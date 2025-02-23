@@ -25,18 +25,18 @@ export default function PricingPage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 flex justify-between items-center p-4 bg-white shadow-md border-b border-gray-200">
         <div className="flex items-center">
-          <a href="/" className="flex items-center">
-            <img
+          <link href="/" className="flex items-center">
+            <image
               src="/images/tc-name-tp-bg.png"
               alt="Truck Command Logo"
               className="h-10 mr-3"
             />
-          </a>
+          </link>
         </div>
         <div className="flex items-center space-x-6">
-          <a href="/" className="text-gray-600 hover:text-[#00D9FF]">
+          <link href="/" className="text-gray-600 hover:text-[#00D9FF]">
             Home
-          </a>
+          </link>
           <div ref={featuresRef} className="relative inline-block">
             <button
               onClick={() => setFeaturesOpen(!featuresOpen)}

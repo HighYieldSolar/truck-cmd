@@ -28,7 +28,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 flex justify-between items-center p-4 bg-white shadow-md border-b border-gray-200">
         <div className="flex items-center">
           {/* Logo as a button linking to the homepage */}
-          <a href="/" className="flex items-center">
+          <a href="/home" className="flex items-center">
             <img
               src="/images/tc-name-tp-bg.png"
               alt="Truck Command Logo"
