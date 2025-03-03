@@ -1,11 +1,16 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { FileText, Truck, Wallet, Users, Package, CheckCircle, Calculator, Fuel, HelpCircle, Mail, MessageSquare, Home } from "lucide-react";
 
 export default function PricingPage() {
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const featuresRef = useRef(null);
   const supportRef = useRef(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -22,21 +27,26 @@ export default function PricingPage() {
 
   return (
     <main className="min-h-screen bg-[#F5F5F5] text-[#222222]">
-      {/* Navbar */}
+      {/* Sticky Navbar */}
       <nav className="sticky top-0 z-50 flex justify-between items-center p-4 bg-white shadow-md border-b border-gray-200">
         <div className="flex items-center">
-          <a href="/" className="flex items-center">
-            <img
-              src="/images/tc-name-tp-bg.png"
-              alt="Truck Command Logo"
-              className="h-10 mr-3"
-            />
-          </a>
+          {/* Logo as a button linking to the homepage */}
+          <Link href="/" className="flex items-center">
+           <Image
+             src="/images/tc-name-tp-bg.png"
+             alt="Truck Command Logo"
+             width={120} // Adjust width
+             height={40} // Adjust height
+             className="h-10 mr-3"
+          />
+          </Link>
         </div>
         <div className="flex items-center space-x-6">
-          <a href="/" className="text-gray-600 hover:text-[#00D9FF]">
+          {/* Home Page Link */}
+            <Link href="/" className="text-gray-600 hover:text-[#00D9FF]">
             Home
-          </a>
+            </Link>
+          {/* Features Dropdown */}
           <div ref={featuresRef} className="relative inline-block">
             <button
               onClick={() => setFeaturesOpen(!featuresOpen)}
@@ -50,76 +60,32 @@ export default function PricingPage() {
             {featuresOpen && (
               <div className="absolute left-0 top-full mt-1 w-80 bg-white rounded-md shadow-lg z-20">
                 <div className="p-4 grid grid-cols-2 gap-4">
-                  <a
-                    href="/features/invoicing"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Invoicing</div>
-                    <div className="text-sm text-gray-500">
-                      Manage invoices seamlessly.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/dispatching"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Dispatching</div>
-                    <div className="text-sm text-gray-500">
-                      Assign and track loads efficiently.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/expense-tracking"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Expense Tracking</div>
-                    <div className="text-sm text-gray-500">
-                      Monitor expenses in real time.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/customer-management"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Customer Management</div>
-                    <div className="text-sm text-gray-500">
-                      Organize client data easily.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/fleet-tracking"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Fleet Tracking</div>
-                    <div className="text-sm text-gray-500">
-                      Real-time vehicle tracking.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/compliance"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Compliance Reports</div>
-                    <div className="text-sm text-gray-500">
-                      Generate regulatory reports.
-                    </div>
-                  </a>
-                  <a
-                    href="/features/ifta-calculator"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">IFTA Calculator</div>
-                    <div className="text-sm text-gray-500">
-                      Simplify fuel tax calculations.
-                    </div>
-                  </a>
+                  {[
+                    { icon: <FileText size={20} className="text-blue-600" />, title: "Invoicing", href: "/features/invoicing" },
+                    { icon: <Truck size={20} className="text-blue-600" />, title: "Dispatching", href: "/features/dispatching" },
+                    { icon: <Wallet size={20} className="text-blue-600" />, title: "Expense Tracking", href: "/features/expense-tracking" },
+                    { icon: <Users size={20} className="text-blue-600" />, title: "Customer Management", href: "/features/customer-management" },
+                    { icon: <Package size={20} className="text-blue-600" />, title: "Fleet Tracking", href: "/features/fleet-tracking" },
+                    { icon: <CheckCircle size={20} className="text-blue-600" />, title: "Compliance Reports", href: "/features/compliance" },
+                    { icon: <Calculator size={20} className="text-blue-600" />, title: "IFTA Calculator", href: "/features/ifta-calculator" },
+                    { icon: <Fuel size={20} className="text-blue-600" />, title: "Fuel Tracker", href: "/features/fuel-tracker" }
+                  ].map((feature, i) => (
+                    <a key={i} href={feature.href} className="flex items-center px-4 py-2 border border-blue-500 rounded hover:bg-gray-100 space-x-2">
+                      {feature.icon}
+                      <span>{feature.title}</span>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}
           </div>
+
+          {/* Pricing Link */}
           <a href="/pricing" className="text-gray-600 hover:text-[#00D9FF]">
             Pricing
           </a>
+
+          {/* Support Dropdown */}
           <div ref={supportRef} className="relative inline-block">
             <button
               onClick={() => setSupportOpen(!supportOpen)}
@@ -133,37 +99,22 @@ export default function PricingPage() {
             {supportOpen && (
               <div className="absolute left-0 top-full mt-1 w-60 bg-white rounded-md shadow-lg z-20">
                 <div className="p-4 space-y-2">
-                  <a
-                    href="/help"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Help Center</div>
-                    <div className="text-sm text-gray-500">
-                      FAQs and guides.
-                    </div>
-                  </a>
-                  <a
-                    href="/contact"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Contact Us</div>
-                    <div className="text-sm text-gray-500">
-                      Reach our team.
-                    </div>
-                  </a>
-                  <a
-                    href="/feedback"
-                    className="block px-4 py-2 border border-blue-500 rounded hover:bg-gray-100"
-                  >
-                    <div className="font-semibold">Feedback</div>
-                    <div className="text-sm text-gray-500">
-                      Share your thoughts.
-                    </div>
-                  </a>
+                  {[
+                    { icon: <HelpCircle size={20} className="text-blue-600" />, title: "Help Center", href: "/help" },
+                    { icon: <Mail size={20} className="text-blue-600" />, title: "Contact Us", href: "/contact" },
+                    { icon: <MessageSquare size={20} className="text-blue-600" />, title: "Feedback", href: "/feedback" }
+                  ].map((support, i) => (
+                    <a key={i} href={support.href} className="flex items-center px-4 py-2 border border-blue-500 rounded hover:bg-gray-100 space-x-2">
+                      {support.icon}
+                      <span>{support.title}</span>
+                    </a>
+                    ))}
                 </div>
               </div>
             )}
           </div>
+
+          {/* Login and Get Started */}
           <a
             href="/login"
             className="text-gray-600 hover:text-[#00D9FF] border border-gray-300 rounded px-3 py-1"
