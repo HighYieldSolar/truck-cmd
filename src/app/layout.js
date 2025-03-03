@@ -1,31 +1,24 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+// This file sets up the Root Layout for the entire application
+// It's the only required file in the app/ directory
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import './globals.css';
+import { Inter } from 'next/font/google';
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Use Inter font with Latin subset
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
 });
 
 export const metadata = {
-  title: "Truck Command",
-  description: "An ERP system for trucking owner-operators and mid-sized fleets.",
+  title: 'Truck Command - Trucking Business Management Software',
+  description: 'Streamline your trucking operations with invoicing, dispatching, expense tracking, and more.',
 };
-
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} font-sans`}>
         {children}
       </body>
     </html>
