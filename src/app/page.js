@@ -325,7 +325,7 @@ export default function LandingPage() {
   const testimonials = [
     { text: "Truck Command has revolutionized how we manage our fleet and expenses. The ease of use and real-time data are game-changers.", name: "Alex Rodriguez", role: "Fleet Manager", company: "AR Logistics", rating: 5 },
     { text: "Since switching to Truck Command, our dispatching process has become smoother and more efficient. Highly recommend!", name: "Jamie Lewis", role: "Owner-Operator", company: "Lewis Hauling", rating: 5 },
-    { text: "The invoicing system is seamless. I can send and track invoices with just a few clicks. It has saved me hours of work every week!", name: "Samantha King", role: "Independent Trucker", company: "King Transport", rating: 5 },
+    { text: "The invoicing system is seamless. I can send and track invoices with just a few clicks. It has saved me hours of work every week!", name: "Samantha Chavez", role: "Independent Trucker", company: "King Transport", rating: 5 },
     { text: "Fuel tracking has never been easier. Truck Command helps us monitor fuel expenses in real-time, making cost analysis simple.", name: "Carlos Martinez", role: "Fleet Owner", company: "CM Freight", rating: 5 },
     { text: "Customer management and compliance tracking are lifesavers. We can keep up with DOT requirements effortlessly!", name: "Linda Parker", role: "Logistics Coordinator", company: "Parker Shipping", rating: 5 },
     { text: "This platform has changed the way we run our trucking business. The insights help us optimize operations and maximize profits.", name: "David Smith", role: "Dispatch Manager", company: "Smith Trucking", rating: 5 }
