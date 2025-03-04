@@ -1,5 +1,16 @@
-// src/components/ui/FeatureCard.js
+// src/components/ui/index.js
 "use client";
+import { useState } from "react";
+import Link from 'next/link';
+import { 
+  Star, 
+  ChevronDown, 
+  CheckCircle, 
+  Send,
+  EyeIcon, 
+  EyeOffIcon
+} from "lucide-react";
+
 export function FeatureCard({ icon, title, description }) {
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow group">
@@ -19,10 +30,6 @@ export function FeatureCard({ icon, title, description }) {
     </div>
   );
 }
-
-// src/components/ui/TestimonialCard.js
-"use client";
-import { Star } from "lucide-react";
 
 export function TestimonialCard({ text, name, role, company, rating = 5 }) {
   return (
@@ -47,11 +54,6 @@ export function TestimonialCard({ text, name, role, company, rating = 5 }) {
   );
 }
 
-// src/components/ui/FAQItem.js
-"use client";
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-
 export function FAQItem({ question, answer }) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -71,8 +73,6 @@ export function FAQItem({ question, answer }) {
   );
 }
 
-// src/components/ui/SectionHeading.js
-"use client";
 export function SectionHeading({ title, subtitle }) {
   return (
     <div className="text-center mb-16">
@@ -88,10 +88,6 @@ export function SectionHeading({ title, subtitle }) {
     </div>
   );
 }
-
-// src/components/ui/Button.js
-"use client";
-import Link from 'next/link';
 
 export function Button({ 
   href, 
@@ -134,11 +130,6 @@ export function Button({
     </button>
   );
 }
-
-// src/components/ui/ContactForm.js
-"use client";
-import { useState } from 'react';
-import { CheckCircle, Send } from 'lucide-react';
 
 export function ContactForm() {
   const [formState, setFormState] = useState({
@@ -288,7 +279,7 @@ export function ContactForm() {
           <Send size={18} className="ml-2" />
         </button>
         <p className="text-sm text-gray-500 mt-2">
-          * Required fields. We'll get back to you within 1 business day.
+          * Required fields. We&apos;ll get back to you within 1 business day.
         </p>
       </div>
     </form>
