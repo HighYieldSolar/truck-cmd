@@ -7,6 +7,12 @@ import {
   Users, Package, CheckCircle, Calculator, Fuel, 
   HelpCircle, Mail, MessageSquare, ArrowRight, Star
 } from "lucide-react";
+import { 
+  FeatureGridSection, 
+  TestimonialSection, 
+  CTASection, 
+  FAQSection 
+} from "@/components/sections";
 
 // Navigation component separated for better organization
 const Navigation = () => {
@@ -301,66 +307,51 @@ const Navigation = () => {
   );
 };
 
-// Feature Card Component for reusability
-const FeatureCard = ({ icon, title, description }) => (
-  <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow group">
-    <div className="flex items-start space-x-4">
-      <div className="text-blue-600 group-hover:text-blue-700 transition-colors">
-        {icon}
-      </div>
-      <div>
-        <h4 className="text-xl font-semibold text-[#222222] group-hover:text-[#007BFF] transition-colors">
-          {title}
-        </h4>
-        <p className="text-[#4A4A4A] mt-2">
-          {description}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-// Testimonial Card Component
-const TestimonialCard = ({ text, name, rating = 5 }) => (
-  <div className="bg-gray-50 p-6 rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200">
-    <div className="flex mb-4">
-      {[...Array(rating)].map((_, i) => (
-        <Star key={i} size={20} className="text-yellow-400 fill-current" />
-      ))}
-    </div>
-    <blockquote className="italic text-lg text-gray-700 mb-4">
-      {text}
-    </blockquote>
-    <div className="flex items-center">
-      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">
-        {name.split(' ')[0][0]}{name.split(' ')[1][0]}
-      </div>
-      <span className="ml-3 font-semibold text-gray-900">- {name}</span>
-    </div>
-  </div>
-);
-
 export default function LandingPage() {
   // Features data
   const features = [
-    { icon: <FileText size={58} className="text-blue-600" />, title: "Invoicing", desc: "Generate, send, and manage invoices with ease for faster payments." },
-    { icon: <Truck size={58} className="text-blue-600" />, title: "Dispatching", desc: "Seamlessly assign and track loads to optimize routes." },
-    { icon: <Wallet size={58} className="text-blue-600" />, title: "Expense Tracking", desc: "Monitor fuel, maintenance, and other expenses in real-time." },
-    { icon: <Users size={58} className="text-blue-600" />, title: "Customer Management", desc: "Keep an organized database for streamlined communications." },
-    { icon: <Package size={58} className="text-blue-600" />, title: "Fleet Tracking", desc: "Track vehicle locations and maintenance schedules effectively." },
-    { icon: <CheckCircle size={58} className="text-blue-600" />, title: "Compliance Reports", desc: "Generate DOT and tax reports to keep your business compliant." },
-    { icon: <Calculator size={58} className="text-blue-600" />, title: "IFTA Calculator", desc: "Simplify fuel tax calculations across different states." },
-    { icon: <Fuel size={58} className="text-blue-600" />, title: "Fuel Tracker", desc: "Monitor fuel usage, track costs, and optimize efficiency." }
+    { icon: <FileText size={58} className="text-blue-600" />, title: "Invoicing", description: "Generate, send, and manage invoices with ease for faster payments." },
+    { icon: <Truck size={58} className="text-blue-600" />, title: "Dispatching", description: "Seamlessly assign and track loads to optimize routes." },
+    { icon: <Wallet size={58} className="text-blue-600" />, title: "Expense Tracking", description: "Monitor fuel, maintenance, and other expenses in real-time." },
+    { icon: <Users size={58} className="text-blue-600" />, title: "Customer Management", description: "Keep an organized database for streamlined communications." },
+    { icon: <Package size={58} className="text-blue-600" />, title: "Fleet Tracking", description: "Track vehicle locations and maintenance schedules effectively." },
+    { icon: <CheckCircle size={58} className="text-blue-600" />, title: "Compliance Reports", description: "Generate DOT and tax reports to keep your business compliant." },
+    { icon: <Calculator size={58} className="text-blue-600" />, title: "IFTA Calculator", description: "Simplify fuel tax calculations across different states." },
+    { icon: <Fuel size={58} className="text-blue-600" />, title: "Fuel Tracker", description: "Monitor fuel usage, track costs, and optimize efficiency." }
   ];
 
   // Testimonials data
   const testimonials = [
-    { text: "Truck Command has revolutionized how we manage our fleet and expenses. The ease of use and real-time data are game-changers.", name: "Alex Rodriguez, Fleet Manager", rating: 5 },
-    { text: "Since switching to Truck Command, our dispatching process has become smoother and more efficient. Highly recommend!", name: "Jamie Lewis, Owner-Operator", rating: 5 },
-    { text: "The invoicing system is seamless. I can send and track invoices with just a few clicks. It has saved me hours of work every week!", name: "Samantha King, Independent Trucker", rating: 4 },
-    { text: "Fuel tracking has never been easier. Truck Command helps us monitor fuel expenses in real-time, making cost analysis simple.", name: "Carlos Martinez, Fleet Owner", rating: 5 },
-    { text: "Customer management and compliance tracking are lifesavers. We can keep up with DOT requirements effortlessly!", name: "Linda Parker, Logistics Coordinator", rating: 5 },
-    { text: "This platform has changed the way we run our trucking business. The insights help us optimize operations and maximize profits.", name: "David Smith, Dispatch Manager", rating: 4 }
+    { text: "Truck Command has revolutionized how we manage our fleet and expenses. The ease of use and real-time data are game-changers.", name: "Alex Rodriguez", role: "Fleet Manager", company: "AR Logistics", rating: 5 },
+    { text: "Since switching to Truck Command, our dispatching process has become smoother and more efficient. Highly recommend!", name: "Jamie Lewis", role: "Owner-Operator", company: "Lewis Hauling", rating: 5 },
+    { text: "The invoicing system is seamless. I can send and track invoices with just a few clicks. It has saved me hours of work every week!", name: "Samantha King", role: "Independent Trucker", company: "King Transport", rating: 5 },
+    { text: "Fuel tracking has never been easier. Truck Command helps us monitor fuel expenses in real-time, making cost analysis simple.", name: "Carlos Martinez", role: "Fleet Owner", company: "CM Freight", rating: 5 },
+    { text: "Customer management and compliance tracking are lifesavers. We can keep up with DOT requirements effortlessly!", name: "Linda Parker", role: "Logistics Coordinator", company: "Parker Shipping", rating: 5 },
+    { text: "This platform has changed the way we run our trucking business. The insights help us optimize operations and maximize profits.", name: "David Smith", role: "Dispatch Manager", company: "Smith Trucking", rating: 5 }
+  ];
+
+  // FAQ data
+  const faqs = [
+    {
+      question: "How does the free trial work?",
+      answer: "Your 7-day free trial gives you full access to all features. No credit card required until you decide to continue. You can cancel anytime during the trial period."
+    },
+    {
+      question: "Is there a mobile app available?",
+      answer: "Yes! Truck Command offers both iOS and Android apps so you can manage your business on the go. All features are accessible from mobile devices."
+    },
+    {
+      question: "Can I import my existing customer data?",
+      answer: "Absolutely. Our platform supports easy importing of customer lists, vehicle information, and other data from spreadsheets or other management systems."
+    },
+    {
+      question: "How secure is my business data?",
+      answer: "We use industry-standard encryption and security practices to protect your data. All information is stored in secure cloud servers with regular backups."
+    },
+    {
+      question: "Do you offer customer support?",
+      answer: "Yes, we provide 24/7 customer support via chat, email, and phone. Our support team consists of trucking industry experts who understand your business needs."
+    }
   ];
 
   // Smooth scroll function for navigation
@@ -500,56 +491,21 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-[#F8F9FA]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#222222] mb-4 inline-block relative">
-              Simple & Efficient Trucking Management
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded"></div>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              All the tools you need to run your trucking business efficiently in one platform
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, i) => (
-              <FeatureCard 
-                key={i} 
-                icon={feature.icon} 
-                title={feature.title} 
-                description={feature.desc} 
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      <FeatureGridSection
+        title="Simple & Efficient Trucking Management"
+        subtitle="All the tools you need to run your trucking business efficiently in one platform"
+        features={features}
+        columns={3}
+        background="gray"
+      />
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#222222] mb-4 inline-block relative">
-              What Our Customers Say
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded"></div>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Join hundreds of satisfied trucking professionals who&apos;ve transformed their business
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, i) => (
-              <TestimonialCard 
-                key={i} 
-                text={testimonial.text} 
-                name={testimonial.name} 
-                rating={testimonial.rating} 
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      <TestimonialSection
+        title="What Our Customers Say"
+        subtitle="Join hundreds of satisfied trucking professionals who've transformed their business"
+        testimonials={testimonials}
+        background="white"
+      />
 
       {/* Pricing CTA Section */}
       <section className="py-16 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
@@ -571,76 +527,20 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#222222] mb-4 inline-block relative">
-              Frequently Asked Questions
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded"></div>
-            </h2>
-          </div>
-          
-          <div className="space-y-6">
-            {[
-              {
-                question: "How does the free trial work?",
-                answer: "Your 7-day free trial gives you full access to all features. No credit card required until you decide to continue. You can cancel anytime during the trial period."
-              },
-              {
-                question: "Is there a mobile app available?",
-                answer: "Yes! Truck Command offers both iOS and Android apps so you can manage your business on the go. All features are accessible from mobile devices."
-              },
-              {
-                question: "Can I import my existing customer data?",
-                answer: "Absolutely. Our platform supports easy importing of customer lists, vehicle information, and other data from spreadsheets or other management systems."
-              },
-              {
-                question: "How secure is my business data?",
-                answer: "We use industry-standard encryption and security practices to protect your data. All information is stored in secure cloud servers with regular backups."
-              },
-              {
-                question: "Do you offer customer support?",
-                answer: "Yes, we provide 24/7 customer support via chat, email, and phone. Our support team consists of trucking industry experts who understand your business needs."
-              }
-            ].map((faq, i) => (
-              <div key={i} className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <h3 className="text-xl font-semibold text-[#222222] mb-3">{faq.question}</h3>
-                <p className="text-gray-600">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-12 text-center">
-            <p className="text-lg text-gray-600 mb-6">Still have questions?</p>
-            <a href="/contact" className="inline-block px-6 py-3 bg-blue-100 text-blue-700 font-medium rounded-md hover:bg-blue-200 transition-colors">
-              Contact Our Support Team
-            </a>
-          </div>
-        </div>
-      </section>
+      <FAQSection
+        title="Frequently Asked Questions"
+        faqs={faqs}
+        contactCTA={true}
+        background="gray"
+      />
 
       {/* Call-to-Action Section */}
-      <section className="py-24 bg-gradient-to-r from-blue-600 to-blue-700 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400 rounded-full filter blur-3xl opacity-20 transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-300 rounded-full filter blur-3xl opacity-20 transform -translate-x-1/2 translate-y-1/2"></div>
-        
-        <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl font-bold mb-6">Start Managing Your Business Better</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Join thousands of trucking businesses that have increased their efficiency and profitability with Truck Command.
-          </p>
-          <p className="text-2xl font-semibold mb-8">
-            Sign up today and get a <span className="text-yellow-300 font-bold">7-day free trial!</span>
-          </p>
-          <a 
-            href="/signup" 
-            className="inline-block px-10 py-5 bg-white text-blue-700 font-bold rounded-lg text-xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-105"
-          >
-            Start Your Free Trial Now
-          </a>
-          <p className="mt-6 text-blue-200">No credit card required • Cancel anytime</p>
-        </div>
-      </section>
+      <CTASection
+        title="Start Managing Your Business Better"
+        description="Join thousands of trucking businesses that have increased their efficiency and profitability with Truck Command."
+        primaryButtonText="Start Your Free Trial Now"
+        footnote="No credit card required • Cancel anytime"
+      />
 
       {/* Footer */}
       <footer className="bg-[#222222] text-white pt-16 pb-8">
@@ -682,8 +582,6 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 <li><a href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
                 <li><a href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="/careers" className="text-gray-400 hover:text-white transition-colors">Careers</a></li>
-                <li><a href="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</a></li>
               </ul>
             </div>
             
@@ -694,12 +592,13 @@ export default function LandingPage() {
                 <li><a href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
                 <li><a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
                 <li><a href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="/terms" className="text-gray-400 hover:text-white transition-colors">Feedback</a></li>
               </ul>
             </div>
           </div>
           
           <div className="pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 mb-4 md:mb-0">&copy; 2025 Truck Command. All rights reserved.</p>
+            <p className="text-gray-400 mb-4 md:mb-0">&copy; {new Date().getFullYear()} Truck Command. All rights reserved.</p>
             <div className="flex space-x-4">
               <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
               <a href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms</a>
