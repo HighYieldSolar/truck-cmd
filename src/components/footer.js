@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div>
             <Image
-              src="/images/tc-name-tp-bg.png"
+              src="/images/tc white-logo with name.png"
               alt="Truck Command Logo"
               width={150}
               height={50}
