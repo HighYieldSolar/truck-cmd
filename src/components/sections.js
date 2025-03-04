@@ -13,7 +13,7 @@ export function SectionHeading({ title, subtitle }) {
     <div className="text-center mb-16">
       <h2 className="text-3xl md:text-4xl font-bold mb-4 inline-block relative">
         {title}
-        <div className="absolute bottom-0 left-0 right-0 mx-auto w-1/4 h-1 bg-blue-500 rounded"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded"></div>
       </h2>
       {subtitle && (
         <p className="text-xl text-gray-600 max-w-3xl mx-auto mt-4">
@@ -148,12 +148,12 @@ export function TestimonialSection({
                 {testimonial.text}
               </blockquote>
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold">
+                <div className="w-20 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-lg">
                   {testimonial.name.split(' ')[0][0]}{testimonial.name.split(' ')[1]?.[0] || ''}
-                </div>
-                <span className="ml-3 font-semibold text-gray-900">
-                  - {testimonial.name}, {testimonial.role && testimonial.company ? `${testimonial.role}, ${testimonial.company}` : ''}
-                </span>
+              </div>
+                  <span className="ml-3 font-semibold text-gray-900">
+                    - {testimonial.name}, {testimonial.role && testimonial.company ? `${testimonial.role}, ${testimonial.company}` : ''}
+                  </span>
               </div>
             </div>
           ))}
