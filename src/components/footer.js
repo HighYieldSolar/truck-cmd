@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#222222] text-white pt-16 pb-8">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div>
             <Image
               src="/images/tc white-logo with name.png"
@@ -34,13 +34,6 @@ export default function Footer() {
               <li><Link href="/features/expense-tracking" className="text-gray-400 hover:text-white transition-colors">Expense Tracking</Link></li>
               <li><Link href="/features/fleet-tracking" className="text-gray-400 hover:text-white transition-colors">Fleet Tracking</Link></li>
               <li><Link href="/features/compliance" className="text-gray-400 hover:text-white transition-colors">Compliance</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Company</h4>
-            <ul className="space-y-3">
-              <li><Link href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
               <li><Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link></li>
             </ul>
           </div>
