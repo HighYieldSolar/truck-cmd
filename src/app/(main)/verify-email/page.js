@@ -1,23 +1,14 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+
 import { Suspense } from "react";
-
-function VerifyEmailComponent() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token"); // Example: fetching token from URL
-
-  return (
-    <div>
-      <h1>Verify Your Email</h1>
-      {token ? <p>Verifying token: {token}</p> : <p>No token provided</p>}
-    </div>
-  );
-}
+import VerifyEmail from "@/components/auth/VerifyEmail";
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <VerifyEmailComponent />
-    </Suspense>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <Suspense fallback={<p className="text-center">Loading...</p>}>
+        <VerifyEmail />
+      </Suspense>
+    </div>
   );
 }
