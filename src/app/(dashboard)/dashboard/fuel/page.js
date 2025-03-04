@@ -672,7 +672,7 @@ const FuelEntryFormModal = ({ isOpen, onClose, fuelEntry, onSave }) => {
                     </button>
                   </div>
                   <div className="relative aspect-[3/4] max-h-96 overflow-hidden bg-gray-100 rounded-md flex items-center justify-center">
-                    <img
+                    <image
                       src={formData.receipt_preview}
                       alt="Receipt preview"
                       className="max-w-full max-h-full object-contain"
@@ -746,7 +746,7 @@ const ReceiptViewerModal = ({ isOpen, onClose, receipt }) => {
         </div>
         
         <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-100">
-          <img 
+          <image 
             src={receipt.receipt_image} 
             alt="Fuel receipt" 
             className="max-w-full max-h-[70vh] object-contain"
