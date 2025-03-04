@@ -71,7 +71,7 @@ const Navigation = () => {
 
   // Support menu items
   const supports = [
-    { icon: <HelpCircle size={20} className="text-blue-600" />, title: "Help Center", href: "/help" },
+    { icon: <HelpCircle size={20} className="text-blue-600" />, title: "FAQ", href: "/faq" },
     { icon: <Mail size={20} className="text-blue-600" />, title: "Contact Us", href: "/contact" },
     { icon: <MessageSquare size={20} className="text-blue-600" />, title: "Feedback", href: "/feedback" }
   ];
@@ -588,11 +588,11 @@ export default function LandingPage() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Support</h4>
               <ul className="space-y-3">
-                <li><a href="/help" className="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
                 <li><a href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
                 <li><a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
                 <li><a href="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="/terms" className="text-gray-400 hover:text-white transition-colors">Feedback</a></li>
+                <li><a href="/feedback" className="text-gray-400 hover:text-white transition-colors">Feedback</a></li>
+                <li><a href="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
               </ul>
             </div>
           </div>

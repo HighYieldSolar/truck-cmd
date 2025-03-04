@@ -61,9 +61,9 @@ export default function Navigation() {
     { icon: <Fuel size={20} className="text-blue-600" />, title: "Fuel Tracker", href: "/features/fuel-tracker", desc: "Track fuel consumption" }
   ];
 
-  // Support menu items
+  // Support menu items - Updated to include FAQ
   const supports = [
-    { icon: <HelpCircle size={20} className="text-blue-600" />, title: "Help Center", href: "/help" },
+    { icon: <HelpCircle size={20} className="text-blue-600" />, title: "FAQ", href: "/faq" },
     { icon: <Mail size={20} className="text-blue-600" />, title: "Contact Us", href: "/contact" },
     { icon: <MessageSquare size={20} className="text-blue-600" />, title: "Feedback", href: "/feedback" }
   ];
