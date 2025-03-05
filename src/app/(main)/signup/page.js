@@ -12,8 +12,10 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [validEmail, setValidEmail] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
   const [phone, setPhone] = useState("");
   const [validPhone, setValidPhone] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -23,8 +25,8 @@ export default function SignupPage() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
   const [numTrucks, setNumTrucks] = useState("1-5");
   const [step, setStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -35,6 +37,43 @@ export default function SignupPage() {
     const isValid = re.test(email);
     setValidEmail(isValid);
     setEmail(email);
+    
+    // Clear existing error state when email changes
+    if (emailExists) {
+      setEmailExists(false);
+    }
+  };
+
+  // Check if email already exists
+  const checkEmailExists = async (email) => {
+    if (!validEmail) return;
+    
+    setCheckingEmail(true);
+    setError(null);
+    
+    try {
+      // Use the Supabase auth API to check if the email exists
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // This will fail if the user doesn't exist
+        }
+      });
+      
+      // If no error is thrown, the email exists
+      setEmailExists(true);
+      setError("This email is already registered. Please use a different email or login.");
+    } catch (error) {
+      // If an error is thrown that's not about user existence, handle it
+      if (error.message && !error.message.includes('User not found')) {
+        setError(error.message);
+      } else {
+        // Email doesn't exist, which is what we want for signup
+        setEmailExists(false);
+      }
+    } finally {
+      setCheckingEmail(false);
+    }
   };
 
   // Validate Phone Number
@@ -45,6 +84,28 @@ export default function SignupPage() {
     const isValid = re.test(cleanedPhone);
     setValidPhone(isValid);
     setPhone(phone);
+    
+    // Clear existing error state when phone changes
+    if (phoneExists) {
+      setPhoneExists(false);
+    }
+  };
+
+  // Check if phone already exists
+  const checkPhoneExists = async (phone) => {
+    if (!validPhone) return;
+    
+    // In a real implementation, you would check if the phone number exists
+    // This might require a custom endpoint or function in your backend
+    // For now, we'll simulate this check with a local function
+    
+    // This is a placeholder - in a real implementation, you'd check against your database
+    const phoneExistsInDB = false; // Replace with actual check
+    
+    setPhoneExists(phoneExistsInDB);
+    if (phoneExistsInDB) {
+      setError("This phone number is already registered. Please use a different number.");
+    }
   };
 
   // Check if passwords match
@@ -57,7 +118,9 @@ export default function SignupPage() {
   const isFormValid = () => {
     return (
       validEmail && 
+      !emailExists &&
       validPhone && 
+      !phoneExists &&
       fullName.trim() !== "" && 
       businessName.trim() !== "" && 
       password.length >= 8 && 
@@ -66,12 +129,41 @@ export default function SignupPage() {
     );
   };
 
-  const handleContinue = (e) => {
+  const handleContinue = async (e) => {
     e.preventDefault();
-    if (validEmail) {
-      setStep(2);
-    } else {
+    if (!validEmail) {
       setError("Please enter a valid email address");
+      return;
+    }
+    
+    // Check if email exists before proceeding
+    setLoading(true);
+    try {
+      // This is a simplified check. In a production environment, you'd want to
+      // implement this more securely, potentially through a server-side function
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+      
+      // If we can request an OTP, the email exists
+      if (!error) {
+        setEmailExists(true);
+        setError("This email is already registered. Please use a different email or login.");
+        setLoading(false);
+        return;
+      }
+      
+      // If we get here, the email doesn't exist which is good for signup
+      setStep(2);
+    } catch (error) {
+      // Handle unexpected errors
+      console.error("Error checking email:", error);
+      setError("An error occurred while checking email availability. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,30 +179,27 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // For demo, simulate successful signup
-      // In production, uncomment the actual supabase call
-      /*
-      const { error } = await supabase.auth.signUp({ 
+      // Clean the phone number to standard format
+      const cleanedPhone = phone.replace(/\D/g, '');
+      
+      // Actual Supabase signup call
+      const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: {
             full_name: fullName,
             business_name: businessName,
-            phone: phone,
+            phone: cleanedPhone,
             num_trucks: numTrucks
           }
         }
       });
       
       if (error) throw error;
-      */
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setFormSubmitted(true);
-      setMessage("Account created successfully!");
+      setMessage("Account created successfully! Please check your email to verify your account.");
       
       // Redirect after showing success message
       setTimeout(() => {
@@ -118,7 +207,11 @@ export default function SignupPage() {
       }, 3000);
       
     } catch (error) {
-      setError(error.message);
+      if (error.message.includes("already registered")) {
+        setError("This email is already registered. Please use a different email or login.");
+      } else {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -174,8 +267,6 @@ export default function SignupPage() {
                 </motion.div>
               ))}
             </div>
-            
-
           </div>
         </div>
 
@@ -226,19 +317,44 @@ export default function SignupPage() {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => validateEmail(e.target.value)}
-                        className={`w-full p-3 border rounded ${validEmail ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'} text-gray-900 focus:ring focus:ring-blue-300`}
+                        onBlur={() => checkEmailExists(email)}
+                        className={`w-full p-3 border rounded ${
+                          email 
+                            ? validEmail && !emailExists
+                              ? 'border-green-300 bg-green-50' 
+                              : 'border-red-300 bg-red-50'
+                            : 'border-gray-300 bg-white'
+                        } text-gray-900 focus:ring focus:ring-blue-300`}
                         required
                       />
                       {email && !validEmail && (
                         <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>
                       )}
+                      {emailExists && (
+                        <p className="text-red-500 text-sm mt-1">This email is already registered</p>
+                      )}
                     </div>
                     
                     <button 
                       onClick={handleContinue}
-                      className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition mt-6"
+                      disabled={loading || !validEmail || emailExists}
+                      className={`w-full p-3 rounded-md mt-6 transition ${
+                        loading || !validEmail || emailExists
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
                     >
-                      Continue
+                      {loading ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Checking...
+                        </span>
+                      ) : (
+                        "Continue"
+                      )}
                     </button>
                     
                     <p className="text-center text-gray-600 mt-4">
@@ -265,7 +381,7 @@ export default function SignupPage() {
                           placeholder="Enter your full name"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          className="w-full p-3 border rounded bg-gray-50 text-gray-900 focus:ring focus:ring-blue-300"
+                          className="w-full p-3 border border-gray-300 rounded bg-white text-gray-900 focus:ring focus:ring-blue-300"
                           required
                         />
                       </div>
@@ -277,7 +393,7 @@ export default function SignupPage() {
                           placeholder="Enter your business name"
                           value={businessName}
                           onChange={(e) => setBusinessName(e.target.value)}
-                          className="w-full p-3 border rounded bg-gray-50 text-gray-900 focus:ring focus:ring-blue-300"
+                          className="w-full p-3 border border-gray-300 rounded bg-white text-gray-900 focus:ring focus:ring-blue-300"
                           required
                         />
                       </div>
@@ -289,16 +405,25 @@ export default function SignupPage() {
                           placeholder="(123) 456-7890"
                           value={phone}
                           onChange={(e) => validatePhone(e.target.value)}
-                          className={`w-full p-3 border rounded ${validPhone ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'} text-gray-900 focus:ring focus:ring-blue-300`}
+                          onBlur={() => checkPhoneExists(phone)}
+                          className={`w-full p-3 border rounded ${
+                            phone 
+                              ? validPhone && !phoneExists
+                                ? 'border-green-300 bg-green-50' 
+                                : 'border-red-300 bg-red-50'
+                              : 'border-gray-300 bg-white'
+                          } text-gray-900 focus:ring focus:ring-blue-300`}
                           required
                         />
                         {phone && !validPhone && (
                           <p className="text-red-500 text-sm mt-1">Please enter a valid 10-digit phone number</p>
                         )}
+                        {phoneExists && (
+                          <p className="text-red-500 text-sm mt-1">This phone number is already registered</p>
+                        )}
                       </div>
                       
-
-                      
+                      {/* Fixed Password Field */}
                       <div>
                         <label className="block text-gray-700 font-medium mb-1">Password</label>
                         <div className="relative">
@@ -307,13 +432,13 @@ export default function SignupPage() {
                             placeholder="Create a password (min. 8 characters)"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-3 border rounded bg-gray-50 text-gray-900 pr-10 focus:ring focus:ring-blue-300"
+                            className="w-full p-3 border border-gray-300 rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300 focus:border-blue-300"
                             required
                           />
                           <button 
                             type="button" 
                             onClick={() => setShowPassword(!showPassword)} 
-                            className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-900"
+                            className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-900 z-10"
                           >
                             {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
                           </button>
@@ -323,22 +448,35 @@ export default function SignupPage() {
                         )}
                       </div>
                       
+                      {/* Fixed Confirm Password Field */}
                       <div>
                         <label className="block text-gray-700 font-medium mb-1">Confirm Password</label>
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Confirm your password"
-                          value={confirmPassword}
-                          onChange={(e) => checkPasswordMatch(e.target.value)}
-                          className={`w-full p-3 border rounded bg-gray-50 text-gray-900 focus:ring focus:ring-blue-300 ${confirmPassword && !passwordsMatch ? 'border-red-300' : ''}`}
-                          required
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChange={(e) => checkPasswordMatch(e.target.value)}
+                            className={`w-full p-3 border rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300 focus:border-blue-300 ${
+                              confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                            required
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setShowPassword(!showPassword)} 
+                            className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-900 z-10"
+                          >
+                            {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                          </button>
+                        </div>
                         {confirmPassword && !passwordsMatch && (
                           <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
                         )}
                       </div>
                     </div>
                     
+                    {/* Updated Terms of Service */}
                     <div className="mt-2 flex items-start">
                       <input
                         type="checkbox"
@@ -348,16 +486,8 @@ export default function SignupPage() {
                         className="mt-1"
                       />
                       <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
-                        I agree to the <button 
-                          type="button" 
-                          className="text-blue-600 underline" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setShowTerms(true);
-                          }}
-                        >
-                          Terms and Conditions
-                        </button> and Privacy Policy
+                        I agree to the <Link href="/terms" target="_blank" className="text-blue-600 underline">Terms of Service</Link> and 
+                        <Link href="/privacy" target="_blank" className="text-blue-600 underline ml-1">Privacy Policy</Link>
                       </label>
                     </div>
                     
@@ -372,7 +502,11 @@ export default function SignupPage() {
                       <button 
                         type="button"
                         onClick={handleSignup}
-                        className="w-2/3 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition"
+                        className={`w-2/3 p-3 rounded-md transition ${
+                          loading || !isFormValid()
+                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
                         disabled={loading || !isFormValid()}
                       >
                         {loading ? (
@@ -395,51 +529,6 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-
-      {/* Terms and Conditions Modal */}
-      {showTerms && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Terms and Conditions</h2>
-              <button 
-                onClick={() => setShowTerms(false)} 
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <XIcon size={24} />
-              </button>
-            </div>
-            
-            <div className="prose prose-sm text-gray-700">
-              <h3>1. Introduction</h3>
-              <p>By using Truck Command, you agree to abide by these terms and conditions. Our services are designed to help trucking businesses manage their operations efficiently.</p>
-              
-              <h3>2. Subscription and Payment</h3>
-              <p>Your subscription begins with a 7-day free trial. After the trial period, your selected payment method will be charged according to your chosen plan unless you cancel before the trial ends.</p>
-              
-              <h3>3. Data Privacy</h3>
-              <p>We take your privacy seriously. All data you enter into Truck Command is secured and protected. We do not sell your data to third parties.</p>
-              
-              <h3>4. User Responsibilities</h3>
-              <p>You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account.</p>
-              
-              <h3>5. Service Availability</h3>
-              <p>While we strive for 99.9% uptime, we cannot guarantee that the service will be available at all times. Maintenance windows will be communicated in advance whenever possible.</p>
-            </div>
-            
-            <button 
-              onClick={() => {
-                setTermsAccepted(true);
-                setShowTerms(false);
-              }} 
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Accept Terms
-            </button>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
