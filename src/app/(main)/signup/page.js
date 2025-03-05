@@ -182,7 +182,7 @@ export default function SignupPage() {
       // Clean the phone number to standard format
       const cleanedPhone = phone.replace(/\D/g, '');
       
-      // Actual Supabase signup call
+      // Supabase signup call with OTP verification
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -192,14 +192,16 @@ export default function SignupPage() {
             business_name: businessName,
             phone: cleanedPhone,
             num_trucks: numTrucks
-          }
+          },
+          // This parameter sets the verification mode to OTP
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
       
       if (error) throw error;
       
       setFormSubmitted(true);
-      setMessage("Account created successfully! Please check your email to verify your account.");
+      setMessage("Account created successfully! Please check your email for the verification code.");
       
       // Redirect after showing success message
       setTimeout(() => {
@@ -297,7 +299,9 @@ export default function SignupPage() {
                   <CheckCircleIcon size={32} className="text-green-500" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h3>
-                <p className="text-gray-600 mb-6">Please check your email to verify your account.</p>
+                <p className="text-gray-600 mb-6">
+                  Please check your email for the verification code to complete your registration.
+                </p>
                 <p className="text-sm text-gray-500">Redirecting you shortly...</p>
               </motion.div>
             ) : (
