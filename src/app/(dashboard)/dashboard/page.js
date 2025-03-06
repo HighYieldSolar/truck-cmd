@@ -29,7 +29,8 @@ import {
   BarChart2,
   DollarSign,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Filter
 } from "lucide-react";
 
 // Sidebar component

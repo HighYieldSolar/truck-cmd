@@ -5,19 +5,28 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  LayoutDashboard,
   Truck,
   FileText,
+  Wallet,
   Users,
+  Package,
+  CheckCircle,
+  Calculator,
+  Fuel,
+  Settings,
+  LogOut,
+  Bell,
+  Search,
+  Filter,
+  Plus,
   MapPin,
   Calendar,
   Clock,
   ChevronDown,
-  Plus,
-  Search,
-  Filter,
   AlertCircle,
   Check,
-  CheckCircle,
+  CheckCircle as CheckCircleIcon,
   X,
   Edit,
   Trash2,
@@ -32,17 +41,22 @@ import {
   MessageSquare,
   Info,
   ChevronRight,
-  Package,
+  Package as PackageIcon,
   DollarSign,
 } from "lucide-react";
 
 // Sidebar Component for consistent navigation
 const Sidebar = ({ activePage = "dispatching" }) => {
   const menuItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: <div className="w-5 h-5 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg></div> },
+    { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
     { name: 'Dispatching', href: '/dashboard/dispatching', icon: <Truck size={18} /> },
     { name: 'Invoices', href: '/dashboard/invoices', icon: <FileText size={18} /> },
-    { name: 'IFTA Calculator', href: '/dashboard/ifta', icon: <div className="w-5 h-5 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /><line x1="7" y1="9" x2="7" y2="9" /><line x1="17" y1="9" x2="17" y2="9" /><polyline points="12,7 12,11 15,9" /></svg></div> },
+    { name: 'Expenses', href: '/dashboard/expenses', icon: <Wallet size={18} /> },
+    { name: 'Customers', href: '/dashboard/customers', icon: <Users size={18} /> },
+    { name: 'Fleet', href: '/dashboard/fleet', icon: <Package size={18} /> },
+    { name: 'Compliance', href: '/dashboard/compliance', icon: <CheckCircle size={18} /> },
+    { name: 'IFTA Calculator', href: '/dashboard/ifta', icon: <Calculator size={18} /> },
+    { name: 'Fuel Tracker', href: '/dashboard/fuel', icon: <Fuel size={18} /> },
   ];
 
   return (
@@ -73,6 +87,30 @@ const Sidebar = ({ activePage = "dispatching" }) => {
               <span>{item.name}</span>
             </Link>
           ))}
+        </div>
+        
+        <div className="pt-4 mt-4 border-t">
+          <Link 
+            href="/dashboard/settings" 
+            className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md hover:text-blue-600 transition-colors"
+          >
+            <Settings size={18} className="mr-3" />
+            <span>Settings</span>
+          </Link>
+          <button 
+            onClick={async () => {
+              try {
+                await supabase.auth.signOut();
+                window.location.href = '/login';
+              } catch (error) {
+                console.error('Error logging out:', error);
+              }
+            }} 
+            className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md hover:text-blue-600 transition-colors"
+          >
+            <LogOut size={18} className="mr-3" />
+            <span>Logout</span>
+          </button>
         </div>
       </nav>
     </div>
@@ -235,18 +273,60 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
   const [selectedDriver, setSelectedDriver] = useState(load.driver || "");
   const [editMode, setEditMode] = useState(false);
   const [updatedLoad, setUpdatedLoad] = useState({...load});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSave = () => {
-    // In a real app, you would save the changes to the backend
-    console.log("Saving changes:", updatedLoad);
-    setEditMode(false);
-    // Simulate updating the load
-    onStatusChange(updatedLoad);
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    try {
+      // In a real app, you would update the load in the database
+      const { data, error } = await supabase
+        .from('loads')
+        .update({
+          status: updatedLoad.status,
+          customer: updatedLoad.customer,
+          pickup_date: updatedLoad.pickupDate,
+          delivery_date: updatedLoad.deliveryDate,
+          origin: updatedLoad.origin,
+          destination: updatedLoad.destination,
+          rate: updatedLoad.rate
+        })
+        .eq('id', updatedLoad.id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      onStatusChange(updatedLoad);
+      setEditMode(false);
+    } catch (error) {
+      console.error("Error updating load:", error);
+      alert("Failed to update load. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDriverAssign = () => {
-    // In a real app, you would save the driver assignment to the backend
-    onAssignDriver(load.id, selectedDriver);
+  const handleDriverAssign = async () => {
+    setIsSubmitting(true);
+    try {
+      // In a real app, you would update the driver in the database
+      const { data, error } = await supabase
+        .from('loads')
+        .update({
+          driver: selectedDriver,
+          status: load.status === "Pending" ? "Assigned" : load.status
+        })
+        .eq('id', load.id);
+        
+      if (error) throw error;
+      
+      // Update the local state
+      onAssignDriver(load.id, selectedDriver);
+    } catch (error) {
+      console.error("Error assigning driver:", error);
+      alert("Failed to assign driver. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -263,6 +343,7 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
               <button 
                 onClick={() => setEditMode(true)}
                 className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                disabled={isSubmitting}
               >
                 <Edit size={18} />
               </button>
@@ -270,13 +351,15 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
               <button 
                 onClick={handleSave}
                 className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full"
+                disabled={isSubmitting}
               >
-                <Check size={18} />
+                {isSubmitting ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
               </button>
             )}
             <button 
               onClick={onClose}
               className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full"
+              disabled={isSubmitting}
             >
               <X size={18} />
             </button>
@@ -427,7 +510,7 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
                     value={selectedDriver}
                     onChange={(e) => setSelectedDriver(e.target.value)}
                     className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    disabled={load.status === "Completed" || load.status === "Cancelled"}
+                    disabled={load.status === "Completed" || load.status === "Cancelled" || isSubmitting}
                   >
                     <option value="">Select Driver</option>
                     {drivers.map(driver => (
@@ -436,10 +519,13 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
                   </select>
                   <button
                     onClick={handleDriverAssign}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                    disabled={!selectedDriver || load.driver === selectedDriver || load.status === "Completed" || load.status === "Cancelled"}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm disabled:bg-blue-300 disabled:cursor-not-allowed"
+                    disabled={!selectedDriver || load.driver === selectedDriver || load.status === "Completed" || load.status === "Cancelled" || isSubmitting}
                   >
-                    Assign
+                    {isSubmitting ? 
+                      <RefreshCw size={16} className="animate-spin" /> : 
+                      "Assign"
+                    }
                   </button>
                 </div>
                 
@@ -543,6 +629,7 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
     rate: "",
     description: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -552,18 +639,58 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newLoad = {
-      ...formData,
-      loadNumber: `L${Math.floor(10000 + Math.random() * 90000)}`,
-      status: "Pending",
-      rate: parseFloat(formData.rate) || 0,
-      distance: Math.floor(Math.random() * 1000) + 100, // Random distance for demo
-      id: Date.now()
-    };
-    onSave(newLoad);
-    onClose();
+    setIsSubmitting(true);
+    
+    try {
+      // In a real app, save to database
+      const loadNumber = `L${Math.floor(10000 + Math.random() * 90000)}`;
+      const distance = Math.floor(Math.random() * 1000) + 100; // Random distance for demo
+      
+      const { data, error } = await supabase
+        .from('loads')
+        .insert([
+          {
+            load_number: loadNumber,
+            customer: formData.customer,
+            origin: formData.origin,
+            destination: formData.destination,
+            pickup_date: formData.pickupDate,
+            delivery_date: formData.deliveryDate,
+            rate: parseFloat(formData.rate) || 0,
+            status: "Pending",
+            distance: distance,
+            description: formData.description
+          }
+        ])
+        .select();
+      
+      if (error) throw error;
+      
+      const newLoad = {
+        id: data[0].id,
+        loadNumber: loadNumber,
+        customer: formData.customer,
+        origin: formData.origin,
+        destination: formData.destination,
+        pickupDate: formData.pickupDate,
+        deliveryDate: formData.deliveryDate,
+        rate: parseFloat(formData.rate) || 0,
+        status: "Pending",
+        distance: distance,
+        description: formData.description,
+        driver: ""
+      };
+      
+      onSave(newLoad);
+      onClose();
+    } catch (error) {
+      console.error("Error creating load:", error);
+      alert("Failed to create load. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -575,6 +702,7 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
           <button 
             onClick={onClose}
             className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full"
+            disabled={isSubmitting}
           >
             <X size={18} />
           </button>
@@ -682,17 +810,54 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
               type="button"
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 text-sm"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center"
+              disabled={isSubmitting}
             >
-              Create Load
+              {isSubmitting ? (
+                <>
+                  <RefreshCw size={16} className="mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : "Create Load"}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Statistic Card Component
+const StatCard = ({ title, value, color }) => {
+  const colorClasses = {
+    blue: "bg-blue-500",
+    green: "bg-green-500",
+    yellow: "bg-yellow-500",
+    red: "bg-red-500",
+    purple: "bg-purple-500"
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+      <div className="flex items-center">
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]} bg-opacity-10 mr-4`}>
+          <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center text-white`}>
+            {color === "blue" && <Truck size={16} />}
+            {color === "yellow" && <Clock size={16} />}
+            {color === "purple" && <Navigation size={16} />}
+            {color === "green" && <CheckCircleIcon size={16} />}
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
       </div>
     </div>
   );
@@ -702,6 +867,7 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
 export default function DispatchingPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingLoads, setLoadingLoads] = useState(false);
   
   // State for the loads
   const [loads, setLoads] = useState([]);
@@ -736,118 +902,154 @@ export default function DispatchingPage() {
     { id: 5, name: "James Wilson" }
   ];
 
-  // Initialize with sample data
   useEffect(() => {
-    async function getUser() {
+    async function fetchData() {
       try {
         setLoading(true);
         
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // Get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (error) {
-          throw error;
-        }
+        if (userError) throw userError;
         
         if (user) {
           setUser(user);
-          // In a real app, you would fetch loads from your API
-          fetchLoads();
+          
+          // Fetch loads from database
+          await fetchLoads();
         }
       } catch (error) {
-        console.error('Error getting user:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     }
     
-    getUser();
+    fetchData();
   }, []);
 
-  const fetchLoads = () => {
-    // This would be an API call in a real application
-    const sampleLoads = [
-      {
-        id: 1,
-        loadNumber: "L12345",
-        customer: "ABC Shipping",
-        origin: "Chicago, IL",
-        destination: "New York, NY",
-        pickupDate: "2025-03-05",
-        deliveryDate: "2025-03-07",
-        status: "In Transit",
-        driver: "John Smith",
-        rate: 2800,
-        distance: 790
-      },
-      {
-        id: 2,
-        loadNumber: "L12346",
-        customer: "XYZ Logistics",
-        origin: "Dallas, TX",
-        destination: "Houston, TX",
-        pickupDate: "2025-03-06",
-        deliveryDate: "2025-03-06",
-        status: "Pending",
-        driver: "",
-        rate: 950,
-        distance: 240
-      },
-      {
-        id: 3,
-        loadNumber: "L12347",
-        customer: "Global Transport Inc.",
-        origin: "Seattle, WA",
-        destination: "Portland, OR",
-        pickupDate: "2025-03-04",
-        deliveryDate: "2025-03-04",
-        status: "Completed",
-        driver: "Maria Garcia",
-        rate: 1200,
-        distance: 174
-      },
-      {
-        id: 4,
-        loadNumber: "L12348",
-        customer: "Fast Freight Services",
-        origin: "Miami, FL",
-        destination: "Orlando, FL",
-        pickupDate: "2025-03-07",
-        deliveryDate: "2025-03-07",
-        status: "Assigned",
-        driver: "Robert Johnson",
-        rate: 750,
-        distance: 235
-      },
-      {
-        id: 5,
-        loadNumber: "L12349",
-        customer: "Acme Delivery",
-        origin: "Los Angeles, CA",
-        destination: "San Francisco, CA",
-        pickupDate: "2025-03-08",
-        deliveryDate: "2025-03-09",
-        status: "Pending",
-        driver: "",
-        rate: 1750,
-        distance: 383
-      },
-      {
-        id: 6,
-        loadNumber: "L12350",
-        customer: "XYZ Logistics",
-        origin: "Denver, CO",
-        destination: "Kansas City, MO",
-        pickupDate: "2025-03-06",
-        deliveryDate: "2025-03-07",
-        status: "Assigned",
-        driver: "Li Wei",
-        rate: 1600,
-        distance: 600
+  const fetchLoads = async () => {
+    try {
+      setLoadingLoads(true);
+      
+      // In a real app, you would fetch from your database
+      // For now, we'll use sample data
+      const { data, error } = await supabase
+        .from('loads')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      // If we don't have any data yet (first run), let's use sample data
+      if (!data || data.length === 0) {
+        const sampleLoads = [
+          {
+            id: 1,
+            loadNumber: "L12345",
+            customer: "ABC Shipping",
+            origin: "Chicago, IL",
+            destination: "New York, NY",
+            pickupDate: "2025-03-05",
+            deliveryDate: "2025-03-07",
+            status: "In Transit",
+            driver: "John Smith",
+            rate: 2800,
+            distance: 790
+          },
+          {
+            id: 2,
+            loadNumber: "L12346",
+            customer: "XYZ Logistics",
+            origin: "Dallas, TX",
+            destination: "Houston, TX",
+            pickupDate: "2025-03-06",
+            deliveryDate: "2025-03-06",
+            status: "Pending",
+            driver: "",
+            rate: 950,
+            distance: 240
+          },
+          {
+            id: 3,
+            loadNumber: "L12347",
+            customer: "Global Transport Inc.",
+            origin: "Seattle, WA",
+            destination: "Portland, OR",
+            pickupDate: "2025-03-04",
+            deliveryDate: "2025-03-04",
+            status: "Completed",
+            driver: "Maria Garcia",
+            rate: 1200,
+            distance: 174
+          },
+          {
+            id: 4,
+            loadNumber: "L12348",
+            customer: "Fast Freight Services",
+            origin: "Miami, FL",
+            destination: "Orlando, FL",
+            pickupDate: "2025-03-07",
+            deliveryDate: "2025-03-07",
+            status: "Assigned",
+            driver: "Robert Johnson",
+            rate: 750,
+            distance: 235
+          },
+          {
+            id: 5,
+            loadNumber: "L12349",
+            customer: "Acme Delivery",
+            origin: "Los Angeles, CA",
+            destination: "San Francisco, CA",
+            pickupDate: "2025-03-08",
+            deliveryDate: "2025-03-09",
+            status: "Pending",
+            driver: "",
+            rate: 1750,
+            distance: 383
+          },
+          {
+            id: 6,
+            loadNumber: "L12350",
+            customer: "XYZ Logistics",
+            origin: "Denver, CO",
+            destination: "Kansas City, MO",
+            pickupDate: "2025-03-06",
+            deliveryDate: "2025-03-07",
+            status: "Assigned",
+            driver: "Li Wei",
+            rate: 1600,
+            distance: 600
+          }
+        ];
+        
+        setLoads(sampleLoads);
+        setTotalLoads(sampleLoads.length);
+      } else {
+        // Map database format to our component format
+        const formattedLoads = data.map(load => ({
+          id: load.id,
+          loadNumber: load.load_number,
+          customer: load.customer,
+          origin: load.origin,
+          destination: load.destination,
+          pickupDate: load.pickup_date,
+          deliveryDate: load.delivery_date,
+          status: load.status,
+          driver: load.driver || "",
+          rate: load.rate,
+          distance: load.distance
+        }));
+        
+        setLoads(formattedLoads);
+        setTotalLoads(formattedLoads.length);
       }
-    ];
-    
-    setLoads(sampleLoads);
-    setTotalLoads(sampleLoads.length);
+    } catch (error) {
+      console.error('Error fetching loads:', error);
+    } finally {
+      setLoadingLoads(false);
+    }
   };
 
   // Filter loads based on search and filter criteria
@@ -956,9 +1158,11 @@ export default function DispatchingPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -988,10 +1192,26 @@ export default function DispatchingPage() {
           <div className="max-w-7xl mx-auto">
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard title="Active Loads" value={loads.filter(l => l.status !== "Completed" && l.status !== "Cancelled").length} color="blue" />
-              <StatCard title="Pending Loads" value={loads.filter(l => l.status === "Pending").length} color="yellow" />
-              <StatCard title="In Transit" value={loads.filter(l => l.status === "In Transit").length} color="purple" />
-              <StatCard title="Completed" value={loads.filter(l => l.status === "Completed").length} color="green" />
+              <StatCard 
+                title="Active Loads" 
+                value={loads.filter(l => l.status !== "Completed" && l.status !== "Cancelled").length} 
+                color="blue" 
+              />
+              <StatCard 
+                title="Pending Loads" 
+                value={loads.filter(l => l.status === "Pending").length} 
+                color="yellow" 
+              />
+              <StatCard 
+                title="In Transit" 
+                value={loads.filter(l => l.status === "In Transit").length} 
+                color="purple" 
+              />
+              <StatCard 
+                title="Completed" 
+                value={loads.filter(l => l.status === "Completed").length} 
+                color="green" 
+              />
             </div>
             
             {/* Filter Bar */}
@@ -1016,10 +1236,14 @@ export default function DispatchingPage() {
             </div>
             
             {/* Loads Grid */}
-            {filteredLoads.length === 0 ? (
+            {loadingLoads ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw size={32} className="animate-spin text-blue-500" />
+              </div>
+            ) : filteredLoads.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
                 <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <Package size={32} className="text-gray-400" />
+                  <PackageIcon size={32} className="text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-1">No loads found</h3>
                 <p className="text-gray-500 mb-4">
@@ -1072,33 +1296,3 @@ export default function DispatchingPage() {
     </div>
   );
 }
-
-// Statistic Card Component
-const StatCard = ({ title, value, color }) => {
-  const colorClasses = {
-    blue: "bg-blue-500",
-    green: "bg-green-500",
-    yellow: "bg-yellow-500",
-    red: "bg-red-500",
-    purple: "bg-purple-500"
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-      <div className="flex items-center">
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]} bg-opacity-10 mr-4`}>
-          <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center text-white`}>
-            {color === "blue" && <Truck size={16} />}
-            {color === "yellow" && <Clock size={16} />}
-            {color === "purple" && <Navigation size={16} />}
-            {color === "green" && <CheckCircle size={16} />}
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
