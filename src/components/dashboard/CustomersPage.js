@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -27,8 +27,20 @@ import {
   Building, 
   ChevronDown,
   X,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  BarChart2,
+  UserPlus,
+  ClipboardList,
+  FileCheck,
+  Info
 } from "lucide-react";
+import { 
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  fetchCustomers
+} from "@/lib/services/customerService";
 
 // Navigation Sidebar Component
 const Sidebar = ({ activePage = "customers" }) => {
@@ -84,6 +96,14 @@ const Sidebar = ({ activePage = "customers" }) => {
           </Link>
           <button 
             className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md hover:text-blue-600 transition-colors"
+            onClick={async () => {
+              try {
+                await supabase.auth.signOut();
+                window.location.href = '/login';
+              } catch (error) {
+                console.error('Error signing out:', error);
+              }
+            }}
           >
             <LogOut size={18} className="mr-3" />
             <span>Logout</span>
@@ -111,18 +131,35 @@ const CustomerCard = ({ customer, onEdit, onDelete }) => {
       </div>
       
       <div className="space-y-2 text-gray-700 mb-4">
-        <div className="flex items-start">
-          <Mail size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-          <span className="text-sm">{customer.email || "No email provided"}</span>
-        </div>
-        <div className="flex items-start">
-          <Phone size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-          <span className="text-sm">{customer.phone || "No phone provided"}</span>
-        </div>
-        <div className="flex items-start">
-          <Building size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-          <span className="text-sm">{customer.address || "No address provided"}</span>
-        </div>
+        {customer.contact_name && (
+          <div className="flex items-start">
+            <Users size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
+            <span className="text-sm">{customer.contact_name}</span>
+          </div>
+        )}
+        {customer.email && (
+          <div className="flex items-start">
+            <Mail size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
+            <span className="text-sm">{customer.email}</span>
+          </div>
+        )}
+        {customer.phone && (
+          <div className="flex items-start">
+            <Phone size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
+            <span className="text-sm">{customer.phone}</span>
+          </div>
+        )}
+        {customer.address && (
+          <div className="flex items-start">
+            <Building size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
+            <span className="text-sm">
+              {customer.address}
+              {customer.city && `, ${customer.city}`}
+              {customer.state && `, ${customer.state}`}
+              {customer.zip && ` ${customer.zip}`}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
@@ -170,11 +207,11 @@ const CustomerTableRow = ({ customer, onEdit, onDelete }) => {
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{customer.contact_name}</div>
-        <div className="text-sm text-gray-500">{customer.email}</div>
+        <div className="text-sm text-gray-900">{customer.contact_name || '—'}</div>
+        <div className="text-sm text-gray-500">{customer.email || '—'}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{customer.phone}</div>
+        <div className="text-sm text-gray-900">{customer.phone || '—'}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -218,6 +255,9 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
     status: 'Active',
     notes: ''
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (customer) {
@@ -240,7 +280,25 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
         notes: ''
       });
     }
+    
+    // Reset errors when opening/closing modal
+    setErrors({});
   }, [customer, isOpen]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.company_name) {
+      newErrors.company_name = 'Company name is required';
+    }
+    
+    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -248,11 +306,32 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
       ...formData,
       [name]: value
     });
+    
+    // Clear error for this field if it exists
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving customer:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -267,6 +346,7 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
+            disabled={isSubmitting}
           >
             <X size={24} />
           </button>
@@ -284,9 +364,12 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
                 name="company_name"
                 value={formData.company_name}
                 onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`block w-full border ${errors.company_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm p-2`}
                 required
               />
+              {errors.company_name && (
+                <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -313,8 +396,11 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`block w-full border ${errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm p-2`}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -444,53 +530,159 @@ const CustomerFormModal = ({ isOpen, onClose, customer, onSave }) => {
               type="button"
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              disabled={isSubmitting}
             >
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              {customer ? "Update Customer" : "Create Customer"}
-            </button>
-          </div>
-        </form>
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center"
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <RefreshCw size={16} className="animate-spin mr-2" />
+                Deleting...
+              </>
+            ) : "Delete"}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-// Delete Confirmation Modal Component
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, customerName }) => {
-  if (!isOpen) return null;
-  
+// Statistic Card Component
+const StatCard = ({ title, value, icon, color = "blue" }) => {
+  const colorClasses = {
+    blue: "bg-blue-100 text-blue-600",
+    green: "bg-green-100 text-green-600",
+    yellow: "bg-yellow-100 text-yellow-600",
+    red: "bg-red-100 text-red-600",
+    purple: "bg-purple-100 text-purple-600",
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-center mb-4 text-red-600">
-          <AlertCircle size={48} />
-        </div>
-        <h3 className="text-lg font-medium text-center text-gray-900 mb-2">
-          Delete Customer
-        </h3>
-        <p className="text-center text-gray-500 mb-6">
-          Are you sure you want to delete <strong>{customerName}</strong>? This action cannot be undone.
-        </p>
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-          >
-            Delete
-          </button>
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+        <div className={`p-2 rounded-md ${colorClasses[color]}`}>
+          {icon}
         </div>
       </div>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+    </div>
+  );
+};
+
+// Filter Component
+const CustomerFilters = ({ filters, setFilters }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+        <div className="flex-1">
+          <label htmlFor="search" className="block text-xs font-medium text-gray-700 mb-1">Search</label>
+          <div className="relative">
+            <input
+              type="text"
+              id="search"
+              placeholder="Search by name, email, or phone"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value={filters.search}
+              onChange={(e) => setFilters({...filters, search: e.target.value})}
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-gray-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="sm:w-40">
+          <label htmlFor="status" className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+          <select
+            id="status"
+            className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+            value={filters.status}
+            onChange={(e) => setFilters({...filters, status: e.target.value})}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div className="sm:w-40">
+          <label htmlFor="customerType" className="block text-xs font-medium text-gray-700 mb-1">Customer Type</label>
+          <select
+            id="customerType"
+            className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+            value={filters.customerType}
+            onChange={(e) => setFilters({...filters, customerType: e.target.value})}
+          >
+            <option value="All">All Types</option>
+            <option value="Shipper">Shipper</option>
+            <option value="Consignee">Consignee</option>
+            <option value="Broker">Broker</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div className="sm:w-40">
+          <label htmlFor="viewMode" className="block text-xs font-medium text-gray-700 mb-1">View Mode</label>
+          <div className="flex rounded-md shadow-sm">
+            <button
+              onClick={() => setFilters({...filters, viewMode: 'grid'})}
+              className={`px-4 py-2 text-sm font-medium ${
+                filters.viewMode === 'grid' 
+                  ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              } border rounded-l-md flex-1`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setFilters({...filters, viewMode: 'table'})}
+              className={`px-4 py-2 text-sm font-medium ${
+                filters.viewMode === 'table' 
+                  ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              } border-t border-b border-r rounded-r-md flex-1`}
+            >
+              Table
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Empty state component
+const EmptyState = ({ filters, openNewCustomerModal }) => {
+  const hasFilters = filters.search || filters.status !== 'All' || filters.customerType !== 'All';
+  
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+      <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        <Users size={32} className="text-gray-400" />
+      </div>
+      <h3 className="text-lg font-medium text-gray-900 mb-1">No customers found</h3>
+      <p className="text-gray-500 mb-4">
+        {hasFilters 
+          ? "Try adjusting your filters or search criteria."
+          : "Get started by adding your first customer."}
+      </p>
+      
+      {!hasFilters && (
+        <button 
+          onClick={openNewCustomerModal}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+        >
+          <Plus size={16} className="mr-2" />
+          Add Your First Customer
+        </button>
+      )}
     </div>
   );
 };
@@ -500,167 +692,167 @@ export default function CustomersPage() {
   const [user, setUser] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'All',
+    customerType: 'All',
+    viewMode: 'grid'
+  });
+  
+  // Modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
-  // Sample customer data for demonstration
-  const sampleCustomers = [
-    {
-      id: 1,
-      company_name: "Global Logistics Inc.",
-      contact_name: "John Smith",
-      email: "john@globallogistics.com",
-      phone: "(555) 123-4567",
-      address: "123 Transport Way",
-      city: "Chicago",
-      state: "IL",
-      zip: "60601",
-      customer_type: "Shipper",
-      status: "Active",
-      notes: "Regular customer, ships 3-4 loads per week."
-    },
-    {
-      id: 2,
-      company_name: "American Freight Services",
-      contact_name: "Sarah Johnson",
-      email: "sarah@americanfreight.com",
-      phone: "(555) 987-6543",
-      address: "456 Shipping Blvd",
-      city: "Dallas",
-      state: "TX",
-      zip: "75201",
-      customer_type: "Broker",
-      status: "Active",
-      notes: "Prefers email communication."
-    },
-    {
-      id: 3,
-      company_name: "Midwest Distribution",
-      contact_name: "Michael Brown",
-      email: "michael@midwestdist.com",
-      phone: "(555) 456-7890",
-      address: "789 Warehouse Dr",
-      city: "Indianapolis",
-      state: "IN",
-      zip: "46225",
-      customer_type: "Consignee",
-      status: "Inactive",
-      notes: "Seasonal customer, active mainly in summer."
-    },
-    {
-      id: 4,
-      company_name: "Pacific Cargo LLC",
-      contact_name: "Lisa Chen",
-      email: "lisa@pacificcargo.com",
-      phone: "(555) 234-5678",
-      address: "321 Harbor Way",
-      city: "Los Angeles",
-      state: "CA",
-      zip: "90017",
-      customer_type: "Shipper",
-      status: "Active",
-      notes: "International shipments specialist."
-    },
-    {
-      id: 5,
-      company_name: "East Coast Brokers",
-      contact_name: "David Wilson",
-      email: "david@eastcoastbrokers.com",
-      phone: "(555) 876-5432",
-      address: "654 Market St",
-      city: "New York",
-      state: "NY",
-      zip: "10001",
-      customer_type: "Broker",
-      status: "Pending",
-      notes: "New relationship, still setting up account details."
-    },
-    {
-      id: 6,
-      company_name: "Southern Transport Solutions",
-      contact_name: "Robert Martinez",
-      email: "robert@southernts.com",
-      phone: "(555) 345-6789",
-      address: "987 Freight Lane",
-      city: "Atlanta",
-      state: "GA",
-      zip: "30303",
-      customer_type: "Shipper",
-      status: "Active",
-      notes: "Prefers phone calls over emails. Ships to southeast region."
+  // Customer stats
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    shippers: 0,
+    consignees: 0,
+    brokers: 0
+  });
+
+  // Define loadCustomers as a callback so it can be reused in effects
+  const loadCustomers = useCallback(async (userId) => {
+    try {
+      setLoadingCustomers(true);
+      const data = await fetchCustomers(userId);
+      setCustomers(data);
+      
+      // Calculate stats
+      const total = data.length;
+      const active = data.filter(c => c.status === 'Active').length;
+      const inactive = data.filter(c => c.status === 'Inactive').length;
+      const shippers = data.filter(c => c.customer_type === 'Shipper').length;
+      const consignees = data.filter(c => c.customer_type === 'Consignee').length;
+      const brokers = data.filter(c => c.customer_type === 'Broker').length;
+      
+      setStats({
+        total,
+        active,
+        inactive,
+        shippers,
+        consignees,
+        brokers
+      });
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      setError('Failed to load customers. Please try refreshing the page.');
+    } finally {
+      setLoadingCustomers(false);
     }
-  ];
+  }, []);
 
   useEffect(() => {
-    async function getData() {
+    async function initUser() {
       try {
         setLoading(true);
         
-        // Get user information
+        // Get authenticated user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) {
-          throw userError;
+        if (userError) throw userError;
+        
+        if (!user) {
+          // Redirect to login if not authenticated
+          window.location.href = '/login';
+          return;
         }
         
-        if (user) {
-          setUser(user);
-          
-          // Simulate API call delay
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Set sample data
-          setCustomers(sampleCustomers);
-        }
+        setUser(user);
+        
+        // Load customers for this user
+        await loadCustomers(user.id);
+        
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+        console.error('Error initializing user:', error);
+        setError('Authentication error. Please try logging in again.');
         setLoading(false);
       }
     }
     
-    getData();
-  }, []);
+    initUser();
+  }, [loadCustomers]);
 
-  // Filter customers based on search term and filters
+  // Filter customers based on search and filter criteria
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = 
-      customer.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.contact_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      !filters.search ||
+      customer.company_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      (customer.contact_name && customer.contact_name.toLowerCase().includes(filters.search.toLowerCase())) ||
+      (customer.email && customer.email.toLowerCase().includes(filters.search.toLowerCase())) ||
+      (customer.phone && customer.phone.toLowerCase().includes(filters.search.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'All' || customer.status === statusFilter;
-    const matchesType = typeFilter === 'All' || customer.customer_type === typeFilter;
+    const matchesStatus = filters.status === 'All' || customer.status === filters.status;
+    const matchesType = filters.customerType === 'All' || customer.customer_type === filters.customerType;
     
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // Handle customer form submission
-  const handleSaveCustomer = (formData) => {
-    if (currentCustomer) {
-      // Update existing customer
-      const updatedCustomers = customers.map(c => 
-        c.id === currentCustomer.id ? { ...formData, id: c.id } : c
-      );
-      setCustomers(updatedCustomers);
-    } else {
-      // Add new customer
-      const newCustomer = {
-        ...formData,
-        id: Math.max(0, ...customers.map(c => c.id)) + 1 // Generate a new ID
-      };
-      setCustomers([...customers, newCustomer]);
-    }
+  // Handle creating or updating customer
+  const handleSaveCustomer = async (formData) => {
+    if (!user) return;
     
-    // Close modal and reset current customer
-    setFormModalOpen(false);
-    setCurrentCustomer(null);
+    try {
+      setIsSubmitting(true);
+      
+      if (currentCustomer) {
+        // Update existing customer
+        const updatedCustomer = await updateCustomer(currentCustomer.id, formData);
+        
+        if (updatedCustomer) {
+          // Update the customer in the local state
+          setCustomers(customers.map(c => 
+            c.id === updatedCustomer.id ? updatedCustomer : c
+          ));
+        }
+      } else {
+        // Create new customer
+        const newCustomer = await createCustomer(user.id, formData);
+        
+        if (newCustomer) {
+          // Add the new customer to the local state
+          setCustomers([...customers, newCustomer]);
+        }
+      }
+      
+      // Close modal and reset current customer
+      setFormModalOpen(false);
+      setCurrentCustomer(null);
+      
+      // Recalculate stats
+      const updatedCustomers = await fetchCustomers(user.id);
+      const total = updatedCustomers.length;
+      const active = updatedCustomers.filter(c => c.status === 'Active').length;
+      const inactive = updatedCustomers.filter(c => c.status === 'Inactive').length;
+      const shippers = updatedCustomers.filter(c => c.customer_type === 'Shipper').length;
+      const consignees = updatedCustomers.filter(c => c.customer_type === 'Consignee').length;
+      const brokers = updatedCustomers.filter(c => c.customer_type === 'Broker').length;
+      
+      setStats({
+        total,
+        active,
+        inactive,
+        shippers,
+        consignees,
+        brokers
+      });
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      setError('Failed to save customer. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle customer edit
@@ -677,22 +869,50 @@ export default function CustomersPage() {
   };
 
   // Confirm customer deletion
-  const confirmDeleteCustomer = () => {
-    if (customerToDelete) {
-      const updatedCustomers = customers.filter(c => c.id !== customerToDelete.id);
-      setCustomers(updatedCustomers);
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // Delete from database
+      const success = await deleteCustomer(customerToDelete.id);
+      
+      if (success) {
+        // Remove from local state
+        setCustomers(customers.filter(c => c.id !== customerToDelete.id));
+        
+        // Recalculate stats
+        if (user) {
+          const updatedCustomers = await fetchCustomers(user.id);
+          const total = updatedCustomers.length;
+          const active = updatedCustomers.filter(c => c.status === 'Active').length;
+          const inactive = updatedCustomers.filter(c => c.status === 'Inactive').length;
+          const shippers = updatedCustomers.filter(c => c.customer_type === 'Shipper').length;
+          const consignees = updatedCustomers.filter(c => c.customer_type === 'Consignee').length;
+          const brokers = updatedCustomers.filter(c => c.customer_type === 'Broker').length;
+          
+          setStats({
+            total,
+            active,
+            inactive,
+            shippers,
+            consignees,
+            brokers
+          });
+        }
+      } else {
+        setError('Failed to delete customer. Please try again.');
+      }
+      
+      // Close modal and reset customer to delete
       setDeleteModalOpen(false);
       setCustomerToDelete(null);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      // Redirect to login page
-      window.location.href = '/login';
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Error deleting customer:', error);
+      setError('Failed to delete customer. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -726,7 +946,9 @@ export default function CustomersPage() {
             <input
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Search..."
+              placeholder="Search customers..."
+              value={filters.search}
+              onChange={(e) => setFilters({...filters, search: e.target.value})}
             />
           </div>
           
@@ -775,111 +997,82 @@ export default function CustomersPage() {
               </div>
             </div>
 
-            {/* Filters and Search */}
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-              <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search customers..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
+            {/* Error message */}
+            {error && (
+              <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
                   </div>
                 </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white"
-                    >
-                      <option value="All">All Statuses</option>
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Pending">Pending</option>
-                    </select>
-                  </div>
-                  
-                  <div className="relative">
-                    <select
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                      className="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white"
-                    >
-                      <option value="All">All Types</option>
-                      <option value="Shipper">Shipper</option>
-                      <option value="Consignee">Consignee</option>
-                      <option value="Broker">Broker</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  
-                  <div className="flex rounded-md shadow-sm">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        viewMode === 'grid' 
-                          ? 'bg-blue-100 text-blue-700 border-blue-300' 
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      } border rounded-l-md`}
-                    >
-                      Grid
-                    </button>
-                    <button
-                      onClick={() => setViewMode('table')}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        viewMode === 'table' 
-                          ? 'bg-blue-100 text-blue-700 border-blue-300' 
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      } border-t border-b border-r rounded-r-md`}
-                    >
-                      Table
-                    </button>
-                  </div>
+              </div>
+            )}
+
+            {/* Info Banner */}
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Info className="h-5 w-5 text-blue-400" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    Organize your shippers, consignees, and brokers in one central location. Use customer information across invoices and loads for consistent operations.
+                  </p>
                 </div>
               </div>
             </div>
-                
-            {/* Content Area */}
-            {loading ? (
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard 
+                title="Total Customers" 
+                value={stats.total} 
+                icon={<Users size={20} className="text-blue-600" />} 
+                color="blue" 
+              />
+              <StatCard 
+                title="Active Customers" 
+                value={stats.active} 
+                icon={<CheckCircle size={20} className="text-green-600" />} 
+                color="green" 
+              />
+              <StatCard 
+                title="Shippers" 
+                value={stats.shippers} 
+                icon={<Truck size={20} className="text-yellow-600" />} 
+                color="yellow" 
+              />
+              <StatCard 
+                title="Brokers" 
+                value={stats.brokers} 
+                icon={<ClipboardList size={20} className="text-purple-600" />} 
+                color="purple" 
+              />
+            </div>
+
+            {/* Filters */}
+            <CustomerFilters filters={filters} setFilters={setFilters} />
+
+            {/* Loading state */}
+            {loadingCustomers ? (
               <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <RefreshCw size={32} className="animate-spin text-blue-500" />
               </div>
             ) : filteredCustomers.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <div className="flex justify-center mb-4">
-                  <Users size={48} className="text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No customers found</h3>
-                <p className="text-gray-500 mb-6">
-                  {searchTerm || statusFilter !== 'All' || typeFilter !== 'All' 
-                    ? "Try adjusting your search or filters." 
-                    : "You don't have any customers yet."}
-                </p>
-                {!searchTerm && statusFilter === 'All' && typeFilter === 'All' && (
-                  <button
-                    onClick={() => {
-                      setCurrentCustomer(null);
-                      setFormModalOpen(true);
-                    }}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Your First Customer
-                  </button>
-                )}
-              </div>
+              <EmptyState 
+                filters={filters} 
+                openNewCustomerModal={() => {
+                  setCurrentCustomer(null);
+                  setFormModalOpen(true);
+                }} 
+              />
             ) : (
               <>
                 {/* Grid View */}
-                {viewMode === 'grid' && (
+                {filters.viewMode === 'grid' && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCustomers.map(customer => (
                       <CustomerCard 
@@ -893,7 +1086,7 @@ export default function CustomersPage() {
                 )}
                 
                 {/* Table View */}
-                {viewMode === 'table' && (
+                {filters.viewMode === 'table' && (
                   <div className="bg-white shadow overflow-hidden rounded-md">
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
@@ -933,24 +1126,12 @@ export default function CustomersPage() {
               </>
             )}
 
-            {/* Customer Count and Pagination (for larger datasets) */}
+            {/* Customer Count */}
             <div className="mt-6 flex items-center justify-between text-sm text-gray-500">
               <div>
                 Showing <span className="font-medium">{filteredCustomers.length}</span> of{" "}
                 <span className="font-medium">{customers.length}</span> customers
               </div>
-              
-              {/* Simple Pagination - would be more sophisticated in production */}
-              {filteredCustomers.length > 0 && (
-                <div className="flex space-x-1">
-                  <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
-                    Previous
-                  </button>
-                  <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
-                    Next
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </main>
@@ -975,7 +1156,53 @@ export default function CustomersPage() {
         }}
         onConfirm={confirmDeleteCustomer}
         customerName={customerToDelete?.company_name}
+        isDeleting={isDeleting}
       />
     </div>
   );
 }
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin mr-2" />
+                  {customer ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                customer ? "Update Customer" : "Create Customer"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Confirmation Modal Component
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, customerName, isDeleting }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-center mb-4 text-red-600">
+          <AlertCircle size={48} />
+        </div>
+        <h3 className="text-lg font-medium text-center text-gray-900 mb-2">
+          Delete Customer
+        </h3>
+        <p className="text-center text-gray-500 mb-6">
+          Are you sure you want to delete <strong>{customerName}</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            disabled={isDeleting}
+          >
+            Cancel
