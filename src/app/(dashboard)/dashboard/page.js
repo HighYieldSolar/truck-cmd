@@ -30,7 +30,8 @@ import {
   DollarSign,
   Calendar,
   ChevronRight,
-  Filter
+  Fuel,
+  LogOut
 } from "lucide-react";
 
 // Sidebar component
@@ -44,6 +45,7 @@ const Sidebar = ({ activePage = "dashboard" }) => {
     { name: 'Fleet', href: '/dashboard/fleet', icon: <Package size={18} /> },
     { name: 'Compliance', href: '/dashboard/compliance', icon: <CheckCircle size={18} /> },
     { name: 'IFTA Calculator', href: '/dashboard/ifta', icon: <Calculator size={18} /> },
+    { name: 'Fuel Tracker', href: '/dashboard/fuel', icon: <Fuel size={18} /> },
   ];
 
   return (
@@ -75,6 +77,30 @@ const Sidebar = ({ activePage = "dashboard" }) => {
             </Link>
           ))}
         </div>
+        
+        <div className="pt-4 mt-4 border-t">
+          <Link 
+            href="/dashboard/settings" 
+            className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md hover:text-blue-600 transition-colors"
+          >
+            <span className="mr-3">⚙️</span>
+            <span>Settings</span>
+          </Link>
+          <button 
+            onClick={async () => {
+              try {
+                await supabase.auth.signOut();
+                window.location.href = '/login';
+              } catch (error) {
+                console.error('Error logging out:', error);
+              }
+            }}
+            className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md hover:text-blue-600 transition-colors"
+          >
+            <LogOut size={18} className="mr-3" />
+            <span>Logout</span>
+          </button>
+        </div>
       </nav>
     </div>
   );
@@ -93,7 +119,7 @@ const StatCard = ({ title, value, change, positive, icon }) => {
           {icon}
         </div>
       </div>
-      {change && (
+      {change !== null && (
         <div className="mt-3">
           <p className={`text-sm flex items-center ${positive ? 'text-green-600' : 'text-red-600'}`}>
             {positive ? (
@@ -105,7 +131,7 @@ const StatCard = ({ title, value, change, positive, icon }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             )}
-            <span>{change} from last period</span>
+            <span>{change}% from last month</span>
           </p>
         </div>
       )}
@@ -176,8 +202,8 @@ const DeliveryItem = ({ delivery }) => (
       <div className="mt-1">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
           delivery.status === 'In Transit' ? 'bg-green-100 text-green-800' :
-          delivery.status === 'Loading' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-blue-100 text-blue-800'
+          delivery.status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
+          'bg-yellow-100 text-yellow-800'
         }`}>
           {delivery.status}
         </span>
@@ -199,15 +225,41 @@ const QuickLink = ({ icon, title, href }) => (
   </Link>
 );
 
+// Empty state component for when there's no data
+const EmptyStateMessage = ({ message, icon, buttonText, buttonLink }) => (
+  <div className="text-center py-8">
+    <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+      {icon}
+    </div>
+    <h3 className="text-lg font-medium text-gray-900">No data to display</h3>
+    <p className="mt-2 text-gray-500">{message}</p>
+    {buttonText && buttonLink && (
+      <Link 
+        href={buttonLink}
+        className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+      >
+        {buttonText}
+      </Link>
+    )}
+  </div>
+);
+
 // Main Dashboard Component
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     earnings: 0,
+    earningsChange: null,
+    earningsPositive: true,
     expenses: 0,
+    expensesChange: null,
+    expensesPositive: false,
     profit: 0,
+    profitChange: null,
+    profitPositive: true,
     activeLoads: 0,
     pendingInvoices: 0,
     upcomingDeliveries: 0
@@ -218,50 +270,77 @@ export default function Dashboard() {
   const [recentInvoices, setRecentInvoices] = useState([]);
 
   useEffect(() => {
-    async function loadDashboard() {
+    async function checkUser() {
       try {
         setLoading(true);
         
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) throw userError;
-        
-        if (user) {
-          setUser(user);
-          
-          // Fetch dashboard data in parallel
-          const [dashboardStats, activity, deliveries, invoices] = await Promise.all([
-            fetchDashboardStats(user.id),
-            fetchRecentActivity(user.id),
-            fetchUpcomingDeliveries(user.id),
-            fetchRecentInvoices(user.id)
-          ]);
-          
-          setStats(dashboardStats);
-          setRecentActivity(activity);
-          setUpcomingDeliveries(deliveries);
-          setRecentInvoices(invoices);
+        if (userError) {
+          throw userError;
         }
+        
+        if (!user) {
+          // Redirect to login if not authenticated
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Set the user in state for reference
+        setUser(user);
+        setLoading(false);
+        
+        // Now load dashboard data
+        await loadDashboardData(user.id);
       } catch (error) {
-        console.error('Error loading dashboard:', error);
-        setError('Failed to load dashboard data. Please try again later.');
-      } finally {
+        console.error('Error checking authentication:', error);
+        setError('Authentication error. Please try logging in again.');
         setLoading(false);
       }
     }
     
-    loadDashboard();
+    checkUser();
   }, []);
+  
+  async function loadDashboardData(userId) {
+    setDataLoading(true);
+    try {
+      // Fetch dashboard data in parallel
+      const [dashboardStats, activity, deliveries] = await Promise.all([
+        fetchDashboardStats(userId),
+        fetchRecentActivity(userId),
+        fetchUpcomingDeliveries(userId),
+      ]);
+      
+      setStats(dashboardStats);
+      setRecentActivity(activity);
+      setUpcomingDeliveries(deliveries);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setDataLoading(false);
+    }
+  }
   
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      // Redirect to login page
       window.location.href = '/login';
     } catch (error) {
       console.error('Error logging out:', error);
     }
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (value) => {
+    return value.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   };
 
   if (loading) {
@@ -301,15 +380,16 @@ export default function Dashboard() {
           <div className="flex items-center">
             <button className="p-2 text-gray-600 hover:text-blue-600 mx-2 relative">
               <Bell size={20} />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                3
-              </span>
+              {/* Notification badge would be conditionally shown here */}
             </button>
             
             <div className="h-8 w-px bg-gray-200 mx-2"></div>
             
             <div className="relative">
-              <button className="flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+              <button 
+                onClick={handleLogout}
+                className="flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+              >
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold mr-2">
                   {user?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
@@ -326,18 +406,24 @@ export default function Dashboard() {
             {/* Page Header */}
             <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Welcome Back, {user?.user_metadata?.full_name?.split(' ')[0] || 'User'}</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">Welcome{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}</h1>
                 <p className="text-gray-600">Here&apos;s what&apos;s happening with your trucking business today</p>
               </div>
               <div className="mt-4 md:mt-0 flex space-x-3">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+                <Link
+                  href="/dashboard/dispatching/new"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                >
                   <Plus size={16} className="mr-2" />
                   New Load
-                </button>
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none">
+                </Link>
+                <Link
+                  href="/dashboard/invoices/new"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
+                >
                   <FileText size={16} className="mr-2" />
                   Create Invoice
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -357,49 +443,86 @@ export default function Dashboard() {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <StatCard
-                title="Total Earnings (MTD)"
-                value={`$${stats.earnings.toLocaleString()}`}
-                change="+12.5%"
-                positive={true}
-                icon={<DollarSign size={22} className="text-green-600" />}
-              />
-              <StatCard
-                title="Total Expenses (MTD)"
-                value={`$${stats.expenses.toLocaleString()}`}
-                change="+3.2%"
-                positive={false}
-                icon={<Wallet size={22} className="text-red-600" />}
-              />
-              <StatCard
-                title="Net Profit"
-                value={`$${stats.profit.toLocaleString()}`}
-                change="+15.3%"
-                positive={true}
-                icon={<BarChart2 size={22} className="text-blue-600" />}
-              />
+              {dataLoading ? (
+                // Skeleton loaders for stats cards
+                Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                        <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="rounded-md p-2 bg-gray-200 h-10 w-10"></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <StatCard
+                    title="Total Earnings (MTD)"
+                    value={formatCurrency(stats.earnings)}
+                    change={stats.earningsChange}
+                    positive={stats.earningsPositive}
+                    icon={<DollarSign size={22} className="text-green-600" />}
+                  />
+                  <StatCard
+                    title="Total Expenses (MTD)"
+                    value={formatCurrency(stats.expenses)}
+                    change={stats.expensesChange}
+                    positive={stats.expensesPositive}
+                    icon={<Wallet size={22} className="text-red-600" />}
+                  />
+                  <StatCard
+                    title="Net Profit"
+                    value={formatCurrency(stats.profit)}
+                    change={stats.profitChange}
+                    positive={stats.profitPositive}
+                    icon={<BarChart2 size={22} className="text-blue-600" />}
+                  />
+                </>
+              )}
             </div>
             
             {/* Secondary Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <InfoCard
-                title="Active Loads"
-                value={stats.activeLoads}
-                icon={<Truck size={20} className="text-blue-600" />}
-                href="/dashboard/dispatching"
-              />
-              <InfoCard
-                title="Pending Invoices"
-                value={stats.pendingInvoices}
-                icon={<FileText size={20} className="text-yellow-600" />}
-                href="/dashboard/invoices"
-              />
-              <InfoCard
-                title="Upcoming Deliveries"
-                value={stats.upcomingDeliveries}
-                icon={<Calendar size={20} className="text-purple-600" />}
-                href="/dashboard/dispatching"
-              />
+              {dataLoading ? (
+                // Skeleton loaders for info cards
+                Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="rounded-md p-2 bg-gray-200 h-10 w-10 mr-4"></div>
+                        <div className="space-y-2">
+                          <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                          <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <InfoCard
+                    title="Active Loads"
+                    value={stats.activeLoads}
+                    icon={<Truck size={20} className="text-blue-600" />}
+                    href="/dashboard/dispatching"
+                  />
+                  <InfoCard
+                    title="Pending Invoices"
+                    value={stats.pendingInvoices}
+                    icon={<FileText size={20} className="text-yellow-600" />}
+                    href="/dashboard/invoices"
+                  />
+                  <InfoCard
+                    title="Upcoming Deliveries"
+                    value={stats.upcomingDeliveries}
+                    icon={<Calendar size={20} className="text-purple-600" />}
+                    href="/dashboard/dispatching"
+                  />
+                </>
+              )}
             </div>
 
             {/* Split View: Recent Activity and Upcoming Deliveries */}
@@ -408,18 +531,30 @@ export default function Dashboard() {
               <div className="lg:col-span-2 bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                   <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
-                  <div className="flex items-center">
-                    <button className="p-1 text-gray-500 hover:text-gray-700">
-                      <Filter size={16} />
-                    </button>
-                    <a href="#" className="ml-4 text-sm text-blue-600 hover:text-blue-700">
-                      View All
-                    </a>
-                  </div>
+                  <Link href="#" className="text-sm text-blue-600 hover:text-blue-700">
+                    View All
+                  </Link>
                 </div>
                 <div className="p-6">
-                  {recentActivity.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No recent activity to display.</p>
+                  {dataLoading ? (
+                    // Skeleton loader for activity feed
+                    Array(3).fill(0).map((_, index) => (
+                      <div key={index} className="flex items-start py-3 border-b border-gray-100 last:border-0 animate-pulse">
+                        <div className="rounded-full h-10 w-10 bg-gray-200 mr-4"></div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div className="h-4 w-40 bg-gray-200 rounded"></div>
+                            <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-3 w-32 bg-gray-200 rounded mt-2"></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : recentActivity.length === 0 ? (
+                    <EmptyStateMessage 
+                      message="Create your first load or invoice to see activity here."
+                      icon={<Clock size={24} className="text-gray-400" />}
+                    />
                   ) : (
                     recentActivity.map((activity, index) => (
                       <ActivityItem key={activity.id || index} activity={activity} />
@@ -432,13 +567,33 @@ export default function Dashboard() {
               <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                   <h2 className="text-lg font-medium text-gray-900">Upcoming Deliveries</h2>
-                  <a href="/dashboard/dispatching" className="text-sm text-blue-600 hover:text-blue-700">
+                  <Link href="/dashboard/dispatching" className="text-sm text-blue-600 hover:text-blue-700">
                     View All
-                  </a>
+                  </Link>
                 </div>
                 <div className="p-6">
-                  {upcomingDeliveries.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No upcoming deliveries scheduled.</p>
+                  {dataLoading ? (
+                    // Skeleton loader for upcoming deliveries
+                    Array(2).fill(0).map((_, index) => (
+                      <div key={index} className="flex items-start py-3 border-b border-gray-100 last:border-0 animate-pulse">
+                        <div className="rounded-full h-10 w-10 bg-gray-200 mr-4"></div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                            <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-3 w-40 bg-gray-200 rounded mt-2"></div>
+                          <div className="h-4 w-20 bg-gray-200 rounded mt-2"></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : upcomingDeliveries.length === 0 ? (
+                    <EmptyStateMessage 
+                      message="No upcoming deliveries scheduled."
+                      icon={<Truck size={24} className="text-gray-400" />}
+                      buttonText="Schedule Delivery"
+                      buttonLink="/dashboard/dispatching/new"
+                    />
                   ) : (
                     upcomingDeliveries.map((delivery, index) => (
                       <DeliveryItem key={delivery.id || index} delivery={delivery} />
