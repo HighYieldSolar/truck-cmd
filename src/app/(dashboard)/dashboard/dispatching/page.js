@@ -1,19 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  fetchLoads,
-  createLoad,
-  updateLoad,
-  deleteLoad,
-  assignDriver,
-  updateLoadStatus,
-  getLoadStats
-} from "@/lib/services/loadService";
-
 import {
   LayoutDashboard,
   Truck,
@@ -278,193 +268,7 @@ const FilterBar = ({ filters, setFilters }) => {
   );
 };
 
-// Statistic Card Component
-const StatCard = ({ title, value, color }) => {
-  const colorClasses = {
-    blue: "bg-blue-500",
-    green: "bg-green-500",
-    yellow: "bg-yellow-500",
-    red: "bg-red-500",
-    purple: "bg-purple-500"
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-      <div className="flex items-center">
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]} bg-opacity-10 mr-4`}>
-          <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center text-white`}>
-            {color === "blue" && <Truck size={16} />}
-            {color === "yellow" && <Clock size={16} />}
-            {color === "purple" && <Navigation size={16} />}
-            {color === "green" && <CheckCircleIcon size={16} />}
-          </div>
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Main Dispatching Dashboard Component
-export default function DispatchingPage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingLoads, setLoadingLoads] = useState(false);
-  const [loadStats, setLoadStats] = useState({
-    total: 0,
-    pending: 0,
-    assigned: 0,
-    inTransit: 0,
-    completed: 0
-  });
-  
-  // State for the loads
-  const [loads, setLoads] = useState([]);
-  const [totalLoads, setTotalLoads] = useState(0);
-  
-  // State for filtering and selection
-  const [filters, setFilters] = useState({
-    search: "",
-    status: "All",
-    dateRange: "all",
-    sortBy: "pickupDate"
-  });
-  
-  // State for modals
-  const [selectedLoad, setSelectedLoad] = useState(null);
-  const [showNewLoadModal, setShowNewLoadModal] = useState(false);
-  
-  // Sample data for customers and drivers
-  const [customers, setCustomers] = useState([]);
-  const [drivers, setDrivers] = useState([]);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        
-        // Get user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (user) {
-          setUser(user);
-          
-          // Fetch loads from database
-          fetchLoadData(user.id);
-          // Fetch customers and drivers in parallel
-          fetchCustomersAndDrivers(user.id);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-// Move these function definitions BEFORE the useEffect
-const fetchLoadData = useCallback(async (userId) => {
-  try {
-    setLoadingLoads(true);
-    
-    // Fetch loads using the loadService
-    const loadsData = await fetchLoads(userId, filters);
-    setLoads(loadsData);
-    setTotalLoads(loadsData.length);
-    
-    // Get load statistics
-    const stats = await getLoadStats(userId);
-    setLoadStats(stats);
-    
-  } catch (error) {
-    console.error('Error fetching loads:', error);
-  } finally {
-    setLoadingLoads(false);
-  }
-}, [filters]);
-
-const fetchCustomersAndDrivers = useCallback(async (userId) => {
-  try {
-    // Fetch customers from database
-    const { data: customersData, error: customersError } = await supabase
-      .from('customers')
-      .select('id, company_name as name')
-      .eq('user_id', userId);
-      
-    if (customersError) throw customersError;
-    
-    // Fetch drivers from database
-    const { data: driversData, error: driversError } = await supabase
-    .from('drivers')
-    .select('id, name')
-    .eq('user_id', userId);
-      
-    if (driversError) throw driversError;
-    
-    // If we don't have any data yet, use sample data
-    if (!customersData || customersData.length === 0) {
-      setCustomers([
-        { id: 1, name: "ABC Shipping" },
-        { id: 2, name: "XYZ Logistics" },
-        { id: 3, name: "Global Transport Inc." },
-        { id: 4, name: "Fast Freight Services" },
-        { id: 5, name: "Acme Delivery" }
-      ]);
-    } else {
-      setCustomers(customersData);
-    }
-    
-    if (!driversData || driversData.length === 0) {
-      setDrivers([
-        { id: 1, name: "John Smith" },
-        { id: 2, name: "Maria Garcia" },
-        { id: 3, name: "Robert Johnson" },
-        { id: 4, name: "Li Wei" },
-        { id: 5, name: "James Wilson" }
-      ]);
-    } else {
-      setDrivers(driversData);
-    }
-  } catch (error) {
-    console.error('Error fetching customers and drivers:', error);
-  }
-}, []);
-
-// THEN have your useEffect
-useEffect(() => {
-  async function fetchData() {
-    try {
-      setLoading(true);
-      
-      // Get user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
-      
-      if (user) {
-        setUser(user);
-        
-        // Fetch loads from database
-        fetchLoadData(user.id);
-        // Fetch customers and drivers in parallel
-        fetchCustomersAndDrivers(user.id);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-  
-  fetchData();
-}, [fetchLoadData, fetchCustomersAndDrivers]);
-
-
-  // Load Detail Modal Component
+// Load Detail Modal Component
 const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDriver }) => {
   const [selectedDriver, setSelectedDriver] = useState(load.driver || "");
   const [editMode, setEditMode] = useState(false);
@@ -474,26 +278,27 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
-      // Update load using the loadService
-      const result = await updateLoad(updatedLoad.id, {
+      // Format data for the database
+      const dbData = {
         status: updatedLoad.status,
         customer: updatedLoad.customer,
-        pickupDate: updatedLoad.pickupDate,
-        deliveryDate: updatedLoad.deliveryDate,
+        pickup_date: updatedLoad.pickupDate,
+        delivery_date: updatedLoad.deliveryDate,
         origin: updatedLoad.origin,
         destination: updatedLoad.destination,
-        rate: updatedLoad.rate,
-        description: updatedLoad.description,
-        notes: updatedLoad.notes
-      });
+        rate: updatedLoad.rate
+      };
+      
+      const { data, error } = await supabase
+        .from('loads')
+        .update(dbData)
+        .eq('id', updatedLoad.id);
         
-      if (result) {
-        // Update the local state
-        onStatusChange(updatedLoad);
-        setEditMode(false);
-      } else {
-        throw new Error("Failed to update load");
-      }
+      if (error) throw error;
+      
+      // Update the local state
+      onStatusChange(updatedLoad);
+      setEditMode(false);
     } catch (error) {
       console.error("Error updating load:", error);
       alert("Failed to update load. Please try again.");
@@ -505,15 +310,20 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
   const handleDriverAssign = async () => {
     setIsSubmitting(true);
     try {
-      // Use assignDriver service
-      const result = await assignDriver(load.id, selectedDriver);
+      // Update the driver in the database
+      const { data, error } = await supabase
+        .from('loads')
+        .update({
+          driver: selectedDriver,
+          status: load.status === "Pending" ? "Assigned" : load.status
+        })
+        .eq('id', load.id);
+        
+      if (error) throw error;
       
-      if (result) {
-        // Update the local state
-        onAssignDriver(load.id, selectedDriver);
-      } else {
-        throw new Error("Failed to assign driver");
-      }
+      // Update the local state
+      onAssignDriver(load.id, selectedDriver);
+      onClose();
     } catch (error) {
       console.error("Error assigning driver:", error);
       alert("Failed to assign driver. Please try again.");
@@ -559,7 +369,7 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
           </div>
         </div>
         
-        {/* Content - keeping the rest of your existing modal content */}
+        {/* Content */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
@@ -837,31 +647,63 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
     setIsSubmitting(true);
     
     try {
-      // Get the user ID from authenticated session
+      // Generate a load number for new loads
+      const loadNumber = `L${Math.floor(10000 + Math.random() * 90000)}`;
+      
+      // Get user ID from session
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
       
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-      
-      // Use the createLoad service function from loadService
-      const newLoad = await createLoad(user.id, {
+      // Format data for the database
+      const dbData = {
+        user_id: user.id,
+        load_number: loadNumber,
         customer: formData.customer,
         origin: formData.origin,
         destination: formData.destination,
-        pickupDate: formData.pickupDate,
-        deliveryDate: formData.deliveryDate,
+        pickup_date: formData.pickupDate,
+        delivery_date: formData.deliveryDate,
         rate: parseFloat(formData.rate) || 0,
+        status: "Pending",
         description: formData.description,
-        status: "Pending"
-      });
+        created_at: new Date()
+      };
       
-      if (newLoad) {
-        onSave(newLoad);
-        onClose();
-      } else {
-        throw new Error("Failed to create load");
+      // Calculate distance using Google Maps API or estimate 
+      // For now, use a simple estimation based on origin/destination
+      const distance = Math.floor(Math.random() * 500) + 100; // Placeholder
+      dbData.distance = distance;
+      
+      // Insert into database
+      const { data, error } = await supabase
+        .from('loads')
+        .insert([dbData])
+        .select();
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        throw new Error("Failed to create load - no data returned");
       }
+      
+      // Map database response to component format
+      const newLoad = {
+        id: data[0].id,
+        loadNumber: data[0].load_number,
+        customer: data[0].customer,
+        origin: data[0].origin,
+        destination: data[0].destination,
+        pickupDate: data[0].pickup_date,
+        deliveryDate: data[0].delivery_date,
+        rate: data[0].rate,
+        status: data[0].status,
+        distance: data[0].distance,
+        description: data[0].description,
+        driver: ""
+      };
+      
+      onSave(newLoad);
+      onClose();
     } catch (error) {
       console.error("Error creating load:", error);
       alert("Failed to create load. Please try again.");
@@ -1010,109 +852,529 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
   );
 };
 
-// Filter loads based on search and filter criteria
-const getFilteredLoads = (loads, filters) => {
-  return loads.filter(load => {
-    // Filter by search term
-    if (filters.search && !load.loadNumber.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !load.customer.toLowerCase().includes(filters.search.toLowerCase()) &&
-        !(load.driver && load.driver.toLowerCase().includes(filters.search.toLowerCase()))) {
-      return false;
+// Statistic Card Component
+const StatCard = ({ title, value, color }) => {
+  const colorClasses = {
+    blue: "bg-blue-500",
+    green: "bg-green-500",
+    yellow: "bg-yellow-500",
+    red: "bg-red-500",
+    purple: "bg-purple-500"
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+      <div className="flex items-center">
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]} bg-opacity-10 mr-4`}>
+          <div className={`w-8 h-8 rounded-lg ${colorClasses[color]} flex items-center justify-center text-white`}>
+            {color === "blue" && <Truck size={16} />}
+            {color === "yellow" && <Clock size={16} />}
+            {color === "purple" && <Navigation size={16} />}
+            {color === "green" && <CheckCircleIcon size={16} />}
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Fetch drivers from the database
+const fetchDrivers = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (error) throw error;
+    
+    // If there are no drivers yet, return sample data
+    if (!data || data.length === 0) {
+      return [
+        { id: 1, user_id: userId, name: "John Smith", phone: "555-123-4567", license: "CDL12345" },
+        { id: 2, user_id: userId, name: "Maria Garcia", phone: "555-987-6543", license: "CDL67890" },
+        { id: 3, user_id: userId, name: "Robert Johnson", phone: "555-456-7890", license: "CDL24680" },
+        { id: 4, user_id: userId, name: "Li Wei", phone: "555-222-3333", license: "CDL13579" },
+        { id: 5, user_id: userId, name: "James Wilson", phone: "555-444-5555", license: "CDL97531" }
+      ];
     }
     
-    // Filter by status
-    if (filters.status !== "All" && load.status !== filters.status) {
-      return false;
+    return data;
+  } catch (error) {
+    console.error("Error fetching drivers:", error);
+    return [];
+  }
+};
+
+// Fetch customers from the database
+const fetchCustomers = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (error) throw error;
+    
+    // If there are no customers yet, return sample data
+    if (!data || data.length === 0) {
+      return [
+        { id: 1, user_id: userId, name: "ABC Shipping", contact: "John Doe", email: "john@abcshipping.com" },
+        { id: 2, user_id: userId, name: "XYZ Logistics", contact: "Jane Smith", email: "jane@xyzlogistics.com" },
+        { id: 3, user_id: userId, name: "Global Transport Inc.", contact: "Mike Johnson", email: "mike@globaltransport.com" },
+        { id: 4, user_id: userId, name: "Fast Freight Services", contact: "Sarah Brown", email: "sarah@fastfreight.com" },
+        { id: 5, user_id: userId, name: "Acme Delivery", contact: "Tom Wilson", email: "tom@acmedelivery.com" }
+      ];
     }
     
-    // Filter by date range
-    if (filters.dateRange !== "all") {
+    return data;
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    return [];
+  }
+};
+
+// Fetch loads from the database with filters
+const fetchLoads = async (userId, filters = {}) => {
+  try {
+    let query = supabase
+      .from('loads')
+      .select('*')
+      .eq('user_id', userId);
+    
+    // Apply status filter
+    if (filters.status && filters.status !== 'All') {
+      query = query.eq('status', filters.status);
+    }
+    
+    // Apply search filter
+    if (filters.search) {
+      query = query.or(`load_number.ilike.%${filters.search}%,customer.ilike.%${filters.search}%,driver.ilike.%${filters.search}%`);
+    }
+    
+    // Apply date filter
+    if (filters.dateRange && filters.dateRange !== 'all') {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      const pickupDate = new Date(load.pickupDate);
+      const nextWeekEnd = new Date(today);
+      nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
       
-      if (filters.dateRange === "today" && pickupDate.toDateString() !== today.toDateString()) {
-        return false;
-      } else if (filters.dateRange === "tomorrow" && pickupDate.toDateString() !== tomorrow.toDateString()) {
-        return false;
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      switch (filters.dateRange) {
+        case 'today':
+          query = query.eq('pickup_date', today.toISOString().split('T')[0]);
+          break;
+        case 'tomorrow':
+          query = query.eq('pickup_date', tomorrow.toISOString().split('T')[0]);
+          break;
+        case 'thisWeek':
+          query = query.gte('pickup_date', today.toISOString().split('T')[0])
+                      .lte('pickup_date', nextWeekEnd.toISOString().split('T')[0]);
+          break;
+        case 'thisMonth':
+          query = query.gte('pickup_date', today.toISOString().split('T')[0])
+                      .lte('pickup_date', monthEnd.toISOString().split('T')[0]);
+          break;
       }
-      // Other date range filters would be implemented here
     }
     
-    return true;
-  });
-};
-
-// Sort filtered loads
-const getSortedLoads = (filteredLoads, sortBy) => {
-  return [...filteredLoads].sort((a, b) => {
-    if (sortBy === "pickupDate") {
-      return new Date(a.pickupDate) - new Date(b.pickupDate);
-    } else if (sortBy === "deliveryDate") {
-      return new Date(a.deliveryDate) - new Date(b.deliveryDate);
-    } else if (sortBy === "status") {
-      return a.status.localeCompare(b.status);
-    } else if (sortBy === "customer") {
-      return a.customer.localeCompare(b.customer);
-    } else if (sortBy === "rate") {
-      return b.rate - a.rate; // High to Low
+    // Apply sorting
+    if (filters.sortBy) {
+      switch (filters.sortBy) {
+        case 'pickupDate':
+          query = query.order('pickup_date', { ascending: true });
+          break;
+        case 'deliveryDate':
+          query = query.order('delivery_date', { ascending: true });
+          break;
+        case 'status':
+          query = query.order('status', { ascending: true });
+          break;
+        case 'customer':
+          query = query.order('customer', { ascending: true });
+          break;
+        case 'rate':
+          query = query.order('rate', { ascending: false });
+          break;
+      }
+    } else {
+      // Default sort by creation date (newest first)
+      query = query.order('created_at', { ascending: false });
     }
-    return 0;
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // If no loads found yet, don't return sample data - let the UI handle the empty state
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
+    // Map database schema to component-friendly format
+    return data.map(load => ({
+      id: load.id,
+      loadNumber: load.load_number,
+      customer: load.customer,
+      origin: load.origin || '',
+      destination: load.destination || '',
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
+      status: load.status,
+      driver: load.driver || '',
+      rate: load.rate || 0,
+      distance: load.distance || 0,
+      description: load.description || ''
+    }));
+  } catch (error) {
+    console.error("Error fetching loads:", error);
+    return [];
+  }
+};
+
+// Calculate load statistics
+const calculateLoadStats = (loads) => {
+  const activeLoads = loads.filter(l => !['Completed', 'Cancelled'].includes(l.status)).length;
+  const pendingLoads = loads.filter(l => l.status === 'Pending').length;
+  const inTransitLoads = loads.filter(l => l.status === 'In Transit').length;
+  const completedLoads = loads.filter(l => l.status === 'Completed').length;
+  
+  return {
+    activeLoads,
+    pendingLoads,
+    inTransitLoads,
+    completedLoads
+  };
+};
+
+// Main Dispatching Dashboard Component
+export default function DispatchingPage() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingLoads, setLoadingLoads] = useState(false);
+  
+  // State for the loads
+  const [loads, setLoads] = useState([]);
+  const [totalLoads, setTotalLoads] = useState(0);
+  const [loadStats, setLoadStats] = useState({
+    activeLoads: 0,
+    pendingLoads: 0,
+    inTransitLoads: 0,
+    completedLoads: 0
   });
-};
+  
+  // State for customers and drivers
+  const [customers, setCustomers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  
+  // State for filtering and selection
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "All",
+    dateRange: "all",
+    sortBy: "pickupDate"
+  });
+  
+  // State for modals
+  const [selectedLoad, setSelectedLoad] = useState(null);
+  const [showNewLoadModal, setShowNewLoadModal] = useState(false);
+  
+  // Error handling state
+  const [error, setError] = useState(null);
 
-// Complete the main component with all the handler functions
-const handleCreateLoad = async (userId, newLoad) => {
-  try {
-    const result = await createLoad(userId, newLoad);
-    return result;
-  } catch (error) {
-    console.error('Error creating load:', error);
-    return null;
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        
+        // Get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        
+        if (!user) {
+          // Redirect to login page if not authenticated
+          window.location.href = '/login';
+          return;
+        }
+        
+        setUser(user);
+        
+        // Fetch all required data in parallel
+        const [cusData, drvData] = await Promise.all([
+          fetchCustomers(user.id),
+          fetchDrivers(user.id)
+        ]);
+        
+        setCustomers(cusData);
+        setDrivers(drvData);
+        
+        // Now fetch loads (this might take longer so do it separately)
+        await loadLoadsData(user.id);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load data. Please try refreshing the page.');
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
+  
+  // Effect to reload loads when filters change
+  useEffect(() => {
+    if (user) {
+      loadLoadsData(user.id);
+    }
+  }, [filters, user]);
+
+  // Function to load loads data
+  const loadLoadsData = async (userId) => {
+    try {
+      setLoadingLoads(true);
+      const loadData = await fetchLoads(userId, filters);
+      setLoads(loadData);
+      setTotalLoads(loadData.length);
+      setLoadStats(calculateLoadStats(loadData));
+    } catch (error) {
+      console.error('Error loading loads:', error);
+      setError('Failed to load loads data. Please try refreshing the page.');
+    } finally {
+      setLoadingLoads(false);
+    }
+  };
+
+  // Handle selecting a load to view details
+  const handleSelectLoad = (load) => {
+    setSelectedLoad(load);
+  };
+
+  // Handle closing the load detail modal
+  const handleCloseModal = () => {
+    setSelectedLoad(null);
+  };
+
+  // Handle status change for a load
+  const handleStatusChange = async (updatedLoad) => {
+    try {
+      // Update the load in the local state
+      const updatedLoads = loads.map(load => {
+        if (load.id === updatedLoad.id) {
+          return updatedLoad;
+        }
+        return load;
+      });
+      
+      setLoads(updatedLoads);
+      setSelectedLoad(updatedLoad);
+      setLoadStats(calculateLoadStats(updatedLoads));
+    } catch (error) {
+      console.error('Error updating load status:', error);
+      alert('Failed to update load status. Please try again.');
+    }
+  };
+
+  // Handle assigning a driver to a load
+  const handleAssignDriver = async (loadId, driverName) => {
+    try {
+      // Update the load in the local state
+      const updatedLoads = loads.map(load => {
+        if (load.id === loadId) {
+          return {
+            ...load,
+            driver: driverName,
+            status: load.status === "Pending" ? "Assigned" : load.status
+          };
+        }
+        return load;
+      });
+      
+      setLoads(updatedLoads);
+      setLoadStats(calculateLoadStats(updatedLoads));
+      
+      // Update the selected load if it's open
+      if (selectedLoad && selectedLoad.id === loadId) {
+        setSelectedLoad({
+          ...selectedLoad,
+          driver: driverName,
+          status: selectedLoad.status === "Pending" ? "Assigned" : selectedLoad.status
+        });
+      }
+    } catch (error) {
+      console.error('Error assigning driver:', error);
+      alert('Failed to assign driver. Please try again.');
+    }
+  };
+
+  // Handle creating a new load
+  const handleCreateLoad = (newLoad) => {
+    const updatedLoads = [newLoad, ...loads];
+    setLoads(updatedLoads);
+    setTotalLoads(updatedLoads.length);
+    setLoadStats(calculateLoadStats(updatedLoads));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
-};
 
-const handleUpdateLoad = async (loadId, loadData) => {
-  try {
-    const result = await updateLoad(loadId, loadData);
-    return result;
-  } catch (error) {
-    console.error('Error updating load:', error);
-    return null;
-  }
-};
+  return (
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar activePage="dispatching" />
 
-const handleDeleteLoad = async (loadId) => {
-  try {
-    const result = await deleteLoad(loadId);
-    return result;
-  } catch (error) {
-    console.error('Error deleting load:', error);
-    return false;
-  }
-};
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 bg-white shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-900">Dispatching</h1>
+          
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => setShowNewLoadModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus size={16} className="mr-2" />
+              Create Load
+            </button>
+          </div>
+        </header>
 
-const handleAssignDriver = async (loadId, driverName) => {
-  try {
-    const result = await assignDriver(loadId, driverName);
-    return result;
-  } catch (error) {
-    console.error('Error assigning driver:', error);
-    return null;
-  }
-};
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
+          <div className="max-w-7xl mx-auto">
+            {/* Error message */}
+            {error && (
+              <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard 
+                title="Active Loads" 
+                value={loadStats.activeLoads} 
+                color="blue" 
+              />
+              <StatCard 
+                title="Pending Loads" 
+                value={loadStats.pendingLoads} 
+                color="yellow" 
+              />
+              <StatCard 
+                title="In Transit" 
+                value={loadStats.inTransitLoads} 
+                color="purple" 
+              />
+              <StatCard 
+                title="Completed" 
+                value={loadStats.completedLoads} 
+                color="green" 
+              />
+            </div>
+            
+            {/* Filter Bar */}
+            <FilterBar filters={filters} setFilters={setFilters} />
+            
+            {/* Loads Grid */}
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900">
+                Loads ({loads.length})
+              </h2>
+              <div className="text-sm text-gray-500">
+                {filters.status !== "All" || filters.search || filters.dateRange !== "all" ? (
+                  <button 
+                    onClick={() => setFilters({search: "", status: "All", dateRange: "all", sortBy: "pickupDate"})}
+                    className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    <RefreshCw size={12} className="mr-1" />
+                    Clear Filters
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            
+            {/* Loads Grid */}
+            {loadingLoads ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw size={32} className="animate-spin text-blue-500" />
+              </div>
+            ) : loads.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <PackageIcon size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No loads found</h3>
+                <p className="text-gray-500 mb-4">
+                  {filters.status !== "All" || filters.search || filters.dateRange !== "all" 
+                    ? "Try adjusting your filters or search criteria."
+                    : "Get started by creating your first load."}
+                </p>
+                <button 
+                  onClick={() => setShowNewLoadModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Create Load
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {loads.map(load => (
+                  <LoadCard
+                    key={load.id}
+                    load={load}
+                    onSelect={handleSelectLoad}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
-const handleStatusChange = async (loadId, status) => {
-  try {
-    const result = await updateLoadStatus(loadId, status);
-    return result;
-  } catch (error) {
-    console.error('Error updating load status:', error);
-    return null;
-  }
-};
+      {/* Load Detail Modal */}
+      {selectedLoad && (
+        <LoadDetailModal
+          load={selectedLoad}
+          onClose={handleCloseModal}
+          onStatusChange={handleStatusChange}
+          drivers={drivers}
+          onAssignDriver={handleAssignDriver}
+        />
+      )}
 
-// Add the closing bracket and export statement
+            {/* New Load Modal */}
+            {showNewLoadModal && (
+              <NewLoadModal
+                onClose={() => setShowNewLoadModal(false)}
+                onSave={handleSaveNewLoad}
+                customers={customers}
+              />
+            )}
+          </div>
+  );
 }
