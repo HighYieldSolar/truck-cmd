@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { createCustomer, updateCustomer } from '../../lib/services/customerService';
 import { X, RefreshCw, Building, Mail, Phone, User, MapPin, Check, AlertCircle } from 'lucide-react';
 
-const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmitting = false }) => {
+const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmitting = false, onSave }) => {
   const [customer, setCustomer] = useState({
     company_name: '',
     contact_name: '',
@@ -19,6 +18,8 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
   
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     if (existingCustomer) {
@@ -43,6 +44,7 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
     // Reset validation state
     setErrors({});
     setTouched({});
+    setSubmitError(null);
   }, [existingCustomer, isOpen]);
 
   const handleChange = (e) => {
@@ -129,15 +131,21 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
       return;
     }
     
+    setSubmitting(true);
+    setSubmitError(null);
+    
     try {
-      if (existingCustomer) {
-        await updateCustomer(existingCustomer.id, customer);
-      } else {
-        await createCustomer(userId, customer);
+      // Instead of directly calling createCustomer/updateCustomer,
+      // use the onSave prop to handle the save operation in the parent component
+      if (onSave) {
+        await onSave(customer);
       }
       onClose();
     } catch (error) {
-      console.error('Error saving customer:', error);
+      console.error('Error in form submission:', error);
+      setSubmitError(error.message || 'Failed to save customer. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -157,7 +165,7 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
           <button 
             onClick={onClose}
             className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100"
-            disabled={isSubmitting}
+            disabled={submitting || isSubmitting}
           >
             <X size={20} />
           </button>
@@ -165,6 +173,16 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
         
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Display any submission errors */}
+          {submitError && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <p className="text-sm text-red-700">{submitError}</p>
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company Information Section */}
             <div className="md:col-span-2">
@@ -420,16 +438,16 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
               type="button"
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
-              disabled={isSubmitting}
+              disabled={submitting || isSubmitting}
             >
-              {isSubmitting ? (
+              {submitting || isSubmitting ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
                   Saving...

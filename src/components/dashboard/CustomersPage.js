@@ -623,29 +623,33 @@ export default function CustomersPage() {
     try {
       setIsSubmitting(true);
       
+      let result;
       if (currentCustomer) {
         // Update existing customer
-        const updatedCustomer = await updateCustomer(currentCustomer.id, formData);
-        
-        if (updatedCustomer) {
-          // Update the customer in the local state
-          setCustomers(customers.map(c => 
-            c.id === updatedCustomer.id ? updatedCustomer : c
-          ));
-        }
+        result = await updateCustomer(currentCustomer.id, formData);
       } else {
         // Create new customer
-        const newCustomer = await createCustomer(user.id, formData);
-        
-        if (newCustomer) {
-          // Add the new customer to the local state
-          setCustomers([...customers, newCustomer]);
-        }
+        result = await createCustomer(user.id, formData);
       }
       
-      // Close modal and reset current customer
-      setFormModalOpen(false);
-      setCurrentCustomer(null);
+      if (!result) {
+        throw new Error("Failed to save customer data");
+      }
+      
+      
+    // Update the customers list
+    if (currentCustomer) {
+      setCustomers(customers.map(c => 
+        c.id === result.id ? result : c
+      ));
+    } else {
+      setCustomers([...customers, result]);
+    }
+    
+    // Close modal and reset current customer
+    setFormModalOpen(false);
+    setCurrentCustomer(null);
+    
       
       // Recalculate stats
       const updatedCustomers = await fetchCustomers(user.id);
