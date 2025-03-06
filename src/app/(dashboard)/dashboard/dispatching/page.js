@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -366,75 +366,104 @@ export default function DispatchingPage() {
       }
     }
     
-    fetchData();
-  }, []);
+// Move these function definitions BEFORE the useEffect
+const fetchLoadData = useCallback(async (userId) => {
+  try {
+    setLoadingLoads(true);
+    
+    // Fetch loads using the loadService
+    const loadsData = await fetchLoads(userId, filters);
+    setLoads(loadsData);
+    setTotalLoads(loadsData.length);
+    
+    // Get load statistics
+    const stats = await getLoadStats(userId);
+    setLoadStats(stats);
+    
+  } catch (error) {
+    console.error('Error fetching loads:', error);
+  } finally {
+    setLoadingLoads(false);
+  }
+}, [filters]);
 
-  const fetchLoadData = async (userId) => {
+const fetchCustomersAndDrivers = useCallback(async (userId) => {
+  try {
+    // Fetch customers from database
+    const { data: customersData, error: customersError } = await supabase
+      .from('customers')
+      .select('id, company_name as name')
+      .eq('user_id', userId);
+      
+    if (customersError) throw customersError;
+    
+    // Fetch drivers from database
+    const { data: driversData, error: driversError } = await supabase
+      .from('drivers')
+      .select('id, name')
+      .eq('user_id', userId);
+      
+    if (driversError) throw driversError;
+    
+    // If we don't have any data yet, use sample data
+    if (!customersData || customersData.length === 0) {
+      setCustomers([
+        { id: 1, name: "ABC Shipping" },
+        { id: 2, name: "XYZ Logistics" },
+        { id: 3, name: "Global Transport Inc." },
+        { id: 4, name: "Fast Freight Services" },
+        { id: 5, name: "Acme Delivery" }
+      ]);
+    } else {
+      setCustomers(customersData);
+    }
+    
+    if (!driversData || driversData.length === 0) {
+      setDrivers([
+        { id: 1, name: "John Smith" },
+        { id: 2, name: "Maria Garcia" },
+        { id: 3, name: "Robert Johnson" },
+        { id: 4, name: "Li Wei" },
+        { id: 5, name: "James Wilson" }
+      ]);
+    } else {
+      setDrivers(driversData);
+    }
+  } catch (error) {
+    console.error('Error fetching customers and drivers:', error);
+  }
+}, []);
+
+// THEN have your useEffect
+useEffect(() => {
+  async function fetchData() {
     try {
-      setLoadingLoads(true);
+      setLoading(true);
       
-      // Fetch loads using the loadService
-      const loadsData = await fetchLoads(userId, filters);
-      setLoads(loadsData);
-      setTotalLoads(loadsData.length);
+      // Get user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      // Get load statistics
-      const stats = await getLoadStats(userId);
-      setLoadStats(stats);
+      if (userError) throw userError;
       
+      if (user) {
+        setUser(user);
+        
+        // Fetch loads from database
+        fetchLoadData(user.id);
+        // Fetch customers and drivers in parallel
+        fetchCustomersAndDrivers(user.id);
+      }
     } catch (error) {
-      console.error('Error fetching loads:', error);
+      console.error('Error fetching data:', error);
     } finally {
-      setLoadingLoads(false);
+      setLoading(false);
     }
-  };
+  }
+  
+  fetchData();
+}, [fetchLoadData, fetchCustomersAndDrivers]);
 
-  const fetchCustomersAndDrivers = async (userId) => {
-    try {
-      // Fetch customers from database
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('id, company_name as name')
-        .eq('user_id', userId);
-        
-      if (customersError) throw customersError;
-      
-      // Fetch drivers from database
-      const { data: driversData, error: driversError } = await supabase
-        .from('drivers')
-        .select('id, name')
-        .eq('user_id', userId);
-        
-      if (driversError) throw driversError;
-      
-      // If we don't have any data yet, use sample data
-      if (!customersData || customersData.length === 0) {
-        setCustomers([
-          { id: 1, name: "ABC Shipping" },
-          { id: 2, name: "XYZ Logistics" },
-          { id: 3, name: "Global Transport Inc." },
-          { id: 4, name: "Fast Freight Services" },
-          { id: 5, name: "Acme Delivery" }
-        ]);
-      } else {
-        setCustomers(customersData);
-      }
-      
-      if (!driversData || driversData.length === 0) {
-        setDrivers([
-          { id: 1, name: "John Smith" },
-          { id: 2, name: "Maria Garcia" },
-          { id: 3, name: "Robert Johnson" },
-          { id: 4, name: "Li Wei" },
-          { id: 5, name: "James Wilson" }
-        ]);
-      } else {
-        setDrivers(driversData);
-      }
-    } catch (error) {
-      console.error('Error fetching customers and drivers:', error);
-    }
-  };
+
   // Load Detail Modal Component
 const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDriver }) => {
   const [selectedDriver, setSelectedDriver] = useState(load.driver || "");
