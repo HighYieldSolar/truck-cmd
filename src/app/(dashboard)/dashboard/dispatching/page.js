@@ -1091,6 +1091,23 @@ export default function DispatchingPage() {
   // Error handling state
   const [error, setError] = useState(null);
 
+  // Define loadLoadsData BEFORE any useEffect that uses it
+  const loadLoadsData = useCallback(async (userId) => {
+    try {
+      setLoadingLoads(true);
+      const loadData = await fetchLoads(userId, filters);
+      setLoads(loadData);
+      setTotalLoads(loadData.length);
+      setLoadStats(calculateLoadStats(loadData));
+    } catch (error) {
+      console.error('Error loading loads:', error);
+      setError('Failed to load loads data. Please try refreshing the page.');
+    } finally {
+      setLoadingLoads(false);
+    }
+  }, [filters]); // Include filters as a dependency
+
+  // Now use loadLoadsData in useEffect
   useEffect(() => {
     async function fetchData() {
       try {
@@ -1133,27 +1150,11 @@ export default function DispatchingPage() {
   }, [loadLoadsData]); // Add loadLoadsData as a dependency
   
   // Effect to reload loads when filters change
-useEffect(() => {
-  if (user) {
-    loadLoadsData(user.id);
-  }
-}, [user, loadLoadsData]); // Include loadLoadsData here to
-
-  // Function to load loads data
-  const loadLoadsData = useCallback(async (userId) => {
-    try {
-      setLoadingLoads(true);
-      const loadData = await fetchLoads(userId, filters);
-      setLoads(loadData);
-      setTotalLoads(loadData.length);
-      setLoadStats(calculateLoadStats(loadData));
-    } catch (error) {
-      console.error('Error loading loads:', error);
-      setError('Failed to load loads data. Please try refreshing the page.');
-    } finally {
-      setLoadingLoads(false);
+  useEffect(() => {
+    if (user) {
+      loadLoadsData(user.id);
     }
-  }, [filters]); // Include filters as a dependency
+  }, [user, loadLoadsData]); // Include loadLoadsData here
 
   // Handle selecting a load to view details
   const handleSelectLoad = (load) => {
@@ -1218,7 +1219,7 @@ useEffect(() => {
   };
 
   // Handle creating a new load
-  const handleCreateLoad = (newLoad) => {
+  const handleSaveNewLoad = (newLoad) => {
     const updatedLoads = [newLoad, ...loads];
     setLoads(updatedLoads);
     setTotalLoads(updatedLoads.length);
@@ -1367,14 +1368,14 @@ useEffect(() => {
         />
       )}
 
-            {/* New Load Modal */}
-            {showNewLoadModal && (
-              <NewLoadModal
-                onClose={() => setShowNewLoadModal(false)}
-                onSave={handleSaveNewLoad}
-                customers={customers}
-              />
-            )}
-          </div>
+      {/* New Load Modal */}
+      {showNewLoadModal && (
+        <NewLoadModal
+          onClose={() => setShowNewLoadModal(false)}
+          onSave={handleSaveNewLoad}
+          customers={customers}
+        />
+      )}
+    </div>
   );
 }
