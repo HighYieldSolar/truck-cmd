@@ -399,9 +399,9 @@ const fetchCustomersAndDrivers = useCallback(async (userId) => {
     
     // Fetch drivers from database
     const { data: driversData, error: driversError } = await supabase
-      .from('drivers')
-      .select('id, name')
-      .eq('user_id', userId);
+    .from('drivers')
+    .select('id, name')
+    .eq('user_id', userId);
       
     if (driversError) throw driversError;
     
