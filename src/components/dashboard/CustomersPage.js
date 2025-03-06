@@ -618,7 +618,45 @@ export default function CustomersPage() {
 // =========== EVENT HANDLERS ===========
   
 const handleSaveCustomer = async (formData) => {
-  // Existing code...
+  try {
+    setIsSubmitting(true);
+    setError(null);
+    
+    if (currentCustomer) {
+      // Update existing customer
+      const updatedCustomer = await updateCustomer(currentCustomer.id, formData);
+      
+      if (updatedCustomer) {
+        // Update the customer in the local state
+        const updatedCustomers = customers.map(c => 
+          c.id === updatedCustomer.id ? updatedCustomer : c
+        );
+        setCustomers(updatedCustomers);
+      } else {
+        throw new Error("Failed to update customer");
+      }
+    } else {
+      // Create new customer
+      const newCustomer = await createCustomer(user.id, formData);
+      
+      if (newCustomer) {
+        // Add the new customer to the local state
+        setCustomers([...customers, newCustomer]);
+      } else {
+        throw new Error("Failed to create customer");
+      }
+    }
+    
+    // Close the modal and reset current customer
+    setFormModalOpen(false);
+    setCurrentCustomer(null);
+    
+  } catch (error) {
+    console.error('Error saving customer:', error);
+    setError('Failed to save customer. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
 };
 
 // Add this function right here
