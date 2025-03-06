@@ -616,7 +616,6 @@ export default function CustomersPage() {
 
   // =========== EVENT HANDLERS ===========
   
-  // Handle creating or updating customer
   const handleSaveCustomer = async (formData) => {
     if (!user) return;
     
@@ -628,7 +627,7 @@ export default function CustomersPage() {
         // Update existing customer
         result = await updateCustomer(currentCustomer.id, formData);
       } else {
-        // Create new customer
+        // Create new customer - this was failing
         result = await createCustomer(user.id, formData);
       }
       
@@ -636,111 +635,27 @@ export default function CustomersPage() {
         throw new Error("Failed to save customer data");
       }
       
+      // Update the customers list
+      if (currentCustomer) {
+        setCustomers(customers.map(c => 
+          c.id === result.id ? result : c
+        ));
+      } else {
+        setCustomers([...customers, result]);
+      }
       
-    // Update the customers list
-    if (currentCustomer) {
-      setCustomers(customers.map(c => 
-        c.id === result.id ? result : c
-      ));
-    } else {
-      setCustomers([...customers, result]);
-    }
-    
-    // Close modal and reset current customer
-    setFormModalOpen(false);
-    setCurrentCustomer(null);
-    
+      // Close modal and reset current customer
+      setFormModalOpen(false);
+      setCurrentCustomer(null);
       
-      // Recalculate stats
-      const updatedCustomers = await fetchCustomers(user.id);
-      const total = updatedCustomers.length;
-      const active = updatedCustomers.filter(c => c.status === 'Active').length;
-      const inactive = updatedCustomers.filter(c => c.status === 'Inactive').length;
-      const shippers = updatedCustomers.filter(c => c.customer_type === 'Shipper').length;
-      const consignees = updatedCustomers.filter(c => c.customer_type === 'Consignee').length;
-      const brokers = updatedCustomers.filter(c => c.customer_type === 'Broker').length;
+      // Recalculate stats if needed
       
-      setStats({
-        total,
-        active,
-        inactive,
-        shippers,
-        consignees,
-        brokers
-      });
     } catch (error) {
       console.error('Error saving customer:', error);
       setError('Failed to save customer. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Handle customer edit
-  const handleEditCustomer = (customer) => {
-    setCurrentCustomer(customer);
-    setFormModalOpen(true);
-  };
-
-  // Handle customer delete
-  const handleDeleteCustomer = (id) => {
-    const customerToRemove = customers.find(c => c.id === id);
-    setCustomerToDelete(customerToRemove);
-    setDeleteModalOpen(true);
-  };
-
-  // Confirm customer deletion
-  const confirmDeleteCustomer = async () => {
-    if (!customerToDelete) return;
-    
-    try {
-      setIsDeleting(true);
-      
-      // Delete from database
-      const success = await deleteCustomer(customerToDelete.id);
-      
-      if (success) {
-        // Remove from local state
-        setCustomers(customers.filter(c => c.id !== customerToDelete.id));
-        
-        // Recalculate stats
-        if (user) {
-          const updatedCustomers = await fetchCustomers(user.id);
-          const total = updatedCustomers.length;
-          const active = updatedCustomers.filter(c => c.status === 'Active').length;
-          const inactive = updatedCustomers.filter(c => c.status === 'Inactive').length;
-          const shippers = updatedCustomers.filter(c => c.customer_type === 'Shipper').length;
-          const consignees = updatedCustomers.filter(c => c.customer_type === 'Consignee').length;
-          const brokers = updatedCustomers.filter(c => c.customer_type === 'Broker').length;
-          
-          setStats({
-            total,
-            active,
-            inactive,
-            shippers,
-            consignees,
-            brokers
-          });
-        }
-      } else {
-        setError('Failed to delete customer. Please try again.');
-      }
-      
-      // Close modal and reset customer to delete
-      setDeleteModalOpen(false);
-      setCustomerToDelete(null);
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      setError('Failed to delete customer. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Open new customer modal
-  const openNewCustomerModal = () => {
-    setCurrentCustomer(null);
-    setFormModalOpen(true);
   };
 
   // =========== RENDER COMPONENT ===========
@@ -911,15 +826,15 @@ export default function CustomersPage() {
 
       {/* Modals */}
       <CustomerFormModal 
-        isOpen={formModalOpen}
-        onClose={() => {
-          setFormModalOpen(false);
-          setCurrentCustomer(null);
-        }}
-        customer={currentCustomer}
-        onSave={handleSaveCustomer}
-        isSubmitting={isSubmitting}
-      />
+  isOpen={formModalOpen}
+  onClose={() => {
+    setFormModalOpen(false);
+    setCurrentCustomer(null);
+  }}
+  customer={currentCustomer}
+  onSave={handleSaveCustomer}
+  isSubmitting={isSubmitting}
+/>
       
       <DeleteConfirmationModal 
         isOpen={deleteModalOpen}
