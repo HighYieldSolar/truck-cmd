@@ -2,283 +2,226 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  registerUser, 
-  loginUser, 
-  getCurrentUser, 
-  resetPassword,
-  logoutUser,
-  updateUserProfile
-} from "@/lib/supabaseAuth";
+import Image from "next/image";
+import Link from "next/link";
+import { KeyRound, CheckCircle, AlertCircle, EyeIcon, EyeOffIcon, RefreshCw } from "lucide-react";
+import { updatePassword } from "@/lib/supabaseAuth";
 
-// Example component showing usage of the Supabase Auth utility
-export default function ExampleAuthComponent() {
+export default function ResetPassword() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
-  const [businessName, setBusinessName] = useState("");
-  const [fullName, setFullName] = useState("");
-
-  // Check if user is already logged in
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
+  
+  // Check if we're already in the recovery flow
   useEffect(() => {
-    async function checkUser() {
-      setLoading(true);
-      const { user, error } = await getCurrentUser();
-      
-      if (user) {
-        setUser(user);
-        setFullName(user.user_metadata?.full_name || "");
-        setBusinessName(user.user_metadata?.business_name || "");
-      } else if (error) {
-        console.error("Error fetching user:", error);
-      }
-      
-      setLoading(false);
+    // When the reset link is clicked, Supabase will add a recovery hash to the URL
+    // You can check for this to ensure we're in the recovery flow
+    const url = new URL(window.location.href);
+    const hasRecoveryToken = url.hash.includes('type=recovery');
+    
+    if (!hasRecoveryToken) {
+      // If no recovery token is found, we might want to redirect
+      // or show a message indicating the link is invalid
+      setError("Invalid or expired password reset link. Please request a new one.");
+    }
+  }, []);
+  
+  // Countdown timer effect for redirecting after success
+  useEffect(() => {
+    let countdownInterval;
+    
+    if (success && redirectCountdown > 0) {
+      countdownInterval = setInterval(() => {
+        setRedirectCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (success && redirectCountdown <= 0) {
+      // When countdown reaches zero, redirect to login
+      router.push('/login');
     }
     
-    checkUser();
-  }, []);
-
-  // Example of user registration
-  const handleSignup = async (e) => {
+    return () => clearInterval(countdownInterval);
+  }, [success, redirectCountdown, router]);
+  
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    if (confirmPassword) {
+      setPasswordsMatch(e.target.value === confirmPassword);
+    }
+  };
+  
+  const handleConfirmPasswordChange = (e) => {
+    setConfirmPassword(e.target.value);
+    setPasswordsMatch(password === e.target.value);
+  };
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+    
+    if (!passwordsMatch) {
+      setError("Passwords do not match");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
-
-    // Gather user metadata
-    const metadata = {
-      full_name: fullName,
-      business_name: businessName,
-      // Add any other profile data you want to store
-    };
-
-    // Call the registerUser function from our utility
-    const { data, error } = await registerUser(email, password, metadata);
-
-    if (error) {
-      setError(error.message);
-    } else {
-      // Redirect to a verification page
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+    
+    try {
+      // Use our auth utility for password update
+      const { data, error } = await updatePassword(password);
+      
+      if (error) throw error;
+      
+      setSuccess(true);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      setError(error.message || "Failed to reset password. Please try again or request a new reset link.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
-  // Example of user login
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    // Call the loginUser function from our utility
-    const { data, error } = await loginUser(email, password);
-
-    if (error) {
-      setError(error.message);
-    } else if (data.user) {
-      setUser(data.user);
-      router.push("/dashboard");
-    }
-
-    setLoading(false);
-  };
-
-  // Example of password reset
-  const handlePasswordReset = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    // Call the resetPassword function from our utility
-    const { error } = await resetPassword(email, `${window.location.origin}/reset-password`);
-
-    if (error) {
-      setError(error.message);
-    } else {
-      // Redirect to confirmation page
-      router.push(`/forgot-password?email=${encodeURIComponent(email)}`);
-    }
-
-    setLoading(false);
-  };
-
-  // Example of user logout
-  const handleLogout = async () => {
-    setLoading(true);
-
-    // Call the logoutUser function from our utility
-    const { error } = await logoutUser();
-
-    if (error) {
-      console.error("Error logging out:", error);
-    } else {
-      setUser(null);
-      router.push("/login");
-    }
-
-    setLoading(false);
-  };
-
-  // Example of profile update
-  const updateProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const { data, error } = await updateUserProfile({
-      full_name: fullName,
-      business_name: businessName,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setUser(data.user);
-      alert("Profile updated successfully!");
-    }
-
-    setLoading(false);
-  };
-
-  // Show different UI based on whether user is logged in
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (user) {
+  
+  if (success) {
     return (
-      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Welcome, {user.user_metadata?.full_name || user.email}</h2>
-        
-        <div className="mb-8">
-          <p className="text-gray-600">Email: {user.email}</p>
-          <p className="text-gray-600">Business: {user.user_metadata?.business_name || "Not specified"}</p>
-        </div>
-        
-        <h3 className="text-lg font-semibold mb-4">Update Profile</h3>
-        
-        <form onSubmit={updateProfile} className="space-y-4 mb-6">
-          <div>
-            <label className="block text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full p-2 border rounded bg-gray-200"
-            />
+      <div className="max-w-md w-full mx-auto bg-white p-8 rounded-lg shadow-md">
+        <div className="flex flex-col items-center">
+          <Image src="/images/TC.png" alt="Truck Command Logo" width={80} height={80} />
+          
+          <div className="mt-6 w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle size={40} className="text-green-600" />
           </div>
           
-          <div>
-            <label className="block text-gray-700 mb-1">Business Name</label>
-            <input
-              type="text"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              className="w-full p-2 border rounded bg-gray-200"
-            />
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
+            Password Reset Successful
+          </h1>
           
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
+          <p className="text-gray-600 text-center mt-4 mb-6">
+            Your password has been successfully reset. Redirecting to login in {redirectCountdown} seconds...
+          </p>
+          
+          <Link
+            href="/login"
+            className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
-            {loading ? "Updating..." : "Update Profile"}
-          </button>
-        </form>
-        
-        <button 
-          onClick={handleLogout}
-          disabled={loading}
-          className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600"
-        >
-          {loading ? "Logging out..." : "Logout"}
-        </button>
+            Go to Login Now
+          </Link>
+        </div>
       </div>
     );
   }
-
+  
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Authentication Example</h2>
-      
-      {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-gray-700 mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded bg-gray-200"
-          />
+    <div className="max-w-md w-full mx-auto bg-white p-8 rounded-lg shadow-md">
+      <div className="flex flex-col items-center">
+        <Image src="/images/TC.png" alt="Truck Command Logo" width={80} height={80} />
+        
+        <div className="mt-6 w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
+          <KeyRound size={40} className="text-blue-600" />
         </div>
         
-        <div>
-          <label className="block text-gray-700 mb-1">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded bg-gray-200"
-          />
+        <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
+          Reset Your Password
+        </h1>
+        
+        <div className="w-full mt-4">
+          <p className="text-gray-600 text-center mb-4">
+            Please enter your new password below.
+          </p>
+          
+          {error && (
+            <div className="mt-2 mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm flex items-start">
+              <AlertCircle size={18} className="mr-2 flex-shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 text-left mb-1">
+                New Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="Enter new password"
+                  className="w-full p-3 border rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-900"
+                >
+                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+            </div>
+            
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 text-left mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={handleConfirmPasswordChange}
+                  placeholder="Confirm new password"
+                  className={`w-full p-3 border rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300 ${
+                    confirmPassword && !passwordsMatch ? 'border-red-300' : ''
+                  }`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-600 hover:text-gray-900"
+                >
+                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                </button>
+              </div>
+              {confirmPassword && !passwordsMatch && (
+                <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
+              )}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition flex items-center justify-center"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <RefreshCw size={18} className="animate-spin mr-2" />
+                  Resetting Password...
+                </span>
+              ) : (
+                "Reset Password"
+              )}
+            </button>
+            
+            <div className="text-center">
+              <Link href="/login" className="text-blue-500 hover:underline text-sm">
+                Return to Login
+              </Link>
+            </div>
+          </form>
         </div>
-        
-        {/* Only show these fields when in signup mode */}
-        <div>
-          <label className="block text-gray-700 mb-1">Full Name</label>
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full p-2 border rounded bg-gray-200"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-700 mb-1">Business Name</label>
-          <input
-            type="text"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-            className="w-full p-2 border rounded bg-gray-200"
-          />
-        </div>
-      </div>
-      
-      <div className="space-y-3 mt-6">
-        <button 
-          onClick={handleLogin}
-          disabled={loading}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-        
-        <button 
-          onClick={handleSignup}
-          disabled={loading}
-          className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
-        >
-          {loading ? "Creating account..." : "Signup"}
-        </button>
-        
-        <button 
-          onClick={handlePasswordReset}
-          disabled={loading}
-          className="w-full bg-gray-300 text-gray-800 p-2 rounded hover:bg-gray-400"
-        >
-          {loading ? "Sending..." : "Reset Password"}
-        </button>
       </div>
     </div>
   );

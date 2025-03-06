@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+// Import our auth utility function
+import { loginUser } from "@/lib/supabaseAuth";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -17,9 +18,10 @@ export default function LoginForm() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setLoading(true); // Set loading to true when starting the login process
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // Use our new auth utility instead of direct Supabase calls
+    const { data, error } = await loginUser(email, password);
 
     setLoading(false);
 
