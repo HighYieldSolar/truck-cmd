@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
+import { fetchCustomers as getCustomers } from "@/lib/services/customerService";
 import {
   LayoutDashboard,
   Truck,
@@ -734,15 +735,15 @@ const NewLoadModal = ({ onClose, onSave, customers }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
               <select
                 name="customer"
-                value={formData.customer}
-                onChange={handleChange}
-                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-                required
+                 value={formData.customer}
+                 onChange={handleChange}
+                 className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                 required
               >
-                <option value="">Select Customer</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.name}>{customer.name}</option>
-                ))}
+              <option value="">Select Customer</option>
+                 {customers.map(customer => (
+              <option key={customer.id} value={customer.company_name}>{customer.company_name}</option>
+               ))}
               </select>
             </div>
             
@@ -883,29 +884,24 @@ const StatCard = ({ title, value, color }) => {
 };
 
 // Fetch drivers from the database
-const fetchDrivers = async (userId) => {
+const fetchCustomers = async (userId) => {
   try {
-    const { data, error } = await supabase
-      .from('drivers')
-      .select('*')
-      .eq('user_id', userId);
-      
-    if (error) throw error;
+    const customers = await getCustomers(userId);
     
-    // If there are no drivers yet, return sample data
-    if (!data || data.length === 0) {
+    // If no customers exist yet, you might want to show sample data
+    if (!customers || customers.length === 0) {
       return [
-        { id: 1, user_id: userId, name: "John Smith", phone: "555-123-4567", license: "CDL12345" },
-        { id: 2, user_id: userId, name: "Maria Garcia", phone: "555-987-6543", license: "CDL67890" },
-        { id: 3, user_id: userId, name: "Robert Johnson", phone: "555-456-7890", license: "CDL24680" },
-        { id: 4, user_id: userId, name: "Li Wei", phone: "555-222-3333", license: "CDL13579" },
-        { id: 5, user_id: userId, name: "James Wilson", phone: "555-444-5555", license: "CDL97531" }
+        { id: 1, user_id: userId, company_name: "ABC Shipping", contact_name: "John Doe", email: "john@abcshipping.com" },
+        { id: 2, user_id: userId, company_name: "XYZ Logistics", contact_name: "Jane Smith", email: "jane@xyzlogistics.com" },
+        { id: 3, user_id: userId, company_name: "Global Transport Inc.", contact_name: "Mike Johnson", email: "mike@globaltransport.com" },
+        { id: 4, user_id: userId, company_name: "Fast Freight Services", contact_name: "Sarah Brown", email: "sarah@fastfreight.com" },
+        { id: 5, user_id: userId, company_name: "Acme Delivery", contact_name: "Tom Wilson", email: "tom@acmedelivery.com" }
       ];
     }
     
-    return data;
+    return customers;
   } catch (error) {
-    console.error("Error fetching drivers:", error);
+    console.error("Error fetching customers:", error);
     return [];
   }
 };
@@ -1087,6 +1083,7 @@ export default function DispatchingPage() {
   // State for modals
   const [selectedLoad, setSelectedLoad] = useState(null);
   const [showNewLoadModal, setShowNewLoadModal] = useState(false);
+  
   
   // Error handling state
   const [error, setError] = useState(null);
