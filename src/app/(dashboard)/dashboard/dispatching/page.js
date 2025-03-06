@@ -140,6 +140,7 @@ const StatusBadge = ({ status }) => {
 };
 
 // Load Card Component for active loads
+// Load Card Component for active loads
 const LoadCard = ({ load, onSelect, onDelete }) => {
   return (
     <div 
@@ -177,25 +178,41 @@ const LoadCard = ({ load, onSelect, onDelete }) => {
             <DollarSign size={14} className="text-gray-400 mr-1" />
             <span className="text-gray-900">${load.rate.toLocaleString()}</span>
           </div>
-          <div className="p-4">
-  {/* Existing card content... */}
-  
-  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
-    <div></div> {/* This might be different in your code */}
-    <div className="flex items-center space-x-2">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(load);
-        }}
-        className="text-red-600 hover:text-red-800 text-sm inline-flex items-center"
-      >
-        <Trash2 size={14} className="mr-1" />
-        Delete
-      </button>
-    </div>
-  </div>
-</div>
+        </div>
+        
+        {/* Step 5: Show completion date for completed loads */}
+        {load.status === "Completed" && load.completedAt && (
+          <div className="mt-2 text-xs text-gray-500">
+            <div className="flex items-center">
+              <CheckCircleIcon size={12} className="text-green-500 mr-1" /> 
+              Completed on {new Date(load.completedAt).toLocaleDateString()}
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+          {/* Step 2: Add Complete button to Load Card */}
+          {load.status !== "Completed" && load.status !== "Cancelled" && (
+            <Link
+              href={`/dashboard/dispatching/complete/${load.id}`}
+              className="text-sm text-green-600 hover:text-green-800 flex items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CheckCircleIcon size={14} className="mr-1" />
+              Mark Complete
+            </Link>
+          )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(load);
+            }}
+            className="text-red-600 hover:text-red-800 text-sm inline-flex items-center"
+          >
+            <Trash2 size={14} className="mr-1" />
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -203,6 +220,7 @@ const LoadCard = ({ load, onSelect, onDelete }) => {
 };
 
 // Filter Bar Component
+// In your FilterBar component
 const FilterBar = ({ filters, setFilters }) => {
   const statusOptions = [
     "All",
@@ -220,6 +238,7 @@ const FilterBar = ({ filters, setFilters }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
       <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+        {/* Your existing filter controls */}
         <div className="flex-1">
           <label htmlFor="search" className="block text-xs font-medium text-gray-700 mb-1">Search</label>
           <div className="relative">
@@ -251,38 +270,43 @@ const FilterBar = ({ filters, setFilters }) => {
           </select>
         </div>
 
-        <div className="sm:w-40">
-          <label htmlFor="dateRange" className="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
-          <select
-            id="dateRange"
-            className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-            value={filters.dateRange}
-            onChange={(e) => setFilters({...filters, dateRange: e.target.value})}
-          >
-            <option value="all">All Dates</option>
-            <option value="today">Today</option>
-            <option value="tomorrow">Tomorrow</option>
-            <option value="thisWeek">This Week</option>
-            <option value="nextWeek">Next Week</option>
-            <option value="thisMonth">This Month</option>
-          </select>
-        </div>
-
-        <div className="sm:w-40">
-          <label htmlFor="sortBy" className="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
-          <select
-            id="sortBy"
-            className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-            value={filters.sortBy}
-            onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
-          >
-            <option value="pickupDate">Pickup Date</option>
-            <option value="deliveryDate">Delivery Date</option>
-            <option value="status">Status</option>
-            <option value="customer">Customer</option>
-            <option value="rate">Rate (High to Low)</option>
-          </select>
-        </div>
+        {/* Rest of your existing filter controls */}
+      </div>
+      
+      {/* Add the quick filter buttons here */}
+      <div className="flex flex-wrap gap-2 mt-4">
+        <button
+          onClick={() => setFilters({...filters, status: "All"})}
+          className={`px-3 py-1 text-xs rounded-full ${
+            filters.status === "All" 
+              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+              : 'bg-gray-100 text-gray-800 border border-gray-200'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setFilters({...filters, status: "Active"})}
+          className={`px-3 py-1 text-xs rounded-full flex items-center ${
+            filters.status === "Active" 
+              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+              : 'bg-gray-100 text-gray-800 border border-gray-200'
+          }`}
+        >
+          <Truck size={10} className="mr-1" />
+          Active
+        </button>
+        <button
+          onClick={() => setFilters({...filters, status: "Completed"})}
+          className={`px-3 py-1 text-xs rounded-full flex items-center ${
+            filters.status === "Completed" 
+              ? 'bg-green-100 text-green-800 border border-green-300' 
+              : 'bg-gray-100 text-gray-800 border border-gray-200'
+          }`}
+        >
+          <CheckCircleIcon size={10} className="mr-1" />
+          Completed
+        </button>
       </div>
     </div>
   );
@@ -299,6 +323,12 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
     setIsSubmitting(true);
     try {
 
+      {load.status === "Completed" && load.completedAt && (
+        <div className="ml-4 bg-green-100 text-green-800 px-3 py-1 text-xs rounded-full flex items-center">
+          <CheckCircleIcon size={12} className="mr-1" />
+          Completed {new Date(load.completedAt).toLocaleString()}
+        </div>
+      )}
       
       // Format data for the database
       const dbData = {
@@ -632,6 +662,17 @@ const LoadDetailModal = ({ load, onClose, onStatusChange, drivers, onAssignDrive
                   <button className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors">
                     <AlertCircle size={20} className="text-red-600 mb-1" />
                     <span className="text-xs text-gray-700">Report Issue</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                     onClose();
+                     router.push(`/dashboard/dispatching/complete/${load.id}`);
+                   }}
+                    className="flex flex-col items-center justify-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-green-50 hover:border-green-200 transition-colors"
+                    disabled={load.status === "Completed" || load.status === "Cancelled"}
+                  >
+                     <CheckCircleIcon size={20} className="text-green-600 mb-1" />
+                    <span className="text-xs text-gray-700">Mark Complete</span>
                   </button>
                 </div>
               </div>
@@ -1032,7 +1073,12 @@ const fetchLoads = async (userId, filters = {}) => {
     
     // Apply status filter
     if (filters.status && filters.status !== 'All') {
-      query = query.eq('status', filters.status);
+      if (filters.status === 'Active') {
+        // Active means any status that is not Completed or Cancelled
+        query = query.not('status', 'in', '("Completed","Cancelled")');
+      } else {
+        query = query.eq('status', filters.status);
+      }
     }
     
     // Apply search filter
@@ -1119,7 +1165,8 @@ const fetchLoads = async (userId, filters = {}) => {
       driver: load.driver || '',
       rate: load.rate || 0,
       distance: load.distance || 0,
-      description: load.description || ''
+      description: load.description || '',
+      completedAt: load.completed_at || null
     }));
   } catch (error) {
     console.error("Error fetching loads:", error);
