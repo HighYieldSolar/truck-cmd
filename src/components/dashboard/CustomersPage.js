@@ -42,154 +42,40 @@ import {
   updateCustomer,
   deleteCustomer
 } from "@/lib/services/customerService";
+import CustomerFormModal from '@/lib/services/CustomerFormModal';
 
-// Main Customer Management Page Component
-export default function CustomersPage() {
-  // =========== STATE MANAGEMENT ===========
-  const [user, setUser] = useState(null);
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Filter states
-  const [filters, setFilters] = useState({
-    search: '',
-    status: 'All',
-    customerType: 'All',
-    viewMode: 'grid'
-  });
-  
-  // Modal states
-  const [formModalOpen, setFormModalOpen] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Customer stats
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    shippers: 0,
-    consignees: 0,
-    brokers: 0
-  });
 
-  // =========== DATA FETCHING ===========
-  // Define loadCustomers as a callback so it can be reused in effects
-  const loadCustomers = useCallback(async (userId) => {
-    try {
-      setLoadingCustomers(true);
-      const data = await fetchCustomers(userId);
-      setCustomers(data);
-      
-      // Calculate stats
-      const total = data.length;
-      const active = data.filter(c => c.status === 'Active').length;
-      const inactive = data.filter(c => c.status === 'Inactive').length;
-      const shippers = data.filter(c => c.customer_type === 'Shipper').length;
-      const consignees = data.filter(c => c.customer_type === 'Consignee').length;
-      const brokers = data.filter(c => c.customer_type === 'Broker').length;
-      
-      setStats({
-        total,
-        active,
-        inactive,
-        shippers,
-        consignees,
-        brokers
-      });
-    } catch (error) {
-      console.error('Error loading customers:', error);
-      setError('Failed to load customers. Please try refreshing the page.');
-    } finally {
-      setLoadingCustomers(false);
-    }
-  }, []);
+// Component definitions and utility functions go here
+// (Do not export CustomersPage here, it will be exported in the later parts)
 
-  // Initial data loading
-  useEffect(() => {
-    async function initUser() {
-      try {
-        setLoading(true);
-        
-        // Get authenticated user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (!user) {
-          // Redirect to login if not authenticated
-          window.location.href = '/login';
-          return;
-        }
-        
-        setUser(user);
-        
-        // Load customers for this user
-        await loadCustomers(user.id);
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error initializing user:', error);
-        setError('Authentication error. Please try logging in again.');
-        setLoading(false);
-      }
-    }
-    
-    initUser();
-  }, [loadCustomers]);
-
-  // Filter customers based on search and filter criteria
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
-      !filters.search ||
-      customer.company_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      (customer.contact_name && customer.contact_name.toLowerCase().includes(filters.search.toLowerCase())) ||
-      (customer.email && customer.email.toLowerCase().includes(filters.search.toLowerCase())) ||
-      (customer.phone && customer.phone.toLowerCase().includes(filters.search.toLowerCase()));
-    
-    const matchesStatus = filters.status === 'All' || customer.status === filters.status;
-    const matchesType = filters.customerType === 'All' || customer.customer_type === filters.customerType;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  // =========== EVENT HANDLERS ===========
-  // These will be defined in Part 3
-
-  // =========== COMPONENT STRUCTURE ===========
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
+// EmptyState Component
+const EmptyState = ({ filters, openNewCustomerModal }) => {
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar Component will go here */}
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header will go here */}
-        
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
-          <div className="max-w-7xl mx-auto">
-            {/* Page Content will go here */}
-          </div>
-        </main>
+    <div className="text-center py-16">
+      <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
+      <p className="mt-1 text-sm text-gray-500">
+        {filters.search ? `No results for "${filters.search}"` : "Get started by adding a new customer."}
+      </p>
+      <div className="mt-6">
+        <button
+          onClick={openNewCustomerModal}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+        >
+          <Plus size={16} className="mr-2" />
+          Add Customer
+        </button>
       </div>
-
-      {/* Modals will go here */}
     </div>
   );
-}
+};
+
+// Navigation Sidebar Component
+
+    // Menu items array
+  // Sidebar component implementation
+
+// Other component definitions
+// ...
 
 // src/components/dashboard/CustomersPage.js - PART 2 (Basic UI Components)
 
@@ -435,6 +321,177 @@ const CustomerFilters = ({ filters, setFilters }) => {
               Table
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add these component definitions to your CustomersPage.js file
+
+// Customer Card Component for the grid view
+const CustomerCard = ({ customer, onEdit, onDelete }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-medium text-gray-900">{customer.company_name}</h3>
+          <div className={`px-2 py-1 text-xs rounded-full ${
+            customer.status === 'Active' ? 'bg-green-100 text-green-800' :
+            customer.status === 'Inactive' ? 'bg-red-100 text-red-800' :
+            'bg-yellow-100 text-yellow-800'
+          }`}>
+            {customer.status}
+          </div>
+        </div>
+        
+        {customer.contact_name && (
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <Users size={16} className="text-gray-400 mr-2" />
+            <span>{customer.contact_name}</span>
+          </div>
+        )}
+        
+        {customer.email && (
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <Mail size={16} className="text-gray-400 mr-2" />
+            <span className="truncate">{customer.email}</span>
+          </div>
+        )}
+        
+        {customer.phone && (
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <Phone size={16} className="text-gray-400 mr-2" />
+            <span>{customer.phone}</span>
+          </div>
+        )}
+        
+        {customer.address && (
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <Building size={16} className="text-gray-400 mr-2" />
+            <span className="truncate">
+              {customer.address}
+              {customer.city && `, ${customer.city}`}
+              {customer.state && `, ${customer.state}`}
+            </span>
+          </div>
+        )}
+        
+        <div className="flex items-center text-sm text-gray-500 mt-4">
+          <span className={`px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800`}>
+            {customer.customer_type}
+          </span>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end space-x-2">
+          <button 
+            onClick={() => onEdit(customer)} 
+            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full"
+            title="Edit"
+          >
+            <Edit size={16} />
+          </button>
+          <button 
+            onClick={() => onDelete(customer.id)} 
+            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full"
+            title="Delete"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Customer Table Row Component for the table view
+const CustomerTableRow = ({ customer, onEdit, onDelete }) => {
+  return (
+    <tr className="hover:bg-gray-50">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <Building size={18} className="text-blue-600" />
+          </div>
+          <div className="ml-4">
+            <div className="text-sm font-medium text-gray-900">{customer.company_name}</div>
+            <div className="text-sm text-gray-500">{customer.customer_type}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{customer.contact_name || 'N/A'}</div>
+        <div className="text-sm text-gray-500">{customer.email || 'No email'}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{customer.phone || 'N/A'}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 py-1 text-xs rounded-full ${
+          customer.status === 'Active' ? 'bg-green-100 text-green-800' :
+          customer.status === 'Inactive' ? 'bg-red-100 text-red-800' :
+          'bg-yellow-100 text-yellow-800'
+        }`}>
+          {customer.status}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <button 
+          onClick={() => onEdit(customer)} 
+          className="text-blue-600 hover:text-blue-900 mr-3"
+        >
+          <Edit size={16} />
+        </button>
+        <button 
+          onClick={() => onDelete(customer.id)} 
+          className="text-red-600 hover:text-red-900"
+        >
+          <Trash2 size={16} />
+        </button>
+      </td>
+    </tr>
+  );
+};
+
+// Empty State Component when no customers are found
+
+
+// Delete Confirmation Modal Component
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, customerName, isDeleting }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-center mb-4 text-red-600">
+          <AlertCircle size={40} />
+        </div>
+        <h3 className="text-lg font-medium text-center text-gray-900 mb-2">
+          Delete Customer
+        </h3>
+        <p className="text-center text-gray-500 mb-6">
+          Are you sure you want to delete <strong>{customerName}</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            disabled={isDeleting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center"
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <RefreshCw size={16} className="animate-spin mr-2" />
+                Deleting...
+              </>
+            ) : "Delete"}
+          </button>
         </div>
       </div>
     </div>
@@ -873,312 +930,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-// =========== COMPLETE CUSTOMER FORM MODAL ===========
-// This is the complete version of the CustomerFormModal with all the form fields included
-
-const CustomerFormModal = ({ isOpen, onClose, customer, onSave, isSubmitting }) => {
-  const [formData, setFormData] = useState({
-    company_name: '',
-    contact_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
-    customer_type: 'Shipper',
-    status: 'Active',
-    notes: ''
-  });
-  
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (customer) {
-      setFormData({
-        ...customer
-      });
-    } else {
-      // Reset form for new customer
-      setFormData({
-        company_name: '',
-        contact_name: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zip: '',
-        customer_type: 'Shipper',
-        status: 'Active',
-        notes: ''
-      });
-    }
-    
-    // Reset errors when opening/closing modal
-    setErrors({});
-  }, [customer, isOpen]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.company_name) {
-      newErrors.company_name = 'Company name is required';
-    }
-    
-    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Clear error for this field if it exists
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: undefined
-      });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-    
-    await onSave(formData);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {customer ? "Edit Customer" : "Add New Customer"}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={isSubmitting}
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                id="company_name"
-                name="company_name"
-                value={formData.company_name}
-                onChange={handleChange}
-                className={`block w-full border ${errors.company_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm p-2`}
-                required
-              />
-              {errors.company_name && (
-                <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="contact_name" className="block text-sm font-medium text-gray-700">
-                Contact Person
-              </label>
-              <input
-                type="text"
-                id="contact_name"
-                name="contact_name"
-                value={formData.contact_name}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`block w-full border ${errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm p-2`}
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                Address
-              </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                City
-              </label>
-              <input
-                type="text"
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                  State
-                </label>
-                <input
-                  type="text"
-                  id="state"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label htmlFor="zip" className="block text-sm font-medium text-gray-700">
-                  ZIP Code
-                </label>
-                <input
-                  type="text"
-                  id="zip"
-                  name="zip"
-                  value={formData.zip}
-                  onChange={handleChange}
-                  className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="customer_type" className="block text-sm font-medium text-gray-700">
-                Customer Type
-              </label>
-              <select
-                id="customer_type"
-                name="customer_type"
-                value={formData.customer_type}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="Shipper">Shipper</option>
-                <option value="Consignee">Consignee</option>
-                <option value="Broker">Broker</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Pending">Pending</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                Notes
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows="3"
-                value={formData.notes}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              ></textarea>
-            </div>
-          </div>
-          
-          <div className="mt-8 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  {customer ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                customer ? "Update Customer" : "Create Customer"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
