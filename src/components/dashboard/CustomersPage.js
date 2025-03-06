@@ -615,48 +615,52 @@ export default function CustomersPage() {
   });
 
   // =========== EVENT HANDLERS ===========
+// =========== EVENT HANDLERS ===========
   
-  const handleSaveCustomer = async (formData) => {
-    if (!user) return;
+const handleSaveCustomer = async (formData) => {
+  // Existing code...
+};
+
+// Add this function right here
+const openNewCustomerModal = () => {
+  setCurrentCustomer(null);
+  setFormModalOpen(true);
+};
+
+// Also add these handler functions since they're used but not defined
+const handleEditCustomer = (customer) => {
+  setCurrentCustomer(customer);
+  setFormModalOpen(true);
+};
+
+const handleDeleteCustomer = (customerId) => {
+  const customerToRemove = customers.find(c => c.id === customerId);
+  setCustomerToDelete(customerToRemove);
+  setDeleteModalOpen(true);
+};
+
+const confirmDeleteCustomer = async () => {
+  if (!customerToDelete) return;
+  
+  try {
+    setIsDeleting(true);
+    const success = await deleteCustomer(customerToDelete.id);
     
-    try {
-      setIsSubmitting(true);
-      
-      let result;
-      if (currentCustomer) {
-        // Update existing customer
-        result = await updateCustomer(currentCustomer.id, formData);
-      } else {
-        // Create new customer - this was failing
-        result = await createCustomer(user.id, formData);
-      }
-      
-      if (!result) {
-        throw new Error("Failed to save customer data");
-      }
-      
-      // Update the customers list
-      if (currentCustomer) {
-        setCustomers(customers.map(c => 
-          c.id === result.id ? result : c
-        ));
-      } else {
-        setCustomers([...customers, result]);
-      }
-      
-      // Close modal and reset current customer
-      setFormModalOpen(false);
-      setCurrentCustomer(null);
-      
-      // Recalculate stats if needed
-      
-    } catch (error) {
-      console.error('Error saving customer:', error);
-      setError('Failed to save customer. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (success) {
+      setCustomers(customers.filter(c => c.id !== customerToDelete.id));
+      setDeleteModalOpen(false);
+      setCustomerToDelete(null);
+    } else {
+      throw new Error("Failed to delete customer");
     }
-  };
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    setError('Failed to delete customer. Please try again.');
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
 
   // =========== RENDER COMPONENT ===========
   if (loading) {
