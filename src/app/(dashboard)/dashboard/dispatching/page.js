@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -1098,7 +1098,7 @@ export default function DispatchingPage() {
         
         // Get user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+      
         if (userError) throw userError;
         
         if (!user) {
@@ -1120,7 +1120,7 @@ export default function DispatchingPage() {
         
         // Now fetch loads (this might take longer so do it separately)
         await loadLoadsData(user.id);
-        
+      
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -1128,19 +1128,19 @@ export default function DispatchingPage() {
         setLoading(false);
       }
     }
-    
+
     fetchData();
-  }, []);
+  }, [loadLoadsData]); // Add loadLoadsData as a dependency
   
   // Effect to reload loads when filters change
-  useEffect(() => {
-    if (user) {
-      loadLoadsData(user.id);
-    }
-  }, [filters, user]);
+useEffect(() => {
+  if (user) {
+    loadLoadsData(user.id);
+  }
+}, [user, loadLoadsData]); // Include loadLoadsData here to
 
   // Function to load loads data
-  const loadLoadsData = async (userId) => {
+  const loadLoadsData = useCallback(async (userId) => {
     try {
       setLoadingLoads(true);
       const loadData = await fetchLoads(userId, filters);
@@ -1153,7 +1153,7 @@ export default function DispatchingPage() {
     } finally {
       setLoadingLoads(false);
     }
-  };
+  }, [filters]); // Include filters as a dependency
 
   // Handle selecting a load to view details
   const handleSelectLoad = (load) => {
