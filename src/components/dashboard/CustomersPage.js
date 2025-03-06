@@ -191,9 +191,9 @@ export default function CustomersPage() {
   );
 }
 
-// src/components/dashboard/CustomersPage.js - PART 2 (UI Components)
+// src/components/dashboard/CustomersPage.js - PART 2 (Basic UI Components)
 
-// =========== UI COMPONENTS ===========
+// =========== BASIC UI COMPONENTS ===========
 
 // Navigation Sidebar Component
 const Sidebar = ({ activePage = "customers" }) => {
@@ -441,369 +441,121 @@ const CustomerFilters = ({ filters, setFilters }) => {
   );
 };
 
-// Customer Card Component
-const CustomerCard = ({ customer, onEdit, onDelete }) => {
-  return (
-    <div className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center">
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold mr-3">
-            {customer.company_name[0].toUpperCase()}
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{customer.company_name}</h3>
-            <p className="text-sm text-gray-500">{customer.customer_type}</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="space-y-2 text-gray-700 mb-4">
-        {customer.contact_name && (
-          <div className="flex items-start">
-            <Users size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-            <span className="text-sm">{customer.contact_name}</span>
-          </div>
-        )}
-        {customer.email && (
-          <div className="flex items-start">
-            <Mail size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-            <span className="text-sm">{customer.email}</span>
-          </div>
-        )}
-        {customer.phone && (
-          <div className="flex items-start">
-            <Phone size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-            <span className="text-sm">{customer.phone}</span>
-          </div>
-        )}
-        {customer.address && (
-          <div className="flex items-start">
-            <Building size={16} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
-            <span className="text-sm">
-              {customer.address}
-              {customer.city && `, ${customer.city}`}
-              {customer.state && `, ${customer.state}`}
-              {customer.zip && ` ${customer.zip}`}
-            </span>
-          </div>
-        )}
-      </div>
-      
-      <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
-        <div>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            customer.status === 'Active' ? 'bg-green-100 text-green-800' : 
-            customer.status === 'Inactive' ? 'bg-gray-100 text-gray-800' : 
-            'bg-yellow-100 text-yellow-800'
-          }`}>
-            {customer.status}
-          </span>
-        </div>
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => onEdit(customer)} 
-            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-          >
-            <Edit size={16} />
-          </button>
-          <button 
-            onClick={() => onDelete(customer.id)} 
-            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Customer Table Row Component
-const CustomerTableRow = ({ customer, onEdit, onDelete }) => {
-  return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-            {customer.company_name[0].toUpperCase()}
-          </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{customer.company_name}</div>
-            <div className="text-sm text-gray-500">{customer.customer_type}</div>
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{customer.contact_name || '—'}</div>
-        <div className="text-sm text-gray-500">{customer.email || '—'}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{customer.phone || '—'}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-          customer.status === 'Active' ? 'bg-green-100 text-green-800' : 
-          customer.status === 'Inactive' ? 'bg-gray-100 text-gray-800' : 
-          'bg-yellow-100 text-yellow-800'
-        }`}>
-          {customer.status}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button 
-          onClick={() => onEdit(customer)} 
-          className="text-blue-600 hover:text-blue-900 mr-3"
-        >
-          <Edit size={16} />
-        </button>
-        <button 
-          onClick={() => onDelete(customer.id)} 
-          className="text-red-600 hover:text-red-900"
-        >
-          <Trash2 size={16} />
-        </button>
-      </td>
-    </tr>
-  );
-};
-
-// Empty state component
-const EmptyState = ({ filters, openNewCustomerModal }) => {
-  const hasFilters = filters.search || filters.status !== 'All' || filters.customerType !== 'All';
-  
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-      <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <Users size={32} className="text-gray-400" />
-      </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-1">No customers found</h3>
-      <p className="text-gray-500 mb-4">
-        {hasFilters 
-          ? "Try adjusting your filters or search criteria."
-          : "Get started by adding your first customer."}
-      </p>
-      
-      {!hasFilters && (
-        <button 
-          onClick={openNewCustomerModal}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-        >
-          <Plus size={16} className="mr-2" />
-          Add Your First Customer
-        </button>
-      )}
-    </div>
-  );
-};
-
-// Customer Form Modal Component
-const CustomerFormModal = ({ isOpen, onClose, customer, onSave, isSubmitting }) => {
-  const [formData, setFormData] = useState({
-    company_name: '',
-    contact_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
-    customer_type: 'Shipper',
-    status: 'Active',
-    notes: ''
-  });
-  
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (customer) {
-      setFormData({
-        ...customer
-      });
-    } else {
-      // Reset form for new customer
-      setFormData({
-        company_name: '',
-        contact_name: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zip: '',
-        customer_type: 'Shipper',
-        status: 'Active',
-        notes: ''
-      });
-    }
-    
-    // Reset errors when opening/closing modal
-    setErrors({});
-  }, [customer, isOpen]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.company_name) {
-      newErrors.company_name = 'Company name is required';
-    }
-    
-    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Clear error for this field if it exists
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: undefined
-      });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-    
-    await onSave(formData);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {customer ? "Edit Customer" : "Add New Customer"}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={isSubmitting}
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                id="company_name"
-                name="company_name"
-                value={formData.company_name}
-                onChange={handleChange}
-                className={`block w-full border ${errors.company_name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm p-2`}
-                required
-              />
-              {errors.company_name && (
-                <p className="text-red-500 text-xs mt-1">{errors.company_name}</p>
-              )}
-            </div>
-            
-            {/* Additional fields go here */}
-            
-            {/* Form buttons */}
-            <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin mr-2" />
-                    {customer ? "Updating..." : "Creating..."}
-                  </>
-                ) : (
-                  customer ? "Update Customer" : "Create Customer"
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Confirmation Modal Component
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, customerName, isDeleting }) => {
-  if (!isOpen) return null;
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-center mb-4 text-red-600">
-          <AlertCircle size={48} />
-        </div>
-        <h3 className="text-lg font-medium text-center text-gray-900 mb-2">
-          Delete Customer
-        </h3>
-        <p className="text-center text-gray-500 mb-6">
-          Are you sure you want to delete <strong>{customerName}</strong>? This action cannot be undone.
-        </p>
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            disabled={isDeleting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center"
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <RefreshCw size={16} className="animate-spin mr-2" />
-                Deleting...
-              </>
-            ) : "Delete"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// src/components/dashboard/CustomersPage.js - PART 3 (Event Handlers & Integration)
-
 // =========== EVENT HANDLERS & INTEGRATION ===========
 
 // Main Customer Management Page Component (updated with all functionalities and components integrated)
 export default function CustomersPage() {
   // State variables declared in Part 1
-  // ...
+  const [user, setUser] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'All',
+    customerType: 'All',
+    viewMode: 'grid'
+  });
+  
+  // Modal states
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Customer stats
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    shippers: 0,
+    consignees: 0,
+    brokers: 0
+  });
+
+  // Define loadCustomers as a callback so it can be reused in effects
+  const loadCustomers = useCallback(async (userId) => {
+    try {
+      setLoadingCustomers(true);
+      const data = await fetchCustomers(userId);
+      setCustomers(data);
+      
+      // Calculate stats
+      const total = data.length;
+      const active = data.filter(c => c.status === 'Active').length;
+      const inactive = data.filter(c => c.status === 'Inactive').length;
+      const shippers = data.filter(c => c.customer_type === 'Shipper').length;
+      const consignees = data.filter(c => c.customer_type === 'Consignee').length;
+      const brokers = data.filter(c => c.customer_type === 'Broker').length;
+      
+      setStats({
+        total,
+        active,
+        inactive,
+        shippers,
+        consignees,
+        brokers
+      });
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      setError('Failed to load customers. Please try refreshing the page.');
+    } finally {
+      setLoadingCustomers(false);
+    }
+  }, []);
+
+  // Initial data loading
+  useEffect(() => {
+    async function initUser() {
+      try {
+        setLoading(true);
+        
+        // Get authenticated user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        
+        if (!user) {
+          // Redirect to login if not authenticated
+          window.location.href = '/login';
+          return;
+        }
+        
+        setUser(user);
+        
+        // Load customers for this user
+        await loadCustomers(user.id);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing user:', error);
+        setError('Authentication error. Please try logging in again.');
+        setLoading(false);
+      }
+    }
+    
+    initUser();
+  }, [loadCustomers]);
+
+  // Filter customers based on search and filter criteria
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = 
+      !filters.search ||
+      customer.company_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      (customer.contact_name && customer.contact_name.toLowerCase().includes(filters.search.toLowerCase())) ||
+      (customer.email && customer.email.toLowerCase().includes(filters.search.toLowerCase())) ||
+      (customer.phone && customer.phone.toLowerCase().includes(filters.search.toLowerCase()));
+    
+    const matchesStatus = filters.status === 'All' || customer.status === filters.status;
+    const matchesType = filters.customerType === 'All' || customer.customer_type === filters.customerType;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   // =========== EVENT HANDLERS ===========
   
