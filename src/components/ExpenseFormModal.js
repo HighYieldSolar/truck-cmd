@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient"; // Add this import
 import { createExpense, updateExpense, uploadReceiptImage } from "@/lib/services/expenseService";
 
 export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
@@ -288,7 +289,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                     />
                   ) : formData.receipt_image ? (
                     <div className="flex items-center">
-                      <imgage 
+                      <image 
                         src="/images/receipt-icon.png" 
                         alt="Receipt" 
                         className="h-6 mr-2" 
