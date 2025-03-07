@@ -12,10 +12,8 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [validEmail, setValidEmail] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
   const [phone, setPhone] = useState("");
   const [validPhone, setValidPhone] = useState(false);
-  const [phoneExists, setPhoneExists] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +23,6 @@ export default function SignupPage() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [checkingEmail, setCheckingEmail] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [numTrucks, setNumTrucks] = useState("1-5");
   const [step, setStep] = useState(1);
@@ -37,51 +34,6 @@ export default function SignupPage() {
     const isValid = re.test(email);
     setValidEmail(isValid);
     setEmail(email);
-    
-    // Clear existing error state when email changes
-    if (emailExists) {
-      setEmailExists(false);
-    }
-  };
-
-  // Check if email already exists
-  const checkEmailExists = async (email) => {
-    if (!validEmail) return;
-    
-    setCheckingEmail(true);
-    setError(null);
-    
-    try {
-      // Use the Supabase auth API to check if the email exists
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        }
-      });
-      
-      // Check for specific error messages that indicate the user doesn't exist
-      if (error) {
-        if (error.message.includes('User not found')) {
-          // Email doesn't exist, which is what we want for signup
-          setEmailExists(false);
-        } else {
-          // Some other error occurred
-          console.error("Error checking email:", error);
-          setError(error.message);
-        }
-      } else {
-        // If no error and data exists, the email exists
-        setEmailExists(true);
-        setError("This email is already registered. Please use a different email or login.");
-      }
-    } catch (error) {
-      // Handle unexpected errors (network issues, etc.)
-      console.error("Unexpected error checking email:", error);
-      setError("An error occurred while checking email availability. Please try again.");
-    } finally {
-      setCheckingEmail(false);
-    }
   };
 
   // Validate Phone Number
@@ -92,28 +44,6 @@ export default function SignupPage() {
     const isValid = re.test(cleanedPhone);
     setValidPhone(isValid);
     setPhone(phone);
-    
-    // Clear existing error state when phone changes
-    if (phoneExists) {
-      setPhoneExists(false);
-    }
-  };
-
-  // Check if phone already exists
-  const checkPhoneExists = async (phone) => {
-    if (!validPhone) return;
-    
-    // In a real implementation, you would check if the phone number exists
-    // This might require a custom endpoint or function in your backend
-    // For now, we'll simulate this check with a local function
-    
-    // This is a placeholder - in a real implementation, you'd check against your database
-    const phoneExistsInDB = false; // Replace with actual check
-    
-    setPhoneExists(phoneExistsInDB);
-    if (phoneExistsInDB) {
-      setError("This phone number is already registered. Please use a different number.");
-    }
   };
 
   // Check if passwords match
@@ -126,9 +56,7 @@ export default function SignupPage() {
   const isFormValid = () => {
     return (
       validEmail && 
-      !emailExists &&
       validPhone && 
-      !phoneExists &&
       fullName.trim() !== "" && 
       businessName.trim() !== "" && 
       password.length >= 8 && 
@@ -137,46 +65,16 @@ export default function SignupPage() {
     );
   };
 
-  const handleContinue = async (e) => {
+  // Simplified approach: Just validate email format and proceed to step 2
+  const handleContinue = (e) => {
     e.preventDefault();
     if (!validEmail) {
       setError("Please enter a valid email address");
       return;
     }
     
-    // Check if email exists before proceeding
-    setLoading(true);
-    try {
-      // Use the Supabase auth API to check if the email exists
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        }
-      });
-      
-      // Check for specific error messages that indicate the user doesn't exist
-      if (error) {
-        if (error.message.includes('User not found')) {
-          // Email doesn't exist, proceed to step 2
-          setStep(2);
-        } else {
-          // Some other error occurred
-          console.error("Error checking email:", error);
-          setError(error.message);
-        }
-      } else {
-        // If no error and data exists, the email exists
-        setEmailExists(true);
-        setError("This email is already registered. Please use a different email or login.");
-      }
-    } catch (error) {
-      // Handle unexpected errors
-      console.error("Error checking email:", error);
-      setError("An error occurred while checking email availability. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // Simply proceed to step 2 without checking if email exists
+    setStep(2);
   };
 
   const handleSignup = async (e) => {
@@ -210,7 +108,14 @@ export default function SignupPage() {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        // Handle specific error for existing email
+        if (error.message.includes("already registered")) {
+          setError("This email is already registered. Please use a different email or login.");
+          return;
+        }
+        throw error;
+      }
       
       setFormSubmitted(true);
       setMessage("Account created successfully! Please check your email for the verification code.");
@@ -221,11 +126,8 @@ export default function SignupPage() {
       }, 3000);
       
     } catch (error) {
-      if (error.message.includes("already registered")) {
-        setError("This email is already registered. Please use a different email or login.");
-      } else {
-        setError(error.message);
-      }
+      console.error("Signup error:", error);
+      setError(error.message || "An error occurred during signup. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -333,10 +235,9 @@ export default function SignupPage() {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => validateEmail(e.target.value)}
-                        onBlur={() => checkEmailExists(email)}
                         className={`w-full p-3 border rounded ${
                           email 
-                            ? validEmail && !emailExists
+                            ? validEmail
                               ? 'border-green-300 bg-green-50' 
                               : 'border-red-300 bg-red-50'
                             : 'border-gray-300 bg-white'
@@ -346,16 +247,13 @@ export default function SignupPage() {
                       {email && !validEmail && (
                         <p className="text-red-500 text-sm mt-1">Please enter a valid email address</p>
                       )}
-                      {emailExists && (
-                        <p className="text-red-500 text-sm mt-1">This email is already registered</p>
-                      )}
                     </div>
                     
                     <button 
                       onClick={handleContinue}
-                      disabled={loading || !validEmail || emailExists}
+                      disabled={loading || !validEmail}
                       className={`w-full p-3 rounded-md mt-6 transition ${
-                        loading || !validEmail || emailExists
+                        loading || !validEmail
                           ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
@@ -366,7 +264,7 @@ export default function SignupPage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Checking...
+                          Processing...
                         </span>
                       ) : (
                         "Continue"
@@ -421,10 +319,9 @@ export default function SignupPage() {
                           placeholder="(123) 456-7890"
                           value={phone}
                           onChange={(e) => validatePhone(e.target.value)}
-                          onBlur={() => checkPhoneExists(phone)}
                           className={`w-full p-3 border rounded ${
                             phone 
-                              ? validPhone && !phoneExists
+                              ? validPhone
                                 ? 'border-green-300 bg-green-50' 
                                 : 'border-red-300 bg-red-50'
                               : 'border-gray-300 bg-white'
@@ -434,12 +331,9 @@ export default function SignupPage() {
                         {phone && !validPhone && (
                           <p className="text-red-500 text-sm mt-1">Please enter a valid 10-digit phone number</p>
                         )}
-                        {phoneExists && (
-                          <p className="text-red-500 text-sm mt-1">This phone number is already registered</p>
-                        )}
                       </div>
                       
-                      {/* Fixed Password Field */}
+                      {/* Password Field */}
                       <div>
                         <label className="block text-gray-700 font-medium mb-1">Password</label>
                         <div className="relative">
@@ -464,7 +358,7 @@ export default function SignupPage() {
                         )}
                       </div>
                       
-                      {/* Fixed Confirm Password Field */}
+                      {/* Confirm Password Field */}
                       <div>
                         <label className="block text-gray-700 font-medium mb-1">Confirm Password</label>
                         <div className="relative">
@@ -492,7 +386,7 @@ export default function SignupPage() {
                       </div>
                     </div>
                     
-                    {/* Updated Terms of Service */}
+                    {/* Terms of Service */}
                     <div className="mt-2 flex items-start">
                       <input
                         type="checkbox"
