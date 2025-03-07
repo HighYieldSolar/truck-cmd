@@ -180,18 +180,30 @@ export async function getExpenseStats(userId, period = 'month') {
     
     if (error) throw error;
     
-    // Calculate total expenses
-    const total = data.reduce((sum, expense) => sum + expense.amount, 0);
+    // Ensure data is an array even if null/undefined
+    const expenseData = data || [];
     
-    // Calculate expenses by category
-    const byCategory = data.reduce((acc, expense) => {
-      const category = expense.category;
-      if (!acc[category]) {
-        acc[category] = 0;
+    // Calculate total expenses, safely handling null/undefined values
+    const total = expenseData.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+    
+    // Calculate expenses by category, safely initializing
+    const byCategory = {};
+    
+    // Populate with all known categories
+    ['Fuel', 'Maintenance', 'Insurance', 'Tolls', 'Office', 'Meals', 'Other'].forEach(cat => {
+      byCategory[cat] = 0;
+    });
+    
+    // Add actual values
+    expenseData.forEach(expense => {
+      if (expense.category) {
+        const category = expense.category;
+        if (!byCategory[category]) {
+          byCategory[category] = 0;
+        }
+        byCategory[category] += parseFloat(expense.amount) || 0;
       }
-      acc[category] += expense.amount;
-      return acc;
-    }, {});
+    });
     
     return {
       total,
@@ -199,9 +211,18 @@ export async function getExpenseStats(userId, period = 'month') {
     };
   } catch (error) {
     console.error('Error getting expense statistics:', error);
+    // Return safe default values
     return {
       total: 0,
-      byCategory: {}
+      byCategory: {
+        Fuel: 0,
+        Maintenance: 0,
+        Insurance: 0,
+        Tolls: 0,
+        Office: 0,
+        Meals: 0,
+        Other: 0
+      }
     };
   }
 }

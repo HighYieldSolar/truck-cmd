@@ -117,10 +117,13 @@ const Sidebar = ({ activePage = "expenses" }) => {
 };
 
 // Expense Stats Card Component
-const ExpenseStatsCard = ({ title, amount, change, changeType, icon, color }) => {
+const ExpenseStatsCard = ({ title, amount = 0, change, changeType, icon, color }) => {
   const bgColorClass = `bg-${color}-50`;
   const textColorClass = `text-${color}-600`;
   const iconBgColorClass = `bg-${color}-100`;
+  
+  // Ensure amount is a number before calling toLocaleString
+  const formattedAmount = typeof amount === 'number' ? amount.toLocaleString() : '0';
   
   return (
     <div className="bg-white p-5 rounded-lg shadow-md">
@@ -131,7 +134,7 @@ const ExpenseStatsCard = ({ title, amount, change, changeType, icon, color }) =>
         </div>
       </div>
       <div className="flex items-baseline mb-2">
-        <h2 className="text-2xl font-bold">${amount.toLocaleString()}</h2>
+        <h2 className="text-2xl font-bold">${formattedAmount}</h2>
       </div>
       {change && (
         <div className="flex items-center">
@@ -338,15 +341,15 @@ export default function ExpensesPage() {
       
       // Fetch expenses with applied filters
       const data = await fetchExpenses(userId, filters);
-      setExpenses(data);
+      setExpenses(data || []);
       
       // Fetch stats
       const stats = await getExpenseStats(userId, 'month');
       
-      // Calculate summaries
-      const totalExpenses = stats.total || 0;
-      const fuelExpenses = stats.byCategory?.Fuel || 0;
-      const maintenanceExpenses = stats.byCategory?.Maintenance || 0;
+      // Calculate summaries with default values if properties are undefined
+      const totalExpenses = stats?.total || 0;
+      const fuelExpenses = stats?.byCategory?.Fuel || 0;
+      const maintenanceExpenses = stats?.byCategory?.Maintenance || 0;
       const otherExpenses = totalExpenses - fuelExpenses - maintenanceExpenses;
       
       setSummaries({
@@ -358,6 +361,13 @@ export default function ExpensesPage() {
     } catch (error) {
       console.error('Error loading expenses:', error);
       setError('Failed to load expenses. Please try refreshing the page.');
+      // Set default values in case of error
+      setSummaries({
+        total: 0,
+        fuel: 0,
+        maintenance: 0,
+        other: 0
+      });
     } finally {
       setExpensesLoading(false);
     }
