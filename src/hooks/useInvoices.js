@@ -1,23 +1,20 @@
 // src/hooks/useInvoices.js
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { 
-  fetchInvoices, 
-  getInvoiceStats,
-  getRecentInvoices,
-  subscribeToInvoices,
-  deleteInvoice,
-  updateInvoiceStatus
-} from '@/lib/services/invoiceService';
+import { fetchInvoices, getInvoiceStats, updateInvoiceStatus, deleteInvoice } from '@/lib/services/invoiceService';
 
 /**
- * Custom hook for managing invoices with real-time updates
- * @param {string} userId - The authenticated user's ID
- * @param {Object} initialFilters - Initial filter settings
- * @returns {Object} - Invoice state and functions
+ * Custom hook for managing invoices
+ * @param {Object} options - Hook options
+ * @param {string} options.userId - User ID
+ * @param {Object} options.filters - Initial filters
+ * @returns {Object} - Invoices state and operations
  */
-export function useInvoices(userId, initialFilters = {}) {
+export function useInvoices({ userId, filters: initialFilters = {} }) {
   const [invoices, setInvoices] = useState([]);
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     paid: 0,
@@ -25,206 +22,221 @@ export function useInvoices(userId, initialFilters = {}) {
     overdue: 0,
     count: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    status: 'all',
-    search: '',
-    dateRange: 'all',
-    sortBy: 'invoice_date',
-    sortDirection: 'desc',
-    ...initialFilters
-  });
+  const [filters, setFilters] = useState(initialFilters);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch invoices based on current filters
-  const loadInvoices = useCallback(async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await fetchInvoices(userId, filters);
-      setInvoices(data);
-      
-      // Also update stats whenever invoices are loaded
-      const statsData = await getInvoiceStats(userId);
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error loading invoices:', err);
-      setError('Failed to load invoices. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, filters]);
+  // Function to refresh data
+  const refreshData = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
-  // Load invoices when component mounts or filters change
+  // Load invoices and stats
   useEffect(() => {
+    async function loadInvoices() {
+      if (!userId) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch invoices and stats in parallel
+        const [invoicesData, invoiceStats] = await Promise.all([
+          fetchInvoices(userId, filters),
+          getInvoiceStats(userId)
+        ]);
+
+        setInvoices(invoicesData || []);
+        setFilteredInvoices(invoicesData || []);
+        setStats(invoiceStats);
+      } catch (err) {
+        console.error('Error loading invoices:', err);
+        setError('Failed to load invoices. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadInvoices();
-  }, [loadInvoices]);
+  }, [userId, filters, refreshTrigger]);
+
+  // Apply search filter
+  useEffect(() => {
+    if (filters.search && invoices.length > 0) {
+      const searchLower = filters.search.toLowerCase();
+      const filtered = invoices.filter(invoice => 
+        invoice.invoice_number?.toLowerCase().includes(searchLower) ||
+        invoice.customer?.toLowerCase().includes(searchLower)
+      );
+      setFilteredInvoices(filtered);
+    } else {
+      setFilteredInvoices(invoices);
+    }
+  }, [invoices, filters.search]);
+
+  // Update filters
+  const updateFilters = useCallback((newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  }, []);
+
+  // Mark invoice as paid
+  const markAsPaid = useCallback(async (invoiceId) => {
+    try {
+      await updateInvoiceStatus(invoiceId, 'Paid');
+      
+      // Update local state
+      setInvoices(prevInvoices => 
+        prevInvoices.map(invoice => 
+          invoice.id === invoiceId 
+            ? { ...invoice, status: 'Paid' } 
+            : invoice
+        )
+      );
+      
+      // Refresh statistics
+      const updatedStats = await getInvoiceStats(userId);
+      setStats(updatedStats);
+      
+      return true;
+    } catch (err) {
+      console.error('Error marking invoice as paid:', err);
+      throw err;
+    }
+  }, [userId]);
+
+  // Delete invoice
+  const removeInvoice = useCallback(async (invoiceId) => {
+    try {
+      await deleteInvoice(invoiceId);
+      
+      // Update local state
+      setInvoices(prevInvoices => 
+        prevInvoices.filter(invoice => invoice.id !== invoiceId)
+      );
+      
+      // Refresh statistics
+      const updatedStats = await getInvoiceStats(userId);
+      setStats(updatedStats);
+      
+      return true;
+    } catch (err) {
+      console.error('Error deleting invoice:', err);
+      throw err;
+    }
+  }, [userId]);
 
   // Set up real-time subscription
   useEffect(() => {
     if (!userId) return;
+
+    const channel = supabase
+      .channel('invoice-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invoices',
+          filter: `user_id=eq.${userId}`
+        },
+        () => {
+          // Refresh data when changes occur
+          refreshData();
+        }
+      )
+      .subscribe();
     
-    const unsubscribe = subscribeToInvoices(userId, (payload) => {
-      // Handle different events
-      if (payload.eventType === 'INSERT') {
-        setInvoices(prev => [payload.new, ...prev]);
-      } else if (payload.eventType === 'UPDATE') {
-        setInvoices(prev => 
-          prev.map(invoice => 
-            invoice.id === payload.new.id ? payload.new : invoice
-          )
-        );
-      } else if (payload.eventType === 'DELETE') {
-        setInvoices(prev => 
-          prev.filter(invoice => invoice.id !== payload.old.id)
-        );
-      }
-      
-      // Refresh stats after any change
-      getInvoiceStats(userId).then(statsData => setStats(statsData));
-    });
-    
-    // Clean up subscription when component unmounts
     return () => {
-      unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, [userId]);
-
-  // Handle invoice deletion with optimistic UI update
-  const handleDeleteInvoice = async (id) => {
-    try {
-      // Optimistic UI update
-      const invoiceToDelete = invoices.find(inv => inv.id === id);
-      setInvoices(prev => prev.filter(inv => inv.id !== id));
-      
-      // Delete from database
-      await deleteInvoice(id);
-      
-      // Update stats after deletion
-      const statsData = await getInvoiceStats(userId);
-      setStats(statsData);
-      
-      return true;
-    } catch (err) {
-      // Revert optimistic update on error
-      loadInvoices();
-      throw err;
-    }
-  };
-
-  // Handle invoice status change with optimistic UI update
-  const handleStatusChange = async (id, newStatus) => {
-    try {
-      // Optimistic UI update
-      setInvoices(prev => 
-        prev.map(invoice => 
-          invoice.id === id ? { ...invoice, status: newStatus } : invoice
-        )
-      );
-      
-      // Update in database
-      await updateInvoiceStatus(id, newStatus);
-      
-      // Update stats after status change
-      const statsData = await getInvoiceStats(userId);
-      setStats(statsData);
-      
-      return true;
-    } catch (err) {
-      // Revert optimistic update on error
-      loadInvoices();
-      throw err;
-    }
-  };
-
-  // Update filters
-  const updateFilters = (newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  };
-
-  // Reset filters to default
-  const resetFilters = () => {
-    setFilters({
-      status: 'all',
-      search: '',
-      dateRange: 'all',
-      sortBy: 'invoice_date',
-      sortDirection: 'desc'
-    });
-  };
+  }, [userId, refreshData]);
 
   return {
     invoices,
-    stats,
+    filteredInvoices,
     loading,
     error,
+    stats,
     filters,
     updateFilters,
-    resetFilters,
-    refreshInvoices: loadInvoices,
-    deleteInvoice: handleDeleteInvoice,
-    updateStatus: handleStatusChange
+    refreshData,
+    markAsPaid,
+    removeInvoice
   };
 }
 
 /**
- * Custom hook for fetching a single invoice by ID
- * @param {string} invoiceId - Invoice ID
- * @returns {Object} - Invoice state and functions
+ * Custom hook for a single invoice
+ * @param {string} invoiceId - Invoice ID to fetch
+ * @returns {Object} - Invoice state and operations
  */
 export function useInvoice(invoiceId) {
   const [invoice, setInvoice] = useState(null);
-  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const fetchInvoice = useCallback(async () => {
-    if (!invoiceId) return;
-    
+  // Function to refresh data
+  const refreshData = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  // Fetch invoice data
+  useEffect(() => {
+    async function loadInvoice() {
+      if (!invoiceId) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from('invoices')
+          .select(`
+            *,
+            items:invoice_items(*),
+            loads:load_id(id, load_number, origin, destination)
+          `)
+          .eq('id', invoiceId)
+          .single();
+
+        if (error) throw error;
+        
+        setInvoice(data);
+      } catch (err) {
+        console.error('Error loading invoice:', err);
+        setError('Failed to load invoice. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadInvoice();
+  }, [invoiceId, refreshTrigger]);
+
+  // Update invoice
+  const updateInvoiceStatus = useCallback(async (status) => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const { data: invoiceData, error: invoiceError } = await supabase
+      const { data, error } = await supabase
         .from('invoices')
-        .select('*')
+        .update({ status })
         .eq('id', invoiceId)
-        .single();
-        
-      if (invoiceError) throw invoiceError;
+        .select();
+
+      if (error) throw error;
       
-      setInvoice(invoiceData);
-      
-      // Fetch invoice items
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('invoice_items')
-        .select('*')
-        .eq('invoice_id', invoiceId)
-        .order('id');
-        
-      if (itemsError) throw itemsError;
-      
-      setItems(itemsData || []);
+      setInvoice(data[0]);
+      return data[0];
     } catch (err) {
-      console.error('Error fetching invoice:', err);
-      setError('Failed to load invoice details. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error updating invoice status:', err);
+      throw err;
     }
   }, [invoiceId]);
 
-  useEffect(() => {
-    fetchInvoice();
-  }, [fetchInvoice]);
-
-  // Set up real-time subscription for this specific invoice
+  // Set up real-time subscription
   useEffect(() => {
     if (!invoiceId) return;
-    
-    const invoiceChannel = supabase
+
+    const channel = supabase
       .channel(`invoice-${invoiceId}`)
       .on(
         'postgres_changes',
@@ -234,51 +246,29 @@ export function useInvoice(invoiceId) {
           table: 'invoices',
           filter: `id=eq.${invoiceId}`
         },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            setInvoice(payload.new);
-          } else if (payload.eventType === 'DELETE') {
-            setInvoice(null);
-            setError('This invoice has been deleted');
-          }
-        }
-      )
-      .subscribe();
-      
-    const itemsChannel = supabase
-      .channel(`invoice-items-${invoiceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'invoice_items',
-          filter: `invoice_id=eq.${invoiceId}`
-        },
-        (payload) => {
-          fetchInvoice(); // Reload all items when any change happens
+        () => {
+          // Refresh data when changes occur
+          refreshData();
         }
       )
       .subscribe();
     
-    // Clean up subscription when component unmounts
     return () => {
-      supabase.removeChannel(invoiceChannel);
-      supabase.removeChannel(itemsChannel);
+      supabase.removeChannel(channel);
     };
-  }, [invoiceId, fetchInvoice]);
+  }, [invoiceId, refreshData]);
 
   return {
     invoice,
-    items,
     loading,
     error,
-    refreshInvoice: fetchInvoice
+    refreshData,
+    updateInvoiceStatus
   };
 }
 
 /**
- * Custom hook for recent invoices on dashboard
+ * Custom hook for recent invoices on the dashboard
  * @param {string} userId - User ID
  * @param {number} limit - Number of invoices to fetch
  * @returns {Object} - Recent invoices state
@@ -288,43 +278,38 @@ export function useRecentInvoices(userId, limit = 5) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchRecentInvoices = useCallback(async () => {
-    if (!userId) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await getRecentInvoices(userId, limit);
-      setInvoices(data);
-    } catch (err) {
-      console.error('Error fetching recent invoices:', err);
-      setError('Failed to load recent invoices');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    async function loadRecentInvoices() {
+      if (!userId) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('id, invoice_number, customer, total, invoice_date, due_date, status')
+          .eq('user_id', userId)
+          .order('invoice_date', { ascending: false })
+          .limit(limit);
+
+        if (error) throw error;
+        
+        setInvoices(data || []);
+      } catch (err) {
+        console.error('Error loading recent invoices:', err);
+        setError('Failed to load recent invoices.');
+      } finally {
+        setLoading(false);
+      }
     }
+
+    loadRecentInvoices();
   }, [userId, limit]);
-
-  useEffect(() => {
-    fetchRecentInvoices();
-  }, [fetchRecentInvoices]);
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!userId) return;
-    
-    const unsubscribe = subscribeToInvoices(userId, () => {
-      // Refresh the list whenever any invoice changes
-      fetchRecentInvoices();
-    });
-    
-    return () => unsubscribe();
-  }, [userId, fetchRecentInvoices]);
 
   return {
     invoices,
     loading,
-    error,
-    refresh: fetchRecentInvoices
+    error
   };
 }
