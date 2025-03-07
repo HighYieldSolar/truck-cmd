@@ -1,0 +1,304 @@
+// src/lib/services/expenseService.js
+import { supabase } from "../supabaseClient";
+
+/**
+ * Fetch all expenses for the current user with optional filters
+ * @param {string} userId - The authenticated user's ID
+ * @param {Object} filters - Filters to apply to the query
+ * @returns {Promise<Array>} - Array of expense objects
+ */
+export async function fetchExpenses(userId, filters = {}) {
+  try {
+    let query = supabase
+      .from('expenses')
+      .select('*')
+      .eq('user_id', userId);
+
+    // Apply filters if provided
+    if (filters.category && filters.category !== 'All') {
+      query = query.eq('category', filters.category);
+    }
+
+    if (filters.search) {
+      query = query.or(`description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`);
+    }
+
+    if (filters.dateRange === 'This Month') {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      query = query
+        .gte('date', firstDay.toISOString().split('T')[0])
+        .lte('date', lastDay.toISOString().split('T')[0]);
+    } else if (filters.dateRange === 'Custom' && filters.startDate && filters.endDate) {
+      query = query
+        .gte('date', filters.startDate)
+        .lte('date', filters.endDate);
+    }
+
+    // Apply sorting
+    if (filters.sortBy) {
+      const order = filters.sortDirection === 'desc' ? { ascending: false } : { ascending: true };
+      query = query.order(filters.sortBy, order);
+    } else {
+      // Default sort by date, newest first
+      query = query.order('date', { ascending: false });
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get expense by ID
+ * @param {string} id - Expense ID
+ * @returns {Promise<Object|null>} - Expense object or null
+ */
+export async function getExpenseById(id) {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching expense:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a new expense
+ * @param {Object} expenseData - Expense data
+ * @returns {Promise<Object|null>} - Created expense or null
+ */
+export async function createExpense(expenseData) {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert([expenseData])
+      .select();
+      
+    if (error) throw error;
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error creating expense:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing expense
+ * @param {string} id - Expense ID
+ * @param {Object} expenseData - Updated expense data
+ * @returns {Promise<Object|null>} - Updated expense or null
+ */
+export async function updateExpense(id, expenseData) {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .update(expenseData)
+      .eq('id', id)
+      .select();
+      
+    if (error) throw error;
+    
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Error updating expense:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete an expense
+ * @param {string} id - Expense ID
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function deleteExpense(id) {
+  try {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting expense:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get expense statistics
+ * @param {string} userId - The authenticated user's ID
+ * @param {string} period - 'month', 'year', or 'all'
+ * @returns {Promise<Object>} - Expense statistics
+ */
+export async function getExpenseStats(userId, period = 'month') {
+  try {
+    let query = supabase
+      .from('expenses')
+      .select('amount, category, date')
+      .eq('user_id', userId);
+    
+    // Apply time period filter
+    if (period === 'month') {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      query = query
+        .gte('date', firstDay.toISOString().split('T')[0])
+        .lte('date', lastDay.toISOString().split('T')[0]);
+    } else if (period === 'year') {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), 0, 1);
+      const lastDay = new Date(now.getFullYear(), 11, 31);
+      
+      query = query
+        .gte('date', firstDay.toISOString().split('T')[0])
+        .lte('date', lastDay.toISOString().split('T')[0]);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Calculate total expenses
+    const total = data.reduce((sum, expense) => sum + expense.amount, 0);
+    
+    // Calculate expenses by category
+    const byCategory = data.reduce((acc, expense) => {
+      const category = expense.category;
+      if (!acc[category]) {
+        acc[category] = 0;
+      }
+      acc[category] += expense.amount;
+      return acc;
+    }, {});
+    
+    return {
+      total,
+      byCategory
+    };
+  } catch (error) {
+    console.error('Error getting expense statistics:', error);
+    return {
+      total: 0,
+      byCategory: {}
+    };
+  }
+}
+
+/**
+ * Upload receipt image to Supabase storage
+ * @param {string} userId - User ID
+ * @param {File} file - Receipt image file
+ * @returns {Promise<string|null>} - Public URL of the uploaded image or null
+ */
+export async function uploadReceiptImage(userId, file) {
+  try {
+    // Create a unique file path
+    const filePath = `${userId}/receipts/${Date.now()}_${file.name}`;
+    
+    // Upload the file
+    const { data, error } = await supabase.storage
+      .from('receipts')
+      .upload(filePath, file);
+      
+    if (error) throw error;
+    
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(filePath);
+      
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading receipt:', error);
+    return null;
+  }
+}
+
+/**
+ * Get expense summaries by time period
+ * @param {string} userId - User ID
+ * @param {string} groupBy - 'day', 'week', 'month', or 'year'
+ * @param {Object} range - { start, end } date range
+ * @returns {Promise<Array>} - Array of expense summaries
+ */
+export async function getExpenseSummaries(userId, groupBy = 'month', range = null) {
+  try {
+    // Base query to get all expenses for the user
+    let query = supabase
+      .from('expenses')
+      .select('amount, date')
+      .eq('user_id', userId);
+    
+    // Apply date range filter if provided
+    if (range?.start && range?.end) {
+      query = query
+        .gte('date', range.start)
+        .lte('date', range.end);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    // Group expenses by the specified time period
+    const groupedExpenses = {};
+    
+    data.forEach(expense => {
+      const date = new Date(expense.date);
+      let key;
+      
+      if (groupBy === 'day') {
+        key = expense.date; // YYYY-MM-DD format
+      } else if (groupBy === 'week') {
+        // Get the week number
+        const janFirst = new Date(date.getFullYear(), 0, 1);
+        const weekNum = Math.ceil((((date - janFirst) / 86400000) + janFirst.getDay() + 1) / 7);
+        key = `${date.getFullYear()}-W${weekNum}`;
+      } else if (groupBy === 'month') {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else if (groupBy === 'year') {
+        key = `${date.getFullYear()}`;
+      }
+      
+      if (!groupedExpenses[key]) {
+        groupedExpenses[key] = 0;
+      }
+      
+      groupedExpenses[key] += expense.amount;
+    });
+    
+    // Convert to array format for charts
+    const result = Object.entries(groupedExpenses).map(([period, amount]) => ({
+      period,
+      amount
+    }));
+    
+    // Sort by period
+    return result.sort((a, b) => a.period.localeCompare(b.period));
+  } catch (error) {
+    console.error('Error getting expense summaries:', error);
+    return [];
+  }
+}
