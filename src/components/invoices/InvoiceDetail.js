@@ -151,10 +151,10 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
 
   useEffect(() => {
     if (isOpen && invoice) {
-      setPayment({
-        ...payment,
+      setPayment(prevPayment => ({
+        ...prevPayment,
         amount: invoice.balance || 0
-      });
+      }));
     }
   }, [isOpen, invoice]);
 
@@ -189,107 +189,6 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <DollarSign size={16} className="text-gray-400" />
               </div>
-          </div>
-        </div>
-
-        {/* Right Column (Payment Details & History) */}
-        <div className="space-y-6">
-          {/* Payment Status */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Payment Status</h3>
-            </div>
-            <div className="p-6">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="font-medium text-gray-900">${total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Amount Paid:</span>
-                <span className="font-medium text-green-600">${amountPaid.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between pt-3 border-t border-gray-200">
-                <span className="font-medium text-gray-900">Balance Due:</span>
-                <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  ${balance.toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="mt-6">
-                <div className="flex items-center mb-2">
-                  <Clock size={16} className="text-gray-600 mr-2" />
-                  <span className="text-sm text-gray-600">Due on {new Date(invoice.due_date).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle size={16} className="text-gray-600 mr-2" />
-                  <span className="text-sm text-gray-600">Payment Terms: {invoice.payment_terms || 'Net 15'}</span>
-                </div>
-              </div>
-              
-              {!isPaid && balance > 0 && (
-                <button
-                  onClick={() => setPaymentModalOpen(true)}
-                  className="w-full mt-6 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
-                >
-                  <DollarSign size={16} className="mr-2" />
-                  Record Payment
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Payment History */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Payment History</h3>
-            </div>
-            <div className="p-6">
-              {paymentHistory.length > 0 ? (
-                <div className="space-y-1">
-                  {paymentHistory.map((payment, index) => (
-                    <PaymentHistoryItem key={index} payment={payment} />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No payments recorded yet.</p>
-              )}
-            </div>
-          </div>
-          
-          {/* Invoice History */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Activity History</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-1">
-                {invoiceHistory.map((activity, index) => (
-                  <InvoiceHistoryItem key={index} activity={activity} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={paymentModalOpen}
-        onClose={() => setPaymentModalOpen(false)}
-        onSubmit={handleRecordPayment}
-        invoice={{ ...invoice, balance }}
-        isSubmitting={submitting}
-      />
-
-      {/* Email Modal */}
-      <EmailInvoiceModal
-        isOpen={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
-        invoice={invoice}
-        onSuccess={handleEmailSuccess}
-      />
-    </div>
-  );
               <input
                 type="number"
                 id="amount"
@@ -599,7 +498,7 @@ export default function InvoiceDetail({ invoiceId }) {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Invoice Not Found</h2>
-        <p className="text-gray-600 mb-6">The invoice you're looking for doesn't exist or you don't have access to it.</p>
+        <p className="text-gray-600 mb-6">The invoice you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
         <Link
           href="/dashboard/invoices"
           className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -815,3 +714,105 @@ export default function InvoiceDetail({ invoiceId }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Right Column (Payment Details & History) */}
+        <div className="space-y-6">
+          {/* Payment Status */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Payment Status</h3>
+            </div>
+            <div className="p-6">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-600">Total Amount:</span>
+                <span className="font-medium text-gray-900">${total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-600">Amount Paid:</span>
+                <span className="font-medium text-green-600">${amountPaid.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between pt-3 border-t border-gray-200">
+                <span className="font-medium text-gray-900">Balance Due:</span>
+                <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  ${balance.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="mt-6">
+                <div className="flex items-center mb-2">
+                  <Clock size={16} className="text-gray-600 mr-2" />
+                  <span className="text-sm text-gray-600">Due on {new Date(invoice.due_date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle size={16} className="text-gray-600 mr-2" />
+                  <span className="text-sm text-gray-600">Payment Terms: {invoice.payment_terms || 'Net 15'}</span>
+                </div>
+              </div>
+              
+              {!isPaid && balance > 0 && (
+                <button
+                  onClick={() => setPaymentModalOpen(true)}
+                  className="w-full mt-6 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                >
+                  <DollarSign size={16} className="mr-2" />
+                  Record Payment
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Payment History */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Payment History</h3>
+            </div>
+            <div className="p-6">
+              {paymentHistory.length > 0 ? (
+                <div className="space-y-1">
+                  {paymentHistory.map((payment, index) => (
+                    <PaymentHistoryItem key={index} payment={payment} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No payments recorded yet.</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Invoice History */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Activity History</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-1">
+                {invoiceHistory.map((activity, index) => (
+                  <InvoiceHistoryItem key={index} activity={activity} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        onSubmit={handleRecordPayment}
+        invoice={{ ...invoice, balance }}
+        isSubmitting={submitting}
+      />
+
+      {/* Email Modal */}
+      <EmailInvoiceModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        invoice={invoice}
+        onSuccess={handleEmailSuccess}
+      />
+    </div>
+  );
+}
