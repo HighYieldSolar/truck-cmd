@@ -56,21 +56,29 @@ export default function SignupPage() {
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false, // This will fail if the user doesn't exist
+          shouldCreateUser: false,
         }
       });
       
-      // If no error is thrown, the email exists
-      setEmailExists(true);
-      setError("This email is already registered. Please use a different email or login.");
-    } catch (error) {
-      // If an error is thrown that's not about user existence, handle it
-      if (error.message && !error.message.includes('User not found')) {
-        setError(error.message);
+      // Check for specific error messages that indicate the user doesn't exist
+      if (error) {
+        if (error.message.includes('User not found')) {
+          // Email doesn't exist, which is what we want for signup
+          setEmailExists(false);
+        } else {
+          // Some other error occurred
+          console.error("Error checking email:", error);
+          setError(error.message);
+        }
       } else {
-        // Email doesn't exist, which is what we want for signup
-        setEmailExists(false);
+        // If no error and data exists, the email exists
+        setEmailExists(true);
+        setError("This email is already registered. Please use a different email or login.");
       }
+    } catch (error) {
+      // Handle unexpected errors (network issues, etc.)
+      console.error("Unexpected error checking email:", error);
+      setError("An error occurred while checking email availability. Please try again.");
     } finally {
       setCheckingEmail(false);
     }
@@ -139,8 +147,7 @@ export default function SignupPage() {
     // Check if email exists before proceeding
     setLoading(true);
     try {
-      // This is a simplified check. In a production environment, you'd want to
-      // implement this more securely, potentially through a server-side function
+      // Use the Supabase auth API to check if the email exists
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -148,16 +155,21 @@ export default function SignupPage() {
         }
       });
       
-      // If we can request an OTP, the email exists
-      if (!error) {
+      // Check for specific error messages that indicate the user doesn't exist
+      if (error) {
+        if (error.message.includes('User not found')) {
+          // Email doesn't exist, proceed to step 2
+          setStep(2);
+        } else {
+          // Some other error occurred
+          console.error("Error checking email:", error);
+          setError(error.message);
+        }
+      } else {
+        // If no error and data exists, the email exists
         setEmailExists(true);
         setError("This email is already registered. Please use a different email or login.");
-        setLoading(false);
-        return;
       }
-      
-      // If we get here, the email doesn't exist which is good for signup
-      setStep(2);
     } catch (error) {
       // Handle unexpected errors
       console.error("Error checking email:", error);
