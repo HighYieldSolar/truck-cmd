@@ -6,9 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
-import { getInvoiceById, updateInvoiceStatus, recordPayment } from "@/lib/services/invoiceService";
-import InvoicePdfGenerator from "@/components/invoices/InvoicePdfGenerator";
-import EmailInvoiceModal from "@/components/invoices/EmailInvoiceModal";
+import { getInvoiceById, updateInvoiceStatus, recordPayment, deleteInvoice, emailInvoice } from "@/lib/services/invoiceService";
+import { subscribeToInvoices } from "@/lib/supabaseRealtime";
 
 import {
   ChevronLeft,
@@ -305,6 +304,230 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
   );
 };
 
+// Email Modal Component
+const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting }) => {
+  const [emailData, setEmailData] = useState({
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    message: '',
+    includePdf: true,
+    includePaymentLink: true
+  });
+
+  useEffect(() => {
+    if (isOpen && invoice) {
+      setEmailData({
+        to: invoice.customer_email || '',
+        cc: '',
+        bcc: '',
+        subject: `Invoice #${invoice.invoice_number} from Your Company`,
+        message: generateDefaultMessage(invoice),
+        includePdf: true,
+        includePaymentLink: true
+      });
+    }
+  }, [isOpen, invoice]);
+
+  if (!isOpen) return null;
+
+  // Generate a default email message
+  function generateDefaultMessage(invoice) {
+    const amountDue = (invoice.total || 0) - (invoice.amount_paid || 0);
+    const dueDate = new Date(invoice.due_date).toLocaleDateString();
+    
+    return `Dear ${invoice.customer},
+
+Please find attached invoice #${invoice.invoice_number} in the amount of $${amountDue.toFixed(2)}.
+
+This invoice is due on ${dueDate}. Please remit payment at your earliest convenience.
+
+Summary:
+- Invoice Number: ${invoice.invoice_number}
+- Invoice Date: ${new Date(invoice.invoice_date).toLocaleDateString()}
+- Due Date: ${dueDate}
+- Amount Due: $${amountDue.toFixed(2)}
+
+If you have any questions about this invoice, please don't hesitate to contact us.
+
+Thank you for your business!
+
+Best regards,
+Your Company Name
+(555) 123-4567`;
+  }
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEmailData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSend(emailData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900 flex items-center">
+            <Mail size={20} className="mr-2 text-blue-600" />
+            Send Invoice by Email
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+            <XCircle size={20} />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
+                To <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                id="to"
+                name="to"
+                value={emailData.to}
+                onChange={handleChange}
+                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                placeholder="customer@example.com"
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="cc" className="block text-sm font-medium text-gray-700 mb-1">
+                  CC
+                </label>
+                <input
+                  type="text"
+                  id="cc"
+                  name="cc"
+                  value={emailData.cc}
+                  onChange={handleChange}
+                  className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="cc@example.com"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="bcc" className="block text-sm font-medium text-gray-700 mb-1">
+                  BCC
+                </label>
+                <input
+                  type="text"
+                  id="bcc"
+                  name="bcc"
+                  value={emailData.bcc}
+                  onChange={handleChange}
+                  className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="bcc@example.com"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                Subject <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="subject"
+                name="subject"
+                value={emailData.subject}
+                onChange={handleChange}
+                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                Message <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows="10"
+                value={emailData.message}
+                onChange={handleChange}
+                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                required
+              ></textarea>
+            </div>
+            
+            <div className="flex items-start space-x-6">
+              <div className="flex items-center h-5">
+                <input
+                  id="includePdf"
+                  name="includePdf"
+                  type="checkbox"
+                  checked={emailData.includePdf}
+                  onChange={handleChange}
+                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+                <label htmlFor="includePdf" className="ml-2 block text-sm text-gray-700">
+                  Attach PDF invoice
+                </label>
+              </div>
+              
+              <div className="flex items-center h-5">
+                <input
+                  id="includePaymentLink"
+                  name="includePaymentLink"
+                  type="checkbox"
+                  checked={emailData.includePaymentLink}
+                  onChange={handleChange}
+                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+                <label htmlFor="includePaymentLink" className="ml-2 block text-sm text-gray-700">
+                  Include payment link
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw size={16} className="mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send size={16} className="mr-2" />
+                  Send Invoice
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Main Invoice Detail Component
 export default function InvoiceDetail({ invoiceId }) {
   const router = useRouter();
@@ -316,12 +539,26 @@ export default function InvoiceDetail({ invoiceId }) {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
 
-  // Fetch invoice data
+  // Fetch user and invoice data
   useEffect(() => {
-    async function fetchInvoiceData() {
+    async function initialize() {
       try {
         setLoading(true);
+        
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        
+        if (!user) {
+          // Redirect to login if not authenticated
+          window.location.href = '/login';
+          return;
+        }
+        
+        setUser(user);
         
         // Get invoice details
         const invoiceData = await getInvoiceById(invoiceId);
@@ -334,12 +571,19 @@ export default function InvoiceDetail({ invoiceId }) {
         
         setInvoice(invoiceData);
         
-        // Simulate fetching payment history
-        // In a real app, you would fetch this from your database
-        setPaymentHistory([]);
+        // Get payment history from Supabase
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('invoice_id', invoiceId)
+          .order('date', { ascending: false });
+          
+        if (paymentsError) throw paymentsError;
         
-        // Simulate fetching invoice history
-        // In a real app, you would fetch this from your database
+        setPaymentHistory(payments || []);
+        
+        // Get invoice activity history
+        // First, set the creation activity
         setInvoiceHistory([
           {
             type: 'created',
@@ -348,6 +592,24 @@ export default function InvoiceDetail({ invoiceId }) {
             user: 'You'
           }
         ]);
+        
+        // Then fetch additional activities if available
+        const { data: activities, error: activitiesError } = await supabase
+          .from('invoice_activities')
+          .select('*')
+          .eq('invoice_id', invoiceId)
+          .order('created_at', { ascending: false });
+          
+        if (!activitiesError && activities) {
+          const formattedActivities = activities.map(activity => ({
+            type: activity.activity_type,
+            description: activity.description,
+            date: new Date(activity.created_at).toLocaleString(),
+            user: activity.user_name || 'System'
+          }));
+          
+          setInvoiceHistory([...formattedActivities, ...invoiceHistory]);
+        }
         
         setLoading(false);
       } catch (err) {
@@ -358,9 +620,60 @@ export default function InvoiceDetail({ invoiceId }) {
     }
     
     if (invoiceId) {
-      fetchInvoiceData();
+      initialize();
     }
   }, [invoiceId]);
+
+  // Set up real-time subscription for this invoice
+  useEffect(() => {
+    if (user && invoiceId) {
+      const channel = supabase
+        .channel(`invoice-${invoiceId}`)
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'invoices',
+            filter: `id=eq.${invoiceId}`
+          },
+          async (payload) => {
+            // Refresh invoice data
+            const invoiceData = await getInvoiceById(invoiceId);
+            if (invoiceData) {
+              setInvoice(invoiceData);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'payments',
+            filter: `invoice_id=eq.${invoiceId}`
+          },
+          async () => {
+            // Refresh payment history
+            const { data } = await supabase
+              .from('payments')
+              .select('*')
+              .eq('invoice_id', invoiceId)
+              .order('date', { ascending: false });
+              
+            if (data) {
+              setPaymentHistory(data);
+            }
+          }
+        )
+        .subscribe();
+      
+      // Clean up subscription when component unmounts
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, invoiceId]);
 
   const handleAction = async (actionId) => {
     try {
@@ -370,9 +683,16 @@ export default function InvoiceDetail({ invoiceId }) {
           break;
         case 'markPaid':
           await updateInvoiceStatus(invoiceId, 'Paid');
-          // Refresh invoice data
-          const updatedInvoice = await getInvoiceById(invoiceId);
-          setInvoice(updatedInvoice);
+          
+          // Add to invoice history - using functional update to avoid dependency issue
+          const newActivity = {
+            type: 'paid',
+            description: 'Invoice marked as paid',
+            date: new Date().toLocaleString(),
+            user: 'You'
+          };
+          
+          setInvoiceHistory(prevHistory => [newActivity, ...prevHistory]);
           break;
         case 'recordPayment':
           setPaymentModalOpen(true);
@@ -381,10 +701,16 @@ export default function InvoiceDetail({ invoiceId }) {
           setEmailModalOpen(true);
           break;
         case 'download':
-          // PDF download handled by InvoicePdfGenerator component
+          // PDF download handled by PDF generator
           break;
         case 'print':
           window.print();
+          break;
+        case 'duplicate':
+          // Create a duplicate invoice
+          if (invoice) {
+            router.push(`/dashboard/invoices/new?duplicate=${invoiceId}`);
+          }
           break;
         default:
           console.log(`Action: ${actionId}`);
@@ -413,29 +739,28 @@ export default function InvoiceDetail({ invoiceId }) {
       // Record the payment
       await recordPayment(invoiceId, formattedPayment);
       
-      // Refresh invoice data
-      const updatedInvoice = await getInvoiceById(invoiceId);
-      setInvoice(updatedInvoice);
-      
-      // Add to payment history
-      setPaymentHistory([
-        {
-          ...formattedPayment,
-          date: new Date(formattedPayment.date).toLocaleDateString(),
-        },
-        ...paymentHistory
-      ]);
+      // Update is handled by real-time subscription
       
       // Add to invoice history
-      setInvoiceHistory([
-        {
-          type: 'paid',
-          description: `Payment of $${formattedPayment.amount.toFixed(2)} recorded`,
-          date: new Date().toLocaleString(),
-          user: 'You'
-        },
-        ...invoiceHistory
-      ]);
+      const newActivity = {
+        type: 'paid',
+        description: `Payment of ${formattedPayment.amount.toFixed(2)} recorded`,
+        date: new Date().toLocaleString(),
+        user: 'You'
+      };
+      
+      setInvoiceHistory([newActivity, ...invoiceHistory]);
+      
+      // Record activity in database
+      await supabase
+        .from('invoice_activities')
+        .insert([{
+          invoice_id: invoiceId,
+          activity_type: 'payment',
+          description: `Payment of ${formattedPayment.amount.toFixed(2)} recorded`,
+          user_id: user.id,
+          user_name: user.email
+        }]);
       
       // Close modal
       setPaymentModalOpen(false);
@@ -447,17 +772,47 @@ export default function InvoiceDetail({ invoiceId }) {
     }
   };
 
-  const handleEmailSuccess = () => {
-    // Add to invoice history
-    setInvoiceHistory([
-      {
+  const handleSendEmail = async (emailData) => {
+    try {
+      setSubmitting(true);
+      
+      // Send the email
+      await emailInvoice(invoiceId, emailData);
+      
+      // Update status to 'Sent' if not already paid
+      if (invoice.status.toLowerCase() !== 'paid') {
+        await updateInvoiceStatus(invoiceId, 'Sent');
+      }
+      
+      // Add to invoice history - using functional update to avoid dependency issue
+      const newActivity = {
         type: 'sent',
-        description: `Invoice emailed to customer`,
+        description: `Invoice emailed to ${emailData.to}`,
         date: new Date().toLocaleString(),
         user: 'You'
-      },
-      ...invoiceHistory
-    ]);
+      };
+      
+      setInvoiceHistory(prevHistory => [newActivity, ...prevHistory]);
+      
+      // Record activity in database
+      await supabase
+        .from('invoice_activities')
+        .insert([{
+          invoice_id: invoiceId,
+          activity_type: 'email',
+          description: `Invoice emailed to ${emailData.to}`,
+          user_id: user.id,
+          user_name: user.email
+        }]);
+      
+      // Close modal
+      setEmailModalOpen(false);
+    } catch (err) {
+      console.error("Error sending email:", err);
+      setError("Failed to send email. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -564,11 +919,31 @@ export default function InvoiceDetail({ invoiceId }) {
               <Send size={16} className="mr-2" />
               Send
             </button>
-            <InvoicePdfGenerator invoice={invoice} />
+            <button
+              onClick={() => handleAction('download')}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <Download size={16} className="mr-2" />
+              Download
+            </button>
             <ActionsDropdown onAction={handleAction} />
           </div>
         </div>
       </div>
+
+      {/* Error display */}
+      {error && (
+        <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (Invoice Details) */}
@@ -604,32 +979,16 @@ export default function InvoiceDetail({ invoiceId }) {
                   )}
                 </div>
                 
-                {invoice.loadDetails && (
+                {invoice.loads && invoice.loads.length > 0 && (
                   <div>
                     <h3 className="text-gray-600 font-semibold text-sm">SHIPMENT INFO:</h3>
-                    {invoice.loadDetails.loadNumber && (
-                      <div className="flex items-center text-gray-600 text-sm mt-1">
-                        <span className="font-medium mr-1">Load #:</span> {invoice.loadDetails.loadNumber}
-                      </div>
-                    )}
-                    {(invoice.loadDetails.origin || invoice.loadDetails.destination) && (
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <MapPin size={14} className="mr-1 flex-shrink-0" /> 
-                        {invoice.loadDetails.origin} → {invoice.loadDetails.destination}
-                      </div>
-                    )}
-                    {invoice.loadDetails.deliveryDate && (
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <Calendar size={14} className="mr-1 flex-shrink-0" /> 
-                        Delivered: {new Date(invoice.loadDetails.deliveryDate).toLocaleDateString()}
-                      </div>
-                    )}
-                    {invoice.loadDetails.description && (
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <Package size={14} className="mr-1 flex-shrink-0" /> 
-                        {invoice.loadDetails.description}
-                      </div>
-                    )}
+                    <div className="flex items-center text-gray-600 text-sm mt-1">
+                      <span className="font-medium mr-1">Load #:</span> {invoice.loads[0].load_number}
+                    </div>
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <MapPin size={14} className="mr-1 flex-shrink-0" /> 
+                      {invoice.loads[0].origin} → {invoice.loads[0].destination}
+                    </div>
                   </div>
                 )}
               </div>
@@ -662,10 +1021,10 @@ export default function InvoiceDetail({ invoiceId }) {
                           {item.quantity}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          ${parseFloat(item.unitPrice).toFixed(2)}
+                          ${parseFloat(item.unit_price).toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          ${(item.quantity * item.unitPrice).toFixed(2)}
+                          ${(item.quantity * item.unit_price).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -810,8 +1169,9 @@ export default function InvoiceDetail({ invoiceId }) {
       <EmailInvoiceModal
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
+        onSend={handleSendEmail}
         invoice={invoice}
-        onSuccess={handleEmailSuccess}
+        isSubmitting={submitting}
       />
     </div>
   );

@@ -1,16 +1,17 @@
 "use client";
 
 import React from "react";
-import { CheckCircle, Clock, AlertCircle, Mail, FileText } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Mail, FileText, Send } from "lucide-react";
 
 /**
- * A reusable status badge component for invoices.
+ * A reusable status badge component for invoices with consistent styling.
  * 
  * @param {Object} props - Component props
- * @param {string} props.status - The invoice status ('paid', 'pending', 'overdue', 'draft', 'sent')
+ * @param {string} props.status - The invoice status ('paid', 'pending', 'overdue', 'draft', 'sent', 'partially paid')
  * @param {string} props.size - The size of the badge ('sm', 'md', 'lg')
  * @param {boolean} props.showIcon - Whether to show the status icon
  * @param {boolean} props.animate - Whether to animate the pending/overdue statuses
+ * @param {string} props.className - Additional CSS classes
  * @returns {JSX.Element} The status badge component
  */
 export default function InvoiceStatusBadge({ 
@@ -54,7 +55,7 @@ export default function InvoiceStatusBadge({
     case 'sent':
       bgColor = 'bg-blue-100';
       textColor = 'text-blue-800';
-      icon = <Mail size={getSizeInPixels(size) - 4} className="mr-1" />;
+      icon = <Send size={getSizeInPixels(size) - 4} className="mr-1" />;
       break;
     case 'partially paid':
       bgColor = 'bg-indigo-100';

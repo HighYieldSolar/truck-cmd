@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import {
@@ -14,12 +14,21 @@ import {
   Search,
   Filter,
   ChevronDown,
+  ChevronRight,
   ArrowUp,
   ArrowDown,
   Sliders,
-  RefreshCw
+  RefreshCw,
+  BarChart2,
+  CreditCard,
+  Calendar,
+  Mail,
+  Printer,
+  Truck
 } from "lucide-react";
-import { getInvoiceStats, fetchInvoices, updateInvoiceStatus } from "@/lib/services/invoiceService";
+import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
+import { fetchInvoices, updateInvoiceStatus, getInvoiceStats, recordPayment, deleteInvoice, emailInvoice } from "@/lib/services/invoiceService";
+import { subscribeToInvoices } from "@/lib/supabaseRealtime";
 
 // Invoice Stats Card Component
 const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) => {
@@ -50,50 +59,32 @@ const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) 
   );
 };
 
-// Status Badge Component 
-const StatusBadge = ({ status }) => {
-  let bgColor = 'bg-gray-100';
-  let textColor = 'text-gray-800';
-  let icon = null;
-
-  switch (status.toLowerCase()) {
-    case 'paid':
-      bgColor = 'bg-green-100';
-      textColor = 'text-green-800';
-      icon = <CheckCircle size={14} className="mr-1" />;
-      break;
-    case 'pending':
-      bgColor = 'bg-yellow-100';
-      textColor = 'text-yellow-800';
-      icon = <Clock size={14} className="mr-1" />;
-      break;
-    case 'overdue':
-      bgColor = 'bg-red-100';
-      textColor = 'text-red-800';
-      icon = <AlertCircle size={14} className="mr-1" />;
-      break;
-    case 'draft':
-      bgColor = 'bg-gray-100';
-      textColor = 'text-gray-800';
-      icon = <FileText size={14} className="mr-1" />;
-      break;
-    case 'sent':
-      bgColor = 'bg-blue-100';
-      textColor = 'text-blue-800';
-      icon = <FileText size={14} className="mr-1" />;
-      break;
-  }
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>
-      {icon}
-      {status}
-    </span>
-  );
-};
-
 // Invoice Filters Component
-const InvoiceFilters = ({ status, setStatus, dateRange, setDateRange, search, setSearch }) => {
+const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
+  const [localFilters, setLocalFilters] = useState({ ...filters });
+
+  const handleFilterChange = (key, value) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleApplyFilters = () => {
+    setFilters(localFilters);
+    onApplyFilters(localFilters);
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = {
+      status: 'all',
+      dateRange: 'all',
+      search: '',
+      sortBy: 'invoice_date',
+      sortDirection: 'desc'
+    };
+    setLocalFilters(resetFilters);
+    setFilters(resetFilters);
+    onApplyFilters(resetFilters);
+  };
+
   const statusOptions = [
     { value: 'all', label: 'All Invoices' },
     { value: 'paid', label: 'Paid' },
@@ -112,54 +103,104 @@ const InvoiceFilters = ({ status, setStatus, dateRange, setDateRange, search, se
     { value: 'thisYear', label: 'This Year' },
   ];
 
+  const sortOptions = [
+    { value: 'invoice_date', label: 'Invoice Date' },
+    { value: 'due_date', label: 'Due Date' },
+    { value: 'total', label: 'Amount' },
+    { value: 'status', label: 'Status' },
+    { value: 'customer', label: 'Customer' }
+  ];
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
-      <div className="relative inline-block w-full md:w-auto">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      <div className="relative inline-block w-full md:w-auto">
-        <select
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        >
-          {dateRangeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      <div className="relative flex-grow">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={16} className="text-gray-400" />
+    <div className="bg-white p-4 rounded-lg shadow mb-6">
+      <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
+        <div className="relative inline-block w-full md:w-auto">
+          <select
+            value={localFilters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          placeholder="Search invoices..."
-        />
+        
+        <div className="relative inline-block w-full md:w-auto">
+          <select
+            value={localFilters.dateRange}
+            onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            {dateRangeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="relative inline-block w-full md:w-auto">
+          <select
+            value={localFilters.sortBy}
+            onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                Sort by: {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="relative inline-block w-full md:w-auto">
+          <select
+            value={localFilters.sortDirection}
+            onChange={(e) => handleFilterChange('sortDirection', e.target.value)}
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </select>
+        </div>
+        
+        <div className="relative flex-grow">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={localFilters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Search invoices..."
+          />
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={handleApplyFilters}
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+          >
+            Apply
+          </button>
+          <button
+            onClick={handleResetFilters}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 // Recent Invoices Table Component
-const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading }) => {
+const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoice }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -232,10 +273,8 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading }) => {
           {invoices.map((invoice) => (
             <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
-                  <Link href={`/dashboard/invoices/${invoice.id}`}>
-                    {invoice.invoice_number}
-                  </Link>
+                <div className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => onViewInvoice(invoice.id)}>
+                  {invoice.invoice_number}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -251,17 +290,17 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading }) => {
                 <div className="text-sm font-medium text-gray-900">${invoice.total?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <StatusBadge status={invoice.status} />
+                <InvoiceStatusBadge status={invoice.status} />
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end space-x-2">
-                  <Link 
-                    href={`/dashboard/invoices/${invoice.id}`}
+                  <button 
+                    onClick={() => onViewInvoice(invoice.id)}
                     className="text-blue-600 hover:text-blue-900"
                     title="View Details"
                   >
                     <FileText size={18} />
-                  </Link>
+                  </button>
                   {invoice.status.toLowerCase() !== 'paid' && (
                     <button 
                       onClick={() => handleMarkAsPaid(invoice.id)}
@@ -298,7 +337,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading }) => {
 };
 
 // Delete Invoice Modal Component
-const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber }) => {
+const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber, isDeleting }) => {
   if (!isOpen) return null;
 
   return (
@@ -315,16 +354,158 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber }) => {
           <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            disabled={isDeleting}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+            className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center"
+            disabled={isDeleting}
           >
-            Delete
+            {isDeleting ? (
+              <>
+                <RefreshCw size={16} className="mr-2 animate-spin" />
+                Deleting...
+              </>
+            ) : "Delete"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Quick Action Card Component
+const QuickActionCard = ({ title, icon, onClick, bgColor = 'bg-blue-50' }) => {
+  return (
+    <button 
+      onClick={onClick}
+      className={`${bgColor} p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col items-center justify-center`}
+    >
+      <div className="rounded-full bg-white p-3 shadow-sm mb-3">
+        {icon}
+      </div>
+      <span className="text-gray-800 font-medium text-sm">{title}</span>
+    </button>
+  );
+};
+
+// Due Soon Widget Component
+const DueSoonWidget = ({ invoices, onViewInvoice }) => {
+  const today = new Date();
+  const dueSoon = invoices
+    .filter(invoice => {
+      if (invoice.status.toLowerCase() !== 'pending') return false;
+      const dueDate = new Date(invoice.due_date);
+      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      return daysUntilDue >= 0 && daysUntilDue <= 7;
+    })
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .slice(0, 5);
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-lg font-medium text-gray-900">Due Soon</h3>
+        <Link href="/dashboard/invoices?filter=pending" className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+          View All <ChevronRight size={16} className="ml-1" />
+        </Link>
+      </div>
+      <div className="p-4">
+        {dueSoon.length === 0 ? (
+          <div className="text-center py-4">
+            <CheckCircle size={32} className="mx-auto text-green-500 mb-2" />
+            <p className="text-gray-500">No invoices due soon!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {dueSoon.map(invoice => {
+              const dueDate = new Date(invoice.due_date);
+              const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+              let badgeColor = 'bg-yellow-100 text-yellow-800';
+              if (daysUntilDue <= 2) badgeColor = 'bg-red-100 text-red-800';
+              
+              return (
+                <div 
+                  key={invoice.id} 
+                  className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100"
+                  onClick={() => onViewInvoice(invoice.id)}
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{invoice.customer}</p>
+                    <p className="text-sm text-gray-500">#{invoice.invoice_number}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${invoice.total.toLocaleString()}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${badgeColor}`}>
+                      {daysUntilDue === 0 ? 'Due today' : `Due in ${daysUntilDue} days`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Overdue Widget Component
+const OverdueWidget = ({ invoices, onViewInvoice }) => {
+  const overdue = invoices
+    .filter(invoice => invoice.status.toLowerCase() === 'overdue')
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .slice(0, 5);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-lg font-medium text-gray-900">Overdue Invoices</h3>
+        <Link href="/dashboard/invoices?filter=overdue" className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+          View All <ChevronRight size={16} className="ml-1" />
+        </Link>
+      </div>
+      <div className="p-4">
+        {overdue.length === 0 ? (
+          <div className="text-center py-4">
+            <CheckCircle size={32} className="mx-auto text-green-500 mb-2" />
+            <p className="text-gray-500">No overdue invoices!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {overdue.map(invoice => {
+              const dueDate = new Date(invoice.due_date);
+              const today = new Date();
+              const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
+              
+              return (
+                <div 
+                  key={invoice.id} 
+                  className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100"
+                  onClick={() => onViewInvoice(invoice.id)}
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{invoice.customer}</p>
+                    <p className="text-sm text-gray-500">Due: {formatDate(invoice.due_date)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${invoice.total.toLocaleString()}</p>
+                    <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
+                      {daysOverdue} days overdue
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -349,13 +530,18 @@ export default function InvoiceDashboard() {
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   
   // Filter state
-  const [status, setStatus] = useState('all');
-  const [dateRange, setDateRange] = useState('all');
-  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({
+    status: 'all',
+    dateRange: 'all',
+    search: '',
+    sortBy: 'invoice_date',
+    sortDirection: 'desc'
+  });
   
   // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Initialize user and load data
   useEffect(() => {
@@ -385,7 +571,26 @@ export default function InvoiceDashboard() {
     }
     
     initialize();
-  }, []);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  // We're disabling the exhaustive-deps warning because loadDashboardData is defined in the component
+  // Including it would cause unnecessary re-renders
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToInvoices(user.id, (payload) => {
+        // Refresh data when changes occur
+        loadDashboardData(user.id);
+      });
+      
+      // Clean up subscription on unmount
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // We're disabling the exhaustive-deps warning because loadDashboardData is defined in the component
+  // Including it would cause unnecessary re-renders
 
   // Load dashboard data
   const loadDashboardData = async (userId) => {
@@ -395,7 +600,7 @@ export default function InvoiceDashboard() {
       // Fetch invoices and stats in parallel
       const [invoiceStats, invoicesData] = await Promise.all([
         getInvoiceStats(userId),
-        fetchInvoices(userId)
+        fetchInvoices(userId, filters)
       ]);
       
       setStats(invoiceStats);
@@ -409,89 +614,28 @@ export default function InvoiceDashboard() {
     }
   };
 
-  // Apply filters when they change
-  useEffect(() => {
-    if (invoices.length > 0) {
-      let filtered = [...invoices];
-      
-      // Filter by status
-      if (status !== 'all') {
-        filtered = filtered.filter(invoice => 
-          invoice.status.toLowerCase() === status.toLowerCase()
-        );
+  // Apply filters
+  const applyFilters = useCallback(async (newFilters) => {
+    if (user) {
+      try {
+        setInvoicesLoading(true);
+        const data = await fetchInvoices(user.id, newFilters);
+        setFilteredInvoices(data);
+      } catch (err) {
+        console.error('Error applying filters:', err);
+        setError('Failed to filter invoices. Please try again.');
+      } finally {
+        setInvoicesLoading(false);
       }
-      
-      // Filter by date range
-      if (dateRange !== 'all') {
-        const now = new Date();
-        let dateFrom = new Date();
-        
-        switch (dateRange) {
-          case 'last30':
-            dateFrom.setDate(now.getDate() - 30);
-            break;
-          case 'last90':
-            dateFrom.setDate(now.getDate() - 90);
-            break;
-          case 'thisMonth':
-            dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
-            break;
-          case 'lastMonth':
-            dateFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-            filtered = filtered.filter(invoice => {
-              const invoiceDate = new Date(invoice.invoice_date);
-              return invoiceDate >= dateFrom && invoiceDate <= lastDay;
-            });
-            break;
-          case 'thisYear':
-            dateFrom = new Date(now.getFullYear(), 0, 1);
-            break;
-          default:
-            break;
-        }
-        
-        if (dateRange !== 'lastMonth') {
-          filtered = filtered.filter(invoice => {
-            const invoiceDate = new Date(invoice.invoice_date);
-            return invoiceDate >= dateFrom;
-          });
-        }
-      }
-      
-      // Filter by search term
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filtered = filtered.filter(invoice => 
-          invoice.invoice_number.toLowerCase().includes(searchLower) ||
-          invoice.customer.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      setFilteredInvoices(filtered);
     }
-  }, [status, dateRange, search, invoices]);
+  }, [user]);
 
   // Handle marking an invoice as paid
   const handleMarkAsPaid = async (invoiceId) => {
     try {
       await updateInvoiceStatus(invoiceId, 'Paid');
       
-      // Update local state
-      const updatedInvoices = invoices.map(invoice => {
-        if (invoice.id === invoiceId) {
-          return { ...invoice, status: 'Paid' };
-        }
-        return invoice;
-      });
-      
-      setInvoices(updatedInvoices);
-      
-      // Reload stats
-      if (user) {
-        const invoiceStats = await getInvoiceStats(user.id);
-        setStats(invoiceStats);
-      }
+      // Update will be handled by the real-time subscription
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
       setError('Failed to update invoice. Please try again.');
@@ -511,22 +655,12 @@ export default function InvoiceDashboard() {
   const confirmDeleteInvoice = async () => {
     try {
       if (invoiceToDelete && user) {
+        setIsDeleting(true);
+        
         // Delete from database
-        const response = await fetch(`/api/invoices/${invoiceToDelete.id}`, {
-          method: 'DELETE',
-        });
+        await deleteInvoice(invoiceToDelete.id);
         
-        if (!response.ok) {
-          throw new Error('Failed to delete invoice');
-        }
-        
-        // Update local state
-        const updatedInvoices = invoices.filter(invoice => invoice.id !== invoiceToDelete.id);
-        setInvoices(updatedInvoices);
-        
-        // Reload stats
-        const invoiceStats = await getInvoiceStats(user.id);
-        setStats(invoiceStats);
+        // Update will be handled by the real-time subscription
         
         // Close modal
         setDeleteModalOpen(false);
@@ -535,7 +669,14 @@ export default function InvoiceDashboard() {
     } catch (err) {
       console.error('Error deleting invoice:', err);
       setError('Failed to delete invoice. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  // Handle view invoice
+  const handleViewInvoice = (invoiceId) => {
+    window.location.href = `/dashboard/invoices/${invoiceId}`;
   };
 
   // Format currency for display
@@ -552,23 +693,23 @@ export default function InvoiceDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoice Management</h1>
-          <p className="text-gray-600 mt-1">Create, track, and manage your invoices</p>
+          <p className="text-gray-600 mt-1">Create, track, and manage your trucking invoices</p>
         </div>
         <div className="mt-4 md:mt-0 flex space-x-3">
           <Link
             href="/dashboard/invoices/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
           >
             <Plus size={16} className="mr-2" />
             Create Invoice
           </Link>
           <button
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
           >
             <Download size={16} className="mr-2" />
             Export
@@ -590,8 +731,8 @@ export default function InvoiceDashboard() {
         </div>
       )}
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard 
           title="Total Invoices" 
           value={formatCurrency(stats.total)} 
@@ -605,8 +746,6 @@ export default function InvoiceDashboard() {
           icon={<CheckCircle size={22} className="text-green-600" />}
           bgColor="bg-green-50"
           textColor="text-green-700"
-          change="+12.5%"
-          positive={true}
         />
         <StatCard 
           title="Pending" 
@@ -621,22 +760,57 @@ export default function InvoiceDashboard() {
           icon={<AlertCircle size={22} className="text-red-600" />}
           bgColor="bg-red-50"
           textColor="text-red-700"
-          change="+5.3%"
-          positive={false}
         />
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <InvoiceFilters 
-          status={status}
-          setStatus={setStatus}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          search={search}
-          setSearch={setSearch}
-        />
+      {/* Quick Actions */}
+      <div className="mb-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <QuickActionCard 
+            title="New Invoice" 
+            icon={<Plus size={20} className="text-blue-600" />} 
+            onClick={() => window.location.href = '/dashboard/invoices/new'} 
+            bgColor="bg-blue-50"
+          />
+          <QuickActionCard 
+            title="Record Payment" 
+            icon={<DollarSign size={20} className="text-green-600" />} 
+            onClick={() => {
+              setFilters({...filters, status: 'pending'});
+              applyFilters({...filters, status: 'pending'});
+            }} 
+            bgColor="bg-green-50"
+          />
+          <QuickActionCard 
+            title="Send Reminder" 
+            icon={<Mail size={20} className="text-orange-600" />} 
+            onClick={() => {
+              setFilters({...filters, status: 'overdue'});
+              applyFilters({...filters, status: 'overdue'});
+            }} 
+            bgColor="bg-orange-50"
+          />
+          <QuickActionCard 
+            title="Generate Report" 
+            icon={<BarChart2 size={20} className="text-purple-600" />} 
+            bgColor="bg-purple-50"
+          />
+        </div>
       </div>
+
+      {/* Two-column widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <DueSoonWidget invoices={invoices} onViewInvoice={handleViewInvoice} />
+        <OverdueWidget invoices={invoices} onViewInvoice={handleViewInvoice} />
+      </div>
+
+      {/* Filters */}
+      <InvoiceFilters 
+        filters={filters}
+        setFilters={setFilters}
+        onApplyFilters={applyFilters}
+      />
 
       {/* Invoices Table */}
       <InvoicesTable 
@@ -644,6 +818,7 @@ export default function InvoiceDashboard() {
         onMarkAsPaid={handleMarkAsPaid}
         onDelete={handleDeleteInvoice}
         loading={invoicesLoading}
+        onViewInvoice={handleViewInvoice}
       />
 
       {/* Pagination */}
@@ -686,6 +861,7 @@ export default function InvoiceDashboard() {
         }}
         onConfirm={confirmDeleteInvoice}
         invoiceNumber={invoiceToDelete?.invoice_number}
+        isDeleting={isDeleting}
       />
     </div>
   );
