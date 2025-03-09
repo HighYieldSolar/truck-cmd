@@ -33,8 +33,8 @@ export default function ContactPage() {
               icon={<Phone size={28} />}
               title="Call Us"
               content={<>
-                <p className="text-lg font-medium">(555) 123-4567</p>
-                <p className="text-sm opacity-90">Mon-Fri: 8am-8pm CT</p>
+                <p className="text-lg font-medium">(951) 505-1147</p>
+                <p className="text-sm opacity-90">Mon-Fri: 8am-8pm PST</p>
               </>}
             />
             
@@ -87,7 +87,7 @@ export default function ContactPage() {
                 <ContactInfoItem 
                   icon={<Phone size={24} />}
                   title="Phone"
-                  content="(555) 123-4567"
+                  content="(951) 505-1147"
                 />
                 
                 <ContactInfoItem 
@@ -96,21 +96,13 @@ export default function ContactPage() {
                   content="support@truckcommand.com"
                 />
                 
-                <ContactInfoItem 
-                  icon={<MapPin size={24} />}
-                  title="Office"
-                  content={<>
-                    123 Transport Way, Suite 400<br />
-                    Dallas, TX 75201
-                  </>}
-                />
                 
                 <ContactInfoItem 
                   icon={<Clock size={24} />}
                   title="Business Hours"
                   content={<>
-                    Monday - Friday: 8am - 8pm CT<br />
-                    Saturday: 9am - 5pm CT<br />
+                    Monday - Friday: 8am - 8pm PST<br />
+                    Saturday: 9am - 5pm PST<br />
                     Sunday: Closed
                   </>}
                 />

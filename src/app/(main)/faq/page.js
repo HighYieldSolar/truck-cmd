@@ -308,8 +308,8 @@ export default function FAQPage() {
                 icon={<Phone size={24} />}
                 title="Phone Support"
                 description="Talk to our team"
-                contact="(555) 123-4567"
-                note="8am-8pm CT, Monday-Friday"
+                contact="(951) 505-1147"
+                note="8am-8pm PST, Monday-Friday"
               />
               <ContactMethod
                 icon={<MessageSquare size={24} />}

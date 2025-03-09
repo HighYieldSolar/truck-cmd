@@ -222,9 +222,8 @@ export default function PrivacyPolicyPage() {
               If you have any questions about this Privacy Policy, please contact us:
             </p>
             <ul className="list-disc pl-8 text-gray-700 space-y-2">
-              <li>By email: privacy@truckcommand.com</li>
-              <li>By phone: (555) 123-4567</li>
-              <li>By mail: 123 Transport Way, Suite 400, Dallas, TX 75201</li>
+              <li>By email: support@truckcommand.com</li>
+              <li>By phone: (951) 505-1147</li>
             </ul>
           </div>
         </div>

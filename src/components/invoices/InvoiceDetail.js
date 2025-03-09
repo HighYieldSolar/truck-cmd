@@ -619,10 +619,16 @@ export default function InvoiceDetail({ invoiceId }) {
       }
     }
     
-    if (invoiceId) {
-      initialize();
-    }
-  }, [invoiceId]);
+    const initialize = useCallback(() => {
+      // Code that uses invoiceHistory
+      // ...
+    }, [invoiceHistory, /* other dependencies */]);
+    
+    useEffect(() => {
+      if (invoiceId) {
+        initialize();
+      }
+    }, [invoiceId, initialize]); // Now correctly includes initialize
 
   // Set up real-time subscription for this invoice
   useEffect(() => {
