@@ -29,6 +29,8 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import StateDataGrid from "@/components/ifta/StateDataGrid";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
+import FuelSummary from "@/components/dashboard/FuelSummary";
+import { getFuelStats } from "@/lib/services/fuelService";
 
 // Import services and hooks
 import { fetchFuelEntries } from "@/lib/services/fuelService";

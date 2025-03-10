@@ -1,8 +1,8 @@
 "use client";
 
-import { FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ReceiptText } from "lucide-react";
+import { Link, CheckCircle, RefreshCw, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ReceiptText } from "lucide-react";
 
-export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
+export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt, onSyncToExpense }) {
   // Format price to 3 decimal places
   const formatPrice = (price) => {
     return parseFloat(price).toFixed(3);
@@ -106,6 +106,30 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
           <Trash2 size={16} />
         </button>
       </td>
+
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {fuelEntry.expense_id ? (
+          <div className="flex items-center">
+            <CheckCircle size={16} className="text-green-500 mr-1" />
+            <span>Synced to Expenses</span>
+            <Link 
+              href={`/dashboard/expenses/${fuelEntry.expense_id}`}
+              className="ml-2 text-blue-600 hover:text-blue-800"
+            >
+              View
+            </Link>
+          </div>
+        ) : (
+          <button
+            onClick={() => onSyncToExpense(fuelEntry)}
+            className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+          >
+            <RefreshCw size={16} className="mr-1" />
+            Sync to Expenses
+          </button>
+        )}
+      </td>
     </tr>
+    
   );
 }
