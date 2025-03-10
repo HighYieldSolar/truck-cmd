@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -61,7 +62,7 @@ const Sidebar = ({ activePage = "expenses" }) => {
   return (
     <div className="hidden md:flex w-64 flex-col bg-white shadow-lg">
       <div className="p-4 border-b">
-        <Image 
+        <img 
           src="/images/tc-name-tp-bg.png" 
           alt="Truck Command Logo"
           width={150}

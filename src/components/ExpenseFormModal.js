@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -282,14 +283,14 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
               {formData.receipt_image && (
                 <div className="mt-2">
                   {typeof formData.receipt_image === 'string' && formData.receipt_image.startsWith('blob') ? (
-                    <image 
+                    <img 
                       src={formData.receipt_image} 
                       alt="Receipt Preview" 
                       className="h-32 object-contain border rounded-md" 
                     />
                   ) : formData.receipt_image ? (
                     <div className="flex items-center">
-                      <image 
+                      <img 
                         src="/images/receipt-icon.png" 
                         alt="Receipt" 
                         className="h-6 mr-2" 

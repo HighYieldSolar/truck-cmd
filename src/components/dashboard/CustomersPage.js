@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // src/components/dashboard/CustomersPage.js - PART 1
 "use client";
 
@@ -98,7 +99,7 @@ const Sidebar = ({ activePage = "customers" }) => {
   return (
     <div className="hidden md:flex w-64 flex-col bg-white shadow-lg">
       <div className="p-4 border-b">
-        <Image 
+        <img 
           src="/images/tc-name-tp-bg.png" 
           alt="Truck Command Logo"
           width={150}
