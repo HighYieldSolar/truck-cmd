@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { X, Download, Share2, Printer, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
@@ -91,7 +92,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt }) {
               transition: 'transform 0.3s ease'
             }}
           >
-            <image 
+            <img 
               src={receipt.receipt_image} 
               alt="Fuel receipt" 
               className="w-full object-contain"
