@@ -1,5 +1,5 @@
 // src/lib/services/fuelService.js
-import { supabase } from "../supabaseClient";
+import { supabase, formatError } from "../supabaseClient";
 
 /**
  * Fetch all fuel entries for the current user with optional filters
@@ -9,6 +9,10 @@ import { supabase } from "../supabaseClient";
  */
 export async function fetchFuelEntries(userId, filters = {}) {
   try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    
     let query = supabase
       .from('fuel_entries')
       .select('*')
@@ -23,6 +27,7 @@ export async function fetchFuelEntries(userId, filters = {}) {
       query = query.or(`location.ilike.%${filters.search}%,vehicle_id.ilike.%${filters.search}%`);
     }
 
+    // Date range filters
     if (filters.dateRange === 'This Quarter') {
       const now = new Date();
       const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
@@ -58,7 +63,7 @@ export async function fetchFuelEntries(userId, filters = {}) {
       query = query.eq('vehicle_id', filters.vehicleId);
     }
 
-    // Apply sorting
+    // Apply sorting - default to newest first
     query = query.order('date', { ascending: false });
 
     const { data, error } = await query;
@@ -101,6 +106,10 @@ export async function getFuelEntryById(id) {
  */
 export async function createFuelEntry(fuelEntryData) {
   try {
+    if (!fuelEntryData.user_id) {
+      throw new Error("User ID is required");
+    }
+    
     const { data, error } = await supabase
       .from('fuel_entries')
       .insert([fuelEntryData])
@@ -160,36 +169,6 @@ export async function deleteFuelEntry(id) {
 }
 
 /**
- * Upload receipt image to Supabase storage
- * @param {string} userId - User ID
- * @param {File} file - Receipt image file
- * @returns {Promise<string|null>} - Public URL of the uploaded image or null
- */
-export async function uploadReceiptImage(userId, file) {
-  try {
-    // Create a unique file path
-    const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name}`;
-    
-    // Upload the file
-    const { data, error } = await supabase.storage
-      .from('receipts')
-      .upload(filePath, file);
-      
-    if (error) throw error;
-    
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
-  } catch (error) {
-    console.error('Error uploading receipt:', error);
-    return null;
-  }
-}
-
-/**
  * Get fuel statistics
  * @param {string} userId - The authenticated user's ID
  * @param {string} period - Time period ('quarter', 'month', 'year', 'all')
@@ -197,6 +176,8 @@ export async function uploadReceiptImage(userId, file) {
  */
 export async function getFuelStats(userId, period = 'quarter') {
   try {
+    if (!userId) return defaultStats();
+    
     let query = supabase
       .from('fuel_entries')
       .select('gallons, price_per_gallon, total_amount, state, date')
@@ -235,8 +216,8 @@ export async function getFuelStats(userId, period = 'quarter') {
     // Calculate statistics
     const fuelData = data || [];
     
-    const totalGallons = fuelData.reduce((sum, entry) => sum + entry.gallons, 0);
-    const totalAmount = fuelData.reduce((sum, entry) => sum + entry.total_amount, 0);
+    const totalGallons = fuelData.reduce((sum, entry) => sum + (parseFloat(entry.gallons) || 0), 0);
+    const totalAmount = fuelData.reduce((sum, entry) => sum + (parseFloat(entry.total_amount) || 0), 0);
     const avgPricePerGallon = totalGallons > 0 ? totalAmount / totalGallons : 0;
     
     // Count unique states
@@ -249,8 +230,8 @@ export async function getFuelStats(userId, period = 'quarter') {
         };
       }
       
-      stateMap[entry.state].gallons += entry.gallons;
-      stateMap[entry.state].amount += entry.total_amount;
+      stateMap[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      stateMap[entry.state].amount += parseFloat(entry.total_amount) || 0;
       stateMap[entry.state].purchases += 1;
       
       return stateMap;
@@ -266,14 +247,58 @@ export async function getFuelStats(userId, period = 'quarter') {
     };
   } catch (error) {
     console.error('Error getting fuel statistics:', error);
-    return {
-      totalGallons: 0,
-      totalAmount: 0,
-      avgPricePerGallon: 0,
-      uniqueStates: 0,
-      entryCount: 0,
-      byState: {}
-    };
+    return defaultStats();
+  }
+}
+
+/**
+ * Default stats object for error cases
+ */
+function defaultStats() {
+  return {
+    totalGallons: 0,
+    totalAmount: 0,
+    avgPricePerGallon: 0,
+    uniqueStates: 0,
+    entryCount: 0,
+    byState: {}
+  };
+}
+
+/**
+ * Upload receipt image to Supabase storage
+ * @param {string} userId - User ID
+ * @param {File} file - Receipt image file
+ * @returns {Promise<string|null>} - Public URL of the uploaded image or null
+ */
+export async function uploadReceiptImage(userId, file) {
+  try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    
+    // Create a unique file path
+    const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    
+    // Upload the file
+    const { data, error } = await supabase.storage
+      .from('receipts')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+      
+    if (error) throw error;
+    
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(filePath);
+      
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading receipt:', error);
+    return null;
   }
 }
 
@@ -284,6 +309,8 @@ export async function getFuelStats(userId, period = 'quarter') {
  */
 export async function getVehiclesWithFuelRecords(userId) {
   try {
+    if (!userId) return [];
+    
     const { data, error } = await supabase
       .from('fuel_entries')
       .select('vehicle_id')
@@ -299,6 +326,49 @@ export async function getVehiclesWithFuelRecords(userId) {
   } catch (error) {
     console.error('Error getting vehicles with fuel records:', error);
     return [];
+  }
+}
+
+/**
+ * Export fuel data for IFTA reporting
+ * @param {string} userId - User ID
+ * @param {Object} filters - Filters to apply
+ * @returns {Promise<Array>} - Array of formatted fuel data for IFTA
+ */
+export async function exportFuelDataForIFTA(userId, filters = {}) {
+  try {
+    // Get fuel entries with the specified filters
+    const fuelEntries = await fetchFuelEntries(userId, filters);
+    
+    // Group by state
+    const byState = fuelEntries.reduce((acc, entry) => {
+      if (!acc[entry.state]) {
+        acc[entry.state] = {
+          state: entry.state,
+          state_name: entry.state_name,
+          gallons: 0,
+          amount: 0,
+          purchases: 0
+        };
+      }
+      
+      acc[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      acc[entry.state].amount += parseFloat(entry.total_amount) || 0;
+      acc[entry.state].purchases += 1;
+      
+      return acc;
+    }, {});
+    
+    // Convert to array and calculate average price per gallon
+    const iftaData = Object.values(byState).map(state => ({
+      ...state,
+      average_price: state.gallons > 0 ? (state.amount / state.gallons) : 0
+    }));
+    
+    return iftaData;
+  } catch (error) {
+    console.error('Error exporting IFTA data:', error);
+    throw error;
   }
 }
 
@@ -359,47 +429,4 @@ export function getUSStates() {
     { code: "WI", name: "Wisconsin" },
     { code: "WY", name: "Wyoming" }
   ];
-}
-
-/**
- * Export fuel data for IFTA reporting
- * @param {string} userId - User ID
- * @param {Object} filters - Filters to apply
- * @returns {Promise<Array>} - Array of formatted fuel data for IFTA
- */
-export async function exportFuelDataForIFTA(userId, filters = {}) {
-  try {
-    // Get fuel entries with the specified filters
-    const fuelEntries = await fetchFuelEntries(userId, filters);
-    
-    // Group by state
-    const byState = fuelEntries.reduce((acc, entry) => {
-      if (!acc[entry.state]) {
-        acc[entry.state] = {
-          state: entry.state,
-          state_name: entry.state_name,
-          gallons: 0,
-          amount: 0,
-          purchases: 0
-        };
-      }
-      
-      acc[entry.state].gallons += entry.gallons;
-      acc[entry.state].amount += entry.total_amount;
-      acc[entry.state].purchases += 1;
-      
-      return acc;
-    }, {});
-    
-    // Convert to array and calculate average price per gallon
-    const iftaData = Object.values(byState).map(state => ({
-      ...state,
-      average_price: state.gallons > 0 ? (state.amount / state.gallons) : 0
-    }));
-    
-    return iftaData;
-  } catch (error) {
-    console.error('Error exporting IFTA data:', error);
-    throw error;
-  }
 }

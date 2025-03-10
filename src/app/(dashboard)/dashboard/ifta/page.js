@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, formatError } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -9,7 +9,6 @@ import {
   FileDown,
   Plus,
   Trash2,
-  Save,
   RefreshCw,
   AlertCircle,
   Info,
@@ -18,10 +17,7 @@ import {
   Calendar,
   MapPin,
   Fuel,
-  DollarSign,
-  Filter,
-  ChevronDown,
-  ChevronsUpDown
+  DollarSign
 } from "lucide-react";
 
 // Import custom components
@@ -48,63 +44,7 @@ export default function IFTACalculatorPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
-
-  // Get IFTA data and functions from our custom hook
-  const {
-    trips,
-    rates,
-    stats,
-    loading,
-    error,
-    loadTrips,
-    addTrip,
-    updateTrip,
-    deleteTrip,
-    loadRates,
-    calculateSummary
-  } = useIFTA(user?.id, activeQuarter);
-
-  // Check if the user is authenticated
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        setInitialLoading(true);
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (!user) {
-          // Redirect to login if not authenticated
-          router.push('/login');
-          return;
-        }
-        
-        setUser(user);
-        
-        // Set default active quarter
-        const now = new Date();
-        const quarter = Math.ceil((now.getMonth() + 1) / 3);
-        setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-      } finally {
-        setInitialLoading(false);
-      }
-    }
-    
-    checkAuth();
-  }, [router]);
-
-  // Load trips when the active quarter changes
-  useEffect(() => {
-    if (user && activeQuarter) {
-      loadTrips(activeQuarter);
-      loadRates();
-      loadFuelData();
-    }
-  }, [user, activeQuarter, loadTrips, loadRates, loadFuelData]);
+  const [pageError, setPageError] = useState(null);
 
   // Load fuel data from fuel tracker to assist with IFTA calculations
   const loadFuelData = useCallback(async () => {
@@ -112,6 +52,7 @@ export default function IFTACalculatorPage() {
     
     try {
       setFuelDataLoading(true);
+      setPageError(null);
       
       // Parse the quarter into dateRange filter
       const [year, quarter] = activeQuarter.split('-Q');
@@ -129,14 +70,77 @@ export default function IFTACalculatorPage() {
       setFuelData(fuelEntries || []);
     } catch (error) {
       console.error('Error loading fuel data:', error);
+      setPageError(formatError(error, 'Failed to load fuel data. Your calculations may be incomplete.'));
     } finally {
       setFuelDataLoading(false);
     }
   }, [user, activeQuarter]);
 
+  // Get IFTA data and functions from our custom hook
+  const {
+    trips,
+    rates,
+    stats,
+    loading,
+    error,
+    loadTrips,
+    addTrip,
+    updateTrip,
+    deleteTrip,
+    loadRates,
+    addRate,
+    calculateSummary
+  } = useIFTA(user?.id, activeQuarter);
+
+  // Check if the user is authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        setInitialLoading(true);
+        setPageError(null);
+        
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
+        
+        if (!session) {
+          // Redirect to login if not authenticated
+          router.push('/login');
+          return;
+        }
+        
+        setUser(session.user);
+        
+        // Set default active quarter
+        const now = new Date();
+        const quarter = Math.ceil((now.getMonth() + 1) / 3);
+        setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
+      } catch (err) {
+        console.error('Error checking authentication:', err);
+        setPageError(formatError(err, 'Authentication error. Please try logging in again.'));
+      } finally {
+        setInitialLoading(false);
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
+
+  // Load trips when the active quarter changes
+  useEffect(() => {
+    if (user && activeQuarter) {
+      loadTrips(activeQuarter);
+      loadRates();
+      loadFuelData();
+    }
+  }, [user, activeQuarter, loadTrips, loadRates, loadFuelData]);
+
   // Handle adding a new trip
   const handleAddTrip = async (tripData) => {
     try {
+      setPageError(null);
       await addTrip({
         ...tripData,
         quarter: activeQuarter
@@ -144,6 +148,20 @@ export default function IFTACalculatorPage() {
       return true;
     } catch (error) {
       console.error('Error adding trip:', error);
+      setPageError(formatError(error, 'Failed to add trip. Please try again.'));
+      return false;
+    }
+  };
+
+  // Handle adding a new tax rate
+  const handleAddRate = async (rateData) => {
+    try {
+      setPageError(null);
+      await addRate(rateData);
+      return true;
+    } catch (error) {
+      console.error('Error adding tax rate:', error);
+      setPageError(formatError(error, 'Failed to add tax rate. Please try again.'));
       return false;
     }
   };
@@ -159,11 +177,13 @@ export default function IFTACalculatorPage() {
     if (!tripToDelete) return;
     
     try {
+      setPageError(null);
       await deleteTrip(tripToDelete.id);
       setDeleteModalOpen(false);
       setTripToDelete(null);
     } catch (error) {
       console.error('Error deleting trip:', error);
+      setPageError(formatError(error, 'Failed to delete trip. Please try again.'));
     }
   };
 
@@ -171,34 +191,39 @@ export default function IFTACalculatorPage() {
   const handleExportData = () => {
     if (!trips || trips.length === 0) return;
 
-    // Create array of data for CSV
-    const csvRows = [
-      // Header row
-      ['Trip ID', 'Date', 'Vehicle ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'MPG', 'Fuel Cost'].join(','),
-      // Data rows
-      ...trips.map(trip => [
-        trip.id,
-        trip.date,
-        trip.vehicleId,
-        trip.startJurisdiction,
-        trip.endJurisdiction,
-        trip.miles,
-        trip.gallons,
-        (trip.miles / trip.gallons).toFixed(2),
-        trip.fuelCost
-      ].join(','))
-    ];
+    try {
+      // Create array of data for CSV
+      const csvRows = [
+        // Header row
+        ['Trip ID', 'Date', 'Vehicle ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'MPG', 'Fuel Cost'].join(','),
+        // Data rows
+        ...trips.map(trip => [
+          trip.id,
+          trip.date,
+          trip.vehicleId,
+          trip.startJurisdiction,
+          trip.endJurisdiction,
+          trip.miles,
+          trip.gallons,
+          (parseFloat(trip.miles) / parseFloat(trip.gallons)).toFixed(2),
+          trip.fuelCost
+        ].join(','))
+      ];
 
-    // Create blob and download link
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ifta_data_${activeQuarter}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Create blob and download link
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `ifta_data_${activeQuarter}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error exporting data:', err);
+      setPageError('Failed to export data. Please try again.');
+    }
   };
 
   // Show loading indicator while checking auth
@@ -224,6 +249,7 @@ export default function IFTACalculatorPage() {
               <button
                 onClick={() => setReportModalOpen(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                disabled={trips.length === 0 || loading}
               >
                 <FileDown size={16} className="mr-2" />
                 Generate Report
@@ -231,6 +257,7 @@ export default function IFTACalculatorPage() {
               <button
                 onClick={handleExportData}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
+                disabled={trips.length === 0 || loading}
               >
                 <Download size={16} className="mr-2" />
                 Export Data
@@ -238,31 +265,32 @@ export default function IFTACalculatorPage() {
             </div>
           </div>
 
-          {/* Show error if present */}
-          {error && (
+          {/* Show errors if present */}
+          {(error || pageError) && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm text-red-700">{error || pageError}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Info Banner */}
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md mb-6">
+          {/* IFTA Tax Rate Disclaimer */}
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <Info className="h-5 w-5 text-blue-400" />
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
               </div>
               <div className="ml-3">
-                <p className="text-sm text-blue-700">
-                  Use this calculator to track your mileage and fuel purchases by jurisdiction for IFTA reporting. 
-                  Keep your records up-to-date for easier quarterly filings.
-                </p>
+                <h3 className="text-sm font-medium text-yellow-800">Important IFTA Tax Rate Disclaimer</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>This calculator requires you to input your own IFTA tax rates. We do not provide pre-defined tax rates as they vary by jurisdiction and change over time.</p>
+                  <p className="mt-1">You are responsible for verifying the accuracy of tax rates and any calculations made by this tool. Always consult official IFTA documentation or a tax professional before filing.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -316,7 +344,11 @@ export default function IFTACalculatorPage() {
 
           {/* IFTA Rates Table */}
           <div className="mb-6">
-            <IFTARatesTable rates={rates} isLoading={loading} />
+            <IFTARatesTable 
+              rates={rates} 
+              isLoading={loading} 
+              onAddRate={handleAddRate}
+            />
           </div>
         </div>
       </main>

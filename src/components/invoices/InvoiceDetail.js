@@ -541,94 +541,101 @@ export default function InvoiceDetail({ invoiceId }) {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Fetch user and invoice data
-  useEffect(() => {
-    async function initialize() {
-      try {
-        setLoading(true);
-        
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (!user) {
-          // Redirect to login if not authenticated
-          window.location.href = '/login';
-          return;
-        }
-        
-        setUser(user);
-        
-        // Get invoice details
-        const invoiceData = await getInvoiceById(invoiceId);
-        
-        if (!invoiceData) {
-          setError("Invoice not found");
-          setLoading(false);
-          return;
-        }
-        
-        setInvoice(invoiceData);
-        
-        // Get payment history from Supabase
-        const { data: payments, error: paymentsError } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('invoice_id', invoiceId)
-          .order('date', { ascending: false });
-          
-        if (paymentsError) throw paymentsError;
-        
-        setPaymentHistory(payments || []);
-        
-        // Get invoice activity history
-        // First, set the creation activity
-        setInvoiceHistory([
-          {
-            type: 'created',
-            description: 'Invoice created',
-            date: new Date(invoiceData.created_at).toLocaleString(),
-            user: 'You'
-          }
-        ]);
-        
-        // Then fetch additional activities if available
-        const { data: activities, error: activitiesError } = await supabase
-          .from('invoice_activities')
-          .select('*')
-          .eq('invoice_id', invoiceId)
-          .order('created_at', { ascending: false });
-          
-        if (!activitiesError && activities) {
-          const formattedActivities = activities.map(activity => ({
-            type: activity.activity_type,
-            description: activity.description,
-            date: new Date(activity.created_at).toLocaleString(),
-            user: activity.user_name || 'System'
-          }));
-          
-          setInvoiceHistory([...formattedActivities, ...invoiceHistory]);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching invoice:", err);
-        setError("Failed to load invoice data");
-        setLoading(false);
+// Fetch user and invoice data
+useEffect(() => {
+  async function initialize() {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      
+      if (!user) {
+        // Redirect to login if not authenticated
+        window.location.href = '/login';
+        return;
       }
+      
+      setUser(user);
+      
+      // Get invoice details
+      const invoiceData = await getInvoiceById(invoiceId);
+      
+      if (!invoiceData) {
+        setError("Invoice not found");
+        setLoading(false);
+        return;
+      }
+      
+      setInvoice(invoiceData);
+      
+      // Get payment history from Supabase
+      const { data: payments, error: paymentsError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('invoice_id', invoiceId)
+        .order('date', { ascending: false });
+        
+      if (paymentsError) throw paymentsError;
+      
+      setPaymentHistory(payments || []);
+      
+      // Get invoice activity history
+      // First, set the creation activity
+      setInvoiceHistory([
+        {
+          type: 'created',
+          description: 'Invoice created',
+          date: new Date(invoiceData.created_at).toLocaleString(),
+          user: 'You'
+        }
+      ]);
+      
+      // Then fetch additional activities if available
+      const { data: activities, error: activitiesError } = await supabase
+        .from('invoice_activities')
+        .select('*')
+        .eq('invoice_id', invoiceId)
+        .order('created_at', { ascending: false });
+        
+      if (!activitiesError && activities) {
+        const formattedActivities = activities.map(activity => ({
+          type: activity.activity_type,
+          description: activity.description,
+          date: new Date(activity.created_at).toLocaleString(),
+          user: activity.user_name || 'System'
+        }));
+        
+        setInvoiceHistory([...formattedActivities, ...invoiceHistory]);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching invoice:", err);
+      setError("Failed to load invoice data");
+      setLoading(false);
     }
-    
-    const initialize = useCallback(() => {
-      // Code that uses invoiceHistory
-      // ...
-    }, [invoiceHistory, /* other dependencies */]);
-    
-    useEffect(() => {
-      if (invoiceId) {
-        initialize();
-      }
-    }, [invoiceId, initialize]); // Now correctly includes initialize
+  }
+  
+  if (invoiceId) {
+    initialize();
+  }
+}, [invoiceId, invoiceHistory]);
+
+// useCallback defined outside the initialize function
+const refreshData = useCallback(() => {
+  // Code that uses invoiceHistory
+  // ...
+}, [invoiceHistory /* other dependencies */]);
+
+// Separate useEffect for refreshData
+useEffect(() => {
+  if (invoiceId) {
+    refreshData();
+  }
+}, [invoiceId, refreshData]);
 
   // Set up real-time subscription for this invoice
   useEffect(() => {
