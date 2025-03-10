@@ -92,7 +92,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt }) {
               transition: 'transform 0.3s ease'
             }}
           >
-            <img 
+            <img
               src={receipt.receipt_image} 
               alt="Fuel receipt" 
               className="w-full object-contain"
