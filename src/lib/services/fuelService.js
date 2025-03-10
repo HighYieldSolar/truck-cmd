@@ -273,28 +273,28 @@ function defaultStats() {
  */
 export async function uploadReceiptImage(userId, file) {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
-    
     // Create a unique file path
-    const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name}`;
+    
+    // Log for debugging
+    console.log("Uploading file to:", filePath);
     
     // Upload the file
     const { data, error } = await supabase.storage
-      .from('receipts')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+      .from('receipts')  // Make sure this bucket exists in your Supabase project
+      .upload(filePath, file);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw error;
+    }
     
     // Get the public URL
     const { data: { publicUrl } } = supabase.storage
       .from('receipts')
       .getPublicUrl(filePath);
-      
+    
+    console.log("File uploaded, public URL:", publicUrl);
     return publicUrl;
   } catch (error) {
     console.error('Error uploading receipt:', error);

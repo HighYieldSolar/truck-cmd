@@ -628,7 +628,7 @@ useEffect(() => {
 const refreshData = useCallback(() => {
   // Code that uses invoiceHistory
   // ...
-}, [invoiceHistory /* other dependencies */]);
+}, [/* other dependencies only */]);
 
 // Separate useEffect for refreshData
 useEffect(() => {

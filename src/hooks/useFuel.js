@@ -96,11 +96,17 @@ export default function useFuel(userId) {
       // Handle receipt upload if there's a file
       let receiptUrl = null;
       if (entryData.receipt_file) {
-        receiptUrl = await uploadReceiptImage(userId, entryData.receipt_file);
+        try {
+          receiptUrl = await uploadReceiptImage(userId, entryData.receipt_file);
+          console.log("Receipt uploaded successfully:", receiptUrl);
+        } catch (uploadError) {
+          console.error('Error uploading receipt:', uploadError);
+          // Continue with null receipt URL instead of failing the whole operation
+        }
       }
       
       // Remove receipt_file from data before saving to database
-      const { receipt_file, ...dataToSave } = entryData;
+      const { receipt_file, receipt_preview, ...dataToSave } = entryData;
       
       // Add receipt URL and user ID
       const entry = await createFuelEntry({
@@ -117,7 +123,7 @@ export default function useFuel(userId) {
       return entry;
     } catch (err) {
       console.error('Error creating fuel entry:', err);
-      setError('Failed to create fuel entry');
+      setError('Failed to create fuel entry: ' + err.message);
       throw err;
     } finally {
       setLoading(false);
