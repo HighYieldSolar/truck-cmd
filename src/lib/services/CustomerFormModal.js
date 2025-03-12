@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabaseClient";
 import { X, RefreshCw, Building, Mail, Phone, User, MapPin, Check, AlertCircle } from 'lucide-react';
 
 const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmitting = false, onSave }) => {
@@ -135,12 +136,37 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
     setSubmitError(null);
     
     try {
-      // Instead of directly calling createCustomer/updateCustomer,
-      // use the onSave prop to handle the save operation in the parent component
-      if (onSave) {
-        await onSave(customer);
+      let result;
+      
+      // If we have an existing customer (editing)
+      if (existingCustomer) {
+        // Pass the data to the parent component's onSave function
+        result = await onSave(customer);
+      } else {
+        // This is a new customer, create it in Supabase
+        const newCustomer = {
+          ...customer,
+          user_id: userId,
+          created_at: new Date().toISOString()
+        };
+        
+        const { data, error } = await supabase
+          .from('customers')
+          .insert([newCustomer])
+          .select();
+          
+        if (error) throw error;
+        
+        // Pass the created customer to the parent component's onSave function
+        if (data && data.length > 0) {
+          result = await onSave(data[0]);
+        } else {
+          throw new Error('Failed to create customer');
+        }
       }
+      
       onClose();
+      return result;
     } catch (error) {
       console.error('Error in form submission:', error);
       setSubmitError(error.message || 'Failed to save customer. Please try again.');
@@ -164,7 +190,7 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:outline-none"
             disabled={submitting || isSubmitting}
           >
             <X size={20} />

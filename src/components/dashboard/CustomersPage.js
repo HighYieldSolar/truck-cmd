@@ -239,11 +239,39 @@ export default function CustomersPage() {
   const handleSaveCustomer = async (customerData) => {
     try {
       if (user) {
+        // If this is an edit (customerData has an id), update the customer in database
+        if (customerData.id) {
+          const { data, error } = await supabase
+            .from('customers')
+            .update({
+              company_name: customerData.company_name,
+              contact_name: customerData.contact_name,
+              email: customerData.email,
+              phone: customerData.phone,
+              address: customerData.address,
+              city: customerData.city,
+              state: customerData.state,
+              zip: customerData.zip,
+              customer_type: customerData.customer_type,
+              status: customerData.status,
+              notes: customerData.notes,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', customerData.id);
+            
+          if (error) throw error;
+        } 
+        // If this is a new customer, it will be handled by the CustomerFormModal
+        
         // Reload customers after save
         await loadCustomers(user.id);
+        
+        // Close the modal
+        setFormModalOpen(false);
+        setCurrentCustomer(null);
       }
     } catch (error) {
-      console.error('Error after saving customer:', error);
+      console.error('Error saving customer:', error);
       setError('Something went wrong. Please try again.');
     }
   };
@@ -548,6 +576,7 @@ export default function CustomersPage() {
           userId={user?.id}
           existingCustomer={currentCustomer}
           onSave={handleSaveCustomer}
+          isSubmitting={customersLoading}
         />
       )}
       
