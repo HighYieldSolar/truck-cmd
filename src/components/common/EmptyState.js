@@ -1,11 +1,10 @@
+// src/components/common/EmptyState.js
 "use client";
-
-import { Fuel } from "lucide-react";
 
 export default function EmptyState({ 
   message = "No data to display",
   description = "There is no data available for the current filters.",
-  icon = <Fuel size={28} className="text-gray-400" />,
+  icon,
   actionText = "",
   onAction = null
 }) {

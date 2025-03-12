@@ -1,4 +1,4 @@
-"use client";
+// Update the FuelTrackerPage.js file to add sync to expenses functionality
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -11,12 +11,14 @@ import {
   Fuel, 
   Trash2,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
 import { exportFuelDataForIFTA } from "@/lib/services/fuelService";
+import { syncFuelToExpenses } from "@/lib/services/expenseFuelIntegration"; // Add this import
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FilterBar from "@/components/fuel/FilterBar";
 import FuelStats from "@/components/fuel/FuelStats";
@@ -51,6 +53,10 @@ export default function FuelTrackerPage() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState(null);
+  
+  // Add sync to expenses state
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncMessage, setSyncMessage] = useState(null);
   
   // Get the fuel data and functions from our custom hook
   const {
@@ -174,6 +180,129 @@ export default function FuelTrackerPage() {
     });
   };
   
+  // Handle syncing fuel entry to expenses
+  const handleSyncToExpense = async (fuelEntry) => {
+    if (!user || !fuelEntry) return;
+    
+    try {
+      setSyncLoading(true);
+      setSyncMessage(null);
+      
+      // Call the sync function for a single fuel entry
+      const result = await syncSingleFuelEntryToExpense(user.id, fuelEntry.id);
+      
+      // Reload fuel entries to update the UI
+      await loadFuelEntries(filters);
+      
+      setSyncMessage({
+        type: 'success',
+        text: `Successfully synced fuel entry to expenses.`
+      });
+      
+      // Clear the success message after 3 seconds
+      setTimeout(() => setSyncMessage(null), 3000);
+      
+      return result;
+    } catch (error) {
+      console.error('Error syncing to expense:', error);
+      setSyncMessage({
+        type: 'error',
+        text: `Error syncing to expenses: ${error.message}`
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+  
+  // Sync a single fuel entry to expenses
+  const syncSingleFuelEntryToExpense = async (userId, fuelEntryId) => {
+    try {
+      // Get the specific fuel entry
+      const { data: fuelEntry, error: fuelError } = await supabase
+        .from('fuel_entries')
+        .select('*')
+        .eq('id', fuelEntryId)
+        .single();
+        
+      if (fuelError) throw fuelError;
+      
+      if (!fuelEntry) {
+        throw new Error('Fuel entry not found');
+      }
+      
+      // Create expense entry
+      const expenseData = {
+        user_id: userId,
+        description: `Fuel - ${fuelEntry.location}`,
+        amount: fuelEntry.total_amount,
+        date: fuelEntry.date,
+        category: 'Fuel',
+        payment_method: fuelEntry.payment_method || 'Credit Card',
+        notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+        receipt_image: fuelEntry.receipt_image,
+        vehicle_id: fuelEntry.vehicle_id,
+        deductible: true // Fuel is typically deductible for business
+      };
+      
+      // Insert expense
+      const { data: expense, error: expenseError } = await supabase
+        .from('expenses')
+        .insert([expenseData])
+        .select();
+        
+      if (expenseError) throw expenseError;
+      
+      if (!expense || expense.length === 0) {
+        throw new Error('Failed to create expense');
+      }
+      
+      // Update fuel entry with expense_id reference
+      const { error: updateError } = await supabase
+        .from('fuel_entries')
+        .update({ expense_id: expense[0].id })
+        .eq('id', fuelEntryId);
+        
+      if (updateError) throw updateError;
+      
+      return expense[0];
+    } catch (error) {
+      console.error('Error syncing single fuel entry:', error);
+      throw error;
+    }
+  };
+  
+  // Sync all fuel entries to expenses
+  const handleSyncAllToExpenses = async () => {
+    if (!user) return;
+    
+    try {
+      setSyncLoading(true);
+      setSyncMessage(null);
+      
+      // Call the syncFuelToExpenses function from the service
+      const result = await syncFuelToExpenses(user.id);
+      
+      // Reload fuel entries to update the UI
+      await loadFuelEntries(filters);
+      
+      setSyncMessage({
+        type: 'success',
+        text: `Successfully synced ${result.syncedCount} fuel entries to expenses.`
+      });
+      
+      // Clear the success message after 5 seconds
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch (error) {
+      console.error('Error syncing to expenses:', error);
+      setSyncMessage({
+        type: 'error',
+        text: `Error syncing to expenses: ${error.message}`
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+  
   // Export IFTA data
   const handleExportIFTA = async () => {
     try {
@@ -228,7 +357,7 @@ export default function FuelTrackerPage() {
               <h1 className="text-2xl font-semibold text-gray-900">Fuel Tracker</h1>
               <p className="text-gray-600">Track fuel purchases by state for IFTA reporting</p>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
+            <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
               <button
                 onClick={() => {
                   setCurrentFuelEntry(null);
@@ -244,7 +373,19 @@ export default function FuelTrackerPage() {
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
               >
                 <Download size={16} className="mr-2" />
-                Export IFTA Data
+                Export IFTA
+              </button>
+              <button
+                onClick={handleSyncAllToExpenses}
+                disabled={syncLoading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none"
+              >
+                {syncLoading ? (
+                  <RefreshCw size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw size={16} className="mr-2" />
+                )}
+                Sync All to Expenses
               </button>
             </div>
           </div>
@@ -258,6 +399,32 @@ export default function FuelTrackerPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Show sync message if present */}
+          {syncMessage && (
+            <div className={`mb-6 ${
+              syncMessage.type === 'success' 
+                ? 'bg-green-50 border-l-4 border-green-400' 
+                : 'bg-red-50 border-l-4 border-red-400'
+            } p-4 rounded-md`}>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  {syncMessage.type === 'success' ? (
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  )}
+                </div>
+                <div className="ml-3">
+                  <p className={`text-sm ${
+                    syncMessage.type === 'success' ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {syncMessage.text}
+                  </p>
                 </div>
               </div>
             </div>
@@ -343,6 +510,9 @@ export default function FuelTrackerPage() {
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Expense Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -353,6 +523,7 @@ export default function FuelTrackerPage() {
                         onEdit={handleEditFuelEntry}
                         onDelete={handleDeleteFuelEntry}
                         onViewReceipt={handleViewReceipt}
+                        onSyncToExpense={handleSyncToExpense}
                       />
                     ))}
                   </tbody>
@@ -364,7 +535,7 @@ export default function FuelTrackerPage() {
                       <td className="px-6 py-4 text-left text-sm font-medium text-gray-900">
                         {fuelEntries.reduce((sum, entry) => sum + entry.gallons, 0).toFixed(3)} gal
                       </td>
-                      <td colSpan="4" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                      <td colSpan="5" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
                         ${fuelEntries.reduce((sum, entry) => sum + entry.total_amount, 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                       </td>
                     </tr>

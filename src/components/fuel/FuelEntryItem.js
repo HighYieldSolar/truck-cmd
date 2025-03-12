@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, CheckCircle, RefreshCw, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ReceiptText } from "lucide-react";
+import { CheckCircle, RefreshCw, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt, onSyncToExpense }) {
   // Format price to 3 decimal places
@@ -73,18 +74,16 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
       
       <td className="px-6 py-4 whitespace-nowrap">
         {fuelEntry.receipt_image ? (
-          <div className="flex items-center">
-            <button 
-              onClick={() => onViewReceipt(fuelEntry)} 
-              className="flex items-center text-blue-600 hover:text-blue-900"
-            >
-              <FileImage size={16} className="mr-1" />
-              <span>View</span>
-            </button>
-          </div>
+          <button 
+            onClick={() => onViewReceipt(fuelEntry)} 
+            className="flex items-center text-blue-600 hover:text-blue-900"
+          >
+            <FileImage size={16} className="mr-1" />
+            <span>View</span>
+          </button>
         ) : (
           <span className="inline-flex items-center text-sm text-gray-500">
-            <ReceiptText size={14} className="text-gray-400 mr-1" />
+            <FileImage size={14} className="text-gray-400 mr-1" />
             No receipt
           </span>
         )}
@@ -107,15 +106,16 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
         </button>
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         {fuelEntry.expense_id ? (
-          <div className="flex items-center">
-            <CheckCircle size={16} className="text-green-500 mr-1" />
-            <span>Synced to Expenses</span>
+          <div className="flex items-center text-green-600">
+            <CheckCircle size={16} className="mr-1" />
+            <span>Synced</span>
             <Link 
-              href={`/dashboard/expenses/${fuelEntry.expense_id}`}
-              className="ml-2 text-blue-600 hover:text-blue-800"
+              href={`/dashboard/expenses?id=${fuelEntry.expense_id}`}
+              className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center"
             >
+              <ExternalLink size={14} className="mr-1" />
               View
             </Link>
           </div>
@@ -130,6 +130,5 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
         )}
       </td>
     </tr>
-    
   );
 }

@@ -1,4 +1,4 @@
-// src/hooks/useFuel.js
+// src/hooks/useFuel.js - Enhanced with expense integration
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
@@ -25,12 +25,24 @@ export default function useFuel(userId) {
     byState: {}
   });
   const [vehicles, setVehicles] = useState([]);
+  // Track entries that are already synced to expenses
+  const [syncedEntries, setSyncedEntries] = useState({});
 
   // Fetch all fuel entries
   const loadFuelEntries = useCallback(async (filters = {}) => {
     try {
       setLoading(true);
       const data = await fetchFuelEntries(userId, filters);
+      
+      // Create a lookup table for synced entries
+      const synced = {};
+      data.forEach(entry => {
+        if (entry.expense_id) {
+          synced[entry.id] = entry.expense_id;
+        }
+      });
+      setSyncedEntries(synced);
+      
       setFuelEntries(data);
       return data;
     } catch (err) {
@@ -112,7 +124,8 @@ export default function useFuel(userId) {
       const entry = await createFuelEntry({
         ...dataToSave,
         receipt_image: receiptUrl || entryData.receipt_image,
-        user_id: userId
+        user_id: userId,
+        expense_id: null // Initialize with no expense link
       });
       
       // Update local state
@@ -142,7 +155,7 @@ export default function useFuel(userId) {
       }
       
       // Remove receipt_file from data before saving to database
-      const { receipt_file, ...dataToSave } = entryData;
+      const { receipt_file, receipt_preview, ...dataToSave } = entryData;
       
       // Add receipt URL only if a new one was uploaded
       const updatedEntry = await updateFuelEntry(id, {
@@ -155,6 +168,12 @@ export default function useFuel(userId) {
         prev.map(entry => entry.id === id ? updatedEntry : entry)
       );
       
+      // Check if this entry is already synced to an expense
+      if (syncedEntries[id]) {
+        // Update the linked expense as well
+        await updateLinkedExpense(syncedEntries[id], updatedEntry);
+      }
+      
       await loadStats();
       await loadVehicles();
       
@@ -166,16 +185,63 @@ export default function useFuel(userId) {
     } finally {
       setLoading(false);
     }
-  }, [userId, loadStats, loadVehicles]);
+  }, [userId, loadStats, loadVehicles, syncedEntries]);
+
+  // Update a linked expense when fuel entry is updated
+  const updateLinkedExpense = async (expenseId, fuelEntry) => {
+    try {
+      // Update the expense with new fuel data
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          description: `Fuel - ${fuelEntry.location}`,
+          amount: fuelEntry.total_amount,
+          date: fuelEntry.date,
+          notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+          receipt_image: fuelEntry.receipt_image,
+          vehicle_id: fuelEntry.vehicle_id
+        })
+        .eq('id', expenseId);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating linked expense:', error);
+      return false;
+    }
+  };
 
   // Delete a fuel entry
   const removeFuelEntry = useCallback(async (id) => {
     try {
       setLoading(true);
+      
+      // Check if this entry is linked to an expense
+      if (syncedEntries[id]) {
+        // Delete the linked expense first
+        const { error: expenseError } = await supabase
+          .from('expenses')
+          .delete()
+          .eq('id', syncedEntries[id]);
+          
+        if (expenseError) {
+          console.error('Error deleting linked expense:', expenseError);
+          // Continue with fuel entry deletion even if expense deletion fails
+        }
+      }
+      
+      // Delete the fuel entry
       await deleteFuelEntry(id);
       
       // Update local state
       setFuelEntries(prev => prev.filter(entry => entry.id !== id));
+      
+      // Remove from synced entries
+      const updatedSyncedEntries = {...syncedEntries};
+      delete updatedSyncedEntries[id];
+      setSyncedEntries(updatedSyncedEntries);
+      
       await loadStats();
       
       return true;
@@ -186,7 +252,73 @@ export default function useFuel(userId) {
     } finally {
       setLoading(false);
     }
-  }, [loadStats]);
+  }, [loadStats, syncedEntries]);
+
+  // Sync a fuel entry to expenses
+  const syncToExpense = useCallback(async (entryId) => {
+    try {
+      if (!userId || !entryId) return null;
+      
+      // Get the fuel entry
+      const { data: entry, error: entryError } = await supabase
+        .from('fuel_entries')
+        .select('*')
+        .eq('id', entryId)
+        .single();
+        
+      if (entryError) throw entryError;
+      
+      // Create expense data
+      const expenseData = {
+        user_id: userId,
+        description: `Fuel - ${entry.location}`,
+        amount: entry.total_amount,
+        date: entry.date,
+        category: 'Fuel',
+        payment_method: entry.payment_method || 'Credit Card',
+        notes: `Vehicle: ${entry.vehicle_id}, ${entry.gallons} gallons at ${entry.state}`,
+        receipt_image: entry.receipt_image,
+        vehicle_id: entry.vehicle_id,
+        deductible: true
+      };
+      
+      // Insert the expense
+      const { data: expense, error: expenseError } = await supabase
+        .from('expenses')
+        .insert([expenseData])
+        .select();
+        
+      if (expenseError) throw expenseError;
+      
+      // Update the fuel entry with the expense ID
+      const { error: updateError } = await supabase
+        .from('fuel_entries')
+        .update({ expense_id: expense[0].id })
+        .eq('id', entryId);
+        
+      if (updateError) throw updateError;
+      
+      // Update local state
+      setFuelEntries(prev => 
+        prev.map(item => 
+          item.id === entryId 
+            ? { ...item, expense_id: expense[0].id }
+            : item
+        )
+      );
+      
+      // Update synced entries
+      setSyncedEntries(prev => ({
+        ...prev,
+        [entryId]: expense[0].id
+      }));
+      
+      return expense[0];
+    } catch (err) {
+      console.error('Error syncing fuel entry to expense:', err);
+      throw err;
+    }
+  }, [userId]);
 
   // Initial data loading
   useEffect(() => {
@@ -212,6 +344,8 @@ export default function useFuel(userId) {
     addFuelEntry,
     updateFuelEntry: updateFuelEntryData,
     deleteFuelEntry: removeFuelEntry,
+    syncToExpense,
+    syncedEntries,
     setError
   };
 }
