@@ -1,3 +1,4 @@
+// src/app/(dashboard)/dashboard/dispatching/complete/[id]/page.js
 "use client";
 
 import CompleteLoadPage from '@/components/dashboard/CompleteLoadPage';
