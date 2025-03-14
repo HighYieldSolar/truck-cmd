@@ -468,47 +468,70 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {dataLoading ? (
-              // Skeleton loaders for stats cards
-              Array(3).fill(0).map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <div className="h-3 w-24 bg-gray-200 rounded"></div>
-                      <div className="h-6 w-32 bg-gray-200 rounded"></div>
-                    </div>
-                    <div className="rounded-md p-2 bg-gray-200 h-10 w-10"></div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <>
-                <StatCard
-                  title="Total Earnings (MTD)"
-                  value={formatCurrency(stats.earnings)}
-                  change={stats.earningsChange}
-                  positive={stats.earningsPositive}
-                  icon={<DollarSign size={22} className="text-green-600" />}
-                />
-                <StatCard
-                  title="Total Expenses (MTD)"
-                  value={formatCurrency(stats.expenses)}
-                  change={stats.expensesChange}
-                  positive={stats.expensesPositive}
-                  icon={<Wallet size={22} className="text-red-600" />}
-                />
-                <StatCard
-                  title="Net Profit"
-                  value={formatCurrency(stats.profit)}
-                  change={stats.profitChange}
-                  positive={stats.profitPositive}
-                  icon={<BarChart2 size={22} className="text-blue-600" />}
-                />
-              </>
-            )}
+{/* Stats Overview */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+  {dataLoading ? (
+    // Skeleton loaders for stats cards
+    Array(3).fill(0).map((_, index) => (
+      <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-3 w-24 bg-gray-200 rounded"></div>
+            <div className="h-6 w-32 bg-gray-200 rounded"></div>
           </div>
+          <div className="rounded-md p-2 bg-gray-200 h-10 w-10"></div>
+        </div>
+      </div>
+    ))
+  ) : (
+    <>
+      <StatCard
+        title="Total Earnings (MTD)"
+        value={formatCurrency(stats.earnings)}
+        change={stats.earningsChange}
+        positive={stats.earningsPositive}
+        icon={<DollarSign size={22} className="text-green-600" />}
+      />
+      <StatCard
+        title="Total Expenses (MTD)"
+        value={formatCurrency(stats.expenses)}
+        change={stats.expensesChange}
+        positive={stats.expensesPositive}
+        icon={<Wallet size={22} className="text-red-600" />}
+      />
+      <StatCard
+        title="Net Profit"
+        value={formatCurrency(stats.profit)}
+        change={stats.profitChange}
+        positive={stats.profitPositive}
+        icon={<BarChart2 size={22} className="text-blue-600" />}
+      />
+    </>
+  )}
+</div>
+
+{/* Earnings Breakdown */}
+{stats.factoredEarnings > 0 && (
+  <div className="bg-white rounded-lg shadow-sm mb-6 p-5">
+    <h3 className="text-lg font-medium text-gray-900 mb-4">Earnings Breakdown</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+        <div>
+          <p className="text-sm font-medium text-gray-500">Invoice Payments</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.paidInvoices)}</p>
+        </div>
+        <FileText size={22} className="text-blue-600" />
+      </div>
+      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+        <div>
+          <p className="text-sm font-medium text-gray-500">Factored Loads</p>
+          <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.factoredEarnings)}</p>
+        </div>
+        <Truck size={22} className="text-green-600" />
+      </div>
+    </div>
+  </div>
+)}
           
           {/* Secondary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">

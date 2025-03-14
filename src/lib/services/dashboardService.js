@@ -40,6 +40,28 @@ export async function fetchDashboardStats(userId) {
     
     if (lastMonthInvoicesError) throw lastMonthInvoicesError;
     
+    // IMPORTANT: Also fetch factored earnings for current month
+    const { data: currentFactoredEarnings, error: factoredError } = await supabase
+      .from('earnings')
+      .select('amount, date')
+      .eq('user_id', userId)
+      .eq('source', 'Factoring')
+      .gte('date', firstDayOfMonthStr)
+      .lte('date', todayStr);
+      
+    if (factoredError) throw factoredError;
+    
+    // Fetch factored earnings for last month (for comparison)
+    const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = await supabase
+      .from('earnings')
+      .select('amount, date')
+      .eq('user_id', userId)
+      .eq('source', 'Factoring')
+      .gte('date', firstDayOfLastMonthStr)
+      .lte('date', lastDayOfLastMonthStr);
+      
+    if (lastMonthFactoredError) throw lastMonthFactoredError;
+    
     // Fetch current month expenses
     const { data: currentExpenses, error: expensesError } = await supabase
       .from('expenses')
@@ -89,13 +111,47 @@ export async function fetchDashboardStats(userId) {
     if (deliveryError) throw deliveryError;
     
     // Calculate current month totals
-    const currentMonthEarnings = currentInvoices.reduce((sum, invoice) => sum + (parseFloat(invoice.total) || 0), 0);
-    const currentMonthExpensesTotal = currentExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+    // Calculate invoice-based earnings (paid amounts)
+    const currentMonthPaidInvoices = currentInvoices
+      .filter(invoice => invoice.status === 'Paid' || invoice.status === 'Partially Paid')
+      .reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0);
+    
+    // Calculate factored earnings
+    const currentMonthFactoredEarnings = currentFactoredEarnings
+      ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+      : 0;
+    
+    // Total earnings = paid invoices + factored earnings
+    const currentMonthEarnings = currentMonthPaidInvoices + currentMonthFactoredEarnings;
+    
+    // Calculate expenses total
+    const currentMonthExpensesTotal = currentExpenses
+      ? currentExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0)
+      : 0;
+    
+    // Calculate profit
     const currentProfit = currentMonthEarnings - currentMonthExpensesTotal;
     
     // Calculate last month totals for comparison
-    const lastMonthEarnings = lastMonthInvoices.reduce((sum, invoice) => sum + (parseFloat(invoice.total) || 0), 0);
-    const lastMonthExpensesTotal = lastMonthExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+    // Last month paid invoices
+    const lastMonthPaidInvoices = lastMonthInvoices
+      ? lastMonthInvoices.reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0)
+      : 0;
+    
+    // Last month factored earnings
+    const lastMonthFactoredEarningsTotal = lastMonthFactoredEarnings
+      ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+      : 0;
+    
+    // Last month total earnings
+    const lastMonthEarnings = lastMonthPaidInvoices + lastMonthFactoredEarningsTotal;
+    
+    // Last month expenses
+    const lastMonthExpensesTotal = lastMonthExpenses
+      ? lastMonthExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0)
+      : 0;
+    
+    // Last month profit
     const lastMonthProfit = lastMonthEarnings - lastMonthExpensesTotal;
     
     // Calculate percentage changes
@@ -123,9 +179,14 @@ export async function fetchDashboardStats(userId) {
       profitPositive: profitChange > 0,
       activeLoads: activeLoads?.length || 0,
       pendingInvoices: pendingInvoices?.length || 0,
-      upcomingDeliveries: upcomingDeliveries?.length || 0
-    };
-  } catch (error) {
+      upcomingDeliveries: upcomingDeliveries?.length || 0,
+      // Add detailed earnings breakdown
+      paidInvoices: currentMonthPaidInvoices,
+      factoredEarnings: currentMonthFactoredEarnings
+      };
+    }
+  
+    catch (error) {
     console.error('Error fetching dashboard stats:', error);
     // Return default values in case of error
     return {
@@ -140,7 +201,9 @@ export async function fetchDashboardStats(userId) {
       profitPositive: false,
       activeLoads: 0,
       pendingInvoices: 0,
-      upcomingDeliveries: 0
+      upcomingDeliveries: 0,
+      paidInvoices: 0,
+      factoredEarnings: 0
     };
   }
 }

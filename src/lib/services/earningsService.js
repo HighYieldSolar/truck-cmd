@@ -42,6 +42,23 @@ export async function recordFactoredEarnings(userId, loadId, amount, options = {
       .select();
 
     if (error) throw error;
+    
+    // After recording factored earnings, update the load record to mark it as factored
+    const { error: updateError } = await supabase
+      .from('loads')
+      .update({
+        factored: true,
+        factoring_company: options.factoringCompany || null,
+        factored_at: new Date().toISOString(),
+        factored_amount: amount
+      })
+      .eq('id', loadId);
+      
+    if (updateError) {
+      console.error('Error updating load with factoring info:', updateError);
+      // Continue even if load update fails - the earnings are still recorded
+    }
+    
     return data?.[0] || null;
   } catch (error) {
     console.error('Error recording factored earnings:', error);
@@ -82,13 +99,15 @@ export async function getEarningsSummary(userId, period = 'month') {
         startDate = new Date(0); // Beginning of time
         break;
     }
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
 
     // Query for invoices within the time period
     const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('total, amount_paid, invoice_date')
+      .select('total, amount_paid, invoice_date, status')
       .eq('user_id', userId)
-      .gte('invoice_date', startDate.toISOString().split('T')[0])
+      .gte('invoice_date', startDateStr)
       .order('invoice_date', { ascending: false });
 
     if (invoicesError) throw invoicesError;
@@ -99,7 +118,7 @@ export async function getEarningsSummary(userId, period = 'month') {
       .select('amount, date')
       .eq('user_id', userId)
       .eq('source', 'Factoring')
-      .gte('date', startDate.toISOString().split('T')[0])
+      .gte('date', startDateStr)
       .order('date', { ascending: false });
 
     if (earningsError) throw earningsError;
@@ -112,7 +131,13 @@ export async function getEarningsSummary(userId, period = 'month') {
     // Sum invoice amounts
     if (invoices && invoices.length > 0) {
       invoiceTotal = invoices.reduce((sum, invoice) => sum + (parseFloat(invoice.total) || 0), 0);
-      paidAmount = invoices.reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0);
+      paidAmount = invoices.reduce((sum, invoice) => {
+        // Only count amount_paid from paid or partially paid invoices
+        if (invoice.status.toLowerCase() === 'paid' || invoice.status.toLowerCase() === 'partially paid') {
+          return sum + (parseFloat(invoice.amount_paid) || 0);
+        }
+        return sum;
+      }, 0);
     }
 
     // Sum factored earnings

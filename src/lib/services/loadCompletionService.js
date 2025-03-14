@@ -35,6 +35,7 @@ export async function completeLoad(userId, loadId, completionData) {
     const loadUpdateData = {
       status: 'Completed',
       actual_delivery_date: deliveryDate,
+      actual_delivery_time: deliveryTime,
       received_by: receivedBy,
       completion_notes: notes,
       delivery_rating: deliveryRating,
@@ -50,6 +51,7 @@ export async function completeLoad(userId, loadId, completionData) {
     if (useFactoring) {
       loadUpdateData.factored = true;
       loadUpdateData.factoring_company = factoringCompany || null;
+      loadUpdateData.factored_at = new Date().toISOString();
     }
     
     // Update the load in the database
@@ -66,12 +68,22 @@ export async function completeLoad(userId, loadId, completionData) {
     let earnings = null;
     
     if (useFactoring) {
+      console.log("Recording factored earnings:", {
+        userId, 
+        loadId, 
+        totalRate,
+        date: new Date().toISOString().split('T')[0],
+        factoringCompany
+      });
+      
       // Record factored earnings
       earnings = await recordFactoredEarnings(userId, loadId, totalRate, {
         date: new Date().toISOString().split('T')[0],
         description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
         factoringCompany: factoringCompany
       });
+      
+      console.log("Factored earnings recorded:", earnings);
     } else if (generateInvoice) {
       // Generate invoice
       invoice = await createInvoiceFromLoad(userId, loadId, {
