@@ -7,10 +7,10 @@ export default function ReportGenerator({
   isOpen,
   onClose,
   trips = [],
-  rates = [],
   stats = {},
   quarter = "",
-  fuelData = []
+  fuelData = [],
+  onSave
 }) {
   const [reportType, setReportType] = useState("summary");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -50,14 +50,13 @@ export default function ReportGenerator({
     };
   };
 
-  // Calculate jurisdiction data (similar to StateDataGrid but more comprehensive)
+  // Calculate jurisdiction data for the report
   const calculateJurisdictionData = () => {
-    // Similar implementation to StateDataGrid component
     // First, extract all jurisdictions involved
     const allJurisdictions = new Set();
     trips.forEach(trip => {
-      if (trip.startJurisdiction) allJurisdictions.add(trip.startJurisdiction);
-      if (trip.endJurisdiction) allJurisdictions.add(trip.endJurisdiction);
+      if (trip.start_jurisdiction) allJurisdictions.add(trip.start_jurisdiction);
+      if (trip.end_jurisdiction) allJurisdictions.add(trip.end_jurisdiction);
     });
 
     // Create a map of jurisdiction data
@@ -68,36 +67,28 @@ export default function ReportGenerator({
         totalMiles: 0,
         taxableMiles: 0,
         taxPaidGallons: 0,
-        taxRate: 0,
-        netTaxableGallons: 0,
-        taxDue: 0
+        netTaxableGallons: 0
       };
-      
-      // Look up tax rate for this jurisdiction
-      const rateInfo = rates.find(r => r.jurisdiction.includes(jurisdiction));
-      if (rateInfo) {
-        jurisdictionMap[jurisdiction].taxRate = rateInfo.totalRate;
-      }
     });
 
     // Process trips to calculate miles in each jurisdiction
     trips.forEach(trip => {
       // Simple case: if start and end are the same, all miles belong to that jurisdiction
-      if (trip.startJurisdiction === trip.endJurisdiction && trip.startJurisdiction) {
-        const miles = parseFloat(trip.miles) || 0;
-        jurisdictionMap[trip.startJurisdiction].totalMiles += miles;
-        jurisdictionMap[trip.startJurisdiction].taxableMiles += miles;
+      if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
+        const miles = parseFloat(trip.total_miles) || 0;
+        jurisdictionMap[trip.start_jurisdiction].totalMiles += miles;
+        jurisdictionMap[trip.start_jurisdiction].taxableMiles += miles;
       } 
       // If crossing jurisdictions, split miles 50/50 (simplified approach)
-      else if (trip.startJurisdiction && trip.endJurisdiction) {
-        const miles = parseFloat(trip.miles) || 0;
+      else if (trip.start_jurisdiction && trip.end_jurisdiction) {
+        const miles = parseFloat(trip.total_miles) || 0;
         const milesPerJurisdiction = miles / 2;
         
-        jurisdictionMap[trip.startJurisdiction].totalMiles += milesPerJurisdiction;
-        jurisdictionMap[trip.startJurisdiction].taxableMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.start_jurisdiction].totalMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.start_jurisdiction].taxableMiles += milesPerJurisdiction;
         
-        jurisdictionMap[trip.endJurisdiction].totalMiles += milesPerJurisdiction;
-        jurisdictionMap[trip.endJurisdiction].taxableMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.end_jurisdiction].totalMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.end_jurisdiction].taxableMiles += milesPerJurisdiction;
       }
     });
 
@@ -116,16 +107,13 @@ export default function ReportGenerator({
     // Average fuel consumption (MPG)
     const avgMpg = totalMiles > 0 && totalGallons > 0 ? totalMiles / totalGallons : 6.0;
 
-    // Calculate net taxable gallons and tax due for each jurisdiction
+    // Calculate net taxable gallons for each jurisdiction
     Object.values(jurisdictionMap).forEach(j => {
       // Taxable gallons based on miles and average consumption
       const taxableGallons = j.taxableMiles / avgMpg;
       
       // Net taxable gallons = taxable gallons - tax paid gallons
       j.netTaxableGallons = taxableGallons - j.taxPaidGallons;
-      
-      // Tax due = net taxable gallons * tax rate
-      j.taxDue = j.netTaxableGallons * j.taxRate;
     });
 
     return {
@@ -183,17 +171,52 @@ export default function ReportGenerator({
     }
   };
 
+  // Handle saving the report
+  const handleSaveReport = async () => {
+    if (!generatedReport) return;
+    
+    try {
+      setIsGenerating(true);
+      
+      // Format data according to ifta_reports schema
+      const reportData = {
+        quarter: quarter,
+        year: parseInt(quarter.split('-Q')[0]),
+        user_id: stats.userId || null,
+        status: 'draft',
+        total_miles: stats.totalMiles || generatedReport.data.totalMiles,
+        total_gallons: stats.totalGallons || generatedReport.data.totalGallons,
+        total_tax: 0, // No tax calculation without rates
+        submitted_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const success = await onSave(reportData);
+      
+      if (success) {
+        // After successful save, handle download
+        handleDownloadReport();
+      }
+    } catch (error) {
+      console.error('Error saving report:', error);
+      setError('Failed to save report. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Handle downloading the report
   const handleDownloadReport = () => {
     if (!generatedReport) return;
     
     // In a real implementation, you would generate a PDF or other file format
-    // For now, we'll generate a simple text representation
+    // For now, we'll generate a simple CSV format
     
     let content = "";
     
     if (generatedReport.type === "summary") {
-      // Build summary report
+      // Build summary report CSV
       content = `IFTA QUARTERLY SUMMARY REPORT - ${quarter}\n`;
       content += `Generated: ${new Date().toLocaleString()}\n\n`;
       
@@ -202,14 +225,14 @@ export default function ReportGenerator({
       content += `Average MPG: ${generatedReport.data.avgMpg.toFixed(2)}\n\n`;
       
       content += `JURISDICTION SUMMARY:\n`;
-      content += `Jurisdiction,Total Miles,Taxable Miles,Tax Paid Gallons,Tax Rate,Net Taxable Gallons,Tax Due\n`;
+      content += `Jurisdiction,Total Miles,Taxable Miles,Tax Paid Gallons,Net Taxable Gallons\n`;
       
       generatedReport.data.jurisdictions.forEach(j => {
         content += `${j.jurisdiction},${j.totalMiles.toFixed(1)},${j.taxableMiles.toFixed(1)},`;
-        content += `${j.taxPaidGallons.toFixed(3)},${j.taxRate.toFixed(3)},${j.netTaxableGallons.toFixed(3)},${j.taxDue.toFixed(2)}\n`;
+        content += `${j.taxPaidGallons.toFixed(3)},${j.netTaxableGallons.toFixed(3)}\n`;
       });
     } else if (generatedReport.type === "detailed") {
-      // Build detailed report
+      // Build detailed report CSV
       content = `IFTA DETAILED QUARTERLY REPORT - ${quarter}\n`;
       content += `Generated: ${new Date().toLocaleString()}\n\n`;
       
@@ -219,19 +242,19 @@ export default function ReportGenerator({
       content += `Average MPG: ${generatedReport.data.avgMpg.toFixed(2)}\n\n`;
       
       content += `JURISDICTION DETAILS:\n`;
-      content += `Jurisdiction,Total Miles,Taxable Miles,Tax Paid Gallons,Tax Rate,Net Taxable Gallons,Tax Due\n`;
+      content += `Jurisdiction,Total Miles,Taxable Miles,Tax Paid Gallons,Net Taxable Gallons\n`;
       
       generatedReport.data.jurisdictions.forEach(j => {
         content += `${j.jurisdiction},${j.totalMiles.toFixed(1)},${j.taxableMiles.toFixed(1)},`;
-        content += `${j.taxPaidGallons.toFixed(3)},${j.taxRate.toFixed(3)},${j.netTaxableGallons.toFixed(3)},${j.taxDue.toFixed(2)}\n`;
+        content += `${j.taxPaidGallons.toFixed(3)},${j.netTaxableGallons.toFixed(3)}\n`;
       });
       
       content += `\nTRIP DETAILS:\n`;
       content += `Date,Vehicle,From,To,Miles,Gallons,Fuel Cost\n`;
       
       generatedReport.data.trips.forEach(trip => {
-        content += `${trip.date},${trip.vehicleId},${trip.startJurisdiction},${trip.endJurisdiction},`;
-        content += `${parseFloat(trip.miles).toFixed(1)},${parseFloat(trip.gallons).toFixed(3)},${parseFloat(trip.fuelCost).toFixed(2)}\n`;
+        content += `${trip.start_date},${trip.vehicle_id},${trip.start_jurisdiction},${trip.end_jurisdiction},`;
+        content += `${parseFloat(trip.total_miles || 0).toFixed(1)},${parseFloat(trip.gallons || 0).toFixed(3)},${parseFloat(trip.fuel_cost || 0).toFixed(2)}\n`;
       });
       
       content += `\nFUEL PURCHASE DETAILS:\n`;
@@ -248,7 +271,7 @@ export default function ReportGenerator({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `ifta_report_${quarter}.csv`);
+    link.setAttribute('download', `ifta_report_${quarter.replace('-', '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -296,7 +319,7 @@ export default function ReportGenerator({
                           <p>Reporting Period: {quarter}</p>
                           <p>Date Range: {quarterDates.start.toLocaleDateString()} to {quarterDates.end.toLocaleDateString()}</p>
                           <p>Total Trips: {trips.length}</p>
-                          <p>Total Jurisdictions: {new Set([...trips.map(t => t.startJurisdiction), ...trips.map(t => t.endJurisdiction)].filter(Boolean)).size}</p>
+                          <p>Total Jurisdictions: {new Set([...trips.map(t => t.start_jurisdiction), ...trips.map(t => t.end_jurisdiction)].filter(Boolean)).size}</p>
                         </div>
                       </div>
                     </div>
@@ -375,7 +398,7 @@ export default function ReportGenerator({
                             <tr>
                               <th className="px-2 py-1 text-left text-gray-500">Jurisdiction</th>
                               <th className="px-2 py-1 text-left text-gray-500">Miles</th>
-                              <th className="px-2 py-1 text-left text-gray-500">Tax Due</th>
+                              <th className="px-2 py-1 text-left text-gray-500">Net Taxable Gallons</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -383,7 +406,7 @@ export default function ReportGenerator({
                               <tr key={j.jurisdiction}>
                                 <td className="px-2 py-1">{j.jurisdiction}</td>
                                 <td className="px-2 py-1">{j.totalMiles.toFixed(1)}</td>
-                                <td className="px-2 py-1">${j.taxDue.toFixed(2)}</td>
+                                <td className="px-2 py-1">{j.netTaxableGallons.toFixed(3)}</td>
                               </tr>
                             ))}
                             {generatedReport.data.jurisdictions.length > 3 && (
@@ -411,18 +434,18 @@ export default function ReportGenerator({
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-blue-600 hover:bg-blue-700"
               }`}
-              onClick={generatedReport ? handleDownloadReport : handleGenerateReport}
+              onClick={generatedReport ? handleSaveReport : handleGenerateReport}
               disabled={isGenerating}
             >
               {isGenerating ? (
                 <>
                   <RefreshCw size={16} className="mr-2 animate-spin" />
-                  Generating...
+                  {generatedReport ? 'Saving...' : 'Generating...'}
                 </>
               ) : generatedReport ? (
                 <>
                   <FileDown size={16} className="mr-2" />
-                  Download Report
+                  Save & Download Report
                 </>
               ) : (
                 "Generate Report"

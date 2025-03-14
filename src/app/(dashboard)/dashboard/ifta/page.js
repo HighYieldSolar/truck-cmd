@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase, formatError } from "@/lib/supabaseClient";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 
 // Import custom components
-import IFTARatesTable from "@/components/ifta/IFTARatesTable";
 import TripEntryForm from "@/components/ifta/TripEntryForm";
 import TripsList from "@/components/ifta/TripsList";
 import IFTASummary from "@/components/ifta/IFTASummary";
@@ -29,32 +28,97 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import StateDataGrid from "@/components/ifta/StateDataGrid";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
-import FuelSummary from "@/components/dashboard/FuelSummary";
-import { getFuelStats } from "@/lib/services/fuelService";
 
-// Import services and hooks
+// Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
-import useIFTA from "@/hooks/useIFTA";
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
+  const isFirstRender = useRef(true);
+  const dataLoadingRef = useRef(false);
+  
+  // Component state
   const [user, setUser] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [activeQuarter, setActiveQuarter] = useState("");
+  const [trips, setTrips] = useState([]);
   const [fuelData, setFuelData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [tripLoading, setTripLoading] = useState(false);
   const [fuelDataLoading, setFuelDataLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [pageError, setPageError] = useState(null);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    totalMiles: 0,
+    totalGallons: 0,
+    avgMpg: 0,
+    fuelCostPerMile: 0,
+    uniqueJurisdictions: 0,
+    userId: null
+  });
+
+  // Function to calculate stats - defined outside useCallback to avoid circular dependencies
+  function calculateStatsFunction(tripsData, fuelEntries) {
+    if (!tripsData || tripsData.length === 0) {
+      return {
+        totalMiles: 0,
+        totalGallons: 0,
+        avgMpg: 0,
+        fuelCostPerMile: 0,
+        uniqueJurisdictions: 0,
+        userId: user?.id
+      };
+    }
+
+    // Calculate total miles from trips, using odometer readings if available
+    let totalMiles = 0;
+    tripsData.forEach(trip => {
+      if (trip.starting_odometer && trip.ending_odometer && trip.ending_odometer > trip.starting_odometer) {
+        totalMiles += (trip.ending_odometer - trip.starting_odometer);
+      } else {
+        totalMiles += parseFloat(trip.total_miles || 0);
+      }
+    });
+    
+    // Get fuel data for the same period
+    const totalGallons = fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons || 0), 0);
+    const totalFuelCost = fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount || 0), 0);
+    
+    // Calculate averages
+    const avgMpg = totalGallons > 0 ? (totalMiles / totalGallons) : 0;
+    const fuelCostPerMile = totalMiles > 0 ? (totalFuelCost / totalMiles) : 0;
+    
+    // Count unique jurisdictions
+    const uniqueJurisdictions = new Set();
+    tripsData.forEach(trip => {
+      if (trip.start_jurisdiction) uniqueJurisdictions.add(trip.start_jurisdiction);
+      if (trip.end_jurisdiction) uniqueJurisdictions.add(trip.end_jurisdiction);
+    });
+    
+    return {
+      totalMiles,
+      totalGallons,
+      avgMpg,
+      fuelCostPerMile,
+      uniqueJurisdictions: uniqueJurisdictions.size,
+      userId: user?.id
+    };
+  }
+
+  // Wrapped version with useCallback that just updates the state
+  const calculateStats = useCallback((tripsData, fuelEntries) => {
+    const newStats = calculateStatsFunction(tripsData, fuelEntries);
+    setStats(newStats);
+  }, [user?.id]); // Only depend on user ID
 
   // Load fuel data from fuel tracker to assist with IFTA calculations
   const loadFuelData = useCallback(async () => {
-    if (!user || !activeQuarter) return;
+    if (!user?.id || !activeQuarter || dataLoadingRef.current) return null;
     
     try {
       setFuelDataLoading(true);
-      setPageError(null);
       
       // Parse the quarter into dateRange filter
       const [year, quarter] = activeQuarter.split('-Q');
@@ -69,37 +133,61 @@ export default function IFTACalculatorPage() {
       };
       
       const fuelEntries = await fetchFuelEntries(user.id, filters);
-      setFuelData(fuelEntries || []);
+      if (fuelEntries) {
+        setFuelData(fuelEntries);
+        return fuelEntries;
+      }
+      return [];
     } catch (error) {
       console.error('Error loading fuel data:', error);
-      setPageError(formatError(error, 'Failed to load fuel data. Your calculations may be incomplete.'));
+      setError('Failed to load fuel data. Your calculations may be incomplete.');
+      return [];
     } finally {
       setFuelDataLoading(false);
     }
-  }, [user, activeQuarter]);
+  }, [user?.id, activeQuarter]);
 
-  // Get IFTA data and functions from our custom hook
-  const {
-    trips,
-    rates,
-    stats,
-    loading,
-    error,
-    loadTrips,
-    addTrip,
-    updateTrip,
-    deleteTrip,
-    loadRates,
-    addRate,
-    calculateSummary
-  } = useIFTA(user?.id, activeQuarter);
+  // Load trips for the selected quarter
+  const loadTrips = useCallback(async () => {
+    if (!user?.id || !activeQuarter || dataLoadingRef.current) return;
+    
+    try {
+      setTripLoading(true);
+      dataLoadingRef.current = true;
+      
+      const { data, error: tripsError } = await supabase
+        .from('ifta_trip_records')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('quarter', activeQuarter)
+        .order('start_date', { ascending: false });
+        
+      if (tripsError) throw tripsError;
+      
+      setTrips(data || []);
+      
+      // Get the current fuel data or load it if needed
+      const currentFuelData = fuelData.length > 0 ? fuelData : await loadFuelData();
+      
+      // Calculate summary statistics
+      calculateStats(data || [], currentFuelData || []);
+    } catch (error) {
+      console.error('Error loading trips:', error);
+      setError('Failed to load trip records.');
+    } finally {
+      setTripLoading(false);
+      dataLoadingRef.current = false;
+    }
+  }, [user?.id, activeQuarter, fuelData, loadFuelData, calculateStats]);
 
-  // Check if the user is authenticated
+  // Initialize data and check authentication
   useEffect(() => {
-    async function checkAuth() {
+    async function initializeData() {
+      if (!isFirstRender.current) return;
+      isFirstRender.current = false;
+      
       try {
         setInitialLoading(true);
-        setPageError(null);
         
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -108,7 +196,6 @@ export default function IFTACalculatorPage() {
         }
         
         if (!session) {
-          // Redirect to login if not authenticated
           router.push('/login');
           return;
         }
@@ -119,56 +206,88 @@ export default function IFTACalculatorPage() {
         const now = new Date();
         const quarter = Math.ceil((now.getMonth() + 1) / 3);
         setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
+        
+        setInitialLoading(false);
       } catch (err) {
         console.error('Error checking authentication:', err);
-        setPageError(formatError(err, 'Authentication error. Please try logging in again.'));
-      } finally {
+        setError('Authentication error. Please try logging in again.');
         setInitialLoading(false);
       }
     }
     
-    checkAuth();
+    initializeData();
   }, [router]);
 
-  // Load trips when the active quarter changes
+  // Load data when quarter changes or user changes
   useEffect(() => {
-    if (user && activeQuarter) {
-      loadTrips(activeQuarter);
-      loadRates();
-      loadFuelData();
+    if (user && activeQuarter && !initialLoading) {
+      const loadAllData = async () => {
+        if (dataLoadingRef.current) return;
+        dataLoadingRef.current = true;
+        
+        try {
+          setError(null);
+          const fuelEntries = await loadFuelData();
+          await loadTrips();
+        } catch (err) {
+          console.error("Error loading data:", err);
+          setError("Failed to load data. Please try again.");
+        } finally {
+          dataLoadingRef.current = false;
+        }
+      };
+      
+      loadAllData();
     }
-  }, [user, activeQuarter, loadTrips, loadRates, loadFuelData]);
+  }, [user, activeQuarter, initialLoading, loadFuelData, loadTrips]);
 
   // Handle adding a new trip
   const handleAddTrip = async (tripData) => {
     try {
-      setPageError(null);
-      await addTrip({
-        ...tripData,
-        quarter: activeQuarter
-      });
+      setLoading(true);
+      setError(null);
+      
+      // Format data for insertion
+      const newTrip = {
+        user_id: user.id,
+        quarter: activeQuarter,
+        start_date: tripData.date,
+        end_date: tripData.endDate || tripData.date,
+        vehicle_id: tripData.vehicleId,
+        driver_id: tripData.driverId || null,
+        load_id: tripData.loadId || null,
+        start_jurisdiction: tripData.startJurisdiction,
+        end_jurisdiction: tripData.endJurisdiction,
+        total_miles: parseFloat(tripData.miles),
+        gallons: parseFloat(tripData.gallons || 0),
+        fuel_cost: parseFloat(tripData.fuelCost || 0),
+        starting_odometer: parseFloat(tripData.startOdometer || 0),
+        ending_odometer: parseFloat(tripData.endOdometer || 0),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error: insertError } = await supabase
+        .from('ifta_trip_records')
+        .insert([newTrip])
+        .select();
+        
+      if (insertError) throw insertError;
+      
+      // Reload trips to update the list
+      await loadTrips();
+      
       return true;
     } catch (error) {
       console.error('Error adding trip:', error);
-      setPageError(formatError(error, 'Failed to add trip. Please try again.'));
+      setError('Failed to add trip. Please try again.');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle adding a new tax rate
-  const handleAddRate = async (rateData) => {
-    try {
-      setPageError(null);
-      await addRate(rateData);
-      return true;
-    } catch (error) {
-      console.error('Error adding tax rate:', error);
-      setPageError(formatError(error, 'Failed to add tax rate. Please try again.'));
-      return false;
-    }
-  };
-
-  // Open the delete confirmation modal
+  // Handle deleting a trip
   const handleDeleteTrip = (trip) => {
     setTripToDelete(trip);
     setDeleteModalOpen(true);
@@ -179,13 +298,26 @@ export default function IFTACalculatorPage() {
     if (!tripToDelete) return;
     
     try {
-      setPageError(null);
-      await deleteTrip(tripToDelete.id);
+      setLoading(true);
+      setError(null);
+      
+      const { error: deleteError } = await supabase
+        .from('ifta_trip_records')
+        .delete()
+        .eq('id', tripToDelete.id);
+        
+      if (deleteError) throw deleteError;
+      
+      // Reload trips to update the list
+      await loadTrips();
+      
       setDeleteModalOpen(false);
       setTripToDelete(null);
     } catch (error) {
       console.error('Error deleting trip:', error);
-      setPageError(formatError(error, 'Failed to delete trip. Please try again.'));
+      setError('Failed to delete trip. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -197,18 +329,20 @@ export default function IFTACalculatorPage() {
       // Create array of data for CSV
       const csvRows = [
         // Header row
-        ['Trip ID', 'Date', 'Vehicle ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'MPG', 'Fuel Cost'].join(','),
+        ['Trip ID', 'Date', 'Vehicle ID', 'Driver ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'Fuel Cost', 'Starting Odometer', 'Ending Odometer'].join(','),
         // Data rows
         ...trips.map(trip => [
           trip.id,
-          trip.date,
-          trip.vehicleId,
-          trip.startJurisdiction,
-          trip.endJurisdiction,
-          trip.miles,
-          trip.gallons,
-          (parseFloat(trip.miles) / parseFloat(trip.gallons)).toFixed(2),
-          trip.fuelCost
+          trip.start_date,
+          trip.vehicle_id,
+          trip.driver_id || '',
+          trip.start_jurisdiction,
+          trip.end_jurisdiction,
+          trip.total_miles,
+          trip.gallons || 0,
+          trip.fuel_cost || 0,
+          trip.starting_odometer || 0,
+          trip.ending_odometer || 0
         ].join(','))
       ];
 
@@ -218,17 +352,85 @@ export default function IFTACalculatorPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `ifta_data_${activeQuarter}.csv`);
+      link.setAttribute('download', `ifta_data_${activeQuarter.replace('-', '_')}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
       console.error('Error exporting data:', err);
-      setPageError('Failed to export data. Please try again.');
+      setError('Failed to export data. Please try again.');
     }
   };
 
-  // Show loading indicator while checking auth
+  // Handle generating a report or saving report data
+  const handleSaveReport = async (reportData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Check if a report already exists for this quarter
+      const { data: existingReports, error: checkError } = await supabase
+        .from('ifta_reports')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('quarter', activeQuarter)
+        .limit(1);
+        
+      if (checkError) throw checkError;
+      
+      let reportId;
+      
+      if (existingReports && existingReports.length > 0) {
+        // Update existing report
+        reportId = existingReports[0].id;
+        
+        const { error: updateError } = await supabase
+          .from('ifta_reports')
+          .update({
+            total_miles: stats.totalMiles,
+            total_gallons: stats.totalGallons,
+            total_tax: reportData.total_tax || 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', reportId);
+          
+        if (updateError) throw updateError;
+      } else {
+        // Create new report
+        const { data: newReport, error: insertError } = await supabase
+          .from('ifta_reports')
+          .insert([{
+            user_id: user.id,
+            quarter: activeQuarter,
+            year: parseInt(activeQuarter.split('-Q')[0]),
+            total_miles: stats.totalMiles,
+            total_gallons: stats.totalGallons,
+            total_tax: reportData.total_tax || 0,
+            status: 'draft',
+            submitted_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select();
+          
+        if (insertError) throw insertError;
+        reportId = newReport[0].id;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving report:', error);
+      setError('Failed to save report. Please try again.');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Combine all loading states for UI to avoid flicker
+  const isLoading = initialLoading || loading || tripLoading || fuelDataLoading;
+
+  // Show stable loading indicator only for initial load
   if (initialLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -268,41 +470,25 @@ export default function IFTACalculatorPage() {
           </div>
 
           {/* Show errors if present */}
-          {(error || pageError) && (
+          {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-700">{error || pageError}</p>
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               </div>
             </div>
           )}
-
-          {/* IFTA Tax Rate Disclaimer */}
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">Important IFTA Tax Rate Disclaimer</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>This calculator requires you to input your own IFTA tax rates. We do not provide pre-defined tax rates as they vary by jurisdiction and change over time.</p>
-                  <p className="mt-1">You are responsible for verifying the accuracy of tax rates and any calculations made by this tool. Always consult official IFTA documentation or a tax professional before filing.</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Quarter Selector */}
           <div className="mb-6">
             <QuarterSelector 
               activeQuarter={activeQuarter} 
               setActiveQuarter={setActiveQuarter} 
-              isLoading={loading}
+              isLoading={loading || tripLoading}
             />
           </div>
 
@@ -310,9 +496,8 @@ export default function IFTACalculatorPage() {
           <div className="mb-6">
             <IFTASummary 
               trips={trips} 
-              rates={rates}
               stats={stats}
-              isLoading={loading} 
+              isLoading={loading || tripLoading} 
             />
           </div>
 
@@ -330,7 +515,7 @@ export default function IFTACalculatorPage() {
             <TripsList 
               trips={trips} 
               onRemoveTrip={handleDeleteTrip} 
-              isLoading={loading}
+              isLoading={tripLoading}
             />
           </div>
 
@@ -338,18 +523,8 @@ export default function IFTACalculatorPage() {
           <div className="mb-6">
             <StateDataGrid
               trips={trips}
-              rates={rates}
               fuelData={fuelData}
-              isLoading={loading || fuelDataLoading}
-            />
-          </div>
-
-          {/* IFTA Rates Table */}
-          <div className="mb-6">
-            <IFTARatesTable 
-              rates={rates} 
-              isLoading={loading} 
-              onAddRate={handleAddRate}
+              isLoading={loading || fuelDataLoading || tripLoading}
             />
           </div>
         </div>
@@ -364,8 +539,8 @@ export default function IFTACalculatorPage() {
         }}
         onConfirm={confirmDeleteTrip}
         title="Delete Trip"
-        message={`Are you sure you want to delete this trip? This action cannot be undone.`}
-        itemName={tripToDelete ? `Trip from ${tripToDelete.startJurisdiction} to ${tripToDelete.endJurisdiction}` : ""}
+        message="Are you sure you want to delete this trip? This action cannot be undone."
+        itemName={tripToDelete ? `Trip from ${tripToDelete.start_jurisdiction} to ${tripToDelete.end_jurisdiction}` : ""}
         isDeleting={loading}
       />
 
@@ -375,10 +550,10 @@ export default function IFTACalculatorPage() {
           isOpen={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
           trips={trips}
-          rates={rates}
           stats={stats}
           quarter={activeQuarter}
           fuelData={fuelData}
+          onSave={handleSaveReport}
         />
       )}
     </DashboardLayout>

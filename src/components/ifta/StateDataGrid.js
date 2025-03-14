@@ -13,7 +13,7 @@ import {
   MapPin
 } from "lucide-react";
 
-export default function StateDataGrid({ trips = [], rates = [], fuelData = [], isLoading = false }) {
+export default function StateDataGrid({ trips = [], fuelData = [], isLoading = false }) {
   const [filters, setFilters] = useState({
     search: "",
     sortBy: "jurisdiction",
@@ -27,8 +27,8 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
     // First, we need to extract all jurisdictions involved
     const allJurisdictions = new Set();
     trips.forEach(trip => {
-      if (trip.startJurisdiction) allJurisdictions.add(trip.startJurisdiction);
-      if (trip.endJurisdiction) allJurisdictions.add(trip.endJurisdiction);
+      if (trip.start_jurisdiction) allJurisdictions.add(trip.start_jurisdiction);
+      if (trip.end_jurisdiction) allJurisdictions.add(trip.end_jurisdiction);
     });
 
     // Create a map of jurisdiction data
@@ -39,36 +39,35 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
         totalMiles: 0,
         taxableMiles: 0,
         taxPaidGallons: 0,
-        taxRate: 0,
-        netTaxableGallons: 0,
-        taxDue: 0
+        netTaxableGallons: 0
       };
-      
-      // Look up tax rate for this jurisdiction
-      const rateInfo = rates.find(r => r.jurisdiction.includes(jurisdiction));
-      if (rateInfo) {
-        jurisdictionMap[jurisdiction].taxRate = rateInfo.totalRate;
-      }
     });
 
     // Process trips to calculate miles in each jurisdiction
     trips.forEach(trip => {
+      // Get odometer values if available
+      const hasOdometer = trip.starting_odometer && trip.ending_odometer;
+      let miles = parseFloat(trip.total_miles) || 0;
+      
+      // If we have odometer readings, use them instead of total_miles
+      if (hasOdometer && trip.starting_odometer < trip.ending_odometer) {
+        miles = trip.ending_odometer - trip.starting_odometer;
+      }
+      
       // Simple case: if start and end are the same, all miles belong to that jurisdiction
-      if (trip.startJurisdiction === trip.endJurisdiction && trip.startJurisdiction) {
-        const miles = parseFloat(trip.miles) || 0;
-        jurisdictionMap[trip.startJurisdiction].totalMiles += miles;
-        jurisdictionMap[trip.startJurisdiction].taxableMiles += miles;
+      if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
+        jurisdictionMap[trip.start_jurisdiction].totalMiles += miles;
+        jurisdictionMap[trip.start_jurisdiction].taxableMiles += miles;
       } 
       // If crossing jurisdictions, split miles 50/50 (simplified approach)
-      else if (trip.startJurisdiction && trip.endJurisdiction) {
-        const miles = parseFloat(trip.miles) || 0;
+      else if (trip.start_jurisdiction && trip.end_jurisdiction) {
         const milesPerJurisdiction = miles / 2;
         
-        jurisdictionMap[trip.startJurisdiction].totalMiles += milesPerJurisdiction;
-        jurisdictionMap[trip.startJurisdiction].taxableMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.start_jurisdiction].totalMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.start_jurisdiction].taxableMiles += milesPerJurisdiction;
         
-        jurisdictionMap[trip.endJurisdiction].totalMiles += milesPerJurisdiction;
-        jurisdictionMap[trip.endJurisdiction].taxableMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.end_jurisdiction].totalMiles += milesPerJurisdiction;
+        jurisdictionMap[trip.end_jurisdiction].taxableMiles += milesPerJurisdiction;
       }
     });
 
@@ -87,16 +86,13 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
     // Average fuel consumption (MPG)
     const avgMpg = totalMiles > 0 && totalGallons > 0 ? totalMiles / totalGallons : 6.0;
 
-    // Calculate net taxable gallons and tax due for each jurisdiction
+    // Calculate net taxable gallons for each jurisdiction
     Object.values(jurisdictionMap).forEach(j => {
       // Taxable gallons based on miles and average consumption
       const taxableGallons = j.taxableMiles / avgMpg;
       
       // Net taxable gallons = taxable gallons - tax paid gallons
       j.netTaxableGallons = taxableGallons - j.taxPaidGallons;
-      
-      // Tax due = net taxable gallons * tax rate
-      j.taxDue = j.netTaxableGallons * j.taxRate;
     });
 
     return Object.values(jurisdictionMap);
@@ -138,8 +134,7 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
     totalMiles: filteredData.reduce((sum, j) => sum + j.totalMiles, 0),
     taxableMiles: filteredData.reduce((sum, j) => sum + j.taxableMiles, 0),
     taxPaidGallons: filteredData.reduce((sum, j) => sum + j.taxPaidGallons, 0),
-    netTaxableGallons: filteredData.reduce((sum, j) => sum + j.netTaxableGallons, 0),
-    taxDue: filteredData.reduce((sum, j) => sum + j.taxDue, 0)
+    netTaxableGallons: filteredData.reduce((sum, j) => sum + j.netTaxableGallons, 0)
   };
 
   // Handle sort
@@ -169,16 +164,14 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
     // Create array of data for CSV
     const csvRows = [
       // Header row
-      ['Jurisdiction', 'Total Miles', 'Taxable Miles', 'Tax Paid Gallons', 'Tax Rate', 'Net Taxable Gallons', 'Tax Due'].join(','),
+      ['Jurisdiction', 'Total Miles', 'Taxable Miles', 'Tax Paid Gallons', 'Net Taxable Gallons'].join(','),
       // Data rows
       ...filteredData.map(j => [
         j.jurisdiction,
         j.totalMiles.toFixed(1),
         j.taxableMiles.toFixed(1),
         j.taxPaidGallons.toFixed(3),
-        j.taxRate.toFixed(3),
-        j.netTaxableGallons.toFixed(3),
-        j.taxDue.toFixed(2)
+        j.netTaxableGallons.toFixed(3)
       ].join(','))
     ];
 
@@ -265,10 +258,9 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
                   <li>Taxable Miles: Miles subject to fuel tax</li>
                   <li>Tax Paid Gallons: Fuel purchased in each jurisdiction</li>
                   <li>Net Taxable Gallons: Calculated as (Taxable Miles ÷ Fleet MPG) - Tax Paid Gallons</li>
-                  <li>Tax Due: Net Taxable Gallons × Tax Rate</li>
                 </ul>
                 <p className="mt-2">
-                  Positive tax due amounts must be paid, while negative amounts can be claimed as credits.
+                  Positive net taxable gallons mean you need to pay additional tax, while negative amounts represent potential credits.
                 </p>
               </div>
             </div>
@@ -350,31 +342,11 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("taxRate")}
-                >
-                  <div className="flex items-center">
-                    Tax Rate
-                    {getSortIcon("taxRate")}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("netTaxableGallons")}
                 >
                   <div className="flex items-center">
                     Net Taxable Gallons
                     {getSortIcon("netTaxableGallons")}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("taxDue")}
-                >
-                  <div className="flex items-center">
-                    Tax Due
-                    {getSortIcon("taxDue")}
                   </div>
                 </th>
               </tr>
@@ -394,17 +366,9 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {j.taxPaidGallons.toFixed(3)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${j.taxRate.toFixed(3)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span className={j.netTaxableGallons < 0 ? "text-red-600" : ""}>
-                      {j.netTaxableGallons.toFixed(3)}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <span className={j.taxDue < 0 ? "text-red-600" : "text-green-600"}>
-                      ${Math.abs(j.taxDue).toFixed(2)} {j.taxDue < 0 ? "(Credit)" : ""}
+                    <span className={j.netTaxableGallons < 0 ? "text-red-600" : "text-green-600"}>
+                      {j.netTaxableGallons.toFixed(3)} {j.netTaxableGallons < 0 ? "(Credit)" : ""}
                     </span>
                   </td>
                 </tr>
@@ -425,14 +389,8 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
                   {totals.taxPaidGallons.toFixed(3)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  —
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {totals.netTaxableGallons.toFixed(3)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={totals.taxDue < 0 ? "text-red-600" : "text-green-600"}>
-                    ${Math.abs(totals.taxDue).toFixed(2)} {totals.taxDue < 0 ? "(Net Credit)" : "(Net Due)"}
+                  <span className={totals.netTaxableGallons < 0 ? "text-red-600" : "text-green-600"}>
+                    {totals.netTaxableGallons.toFixed(3)} {totals.netTaxableGallons < 0 ? "(Net Credit)" : "(Net Due)"}
                   </span>
                 </td>
               </tr>
@@ -442,7 +400,7 @@ export default function StateDataGrid({ trips = [], rates = [], fuelData = [], i
       </div>
       
       <div className="px-6 py-3 bg-gray-50 text-gray-500 text-xs border-t border-gray-200">
-        Note: This is an estimate based on your recorded trips and fuel purchases. Actual tax liability may vary.
+        Note: This is an estimate based on your recorded trips and fuel purchases. Please consult with a tax professional for official IFTA filings.
       </div>
     </div>
   );

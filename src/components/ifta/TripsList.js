@@ -22,23 +22,28 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
     vehicle: ""
   });
   const [sortConfig, setSortConfig] = useState({
-    key: 'date',
+    key: 'start_date',
     direction: 'desc'
   });
 
   // Get unique values for filter dropdowns
   const getUniqueValues = (key) => {
-    return [...new Set(trips.map(trip => {
-      // Special case for jurisdictions
+    const values = new Set();
+    
+    trips.forEach(trip => {
       if (key === 'jurisdiction') {
-        return [trip.startJurisdiction, trip.endJurisdiction];
+        if (trip.start_jurisdiction) values.add(trip.start_jurisdiction);
+        if (trip.end_jurisdiction) values.add(trip.end_jurisdiction);
+      } else if (key === 'vehicle') {
+        if (trip.vehicle_id) values.add(trip.vehicle_id);
       }
-      return trip[key];
-    }).flat())];
+    });
+    
+    return Array.from(values);
   };
 
   const uniqueJurisdictions = getUniqueValues('jurisdiction');
-  const uniqueVehicles = getUniqueValues('vehicleId');
+  const uniqueVehicles = getUniqueValues('vehicle');
 
   // Handle sort
   const requestSort = (key) => {
@@ -64,13 +69,13 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
       
       // Jurisdiction filter
       if (filters.jurisdiction && 
-        !(trip.startJurisdiction === filters.jurisdiction || 
-          trip.endJurisdiction === filters.jurisdiction)) {
+        !(trip.start_jurisdiction === filters.jurisdiction || 
+          trip.end_jurisdiction === filters.jurisdiction)) {
         return false;
       }
       
       // Vehicle filter
-      if (filters.vehicle && trip.vehicleId !== filters.vehicle) {
+      if (filters.vehicle && trip.vehicle_id !== filters.vehicle) {
         return false;
       }
       
@@ -80,11 +85,11 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
     // Then sort
     return filteredTrips.sort((a, b) => {
       // Special case for numeric values
-      if (['miles', 'gallons', 'fuelCost'].includes(sortConfig.key)) {
+      if (['total_miles', 'gallons', 'fuel_cost'].includes(sortConfig.key)) {
         if (sortConfig.direction === 'asc') {
-          return parseFloat(a[sortConfig.key]) - parseFloat(b[sortConfig.key]);
+          return parseFloat(a[sortConfig.key] || 0) - parseFloat(b[sortConfig.key] || 0);
         } else {
-          return parseFloat(b[sortConfig.key]) - parseFloat(a[sortConfig.key]);
+          return parseFloat(b[sortConfig.key] || 0) - parseFloat(a[sortConfig.key] || 0);
         }
       }
       
@@ -102,9 +107,9 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
   const sortedAndFilteredTrips = getSortedAndFilteredTrips();
   
   // Calculate totals
-  const totalMiles = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.miles), 0);
-  const totalGallons = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons), 0);
-  const totalFuelCost = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.fuelCost), 0);
+  const totalMiles = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0);
+  const totalGallons = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0);
+  const totalFuelCost = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.fuel_cost || 0), 0);
 
   // Get sort icon
   const getSortIcon = (key) => {
@@ -119,7 +124,7 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
     );
   };
 
-  // Format jurisdiction for display (extract from parentheses)
+  // Format jurisdiction for display
   const formatJurisdiction = (jurisdictionCode) => {
     return jurisdictionCode || '—';
   };
@@ -232,23 +237,23 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => requestSort('date')}
+                  onClick={() => requestSort('start_date')}
                 >
                   <div className="flex items-center">
                     <Calendar size={14} className="mr-1" />
                     Date
-                    {getSortIcon('date')}
+                    {getSortIcon('start_date')}
                   </div>
                 </th>
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => requestSort('vehicleId')}
+                  onClick={() => requestSort('vehicle_id')}
                 >
                   <div className="flex items-center">
                     <Truck size={14} className="mr-1" />
                     Vehicle
-                    {getSortIcon('vehicleId')}
+                    {getSortIcon('vehicle_id')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -260,11 +265,11 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => requestSort('miles')}
+                  onClick={() => requestSort('total_miles')}
                 >
                   <div className="flex items-center">
                     Miles
-                    {getSortIcon('miles')}
+                    {getSortIcon('total_miles')}
                   </div>
                 </th>
                 <th 
@@ -281,12 +286,12 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => requestSort('fuelCost')}
+                  onClick={() => requestSort('fuel_cost')}
                 >
                   <div className="flex items-center">
                     <DollarSign size={14} className="mr-1" />
                     Fuel Cost
-                    {getSortIcon('fuelCost')}
+                    {getSortIcon('fuel_cost')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -298,30 +303,33 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
               {sortedAndFilteredTrips.map((trip) => (
                 <tr key={trip.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {trip.date}
+                    {trip.start_date}
+                    {trip.end_date && trip.end_date !== trip.start_date && 
+                      <span className="text-xs text-gray-500 ml-1">to {trip.end_date}</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                    {trip.vehicleId}
+                    {trip.vehicle_id}
+                    {trip.driver_id && <div className="text-xs text-gray-400">Driver: {trip.driver_id}</div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center">
                       <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        {formatJurisdiction(trip.startJurisdiction)}
+                        {formatJurisdiction(trip.start_jurisdiction)}
                       </span>
                       <span className="mx-2">→</span>
                       <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        {formatJurisdiction(trip.endJurisdiction)}
+                        {formatJurisdiction(trip.end_jurisdiction)}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseFloat(trip.miles).toLocaleString()} mi
+                    {parseFloat(trip.total_miles || 0).toLocaleString()} mi
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseFloat(trip.gallons).toLocaleString()} gal
+                    {parseFloat(trip.gallons || 0).toLocaleString()} gal
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${parseFloat(trip.fuelCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 // src/components/dashboard/SettingsPage.js
 "use client";
 

@@ -11,7 +11,7 @@ import {
   RefreshCw
 } from "lucide-react";
 
-export default function IFTASummary({ trips = [], rates = [], stats = {}, isLoading = false }) {
+export default function IFTASummary({ trips = [], stats = {}, isLoading = false }) {
   // Format numbers with localization and proper decimal places
   const formatNumber = (value, decimals = 0) => {
     return parseFloat(value || 0).toLocaleString(undefined, {
@@ -20,51 +20,8 @@ export default function IFTASummary({ trips = [], rates = [], stats = {}, isLoad
     });
   };
 
-  // Calculate summaries from trips
-  const calculateSummaries = () => {
-    if (!trips || trips.length === 0) {
-      return {
-        totalMiles: 0,
-        totalGallons: 0,
-        totalFuelCost: 0,
-        avgMpg: 0,
-        fuelCostPerMile: 0,
-        uniqueJurisdictions: 0
-      };
-    }
-
-    const totalMiles = trips.reduce((sum, trip) => sum + parseFloat(trip.miles || 0), 0);
-    const totalGallons = trips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0);
-    const totalFuelCost = trips.reduce((sum, trip) => sum + parseFloat(trip.fuelCost || 0), 0);
-    
-    // Calculate averages
-    const avgMpg = totalGallons > 0 ? totalMiles / totalGallons : 0;
-    const fuelCostPerMile = totalMiles > 0 ? totalFuelCost / totalMiles : 0;
-    
-    // Count unique jurisdictions
-    const allJurisdictions = [
-      ...trips.map(trip => trip.startJurisdiction),
-      ...trips.map(trip => trip.endJurisdiction)
-    ].filter(Boolean);
-    const uniqueJurisdictions = new Set(allJurisdictions).size;
-    
-    return {
-      totalMiles,
-      totalGallons,
-      totalFuelCost,
-      avgMpg,
-      fuelCostPerMile,
-      uniqueJurisdictions
-    };
-  };
-
-  // Either use passed-in stats or calculate from trips
-  const summaries = stats && Object.keys(stats).length > 0 
-    ? stats 
-    : calculateSummaries();
-
   // Card component for each stat
-  const StatCard = ({ title, value, icon, color, trend, trendValue }) => (
+  const StatCard = ({ title, value, icon, color }) => (
     <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${
       color === 'blue' ? 'border-blue-500' :
       color === 'green' ? 'border-green-500' :
@@ -77,20 +34,6 @@ export default function IFTASummary({ trips = [], rates = [], stats = {}, isLoad
         <div>
           <p className="text-sm font-medium text-gray-500">{title}</p>
           <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-          {trend && trendValue !== undefined && (
-            <div className="mt-1 flex items-center">
-              {trend === 'up' ? (
-                <TrendingUp size={14} className="text-green-600" />
-              ) : (
-                <TrendingDown size={14} className="text-red-600" />
-              )}
-              <span className={`ml-1 text-xs ${
-                trend === 'up' ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {trendValue}%
-              </span>
-            </div>
-          )}
         </div>
         <div className={`p-2 rounded-md ${
           color === 'blue' ? 'bg-blue-100 text-blue-600' :
@@ -125,49 +68,58 @@ export default function IFTASummary({ trips = [], rates = [], stats = {}, isLoad
     );
   }
 
+  // If no stats are provided, show default values
+  const {
+    totalMiles = 0,
+    totalGallons = 0,
+    avgMpg = 0,
+    fuelCostPerMile = 0,
+    uniqueJurisdictions = 0
+  } = stats;
+
   return (
     <div>
       <h3 className="text-lg font-medium text-gray-900 mb-4">IFTA Summary</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="Total Distance"
-          value={`${formatNumber(summaries.totalMiles)} miles`}
+          value={`${formatNumber(totalMiles)} miles`}
           icon={<Truck size={20} />}
           color="blue"
         />
         
         <StatCard
           title="Total Fuel"
-          value={`${formatNumber(summaries.totalGallons, 3)} gallons`}
+          value={`${formatNumber(totalGallons, 3)} gallons`}
           icon={<Fuel size={20} />}
           color="green"
         />
         
         <StatCard
-          title="Total Fuel Cost"
-          value={`${formatNumber(summaries.totalFuelCost, 2)}`}
-          icon={<DollarSign size={20} />}
-          color="purple"
-        />
-        
-        <StatCard
           title="Average MPG"
-          value={formatNumber(summaries.avgMpg, 2)}
+          value={formatNumber(avgMpg, 2)}
           icon={<Calculator size={20} />}
           color="yellow"
         />
         
         <StatCard
           title="Fuel Cost per Mile"
-          value={`${formatNumber(summaries.fuelCostPerMile, 3)}`}
+          value={`$${formatNumber(fuelCostPerMile, 3)}`}
           icon={<DollarSign size={20} />}
           color="red"
         />
         
         <StatCard
           title="Jurisdictions"
-          value={summaries.uniqueJurisdictions}
+          value={uniqueJurisdictions}
           icon={<MapPin size={20} />}
+          color="purple"
+        />
+        
+        <StatCard
+          title="Total Trips"
+          value={trips.length}
+          icon={<Truck size={20} />}
           color="blue"
         />
       </div>
@@ -180,11 +132,11 @@ export default function IFTASummary({ trips = [], rates = [], stats = {}, isLoad
             </div>
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                {rates.length > 0 ? (
-                  <>Based on your trips and current tax rates, your estimated IFTA tax liability is <strong className="font-medium">${formatNumber(stats.estimatedTaxLiability || 0, 2)}</strong>.</>
-                ) : (
-                  <>Your IFTA tax liability will be calculated when tax rate data is available.</>
-                )}
+                Your IFTA tax liability will be determined based on the Net Taxable Gallons for each jurisdiction shown in the table below. Check with your tax professional for current tax rates in each jurisdiction.
+              </p>
+              <p className="text-sm text-blue-700 mt-2">
+                This report includes data from {trips.length} trips across {uniqueJurisdictions} jurisdictions. 
+                Average MPG: {formatNumber(avgMpg, 2)}.
               </p>
             </div>
           </div>

@@ -62,6 +62,27 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
     setActiveQuarter(e.target.value);
   };
 
+  // Get filing deadline date based on quarter
+  const getFilingDeadline = (quarterString) => {
+    if (!quarterString) return "";
+    
+    const [year, quarter] = quarterString.split('-Q');
+    const quarterInt = parseInt(quarter);
+    
+    switch (quarterInt) {
+      case 1: // Q1 deadline is April 30
+        return `April 30, ${year}`;
+      case 2: // Q2 deadline is July 31
+        return `July 31, ${year}`;
+      case 3: // Q3 deadline is October 31
+        return `October 31, ${year}`;
+      case 4: // Q4 deadline is January 31 of next year
+        return `January 31, ${parseInt(year) + 1}`;
+      default:
+        return "Check your jurisdiction";
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
@@ -108,14 +129,7 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
         <div className="bg-green-50 p-3 rounded-lg">
           <div className="text-xs text-green-500 uppercase font-medium">Filing Deadline</div>
           <div className="text-lg font-medium text-green-700">
-            {activeQuarter && activeQuarter.includes('Q') ? (
-              <>
-                {activeQuarter.includes('Q1') && "April 30"}
-                {activeQuarter.includes('Q2') && "July 31"}
-                {activeQuarter.includes('Q3') && "October 31"}
-                {activeQuarter.includes('Q4') && "January 31"}
-              </>
-            ) : "Check your jurisdiction"}
+            {getFilingDeadline(activeQuarter)}
           </div>
         </div>
         

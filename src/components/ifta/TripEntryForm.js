@@ -83,11 +83,16 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
   const [tripData, setTripData] = useState({
     date: "",
     vehicleId: "",
+    driverId: "",
+    loadId: "",
     startJurisdiction: "",
     endJurisdiction: "",
     miles: "",
     gallons: "",
-    fuelCost: ""
+    fuelCost: "",
+    startOdometer: "",
+    endOdometer: "",
+    endDate: ""
   });
   
   const [errors, setErrors] = useState({});
@@ -190,15 +195,7 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
     
     // Auto-calculate based on mode
     if (calculationMode === 'mpg' && (name === 'miles' || name === 'gallons')) {
-      // Calculate MPG
-      const miles = name === 'miles' ? parseFloat(value) || 0 : parseFloat(tripData.miles) || 0;
-      const gallons = name === 'gallons' ? parseFloat(value) || 0 : parseFloat(tripData.gallons) || 0;
-      
-      // No calculation if either value is 0
-      if (miles > 0 && gallons > 0) {
-        const mpg = miles / gallons;
-        // We don't update any form fields here, just show the calculated value
-      }
+      // No automatic calculation in mpg mode
     } else if (calculationMode === 'gallons' && name === 'miles') {
       // Calculate gallons based on miles and assumed MPG
       const miles = parseFloat(value) || 0;
@@ -243,6 +240,7 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
     setTripData({
       date: "",
       vehicleId: "",
+      loadId: "",
       startJurisdiction: "",
       endJurisdiction: "",
       miles: "",
@@ -253,12 +251,6 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
     // Reset validation states
     setErrors({});
     setTouched({});
-  };
-
-  // Format jurisdiction for display
-  const formatJurisdiction = (code) => {
-    const jurisdiction = jurisdictions.find(j => j.code === code);
-    return jurisdiction ? `${jurisdiction.name} (${jurisdiction.code})` : code;
   };
 
   return (
@@ -358,6 +350,21 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
                   </p>
                 )}
               </div>
+              
+              <div>
+                <label htmlFor="loadId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <Truck size={16} className="text-gray-400 mr-1" /> Load Reference (optional)
+                </label>
+                <input
+                  type="text"
+                  id="loadId"
+                  name="loadId"
+                  placeholder="Enter load ID or reference"
+                  value={tripData.loadId}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                />
+              </div>
             </div>
             
             <div className="space-y-6">
@@ -455,7 +462,7 @@ export default function TripEntryForm({ onAddTrip, isLoading = false, fuelData =
             
             <div>
               <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Purchased {calculationMode === 'mpg' ? '*' : ''}
+                <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used {calculationMode === 'mpg' ? '*' : ''}
               </label>
               <input
                 type="number"
