@@ -10,7 +10,7 @@ import { supabase } from "../supabaseClient";
 export async function fetchTrucks(userId, filters = {}) {
   try {
     let query = supabase
-      .from('trucks')
+      .from('vehicles')  // Use your actual table name
       .select('*')
       .eq('user_id', userId);
     
@@ -71,21 +71,26 @@ export async function getTruckById(id) {
  */
 export async function createTruck(truckData) {
   try {
-    // Generate a UUID for vehicle_id
-    const uuid = crypto.randomUUID ? crypto.randomUUID() : 
-      ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-      );
-    
-    // Add vehicle_id to the truck data
-    const truckWithVehicleId = {
-      ...truckData,
-      vehicle_id: uuid
+    // Prepare the data to match your existing database structure
+    const preparedData = {
+      user_id: truckData.user_id,
+      name: truckData.name,
+      make: truckData.make,
+      model: truckData.model,
+      year: truckData.year,
+      vin: truckData.vin,
+      license_plate: truckData.license_plate,
+      status: truckData.status,
+      color: truckData.color || null,
+      fuel_type: truckData.fuel_type,
+      tank_capacity: truckData.tank_capacity || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     const { data, error } = await supabase
-      .from('trucks')
-      .insert([truckWithVehicleId])
+      .from('vehicles')  // Use your actual table name
+      .insert([preparedData])
       .select();
       
     if (error) throw error;
@@ -179,7 +184,7 @@ export async function uploadTruckImage(userId, file) {
 export async function getTruckStats(userId) {
   try {
     const { data, error } = await supabase
-      .from('trucks')
+      .from('vehicles')  // Use your actual table name
       .select('id, status')
       .eq('user_id', userId);
       

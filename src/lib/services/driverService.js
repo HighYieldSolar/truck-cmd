@@ -71,9 +71,30 @@ export async function getDriverById(id) {
  */
 export async function createDriver(driverData) {
   try {
+    // Prepare the data to match your existing database structure
+    const preparedData = {
+      user_id: driverData.user_id,
+      name: driverData.name,
+      position: driverData.position,
+      email: driverData.email,
+      phone: driverData.phone,
+      license_number: driverData.license_number,
+      license_state: driverData.license_state,
+      license_expiry: driverData.license_expiry,
+      medical_card_expiry: driverData.medical_card_expiry,
+      status: driverData.status,
+      hire_date: driverData.hire_date,
+      city: driverData.city || null,
+      state: driverData.state || null,
+      emergency_contact: driverData.emergency_contact,
+      emergency_phone: driverData.emergency_phone,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
     const { data, error } = await supabase
       .from('drivers')
-      .insert([driverData])
+      .insert([preparedData])
       .select();
       
     if (error) throw error;
@@ -93,9 +114,28 @@ export async function createDriver(driverData) {
  */
 export async function updateDriver(id, driverData) {
   try {
+    // Ensure we only update fields that match your existing schema
+    const updateData = {
+      name: driverData.name,
+      position: driverData.position,
+      email: driverData.email,
+      phone: driverData.phone,
+      license_number: driverData.license_number,
+      license_state: driverData.license_state,
+      license_expiry: driverData.license_expiry,
+      medical_card_expiry: driverData.medical_card_expiry,
+      status: driverData.status,
+      hire_date: driverData.hire_date,
+      city: driverData.city,
+      state: driverData.state,
+      emergency_contact: driverData.emergency_contact,
+      emergency_phone: driverData.emergency_phone,
+      updated_at: new Date().toISOString()
+    };
+    
     const { data, error } = await supabase
       .from('drivers')
-      .update(driverData)
+      .update(updateData)
       .eq('id', id)
       .select();
       

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,7 +17,8 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
     medical_card_expiry: '',
     status: 'Active',
     hire_date: '',
-    address: '',
+    city: '',
+    state: '',
     emergency_contact: '',
     emergency_phone: '',
     image: null,
@@ -46,7 +46,8 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         medical_card_expiry: driver.medical_card_expiry || '',
         status: driver.status || 'Active',
         hire_date: driver.hire_date || '',
-        address: driver.address || '',
+        city: driver.city || '',
+        state: driver.state || '',
         emergency_contact: driver.emergency_contact || '',
         emergency_phone: driver.emergency_phone || '',
         image: driver.image || null,
@@ -66,7 +67,8 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         medical_card_expiry: '',
         status: 'Active',
         hire_date: '',
-        address: '',
+        city: '',
+        state: '',
         emergency_contact: '',
         emergency_phone: '',
         image: null,
@@ -202,7 +204,8 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         medical_card_expiry: formData.medical_card_expiry,
         status: formData.status,
         hire_date: formData.hire_date,
-        address: formData.address,
+        city: formData.city,
+        state: formData.state,
         emergency_contact: formData.emergency_contact,
         emergency_phone: formData.emergency_phone,
         image: imageUrl,
@@ -428,18 +431,33 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
               )}
             </div>
             
-            <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                Address
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                City
               </label>
               <input
                 type="text"
-                id="address"
-                name="address"
-                value={formData.address}
+                id="city"
+                name="city"
+                value={formData.city}
                 onChange={handleChange}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="Street address"
+                placeholder="City"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                State
+              </label>
+              <input
+                type="text"
+                id="state"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
+                placeholder="State"
               />
             </div>
             

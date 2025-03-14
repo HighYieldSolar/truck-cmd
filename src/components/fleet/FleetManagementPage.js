@@ -209,7 +209,7 @@ export default function FleetManagementPage() {
         
         // Load recent trucks
         const { data: trucks, error: trucksError } = await supabase
-          .from('trucks')
+          .from('vehicles')  // Use your actual table name
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })

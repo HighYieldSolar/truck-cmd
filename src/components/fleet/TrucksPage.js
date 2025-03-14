@@ -72,9 +72,10 @@ const TruckCard = ({ truck, onEdit, onDelete }) => {
         </div>
       </div>
       
-      {truck.vehicle_id && (
-        <div className="text-xs text-gray-500 mb-2">
-          Vehicle ID: {truck.vehicle_id}
+      {truck.color && (
+        <div className="flex space-x-2 text-sm mb-2">
+          <span className="text-gray-500">Color:</span>
+          <span className="font-medium">{truck.color}</span>
         </div>
       )}
       
