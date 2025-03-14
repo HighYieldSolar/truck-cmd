@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }) {
     };
   }, [userDropdownOpen]);
 
-  // Menu items definition
+  // Menu items definition with Settings added to the main navigation
   const menuItems = [
     { 
       name: 'Dashboard', 
@@ -164,6 +164,12 @@ export default function DashboardLayout({ children }) {
       icon: <Fuel size={20} />,
       active: activePage === 'fuel'
     },
+    { 
+      name: 'Settings', 
+      href: '/dashboard/settings', 
+      icon: <Settings size={20} />,
+      active: activePage === 'settings'
+    },
   ];
 
   if (loading) {
@@ -213,21 +219,6 @@ export default function DashboardLayout({ children }) {
           </nav>
           
           <div className="mt-auto px-3 py-4 border-t border-gray-200">
-            <Link
-              href="/dashboard/settings"
-              className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
-                activePage === 'settings'
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-              }`}
-            >
-              <Settings 
-                size={20} 
-                className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} 
-              />
-              Settings
-            </Link>
-            
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-3 py-3 mt-1 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
@@ -295,22 +286,6 @@ export default function DashboardLayout({ children }) {
           </nav>
           
           <div className="mt-auto px-3 py-4 border-t border-gray-200">
-            <Link
-              href="/dashboard/settings"
-              className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
-                activePage === 'settings'
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Settings 
-                size={20} 
-                className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} 
-              />
-              Settings
-            </Link>
-            
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-3 py-3 mt-1 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
