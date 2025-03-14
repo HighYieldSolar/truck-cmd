@@ -42,45 +42,47 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
 // Steps progress bar with modern design
 const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between w-full">
+    <div className="mb-8 px-4">
+      <div className="relative flex items-center justify-between w-full">
+        {/* Step connector container - positions lines to align with circle centers */}
+        <div className="absolute top-6 left-0 right-0 flex justify-between items-center">
+          {/* First segment line (steps 1-2) */}
+          <div className="h-1 flex-1 mx-10" 
+            style={{ 
+              backgroundColor: currentStep > 1 ? '#10B981' : '#E5E7EB',
+            }} 
+          />
+          
+          {/* Second segment line (steps 2-3) */}
+          <div className="h-1 flex-1 mx-10" 
+            style={{ 
+              backgroundColor: currentStep > 2 ? '#10B981' : '#E5E7EB',
+            }} 
+          />
+        </div>
+        
+        {/* Step circles */}
         {[...Array(totalSteps)].map((_, index) => {
           const step = index + 1;
           const stepComplete = step < currentStep;
           const stepCurrent = step === currentStep;
+          
           return (
-            <div key={step} className="flex-1 relative">
+            <div key={step} className="flex flex-col items-center relative z-10">
               <div
-                className={`flex items-center ${
-                  step === totalSteps ? "justify-end" : step === 1 ? "justify-start" : "justify-center"
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all duration-200 ${
+                  stepComplete
+                    ? "bg-green-500 text-white"
+                    : stepCurrent
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-500"
                 }`}
               >
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold relative z-10 transition-all duration-200 ${
-                    stepComplete
-                      ? "bg-green-500 text-white"
-                      : stepCurrent
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {stepComplete ? <CheckCircle size={20} /> : step}
-                </div>
+                {stepComplete ? <CheckCircle size={20} /> : step}
               </div>
               
-              {step < totalSteps && (
-                <div
-                  className={`absolute top-6 h-1 left-0 right-0 -mx-2 ${
-                    step < currentStep ? "bg-green-500" : "bg-gray-200"
-                  }`}
-                  style={{ 
-                    width: "calc(100% + 1rem)",
-                    left: step === 1 ? "50%" : "0"
-                  }}
-                ></div>
-              )}
-              
-              <div className="mt-3 text-center">
+              {/* Step label */}
+              <div className="mt-3 text-center w-28">
                 <span
                   className={`text-sm font-medium ${
                     stepComplete
@@ -92,7 +94,7 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
                 >
                   {step === 1 && "Delivery Details"}
                   {step === 2 && "Documentation"}
-                  {step === 3 && "Billing & Completion"}
+                  {step === 3 && "Completion"}
                 </span>
               </div>
             </div>
