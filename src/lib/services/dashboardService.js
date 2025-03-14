@@ -42,25 +42,25 @@ export async function fetchDashboardStats(userId) {
     
     // IMPORTANT: Also fetch factored earnings for current month
     const { data: currentFactoredEarnings, error: factoredError } = await supabase
-      .from('earnings')
-      .select('amount, date')
-      .eq('user_id', userId)
-      .eq('source', 'Factoring')
-      .gte('date', firstDayOfMonthStr)
-      .lte('date', todayStr);
-      
-    if (factoredError) throw factoredError;
+    .from('earnings')
+    .select('amount, date')
+    .eq('user_id', userId)
+    .eq('source', 'Factoring')
+    .gte('date', firstDayOfMonthStr)
+    .lte('date', todayStr);
+    
+  if (factoredError) throw factoredError;
     
     // Fetch factored earnings for last month (for comparison)
     const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = await supabase
-      .from('earnings')
-      .select('amount, date')
-      .eq('user_id', userId)
-      .eq('source', 'Factoring')
-      .gte('date', firstDayOfLastMonthStr)
-      .lte('date', lastDayOfLastMonthStr);
-      
-    if (lastMonthFactoredError) throw lastMonthFactoredError;
+    .from('earnings')
+    .select('amount, date')
+    .eq('user_id', userId)
+    .eq('source', 'Factoring')
+    .gte('date', firstDayOfLastMonthStr)
+    .lte('date', lastDayOfLastMonthStr);
+    
+  if (lastMonthFactoredError) throw lastMonthFactoredError;
     
     // Fetch current month expenses
     const { data: currentExpenses, error: expensesError } = await supabase
@@ -118,8 +118,8 @@ export async function fetchDashboardStats(userId) {
     
     // Calculate factored earnings
     const currentMonthFactoredEarnings = currentFactoredEarnings
-      ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
-      : 0;
+    ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+    : 0;
     
     // Total earnings = paid invoices + factored earnings
     const currentMonthEarnings = currentMonthPaidInvoices + currentMonthFactoredEarnings;
@@ -140,8 +140,8 @@ export async function fetchDashboardStats(userId) {
     
     // Last month factored earnings
     const lastMonthFactoredEarningsTotal = lastMonthFactoredEarnings
-      ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
-      : 0;
+    ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+    : 0;
     
     // Last month total earnings
     const lastMonthEarnings = lastMonthPaidInvoices + lastMonthFactoredEarningsTotal;
@@ -168,6 +168,7 @@ export async function fetchDashboardStats(userId) {
       : null;
     
     return {
+      earnings: currentMonthEarnings,
       earnings: currentMonthEarnings,
       earningsChange: earningsChange,
       earningsPositive: earningsChange > 0,

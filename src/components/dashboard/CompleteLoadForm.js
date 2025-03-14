@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import { recordFactoredEarnings } from '@/lib/services/earningsService';
 
 // Star Rating Component with modern styling
 const StarRating = ({ rating, setRating, disabled = false }) => {
@@ -563,6 +564,24 @@ export default function CompleteLoadForm({ loadId }) {
               
               await supabase.from('invoice_items').insert([additionalChargeItem]);
             }
+
+// Add this code for factoring
+if (formData.useFactoring) {
+  // Calculate total rate
+  const totalRate = loadDetails.rate + parseFloat(formData.additionalCharges || 0);
+  
+  try {
+    // Record factored earnings
+    await recordFactoredEarnings(user.id, loadId, totalRate, {
+      date: formData.deliveryDate,
+      description: `Factored load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`,
+      factoringCompany: formData.factoringCompany || null
+    });
+  } catch (factoringError) {
+    console.error('Error recording factored earnings:', factoringError);
+    // Don't fail the whole process if factoring recording has an issue
+  }
+}
             
             // Record invoice creation activity
             await supabase.from('invoice_activities').insert([{
