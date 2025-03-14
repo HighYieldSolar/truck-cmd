@@ -71,9 +71,21 @@ export async function getTruckById(id) {
  */
 export async function createTruck(truckData) {
   try {
+    // Generate a UUID for vehicle_id
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : 
+      ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    
+    // Add vehicle_id to the truck data
+    const truckWithVehicleId = {
+      ...truckData,
+      vehicle_id: uuid
+    };
+    
     const { data, error } = await supabase
       .from('trucks')
-      .insert([truckData])
+      .insert([truckWithVehicleId])
       .select();
       
     if (error) throw error;

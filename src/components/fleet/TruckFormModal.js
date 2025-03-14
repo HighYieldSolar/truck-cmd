@@ -20,7 +20,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     fuel_type: 'Diesel',
     image: null,
     image_file: null,
-    notes: ''
+    notes: '',
+    vehicle_id: '' // Add this field to store the vehicle_id
   });
 
   const [errors, setErrors] = useState({});
@@ -45,7 +46,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         fuel_type: truck.fuel_type || 'Diesel',
         image: truck.image || null,
         image_file: null,
-        notes: truck.notes || ''
+        notes: truck.notes || '',
+        vehicle_id: truck.vehicle_id || '' // Include the vehicle_id
       });
     } else {
       // Add mode - reset form
@@ -62,7 +64,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         fuel_type: 'Diesel',
         image: null,
         image_file: null,
-        notes: ''
+        notes: '',
+        vehicle_id: '' // Reset vehicle_id field
       });
     }
     
@@ -174,6 +177,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         fuel_type: formData.fuel_type,
         image: imageUrl,
         notes: formData.notes,
+        vehicle_id: formData.vehicle_id, // Include the vehicle_id
       };
       
       let result;

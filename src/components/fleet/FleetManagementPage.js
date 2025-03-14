@@ -334,14 +334,14 @@ export default function FleetManagementPage() {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-wrap gap-3">
               <Link
-                href="/dashboard/fleet/trucks"
+                href="/dashboard/fleet/trucks/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
               >
                 <Plus size={16} className="mr-2" />
                 Add Truck
               </Link>
               <Link
-                href="/dashboard/fleet/drivers"
+                href="/dashboard/fleet/drivers/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
               >
                 <Plus size={16} className="mr-2" />
@@ -440,7 +440,7 @@ export default function FleetManagementPage() {
                       <div className="p-6 text-center">
                         <p className="text-gray-500 mb-4">No vehicles found</p>
                         <Link
-                          href="/dashboard/fleet/trucks"
+                          href="/dashboard/fleet/trucks/new"
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
                         >
                           <Plus size={16} className="mr-2" />
@@ -468,7 +468,7 @@ export default function FleetManagementPage() {
                       <div className="p-6 text-center">
                         <p className="text-gray-500 mb-4">No drivers found</p>
                         <Link
-                          href="/dashboard/fleet/drivers"
+                          href="/dashboard/fleet/drivers/new"
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200"
                         >
                           <Plus size={16} className="mr-2" />

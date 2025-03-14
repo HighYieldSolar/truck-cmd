@@ -72,6 +72,12 @@ const TruckCard = ({ truck, onEdit, onDelete }) => {
         </div>
       </div>
       
+      {truck.vehicle_id && (
+        <div className="text-xs text-gray-500 mb-2">
+          Vehicle ID: {truck.vehicle_id}
+        </div>
+      )}
+      
       <Link 
         href={`/dashboard/fleet/trucks/${truck.id}`}
         className="text-sm text-blue-600 hover:text-blue-800"
