@@ -1,7 +1,6 @@
 "use client";
 
-import React from 'react';
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CompleteLoadForm from '@/components/dashboard/CompleteLoadForm';
 
@@ -46,7 +45,9 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function CompleteLoadPage({ params }) {
-  const loadId = params?.id;
+  // Use React.use() to unwrap the params Promise
+  const resolvedParams = React.use(params);
+  const loadId = resolvedParams?.id;
   
   if (!loadId) {
     return (

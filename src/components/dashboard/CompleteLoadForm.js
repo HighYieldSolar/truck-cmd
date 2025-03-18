@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { recordFactoredEarnings } from '@/lib/services/earningsService';
 
 // Star Rating Component with modern styling
 const StarRating = ({ rating, setRating, disabled = false }) => {

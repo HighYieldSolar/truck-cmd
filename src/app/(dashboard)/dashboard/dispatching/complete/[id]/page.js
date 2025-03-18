@@ -1,8 +1,7 @@
-// src/app/(dashboard)/dashboard/dispatching/complete/[id]/page.js
 "use client";
 
-import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
 // Dynamically import the CompleteLoadPage component to ensure client-side rendering
 const CompleteLoadPage = dynamic(() => import('@/components/dashboard/CompleteLoadPage'), {
@@ -21,7 +20,7 @@ export default function CompleteLoadRoute({ params }) {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     }>
-      <CompleteLoadPage params={params} />
+      <CompleteLoadPage params={Promise.resolve(params)} />
     </Suspense>
   );
 }
