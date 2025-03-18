@@ -5,11 +5,11 @@ import { Download, FileText, RefreshCw } from 'lucide-react';
 
 /**
  * Component that generates and downloads a PDF invoice
- * Note: This is a client-side component that uses jsPDF library for PDF generation
- * In a production environment, you might want to use a server-side approach for more complex PDFs
+ * Improved with better error handling and loading states
  */
-export default function InvoicePdfGenerator({ invoice, companyInfo }) {
+export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Default company info if not provided
   const company = companyInfo || {
@@ -28,9 +28,11 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
   const generatePdf = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Dynamically import jsPDF and jsPDF-AutoTable
-      // This reduces the initial bundle size since these libraries are quite large
+      console.log("Starting PDF generation for invoice:", invoice.invoice_number);
+
+      // Dynamically import jsPDF and jsPDF-AutoTable to reduce initial bundle size
       const [jsPDFModule, autoTableModule] = await Promise.all([
         import('jspdf'),
         import('jspdf-autotable')
@@ -39,20 +41,30 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
       const jsPDF = jsPDFModule.default;
       const autoTable = autoTableModule.default;
 
+      console.log("Libraries loaded, creating PDF document");
+
       // Create new PDF document
-      const doc = new jsPDF();
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
       
-      // Add company logo (if in production with real logo)
-      // doc.addImage(company.logo, 'PNG', 15, 15, 50, 20);
+      // Add company logo placeholder
+      doc.setFillColor(240, 240, 240);
+      doc.rect(15, 15, 50, 20, 'F');
+      doc.setTextColor(100);
+      doc.setFontSize(12);
+      doc.text("LOGO", 40, 25, { align: 'center' });
 
       // Add company info
       doc.setFontSize(10);
       doc.setTextColor(100);
-      doc.text(company.name, 15, 20);
-      doc.text(company.address, 15, 25);
-      doc.text(`${company.city}, ${company.state} ${company.zip}`, 15, 30);
-      doc.text(`Phone: ${company.phone}`, 15, 35);
-      doc.text(`Email: ${company.email}`, 15, 40);
+      doc.text(company.name, 15, 45);
+      doc.text(company.address, 15, 50);
+      doc.text(`${company.city}, ${company.state} ${company.zip}`, 15, 55);
+      doc.text(`Phone: ${company.phone}`, 15, 60);
+      doc.text(`Email: ${company.email}`, 15, 65);
       
       // Add invoice title and info
       doc.setFontSize(18);
@@ -71,43 +83,60 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
       // Add billed to section
       doc.setFontSize(11);
       doc.setTextColor(0);
-      doc.text('BILL TO:', 15, 60);
+      doc.text('BILL TO:', 15, 80);
       doc.setFontSize(10);
-      doc.text(invoice.customer, 15, 65);
+      doc.text(invoice.customer, 15, 85);
+      
+      if (invoice.customer_address) {
+        const addressLines = invoice.customer_address.split('\n');
+        let addressY = 90;
+        addressLines.forEach(line => {
+          doc.text(line, 15, addressY);
+          addressY += 5;
+        });
+      }
       
       // Add shipment info if available
-      if (invoice.loadDetails) {
+      if (invoice.loads && invoice.loads.length > 0) {
+        const load = invoice.loads[0];
+        
         doc.setFontSize(11);
-        doc.text('SHIPMENT INFO:', 140, 60);
+        doc.text('SHIPMENT INFO:', 140, 80);
         doc.setFontSize(10);
         
-        let yPos = 65;
+        let yPos = 85;
         
-        if (invoice.loadDetails.loadNumber) {
-          doc.text(`Load #: ${invoice.loadDetails.loadNumber}`, 140, yPos);
+        if (load.load_number) {
+          doc.text(`Load #: ${load.load_number}`, 140, yPos);
           yPos += 5;
         }
         
-        if (invoice.loadDetails.origin || invoice.loadDetails.destination) {
-          doc.text(`Route: ${invoice.loadDetails.origin || ''} → ${invoice.loadDetails.destination || ''}`, 140, yPos);
+        if (load.origin || load.destination) {
+          doc.text(`Route: ${load.origin || ''} → ${load.destination || ''}`, 140, yPos);
           yPos += 5;
-        }
-        
-        if (invoice.loadDetails.deliveryDate) {
-          doc.text(`Delivered: ${new Date(invoice.loadDetails.deliveryDate).toLocaleDateString()}`, 140, yPos);
         }
       }
       
       // Add line items table
+      const tableColumn = ["Description", "Quantity", "Unit Price", "Total"];
+      const tableRows = [];
+      
+      if (invoice.items && invoice.items.length > 0) {
+        invoice.items.forEach(item => {
+          const itemData = [
+            item.description,
+            item.quantity.toString(),
+            `$${parseFloat(item.unit_price).toFixed(2)}`,
+            `$${(item.quantity * item.unit_price).toFixed(2)}`
+          ];
+          tableRows.push(itemData);
+        });
+      }
+      
       autoTable(doc, {
-        startY: 80,
-        head: [['Description', 'Quantity', 'Unit Price', 'Total']],
-        body: invoice.items.map(item => [
-          item.description,
-          item.quantity.toString(),
-          `$${item.unitPrice.toFixed(2)}`,
-          `$${(item.quantity * item.unitPrice).toFixed(2)}`
-        ]),
+        startY: 100,
+        head: [tableColumn],
+        body: tableRows,
         theme: 'striped',
         headStyles: {
           fillColor: [66, 139, 202]
@@ -182,11 +211,17 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
         );
       }
       
-      // Save the PDF
-      doc.save(`Invoice_${invoice.invoice_number}.pdf`);
+      console.log("PDF generated, saving file");
+      
+      // Save the PDF with a detailed filename
+      const filename = `Invoice_${invoice.invoice_number}_${invoice.customer.replace(/\s+/g, '_')}.pdf`;
+      doc.save(filename);
+      
+      console.log(`PDF saved as: ${filename}`);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      setError('Failed to generate PDF. Please try again.');
+      alert('Error generating PDF: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -194,6 +229,7 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
 
   return (
     <button
+      id={id}
       onClick={generatePdf}
       disabled={loading}
       className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
@@ -209,6 +245,7 @@ export default function InvoicePdfGenerator({ invoice, companyInfo }) {
           Download PDF
         </>
       )}
+      {error && <span className="text-red-500 ml-2 text-xs">{error}</span>}
     </button>
   );
 }

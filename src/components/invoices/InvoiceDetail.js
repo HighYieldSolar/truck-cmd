@@ -1,3 +1,4 @@
+// src/components/invoices/InvoiceDetail.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +8,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import { getInvoiceById, updateInvoiceStatus, recordPayment, deleteInvoice, emailInvoice } from "@/lib/services/invoiceService";
-import { subscribeToInvoices } from "@/lib/supabaseRealtime";
+import InvoicePdfGenerator from "@/components/invoices/InvoicePdfGenerator";
 
 import {
   ChevronLeft,
@@ -50,11 +51,11 @@ const PaymentHistoryItem = ({ payment }) => {
         </div>
         <div>
           <p className="text-sm font-medium text-gray-900">{payment.description}</p>
-          <p className="text-xs text-gray-500">{payment.date} · {payment.reference}</p>
+          <p className="text-xs text-gray-500">{payment.date} · {payment.reference || 'No reference'}</p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium text-gray-900">${payment.amount.toFixed(2)}</p>
+        <p className="text-sm font-medium text-gray-900">${parseFloat(payment.amount).toFixed(2)}</p>
         <p className="text-xs text-gray-500">{payment.status}</p>
       </div>
     </div>
@@ -118,7 +119,7 @@ const ActionsDropdown = ({ onAction }) => {
       </button>
       
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+        <div className="absolute right-0 z-50 mt-2 w-56 py-2 bg-white rounded-md shadow-lg border border-gray-200">
           <div className="py-1" role="menu" aria-orientation="vertical">
             {actions.map((action) => (
               <button
@@ -137,6 +138,7 @@ const ActionsDropdown = ({ onAction }) => {
     </div>
   );
 };
+// Modal Components for InvoiceDetail - Part 2
 
 // Payment Modal Component
 const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
@@ -527,6 +529,7 @@ Your Company Name
     </div>
   );
 };
+// Main InvoiceDetail Component - Part 3
 
 // Main Invoice Detail Component
 export default function InvoiceDetail({ invoiceId }) {
@@ -541,101 +544,88 @@ export default function InvoiceDetail({ invoiceId }) {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState(null);
 
-// Fetch user and invoice data
-useEffect(() => {
-  async function initialize() {
-    try {
-      setLoading(true);
-      
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
-      
-      if (!user) {
-        // Redirect to login if not authenticated
-        window.location.href = '/login';
-        return;
-      }
-      
-      setUser(user);
-      
-      // Get invoice details
-      const invoiceData = await getInvoiceById(invoiceId);
-      
-      if (!invoiceData) {
-        setError("Invoice not found");
-        setLoading(false);
-        return;
-      }
-      
-      setInvoice(invoiceData);
-      
-      // Get payment history from Supabase
-      const { data: payments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('invoice_id', invoiceId)
-        .order('date', { ascending: false });
+  // Fetch user and invoice data
+  useEffect(() => {
+    async function initialize() {
+      try {
+        setLoading(true);
         
-      if (paymentsError) throw paymentsError;
-      
-      setPaymentHistory(payments || []);
-      
-      // Get invoice activity history
-      // First, set the creation activity
-      setInvoiceHistory([
-        {
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        
+        if (!user) {
+          // Redirect to login if not authenticated
+          router.push('/login');
+          return;
+        }
+        
+        setUser(user);
+        
+        // Get invoice details
+        const invoiceData = await getInvoiceById(invoiceId);
+        
+        if (!invoiceData) {
+          setError("Invoice not found");
+          setLoading(false);
+          return;
+        }
+        
+        setInvoice(invoiceData);
+        
+        // Get payment history from Supabase
+        const { data: payments, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('invoice_id', invoiceId)
+          .order('date', { ascending: false });
+          
+        if (paymentsError) throw paymentsError;
+        
+        setPaymentHistory(payments || []);
+        
+        // Get invoice activity history
+        // First, set the creation activity
+        const initialHistory = [{
           type: 'created',
           description: 'Invoice created',
           date: new Date(invoiceData.created_at).toLocaleString(),
           user: 'You'
+        }];
+        
+        setInvoiceHistory(initialHistory);
+        
+        // Then fetch additional activities if available
+        const { data: activities, error: activitiesError } = await supabase
+          .from('invoice_activities')
+          .select('*')
+          .eq('invoice_id', invoiceId)
+          .order('created_at', { ascending: false });
+          
+        if (!activitiesError && activities && activities.length > 0) {
+          const formattedActivities = activities.map(activity => ({
+            type: activity.activity_type,
+            description: activity.description,
+            date: new Date(activity.created_at).toLocaleString(),
+            user: activity.user_name || 'System'
+          }));
+          
+          setInvoiceHistory([...formattedActivities, ...initialHistory]);
         }
-      ]);
-      
-      // Then fetch additional activities if available
-      const { data: activities, error: activitiesError } = await supabase
-        .from('invoice_activities')
-        .select('*')
-        .eq('invoice_id', invoiceId)
-        .order('created_at', { ascending: false });
         
-      if (!activitiesError && activities) {
-        const formattedActivities = activities.map(activity => ({
-          type: activity.activity_type,
-          description: activity.description,
-          date: new Date(activity.created_at).toLocaleString(),
-          user: activity.user_name || 'System'
-        }));
-        
-        setInvoiceHistory([...formattedActivities, ...invoiceHistory]);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching invoice:", err);
+        setError("Failed to load invoice data: " + err.message);
+        setLoading(false);
       }
-      
-      setLoading(false);
-    } catch (err) {
-      console.error("Error fetching invoice:", err);
-      setError("Failed to load invoice data");
-      setLoading(false);
     }
-  }
-  
-  if (invoiceId) {
-    initialize();
-  }
-}, [invoiceId, invoiceHistory]);
-
-// useCallback defined outside the initialize function
-const refreshData = useCallback(() => {
-  // Code that uses invoiceHistory
-  // ...
-}, [/* other dependencies only */]);
-
-// Separate useEffect for refreshData
-useEffect(() => {
-  if (invoiceId) {
-    refreshData();
-  }
-}, [invoiceId, refreshData]);
+    
+    if (invoiceId) {
+      initialize();
+    }
+  }, [invoiceId, router]);
 
   // Set up real-time subscription for this invoice
   useEffect(() => {
@@ -651,6 +641,7 @@ useEffect(() => {
             filter: `id=eq.${invoiceId}`
           },
           async (payload) => {
+            console.log("Invoice updated:", payload);
             // Refresh invoice data
             const invoiceData = await getInvoiceById(invoiceId);
             if (invoiceData) {
@@ -667,6 +658,7 @@ useEffect(() => {
             filter: `invoice_id=eq.${invoiceId}`
           },
           async () => {
+            console.log("Payment updated");
             // Refresh payment history
             const { data } = await supabase
               .from('payments')
@@ -697,7 +689,12 @@ useEffect(() => {
         case 'markPaid':
           await updateInvoiceStatus(invoiceId, 'Paid');
           
-          // Add to invoice history - using functional update to avoid dependency issue
+          // Force refresh of stats by setting a session flag
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem('dashboard-refresh-needed', 'true');
+          }
+          
+          // Add to invoice history
           const newActivity = {
             type: 'paid',
             description: 'Invoice marked as paid',
@@ -714,7 +711,8 @@ useEffect(() => {
           setEmailModalOpen(true);
           break;
         case 'download':
-          // PDF download handled by PDF generator
+          // PDF download will be handled by the InvoicePdfGenerator component
+          document.getElementById('download-invoice-btn').click();
           break;
         case 'print':
           window.print();
@@ -752,17 +750,20 @@ useEffect(() => {
       // Record the payment
       await recordPayment(invoiceId, formattedPayment);
       
-      // Update is handled by real-time subscription
+      // Force refresh of stats
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('dashboard-refresh-needed', 'true');
+      }
       
       // Add to invoice history
       const newActivity = {
         type: 'paid',
-        description: `Payment of ${formattedPayment.amount.toFixed(2)} recorded`,
+        description: `Payment of $${formattedPayment.amount.toFixed(2)} recorded`,
         date: new Date().toLocaleString(),
         user: 'You'
       };
       
-      setInvoiceHistory([newActivity, ...invoiceHistory]);
+      setInvoiceHistory(prevHistory => [newActivity, ...prevHistory]);
       
       // Record activity in database
       await supabase
@@ -770,7 +771,7 @@ useEffect(() => {
         .insert([{
           invoice_id: invoiceId,
           activity_type: 'payment',
-          description: `Payment of ${formattedPayment.amount.toFixed(2)} recorded`,
+          description: `Payment of $${formattedPayment.amount.toFixed(2)} recorded`,
           user_id: user.id,
           user_name: user.email
         }]);
@@ -797,7 +798,7 @@ useEffect(() => {
         await updateInvoiceStatus(invoiceId, 'Sent');
       }
       
-      // Add to invoice history - using functional update to avoid dependency issue
+      // Add to invoice history
       const newActivity = {
         type: 'sent',
         description: `Invoice emailed to ${emailData.to}`,
@@ -932,6 +933,13 @@ useEffect(() => {
               <Send size={16} className="mr-2" />
               Send
             </button>
+            {/* Hidden button for PDF generator to target */}
+            <div className="hidden">
+              <InvoicePdfGenerator 
+                invoice={invoice} 
+                id="download-invoice-btn"
+              />
+            </div>
             <button
               onClick={() => handleAction('download')}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -988,7 +996,7 @@ useEffect(() => {
                   <h3 className="text-gray-600 font-semibold text-sm">BILL TO:</h3>
                   <p className="font-medium text-gray-900">{invoice.customer}</p>
                   {invoice.customer_address && (
-                    <p className="text-gray-600 text-sm">{invoice.customer_address}</p>
+                    <p className="text-gray-600 text-sm whitespace-pre-line">{invoice.customer_address}</p>
                   )}
                 </div>
                 
@@ -1027,7 +1035,7 @@ useEffect(() => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {invoice.items && invoice.items.map((item, index) => (
                       <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
                           {item.description}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
