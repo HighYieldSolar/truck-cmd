@@ -169,7 +169,6 @@ export async function fetchDashboardStats(userId) {
     
     return {
       earnings: currentMonthEarnings,
-      earnings: currentMonthEarnings,
       earningsChange: earningsChange,
       earningsPositive: earningsChange > 0,
       expenses: currentMonthExpensesTotal,
@@ -246,6 +245,15 @@ export async function fetchRecentActivity(userId, limit = 5) {
       .limit(limit);
       
     if (loadError) throw loadError;
+
+// Get recent factored earnings
+const { data: factoredActivity, error: factoredError } = await supabase
+  .from('earnings')
+  .select('id, description, amount, created_at, factoring_company')
+  .eq('user_id', userId)
+  .eq('source', 'Factoring')
+  .order('created_at', { ascending: false })
+  .limit(limit);
     
     // Combine all activities and sort by created_at
     const combinedActivity = [
@@ -281,7 +289,8 @@ export async function fetchRecentActivity(userId, limit = 5) {
     const rawItems = [
       ...(invoiceActivity || []).map(item => ({ ...item, activityType: 'invoice' })),
       ...(expenseActivity || []).map(item => ({ ...item, activityType: 'expense' })),
-      ...(loadActivity || []).map(item => ({ ...item, activityType: 'load' }))
+      ...(loadActivity || []).map(item => ({ ...item, activityType: 'load' })),
+      ...(factoredActivity || []).map(item => ({ ...item, activityType: 'earnings' }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
     // Map the sorted items to the formatted activities
