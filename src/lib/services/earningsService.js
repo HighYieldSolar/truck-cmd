@@ -11,6 +11,8 @@ import { supabase } from "../supabaseClient";
  */
 export async function recordFactoredEarnings(userId, loadId, amount, options = {}) {
   try {
+    console.log(`Starting recordFactoredEarnings - userId: ${userId}, loadId: ${loadId}, amount: ${amount}`);
+    
     // Get load details for reference
     const { data: load, error: loadError } = await supabase
       .from('loads')
@@ -34,6 +36,8 @@ export async function recordFactoredEarnings(userId, loadId, amount, options = {
       factoring_company: options.factoringCompany || null,
       created_at: new Date().toISOString()
     };
+    
+    console.log("Inserting earnings record:", earningsData);
 
     // Insert the earnings record
     const { data, error } = await supabase
@@ -41,9 +45,21 @@ export async function recordFactoredEarnings(userId, loadId, amount, options = {
       .insert([earningsData])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error inserting earnings record:", error);
+      throw error;
+    }
+    
+    console.log("Earnings record created:", data);
     
     // After recording factored earnings, update the load record to mark it as factored
+    console.log("Updating load record with factoring info:", {
+      factored: true,
+      factoring_company: options.factoringCompany || null,
+      factored_at: new Date().toISOString(),
+      factored_amount: amount
+    });
+    
     const { error: updateError } = await supabase
       .from('loads')
       .update({
@@ -57,7 +73,11 @@ export async function recordFactoredEarnings(userId, loadId, amount, options = {
     if (updateError) {
       console.error('Error updating load with factoring info:', updateError);
       // Continue even if load update fails - the earnings are still recorded
+      // But we should throw the error so the calling function knows there was an issue
+      throw updateError;
     }
+    
+    console.log("Load record updated successfully");
     
     return data?.[0] || null;
   } catch (error) {

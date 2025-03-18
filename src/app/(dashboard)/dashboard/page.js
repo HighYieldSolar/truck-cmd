@@ -296,6 +296,50 @@ export default function Dashboard() {
     avgPricePerGallon: 0,
     uniqueStates: 0
   });
+  
+  // Add refresh indicator to force updates when needed
+  const [refreshIndicator, setRefreshIndicator] = useState(0);
+
+  useEffect(() => {
+    // Check if coming back from completion page
+    const refreshNeeded = typeof window !== 'undefined' ? sessionStorage.getItem('dashboard-refresh-needed') : null;
+    if (refreshNeeded) {
+      // Clear the flag
+      sessionStorage.removeItem('dashboard-refresh-needed');
+      // Force a refresh by incrementing the refresh indicator
+      setRefreshIndicator(prev => prev + 1);
+      console.log("Dashboard refresh triggered from session storage flag");
+    }
+  }, []);
+
+  // Define loadDashboardData here before using it in useEffect
+  const loadDashboardData = useCallback(async (userId) => {
+    try {
+      console.log("Loading dashboard data for user:", userId);
+      setDataLoading(true);
+      
+      // Fetch dashboard data in parallel
+      const [dashboardStats, activity, deliveries, invoices, fuel] = await Promise.all([
+        fetchDashboardStats(userId),
+        fetchRecentActivity(userId),
+        fetchUpcomingDeliveries(userId),
+        fetchRecentInvoices(userId),
+        getFuelStats(userId, 'month')
+      ]);
+      
+      console.log("Dashboard stats loaded:", dashboardStats);
+      setStats(dashboardStats);
+      setRecentActivity(activity);
+      setUpcomingDeliveries(deliveries);
+      setRecentInvoices(invoices);
+      setFuelStats(fuel);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again later.');
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function checkUser() {
@@ -327,62 +371,52 @@ export default function Dashboard() {
         setLoading(false);
       }
     }
-  
-    // Define loadDashboardData inside the useEffect
-    async function loadDashboardData(userId) {
-      try {
-        setDataLoading(true);
-        
-        // Fetch dashboard data in parallel
-        const [dashboardStats, activity, deliveries, invoices, fuel] = await Promise.all([
-          fetchDashboardStats(userId),
-          fetchRecentActivity(userId),
-          fetchUpcomingDeliveries(userId),
-          fetchRecentInvoices(userId),
-          getFuelStats(userId, 'month')
-        ]);
-        
-        setStats(dashboardStats);
-        setRecentActivity(activity);
-        setUpcomingDeliveries(deliveries);
-        setRecentInvoices(invoices);
-        setFuelStats(fuel);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        setError('Failed to load dashboard data. Please try again later.');
-      } finally {
-        setDataLoading(false);
-      }
-    }
     
     checkUser();
-  }, []); // Empty dependency array is fine now
-  
-  const loadDashboardData = useCallback(async (userId) => {
-    try {
-      setDataLoading(true);
-      
-      // Fetch dashboard data in parallel
-      const [dashboardStats, activity, deliveries, invoices, fuel] = await Promise.all([
-        fetchDashboardStats(userId),
-        fetchRecentActivity(userId),
-        fetchUpcomingDeliveries(userId),
-        fetchRecentInvoices(userId),
-        getFuelStats(userId, 'month')
-      ]);
-      
-      setStats(dashboardStats);
-      setRecentActivity(activity);
-      setUpcomingDeliveries(deliveries);
-      setRecentInvoices(invoices);
-      setFuelStats(fuel);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      setError('Failed to load dashboard data. Please try again later.');
-    } finally {
-      setDataLoading(false);
+  }, [loadDashboardData]); // Include loadDashboardData as a dependency
+
+  // Effect to reload dashboard when refreshIndicator changes
+  useEffect(() => {
+    if (user && refreshIndicator > 0) {
+      loadDashboardData(user.id);
     }
-  }, []);
+  }, [user, refreshIndicator, loadDashboardData]);
+
+  // Add a subscription to factoring changes
+  useEffect(() => {
+    if (user) {
+      const channel = supabase
+        .channel(`earnings-changes-${user.id}`)
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'earnings', filter: `user_id=eq.${user.id}` },
+            payload => {
+              console.log("Earnings change detected:", payload);
+              // Refresh dashboard data when earnings change
+              loadDashboardData(user.id);
+            })
+        .subscribe();
+        
+      // Also subscribe to load status changes
+      const loadChannel = supabase
+        .channel(`loads-${user.id}`)
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'loads', filter: `user_id=eq.${user.id}` },
+            payload => {
+              console.log("Load change detected:", payload);
+              // Only refresh if it's a status change to completed or factored change
+              if (payload.new.status === 'Completed' || payload.new.factored !== payload.old?.factored) {
+                loadDashboardData(user.id);
+              }
+            })
+        .subscribe();
+      
+      // Clean up subscription
+      return () => {
+        supabase.removeChannel(channel);
+        supabase.removeChannel(loadChannel);
+      };
+    }
+  }, [user, loadDashboardData]);
 
   // Format currency
   const formatCurrency = (value) => {
@@ -457,7 +491,7 @@ export default function Dashboard() {
           {/* Show error if present */}
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
+<div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
                 </div>

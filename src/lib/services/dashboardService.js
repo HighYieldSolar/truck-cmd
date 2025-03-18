@@ -8,6 +8,8 @@ import { supabase } from "../supabaseClient";
  */
 export async function fetchDashboardStats(userId) {
   try {
+    console.log("Fetching dashboard stats for user:", userId);
+    
     // Get current month date range for MTD calculations
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -42,25 +44,27 @@ export async function fetchDashboardStats(userId) {
     
     // IMPORTANT: Also fetch factored earnings for current month
     const { data: currentFactoredEarnings, error: factoredError } = await supabase
-    .from('earnings')
-    .select('amount, date')
-    .eq('user_id', userId)
-    .eq('source', 'Factoring')
-    .gte('date', firstDayOfMonthStr)
-    .lte('date', todayStr);
+      .from('earnings')
+      .select('amount, date')
+      .eq('user_id', userId)
+      .eq('source', 'Factoring')
+      .gte('date', firstDayOfMonthStr)
+      .lte('date', todayStr);
     
-  if (factoredError) throw factoredError;
+    if (factoredError) throw factoredError;
+    
+    console.log("Current factored earnings:", currentFactoredEarnings);
     
     // Fetch factored earnings for last month (for comparison)
     const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = await supabase
-    .from('earnings')
-    .select('amount, date')
-    .eq('user_id', userId)
-    .eq('source', 'Factoring')
-    .gte('date', firstDayOfLastMonthStr)
-    .lte('date', lastDayOfLastMonthStr);
+      .from('earnings')
+      .select('amount, date')
+      .eq('user_id', userId)
+      .eq('source', 'Factoring')
+      .gte('date', firstDayOfLastMonthStr)
+      .lte('date', lastDayOfLastMonthStr);
     
-  if (lastMonthFactoredError) throw lastMonthFactoredError;
+    if (lastMonthFactoredError) throw lastMonthFactoredError;
     
     // Fetch current month expenses
     const { data: currentExpenses, error: expensesError } = await supabase
@@ -113,13 +117,20 @@ export async function fetchDashboardStats(userId) {
     // Calculate current month totals
     // Calculate invoice-based earnings (paid amounts)
     const currentMonthPaidInvoices = currentInvoices
-      .filter(invoice => invoice.status === 'Paid' || invoice.status === 'Partially Paid')
-      .reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0);
+      ? currentInvoices
+          .filter(invoice => invoice.status === 'Paid' || invoice.status === 'Partially Paid')
+          .reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0)
+      : 0;
     
     // Calculate factored earnings
     const currentMonthFactoredEarnings = currentFactoredEarnings
-    ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
-    : 0;
+      ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+      : 0;
+    
+    console.log("Calculated earnings:", {
+      paidInvoices: currentMonthPaidInvoices,
+      factoredEarnings: currentMonthFactoredEarnings
+    });
     
     // Total earnings = paid invoices + factored earnings
     const currentMonthEarnings = currentMonthPaidInvoices + currentMonthFactoredEarnings;
@@ -140,8 +151,8 @@ export async function fetchDashboardStats(userId) {
     
     // Last month factored earnings
     const lastMonthFactoredEarningsTotal = lastMonthFactoredEarnings
-    ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
-    : 0;
+      ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+      : 0;
     
     // Last month total earnings
     const lastMonthEarnings = lastMonthPaidInvoices + lastMonthFactoredEarningsTotal;
@@ -183,10 +194,8 @@ export async function fetchDashboardStats(userId) {
       // Add detailed earnings breakdown
       paidInvoices: currentMonthPaidInvoices,
       factoredEarnings: currentMonthFactoredEarnings
-      };
-    }
-  
-    catch (error) {
+    };
+  } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     // Return default values in case of error
     return {
@@ -246,14 +255,16 @@ export async function fetchRecentActivity(userId, limit = 5) {
       
     if (loadError) throw loadError;
 
-// Get recent factored earnings
-const { data: factoredActivity, error: factoredError } = await supabase
-  .from('earnings')
-  .select('id, description, amount, created_at, factoring_company')
-  .eq('user_id', userId)
-  .eq('source', 'Factoring')
-  .order('created_at', { ascending: false })
-  .limit(limit);
+    // Get recent factored earnings
+    const { data: factoredActivity, error: factoredError } = await supabase
+      .from('earnings')
+      .select('id, description, amount, date, created_at, factoring_company')
+      .eq('user_id', userId)
+      .eq('source', 'Factoring')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (factoredError) throw factoredError;
     
     // Combine all activities and sort by created_at
     const combinedActivity = [
@@ -282,6 +293,16 @@ const { data: factoredActivity, error: factoredError } = await supabase
         client: item.customer,
         date: timeAgo(new Date(item.created_at)),
         status: getStatusType(item.status)
+      })),
+      ...(factoredActivity || []).map(item => ({
+        id: `factored-${item.id}`,
+        type: 'factored',
+        title: `Factored load earnings recorded`,
+        amount: `$${parseFloat(item.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+        description: item.description,
+        company: item.factoring_company,
+        date: timeAgo(new Date(item.created_at || item.date)),
+        status: 'success'
       }))
     ];
     
@@ -290,18 +311,21 @@ const { data: factoredActivity, error: factoredError } = await supabase
       ...(invoiceActivity || []).map(item => ({ ...item, activityType: 'invoice' })),
       ...(expenseActivity || []).map(item => ({ ...item, activityType: 'expense' })),
       ...(loadActivity || []).map(item => ({ ...item, activityType: 'load' })),
-      ...(factoredActivity || []).map(item => ({ ...item, activityType: 'earnings' }))
+      ...(factoredActivity || []).map(item => ({ ...item, activityType: 'factored', created_at: item.created_at || new Date(item.date).toISOString() }))
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
     // Map the sorted items to the formatted activities
     const sortedActivities = rawItems.slice(0, limit).map(item => {
-      const formattedItem = combinedActivity.find(activity => {
-        if (item.activityType === 'invoice' && activity.id === `inv-${item.id}`) return true;
-        if (item.activityType === 'expense' && activity.id === `exp-${item.id}`) return true;
-        if (item.activityType === 'load' && activity.id === `load-${item.id}`) return true;
-        return false;
-      });
-      return formattedItem;
+      if (item.activityType === 'invoice') {
+        return combinedActivity.find(activity => activity.id === `inv-${item.id}`);
+      } else if (item.activityType === 'expense') {
+        return combinedActivity.find(activity => activity.id === `exp-${item.id}`);
+      } else if (item.activityType === 'load') {
+        return combinedActivity.find(activity => activity.id === `load-${item.id}`);
+      } else if (item.activityType === 'factored') {
+        return combinedActivity.find(activity => activity.id === `factored-${item.id}`);
+      }
+      return null;
     }).filter(Boolean); // Remove any undefined items
     
     return sortedActivities;

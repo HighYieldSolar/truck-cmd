@@ -12,6 +12,12 @@ import { recordFactoredEarnings } from "./earningsService";
  */
 export async function completeLoad(userId, loadId, completionData) {
   try {
+    console.log("Starting load completion process with data:", {
+      userId,
+      loadId,
+      completionData: { ...completionData, podDocuments: "[truncated]" }
+    });
+    
     // Destructure required fields from completion data
     const { 
       deliveryDate, deliveryTime, receivedBy, notes, deliveryRating,
@@ -27,9 +33,13 @@ export async function completeLoad(userId, loadId, completionData) {
       .eq('id', loadId)
       .single();
       
-    if (loadError) throw loadError;
+    if (loadError) {
+      console.error("Error fetching load details:", loadError);
+      throw loadError;
+    }
     
     const totalRate = (load?.rate || 0) + parseFloat(additionalCharges || 0);
+    console.log(`Calculated total rate: ${totalRate} (base rate: ${load?.rate}, additional charges: ${additionalCharges})`);
     
     // Update the load with completion data
     const loadUpdateData = {
@@ -49,10 +59,14 @@ export async function completeLoad(userId, loadId, completionData) {
     
     // Add factoring information if applicable
     if (useFactoring) {
+      console.log("Using factoring with company:", factoringCompany);
       loadUpdateData.factored = true;
       loadUpdateData.factoring_company = factoringCompany || null;
       loadUpdateData.factored_at = new Date().toISOString();
+      loadUpdateData.factored_amount = totalRate;
     }
+    
+    console.log("Updating load with data:", loadUpdateData);
     
     // Update the load in the database
     const { data: updatedLoad, error: updateError } = await supabase
@@ -61,7 +75,12 @@ export async function completeLoad(userId, loadId, completionData) {
       .eq('id', loadId)
       .select();
       
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error("Error updating load:", updateError);
+      throw updateError;
+    }
+    
+    console.log("Load updated successfully:", updatedLoad);
     
     // Handle either invoice generation or factoring
     let invoice = null;
@@ -72,26 +91,40 @@ export async function completeLoad(userId, loadId, completionData) {
         userId, 
         loadId, 
         totalRate,
-        date: new Date().toISOString().split('T')[0],
+        date: deliveryDate || new Date().toISOString().split('T')[0],
         factoringCompany
       });
       
       // Record factored earnings
-      earnings = await recordFactoredEarnings(userId, loadId, totalRate, {
-        date: new Date().toISOString().split('T')[0],
-        description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
-        factoringCompany: factoringCompany
-      });
-      
-      console.log("Factored earnings recorded:", earnings);
+      try {
+        earnings = await recordFactoredEarnings(userId, loadId, totalRate, {
+          date: deliveryDate || new Date().toISOString().split('T')[0],
+          description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
+          factoringCompany: factoringCompany
+        });
+        
+        console.log("Factored earnings recorded:", earnings);
+      } catch (factorError) {
+        console.error("Error recording factored earnings:", factorError);
+        // Consider whether to fail the whole operation or continue
+        throw factorError;
+      }
     } else if (generateInvoice) {
+      console.log("Generating invoice for load");
       // Generate invoice
-      invoice = await createInvoiceFromLoad(userId, loadId, {
-        markAsPaid: markPaid,
-        dueInDays: 15,
-        invoiceDate: new Date().toISOString().split('T')[0],
-        notes: `Invoice for Load #${load.load_number}: ${load.origin} to ${load.destination}`
-      });
+      try {
+        invoice = await createInvoiceFromLoad(userId, loadId, {
+          markAsPaid: markPaid,
+          dueInDays: 15,
+          invoiceDate: new Date().toISOString().split('T')[0],
+          notes: `Invoice for Load #${load.load_number}: ${load.origin} to ${load.destination}`
+        });
+        
+        console.log("Invoice generated:", invoice ? invoice.id : "No invoice returned");
+      } catch (invoiceError) {
+        console.error("Error generating invoice:", invoiceError);
+        // Continue with the completion process even if invoice generation fails
+      }
     }
     
     return {

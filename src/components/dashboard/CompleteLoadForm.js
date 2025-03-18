@@ -1,3 +1,4 @@
+// src/components/dashboard/CompleteLoadForm.js
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -348,31 +349,31 @@ export default function CompleteLoadForm({ loadId }) {
     }
   };
   
-      // Handle file preview
+  // Handle file preview
   const handleFilePreview = (file) => {
     setPreviewFile(file);
     setPreviewModalOpen(true);
   };
   
   // When useFactoring is toggled, update related fields
-    const handleFactoringToggle = (useFactoring) => {
-      if (useFactoring) {
-        // If switching to factoring, disable invoice generation
-        setFormData(prev => ({
-          ...prev,
-          useFactoring: true,
-          generateInvoice: false, // Force this to false
-          markPaid: false // Force this to false as well
-        }));
-      } else {
-        // If switching away from factoring, re-enable invoice generation by default
-        setFormData(prev => ({
-          ...prev,
-          useFactoring: false,
-          generateInvoice: true // Default to generating invoice when not using factoring
-        }));
-      }
-    };
+  const handleFactoringToggle = (useFactoring) => {
+    if (useFactoring) {
+      // If switching to factoring, disable invoice generation
+      setFormData(prev => ({
+        ...prev,
+        useFactoring: true,
+        generateInvoice: false, // Force this to false
+        markPaid: false // Force this to false as well
+      }));
+    } else {
+      // If switching away from factoring, re-enable invoice generation by default
+      setFormData(prev => ({
+        ...prev,
+        useFactoring: false,
+        generateInvoice: true // Default to generating invoice when not using factoring
+      }));
+    }
+  };
   
   // Remove a file from the list
   const handleRemoveFile = (index) => {
@@ -415,6 +416,11 @@ export default function CompleteLoadForm({ loadId }) {
       case 3: // Billing & Completion
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
           newErrors.additionalChargesDescription = "Description is required for additional charges";
+          isValid = false;
+        }
+        
+        if (formData.useFactoring && !formData.factoringCompany.trim()) {
+          newErrors.factoringCompany = "Factoring company name is required";
           isValid = false;
         }
         break;
@@ -484,30 +490,66 @@ export default function CompleteLoadForm({ loadId }) {
         podDocuments: podUrls
       };
       
+      // Prepare load update data
+      const loadUpdateData = {
+        status: 'Completed',
+        actual_delivery_date: formData.deliveryDate,
+        received_by: formData.receivedBy,
+        completion_notes: formData.notes,
+        additional_mileage: parseFloat(formData.additionalMileage || 0),
+        additional_charges: parseFloat(formData.additionalCharges || 0),
+        additional_charges_description: formData.additionalChargesDescription,
+        delivery_rating: formData.deliveryRating,
+        pod_documents: podUrls,
+        completed_at: new Date().toISOString(),
+        final_rate: totalRate
+      };
+      
+      // Add factoring information if applicable
+      if (formData.useFactoring) {
+        loadUpdateData.factored = true;
+        loadUpdateData.factoring_company = formData.factoringCompany || null;
+        loadUpdateData.factored_at = new Date().toISOString();
+        loadUpdateData.factored_amount = totalRate;
+      }
+      
       // Update the load in Supabase
       const { data: updatedLoad, error: updateError } = await supabase
         .from('loads')
-        .update({
-          status: 'Completed',
-          actual_delivery_date: formData.deliveryDate,
-          received_by: formData.receivedBy,
-          completion_notes: formData.notes,
-          additional_mileage: parseFloat(formData.additionalMileage || 0),
-          additional_charges: parseFloat(formData.additionalCharges || 0),
-          additional_charges_description: formData.additionalChargesDescription,
-          delivery_rating: formData.deliveryRating,
-          pod_documents: podUrls,
-          completed_at: new Date().toISOString(),
-          final_rate: totalRate
-        })
+        .update(loadUpdateData)
         .eq('id', loadId)
         .select();
         
       if (updateError) throw updateError;
       
-      // Create invoice if requested
+      // Process factoring or create invoice based on user selection
       let invoiceCreated = false;
-      if (formData.generateInvoice) {
+      
+      if (formData.useFactoring) {
+        console.log("Processing factored load:", {
+          userId: user.id,
+          loadId: loadId,
+          amount: totalRate
+        });
+        
+        try {
+          // Record factored earnings
+          const factoringResult = await recordFactoredEarnings(user.id, loadId, totalRate, {
+            date: formData.deliveryDate,
+            description: `Factored load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`,
+            factoringCompany: formData.factoringCompany || null
+          });
+          
+          console.log("Factoring result:", factoringResult);
+          
+          if (!factoringResult) {
+            console.warn("No factoring result returned, but continuing with completion process");
+          }
+        } catch (factoringError) {
+          console.error("Error recording factored earnings:", factoringError);
+          // We'll still continue with the load completion process
+        }
+      } else if (formData.generateInvoice) {
         // Generate an invoice number
         const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
         
@@ -564,24 +606,6 @@ export default function CompleteLoadForm({ loadId }) {
               
               await supabase.from('invoice_items').insert([additionalChargeItem]);
             }
-
-// Add this code for factoring
-if (formData.useFactoring) {
-  // Calculate total rate
-  const totalRate = loadDetails.rate + parseFloat(formData.additionalCharges || 0);
-  
-  try {
-    // Record factored earnings
-    await recordFactoredEarnings(user.id, loadId, totalRate, {
-      date: formData.deliveryDate,
-      description: `Factored load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`,
-      factoringCompany: formData.factoringCompany || null
-    });
-  } catch (factoringError) {
-    console.error('Error recording factored earnings:', factoringError);
-    // Don't fail the whole process if factoring recording has an issue
-  }
-}
             
             // Record invoice creation activity
             await supabase.from('invoice_activities').insert([{
@@ -594,6 +618,11 @@ if (formData.useFactoring) {
             }]);
           }
         }
+      }
+      
+      // Set flag to refresh dashboard when redirected back
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dashboard-refresh-needed', 'true');
       }
       
       // Show success modal
@@ -731,7 +760,7 @@ if (formData.useFactoring) {
                       <p className="text-sm font-medium text-gray-900">Route</p>
                       <p className="text-sm text-gray-700">
                         {loadDetails.origin} → {loadDetails.destination}
-                      </p>
+                        </p>
                     </div>
                   </div>
                   <div className="flex">
@@ -1219,6 +1248,7 @@ if (formData.useFactoring) {
                           <li>Update the load status to &quot;Completed&quot;</li>
                           <li>Save all delivery documentation</li>
                           {formData.generateInvoice && <li>Generate an invoice automatically</li>}
+                          {formData.useFactoring && <li>Record earnings from this factored load</li>}
                           <li>Make this load available for reporting</li>
                         </ul>
                       </div>
