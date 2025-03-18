@@ -1,4 +1,3 @@
-// src/lib/services/dashboardService.js
 import { supabase } from "../supabaseClient";
 
 /**
@@ -22,97 +21,115 @@ export async function fetchDashboardStats(userId) {
     const firstDayOfLastMonthStr = firstDayOfLastMonth.toISOString().split('T')[0];
     const lastDayOfLastMonthStr = lastDayOfLastMonth.toISOString().split('T')[0];
     
-    // Fetch invoices for earnings calculation (current month)
-    const { data: currentInvoices, error: invoicesError } = await supabase
-      .from('invoices')
-      .select('total, amount_paid, status, invoice_date')
-      .eq('user_id', userId)
-      .gte('invoice_date', firstDayOfMonthStr)
-      .lte('invoice_date', todayStr);
+    // Run parallel queries for better performance
+    const [
+      invoicesResult, 
+      factoringsResult, 
+      lastMonthInvoicesResult, 
+      lastMonthFactoringsResult,
+      expensesResult,
+      lastMonthExpensesResult,
+      activeLoadsResult,
+      pendingInvoicesResult,
+      upcomingDeliveriesResult
+    ] = await Promise.all([
+      // Current month invoices
+      supabase
+        .from('invoices')
+        .select('total, amount_paid, status, invoice_date')
+        .eq('user_id', userId)
+        .gte('invoice_date', firstDayOfMonthStr)
+        .lte('invoice_date', todayStr),
+        
+      // Current month factored earnings
+      supabase
+        .from('earnings')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .eq('source', 'Factoring')
+        .gte('date', firstDayOfMonthStr)
+        .lte('date', todayStr),
       
+      // Last month invoices
+      supabase
+        .from('invoices')
+        .select('total, amount_paid')
+        .eq('user_id', userId)
+        .gte('invoice_date', firstDayOfLastMonthStr)
+        .lte('invoice_date', lastDayOfLastMonthStr),
+      
+      // Last month factored earnings
+      supabase
+        .from('earnings')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .eq('source', 'Factoring')
+        .gte('date', firstDayOfLastMonthStr)
+        .lte('date', lastDayOfLastMonthStr),
+      
+      // Current month expenses
+      supabase
+        .from('expenses')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .gte('date', firstDayOfMonthStr)
+        .lte('date', todayStr),
+      
+      // Last month expenses
+      supabase
+        .from('expenses')
+        .select('amount')
+        .eq('user_id', userId)
+        .gte('date', firstDayOfLastMonthStr)
+        .lte('date', lastDayOfLastMonthStr),
+      
+      // Active loads
+      supabase
+        .from('loads')
+        .select('id')
+        .eq('user_id', userId)
+        .in('status', ['Pending', 'Assigned', 'In Transit']),
+      
+      // Pending invoices
+      supabase
+        .from('invoices')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'Pending'),
+      
+      // Upcoming deliveries
+      supabase
+        .from('loads')
+        .select('id')
+        .eq('user_id', userId)
+        .in('status', ['Assigned', 'In Transit'])
+        .gte('delivery_date', todayStr)
+    ]);
+    
+    // Destructure results
+    const { data: currentInvoices, error: invoicesError } = invoicesResult;
+    const { data: currentFactoredEarnings, error: factoredError } = factoringsResult; 
+    const { data: lastMonthInvoices, error: lastMonthInvoicesError } = lastMonthInvoicesResult;
+    const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = lastMonthFactoringsResult;
+    const { data: currentExpenses, error: expensesError } = expensesResult;
+    const { data: lastMonthExpenses, error: lastMonthExpensesError } = lastMonthExpensesResult;
+    const { data: activeLoads, error: loadsError } = activeLoadsResult;
+    const { data: pendingInvoices, error: pendingInvoicesError } = pendingInvoicesResult;
+    const { data: upcomingDeliveries, error: deliveryError } = upcomingDeliveriesResult;
+    
+    // Handle query errors
     if (invoicesError) throw invoicesError;
-    
-    // Fetch invoices for last month (for comparison)
-    const { data: lastMonthInvoices, error: lastMonthInvoicesError } = await supabase
-      .from('invoices')
-      .select('total, amount_paid')
-      .eq('user_id', userId)
-      .gte('invoice_date', firstDayOfLastMonthStr)
-      .lte('invoice_date', lastDayOfLastMonthStr);
-    
-    if (lastMonthInvoicesError) throw lastMonthInvoicesError;
-    
-    // IMPORTANT: Also fetch factored earnings for current month
-    const { data: currentFactoredEarnings, error: factoredError } = await supabase
-      .from('earnings')
-      .select('amount, date')
-      .eq('user_id', userId)
-      .eq('source', 'Factoring')
-      .gte('date', firstDayOfMonthStr)
-      .lte('date', todayStr);
-    
     if (factoredError) throw factoredError;
-    
-    console.log("Current factored earnings:", currentFactoredEarnings);
-    
-    // Fetch factored earnings for last month (for comparison)
-    const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = await supabase
-      .from('earnings')
-      .select('amount, date')
-      .eq('user_id', userId)
-      .eq('source', 'Factoring')
-      .gte('date', firstDayOfLastMonthStr)
-      .lte('date', lastDayOfLastMonthStr);
-    
+    if (lastMonthInvoicesError) throw lastMonthInvoicesError;
     if (lastMonthFactoredError) throw lastMonthFactoredError;
-    
-    // Fetch current month expenses
-    const { data: currentExpenses, error: expensesError } = await supabase
-      .from('expenses')
-      .select('amount, date')
-      .eq('user_id', userId)
-      .gte('date', firstDayOfMonthStr)
-      .lte('date', todayStr);
-      
     if (expensesError) throw expensesError;
-    
-    // Fetch last month expenses (for comparison)
-    const { data: lastMonthExpenses, error: lastMonthExpensesError } = await supabase
-      .from('expenses')
-      .select('amount')
-      .eq('user_id', userId)
-      .gte('date', firstDayOfLastMonthStr)
-      .lte('date', lastDayOfLastMonthStr);
-      
     if (lastMonthExpensesError) throw lastMonthExpensesError;
-    
-    // Fetch active loads
-    const { data: activeLoads, error: loadsError } = await supabase
-      .from('loads')
-      .select('id')
-      .eq('user_id', userId)
-      .in('status', ['Pending', 'Assigned', 'In Transit']);
-    
     if (loadsError) throw loadsError;
-    
-    // Fetch pending invoices
-    const { data: pendingInvoices, error: pendingInvoicesError } = await supabase
-      .from('invoices')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'Pending');
-      
     if (pendingInvoicesError) throw pendingInvoicesError;
-    
-    // Fetch upcoming deliveries (deliveries scheduled for today or in the future)
-    const { data: upcomingDeliveries, error: deliveryError } = await supabase
-      .from('loads')
-      .select('id')
-      .eq('user_id', userId)
-      .in('status', ['Assigned', 'In Transit'])
-      .gte('delivery_date', todayStr);
-      
     if (deliveryError) throw deliveryError;
+    
+    // Log factored earnings data for debugging
+    console.log("Current month factored earnings:", currentFactoredEarnings);
     
     // Calculate current month totals
     // Calculate invoice-based earnings (paid amounts)
@@ -177,6 +194,15 @@ export async function fetchDashboardStats(userId) {
     const profitChange = lastMonthProfit > 0 
       ? ((currentProfit - lastMonthProfit) / lastMonthProfit * 100).toFixed(1)
       : null;
+    
+    // Log final stats for debugging
+    console.log("Final dashboard stats:", {
+      earnings: currentMonthEarnings,
+      paidInvoices: currentMonthPaidInvoices,
+      factoredEarnings: currentMonthFactoredEarnings,
+      expenses: currentMonthExpensesTotal,
+      profit: currentProfit
+    });
     
     return {
       earnings: currentMonthEarnings,

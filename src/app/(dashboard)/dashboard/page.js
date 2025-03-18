@@ -1,3 +1,4 @@
+// src/app/(dashboard)/dashboard/page.js
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -35,7 +36,8 @@ import {
   LogOut,
   TrendingUp,
   TrendingDown,
-  MapPin
+  MapPin,
+  RefreshCw
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
@@ -207,34 +209,6 @@ const FuelSummary = ({ stats = {} }) => {
   );
 };
 
-// Empty state component for when there's no data
-const EmptyStateMessage = ({ message, icon, buttonText, buttonLink, onButtonClick }) => (
-  <div className="text-center py-8">
-    <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-      {icon}
-    </div>
-    <h3 className="text-lg font-medium text-gray-900">No data to display</h3>
-    <p className="mt-2 text-gray-500">{message}</p>
-    {buttonText && (buttonLink || onButtonClick) && (
-      buttonLink ? (
-        <Link 
-          href={buttonLink}
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          {buttonText}
-        </Link>
-      ) : (
-        <button
-          onClick={onButtonClick}
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          {buttonText}
-        </button>
-      )
-    )}
-  </div>
-);
-
 // Recent Invoices Component
 const RecentInvoices = ({ invoices = [] }) => (
   <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -266,6 +240,34 @@ const RecentInvoices = ({ invoices = [] }) => (
   </div>
 );
 
+// Empty state component for when there's no data
+const EmptyStateMessage = ({ message, icon, buttonText, buttonLink, onButtonClick }) => (
+  <div className="text-center py-8">
+    <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+      {icon}
+    </div>
+    <h3 className="text-lg font-medium text-gray-900">No data to display</h3>
+    <p className="mt-2 text-gray-500">{message}</p>
+    {buttonText && (buttonLink || onButtonClick) && (
+      buttonLink ? (
+        <Link 
+          href={buttonLink}
+          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+        >
+          {buttonText}
+        </Link>
+      ) : (
+        <button
+          onClick={onButtonClick}
+          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+        >
+          {buttonText}
+        </button>
+      )
+    )}
+  </div>
+);
+
 // Main Dashboard Component
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -284,7 +286,9 @@ export default function Dashboard() {
     profitPositive: true,
     activeLoads: 0,
     pendingInvoices: 0,
-    upcomingDeliveries: 0
+    upcomingDeliveries: 0,
+    paidInvoices: 0,
+    factoredEarnings: 0
   });
   
   const [recentActivity, setRecentActivity] = useState([]);
@@ -299,18 +303,6 @@ export default function Dashboard() {
   
   // Add refresh indicator to force updates when needed
   const [refreshIndicator, setRefreshIndicator] = useState(0);
-
-  useEffect(() => {
-    // Check if coming back from completion page
-    const refreshNeeded = typeof window !== 'undefined' ? sessionStorage.getItem('dashboard-refresh-needed') : null;
-    if (refreshNeeded) {
-      // Clear the flag
-      sessionStorage.removeItem('dashboard-refresh-needed');
-      // Force a refresh by incrementing the refresh indicator
-      setRefreshIndicator(prev => prev + 1);
-      console.log("Dashboard refresh triggered from session storage flag");
-    }
-  }, []);
 
   // Define loadDashboardData here before using it in useEffect
   const loadDashboardData = useCallback(async (userId) => {
@@ -338,6 +330,18 @@ export default function Dashboard() {
       setError('Failed to load dashboard data. Please try again later.');
     } finally {
       setDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Check if coming back from completion page with refresh flag
+    const refreshNeeded = typeof window !== 'undefined' ? sessionStorage.getItem('dashboard-refresh-needed') : null;
+    if (refreshNeeded) {
+      // Clear the flag
+      sessionStorage.removeItem('dashboard-refresh-needed');
+      // Force a refresh by incrementing the refresh indicator
+      setRefreshIndicator(prev => prev + 1);
+      console.log("Dashboard refresh triggered from session storage flag");
     }
   }, []);
 
@@ -382,10 +386,11 @@ export default function Dashboard() {
     }
   }, [user, refreshIndicator, loadDashboardData]);
 
-  // Add a subscription to factoring changes
+  // Add subscriptions to important tables for real-time updates
   useEffect(() => {
     if (user) {
-      const channel = supabase
+      // Subscribe to earnings changes
+      const earningsChannel = supabase
         .channel(`earnings-changes-${user.id}`)
         .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'earnings', filter: `user_id=eq.${user.id}` },
@@ -396,15 +401,16 @@ export default function Dashboard() {
             })
         .subscribe();
         
-      // Also subscribe to load status changes
+      // Subscribe to load status changes
       const loadChannel = supabase
         .channel(`loads-${user.id}`)
         .on('postgres_changes',
             { event: '*', schema: 'public', table: 'loads', filter: `user_id=eq.${user.id}` },
             payload => {
               console.log("Load change detected:", payload);
-              // Only refresh if it's a status change to completed or factored change
-              if (payload.new.status === 'Completed' || payload.new.factored !== payload.old?.factored) {
+              // Refresh if it's a completion or factored change
+              if (payload.new?.status === 'Completed' || 
+                  payload.new?.factored !== payload.old?.factored) {
                 loadDashboardData(user.id);
               }
             })
@@ -412,21 +418,11 @@ export default function Dashboard() {
       
       // Clean up subscription
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(earningsChannel);
         supabase.removeChannel(loadChannel);
       };
     }
   }, [user, loadDashboardData]);
-
-  // Format currency
-  const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  };
 
   // Combine all recent activities including fuel entries
   const combinedActivities = [...recentActivity];
@@ -452,6 +448,23 @@ export default function Dashboard() {
     return new Date(b.date) - new Date(a.date);
   });
 
+  // Format currency
+  const formatCurrency = (value) => {
+    return value.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    if (user) {
+      loadDashboardData(user.id);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -468,9 +481,16 @@ export default function Dashboard() {
           <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Welcome{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}</h1>
-              <p className="text-gray-600">Here&apos;s what&apos;s happening with your trucking business today</p>
+              <p className="text-gray-600">Here&#39;s what&#39;s happening with your trucking business today</p>
             </div>
             <div className="mt-4 md:mt-0 flex space-x-3">
+              <button
+                onClick={handleRefresh}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <RefreshCw size={16} className="mr-2" />
+                Refresh
+              </button>
               <Link
                 href="/dashboard/dispatching/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
@@ -491,7 +511,7 @@ export default function Dashboard() {
           {/* Show error if present */}
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-<div className="flex">
+              <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
                 </div>
@@ -502,70 +522,99 @@ export default function Dashboard() {
             </div>
           )}
 
-{/* Stats Overview */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-  {dataLoading ? (
-    // Skeleton loaders for stats cards
-    Array(3).fill(0).map((_, index) => (
-      <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-3 w-24 bg-gray-200 rounded"></div>
-            <div className="h-6 w-32 bg-gray-200 rounded"></div>
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {dataLoading ? (
+              // Skeleton loaders for stats cards
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow px-5 py-5 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="rounded-md p-2 bg-gray-200 h-10 w-10"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <>
+                <StatCard
+                  title="Total Earnings (MTD)"
+                  value={formatCurrency(stats.earnings)}
+                  change={stats.earningsChange}
+                  positive={stats.earningsPositive}
+                  icon={<DollarSign size={22} className="text-green-600" />}
+                />
+                <StatCard
+                  title="Total Expenses (MTD)"
+                  value={formatCurrency(stats.expenses)}
+                  change={stats.expensesChange}
+                  positive={stats.expensesPositive}
+                  icon={<Wallet size={22} className="text-red-600" />}
+                />
+                <StatCard
+                  title="Net Profit"
+                  value={formatCurrency(stats.profit)}
+                  change={stats.profitChange}
+                  positive={stats.profitPositive}
+                  icon={<BarChart2 size={22} className="text-blue-600" />}
+                />
+              </>
+            )}
           </div>
-          <div className="rounded-md p-2 bg-gray-200 h-10 w-10"></div>
-        </div>
-      </div>
-    ))
-  ) : (
-    <>
-      <StatCard
-        title="Total Earnings (MTD)"
-        value={formatCurrency(stats.earnings)}
-        change={stats.earningsChange}
-        positive={stats.earningsPositive}
-        icon={<DollarSign size={22} className="text-green-600" />}
-      />
-      <StatCard
-        title="Total Expenses (MTD)"
-        value={formatCurrency(stats.expenses)}
-        change={stats.expensesChange}
-        positive={stats.expensesPositive}
-        icon={<Wallet size={22} className="text-red-600" />}
-      />
-      <StatCard
-        title="Net Profit"
-        value={formatCurrency(stats.profit)}
-        change={stats.profitChange}
-        positive={stats.profitPositive}
-        icon={<BarChart2 size={22} className="text-blue-600" />}
-      />
-    </>
-  )}
-</div>
 
-{/* Earnings Breakdown */}
-{stats.factoredEarnings > 0 && (
-  <div className="bg-white rounded-lg shadow-sm mb-6 p-5">
-    <h3 className="text-lg font-medium text-gray-900 mb-4">Earnings Breakdown</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-        <div>
-          <p className="text-sm font-medium text-gray-500">Invoice Payments</p>
-          <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.paidInvoices)}</p>
-        </div>
-        <FileText size={22} className="text-blue-600" />
-      </div>
-      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-        <div>
-          <p className="text-sm font-medium text-gray-500">Factored Loads</p>
-          <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.factoredEarnings)}</p>
-        </div>
-        <Truck size={22} className="text-green-600" />
-      </div>
-    </div>
-  </div>
-)}
+          {/* Earnings Breakdown */}
+          {(stats.paidInvoices > 0 || stats.factoredEarnings > 0) && (
+            <div className="bg-white rounded-lg shadow-sm mb-6 p-5">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Earnings Breakdown</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Invoice Payments</p>
+                    <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.paidInvoices)}</p>
+                  </div>
+                  <FileText size={22} className="text-blue-600" />
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Factored Loads</p>
+                    <p className="text-xl font-semibold text-gray-900">{formatCurrency(stats.factoredEarnings)}</p>
+                  </div>
+                  <Truck size={22} className="text-green-600" />
+                </div>
+              </div>
+              
+              {/* Progress bar visualization */}
+              {stats.earnings > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Earnings Distribution</p>
+                  <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 float-left"
+                      style={{ width: `${(stats.paidInvoices / stats.earnings) * 100}%` }}
+                      title={`Paid Invoices: ${formatCurrency(stats.paidInvoices)}`}
+                    ></div>
+                    <div 
+                      className="h-full bg-green-500 float-left"
+                      style={{ width: `${(stats.factoredEarnings / stats.earnings) * 100}%` }}
+                      title={`Factored Loads: ${formatCurrency(stats.factoredEarnings)}`}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-gray-500">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
+                      <span>Paid Invoices ({stats.earnings > 0 ? Math.round((stats.paidInvoices / stats.earnings) * 100) : 0}%)</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
+                      <span>Factored Loads ({stats.earnings > 0 ? Math.round((stats.factoredEarnings / stats.earnings) * 100) : 0}%)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Secondary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -728,6 +777,22 @@ export default function Dashboard() {
               />
             </div>
           </div>
+
+          {/* Show "Fix Earnings" link if there's been factoring or earnings issues */}
+          {(stats.factoredEarnings > 0 || error) && (
+            <div className="text-center mb-6">
+              <Link 
+                href="/dashboard/admin/fix-earnings"
+                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+              >
+                <RefreshCw size={14} className="mr-1" />
+                Fix Earnings Records
+              </Link>
+              <p className="text-xs text-gray-500 mt-1">
+                Use this utility to fix any issues with earnings records from factored loads
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </DashboardLayout>
