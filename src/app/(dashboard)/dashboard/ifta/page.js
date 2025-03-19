@@ -17,7 +17,8 @@ import {
   Calendar,
   MapPin,
   Fuel,
-  DollarSign
+  DollarSign,
+  Clock
 } from "lucide-react";
 
 // Import custom components
@@ -25,12 +26,16 @@ import TripEntryForm from "@/components/ifta/TripEntryForm";
 import TripsList from "@/components/ifta/TripsList";
 import IFTASummary from "@/components/ifta/IFTASummary";
 import QuarterSelector from "@/components/ifta/QuarterSelector";
-import StateDataGrid from "@/components/ifta/StateDataGrid";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
 
+// Import new IFTA-Fuel integration components
+import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
+import EnhancedIFTASummary from "@/components/ifta/EnhancedIFTASummary";
+
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
+import { saveIFTAReport } from "@/lib/services/iftaService";
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
@@ -59,17 +64,23 @@ export default function IFTACalculatorPage() {
     userId: null
   });
 
-  // Function to calculate stats - defined outside useCallback to avoid circular dependencies
-  function calculateStatsFunction(tripsData, fuelEntries) {
+  // New state for fuel integration
+  const [syncResult, setSyncResult] = useState(null);
+  const [useEnhancedSummary, setUseEnhancedSummary] = useState(true);
+
+  // Define calculateStats with useCallback and include the calculation logic inside
+  const calculateStats = useCallback((tripsData, fuelEntries) => {
+    // Calculate stats directly inside useCallback
     if (!tripsData || tripsData.length === 0) {
-      return {
+      setStats({
         totalMiles: 0,
         totalGallons: 0,
         avgMpg: 0,
         fuelCostPerMile: 0,
         uniqueJurisdictions: 0,
         userId: user?.id
-      };
+      });
+      return;
     }
 
     // Calculate total miles from trips, using odometer readings if available
@@ -97,21 +108,16 @@ export default function IFTACalculatorPage() {
       if (trip.end_jurisdiction) uniqueJurisdictions.add(trip.end_jurisdiction);
     });
     
-    return {
+    // Set the stats state directly
+    setStats({
       totalMiles,
       totalGallons,
       avgMpg,
       fuelCostPerMile,
       uniqueJurisdictions: uniqueJurisdictions.size,
       userId: user?.id
-    };
-  }
-
-  // Wrapped version with useCallback that just updates the state
-  const calculateStats = useCallback((tripsData, fuelEntries) => {
-    const newStats = calculateStatsFunction(tripsData, fuelEntries);
-    setStats(newStats);
-  }, [user?.id]); // Only depend on user ID
+    });
+  }, [user?.id]); // Only depend on user?.id since it's used inside
 
   // Load fuel data from fuel tracker to assist with IFTA calculations
   const loadFuelData = useCallback(async () => {
@@ -241,6 +247,11 @@ export default function IFTACalculatorPage() {
     }
   }, [user, activeQuarter, initialLoading, loadFuelData, loadTrips]);
 
+  // Handle sync result from the IFTA-Fuel Sync component
+  const handleSyncComplete = (result) => {
+    setSyncResult(result);
+  };
+
   // Handle adding a new trip
   const handleAddTrip = async (tripData) => {
     try {
@@ -368,54 +379,7 @@ export default function IFTACalculatorPage() {
       setLoading(true);
       setError(null);
       
-      // Check if a report already exists for this quarter
-      const { data: existingReports, error: checkError } = await supabase
-        .from('ifta_reports')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('quarter', activeQuarter)
-        .limit(1);
-        
-      if (checkError) throw checkError;
-      
-      let reportId;
-      
-      if (existingReports && existingReports.length > 0) {
-        // Update existing report
-        reportId = existingReports[0].id;
-        
-        const { error: updateError } = await supabase
-          .from('ifta_reports')
-          .update({
-            total_miles: stats.totalMiles,
-            total_gallons: stats.totalGallons,
-            total_tax: reportData.total_tax || 0,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', reportId);
-          
-        if (updateError) throw updateError;
-      } else {
-        // Create new report
-        const { data: newReport, error: insertError } = await supabase
-          .from('ifta_reports')
-          .insert([{
-            user_id: user.id,
-            quarter: activeQuarter,
-            year: parseInt(activeQuarter.split('-Q')[0]),
-            total_miles: stats.totalMiles,
-            total_gallons: stats.totalGallons,
-            total_tax: reportData.total_tax || 0,
-            status: 'draft',
-            submitted_at: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }])
-          .select();
-          
-        if (insertError) throw insertError;
-        reportId = newReport[0].id;
-      }
+      const savedReport = await saveIFTAReport(user.id, reportData);
       
       return true;
     } catch (error) {
@@ -492,13 +456,31 @@ export default function IFTACalculatorPage() {
             />
           </div>
 
-          {/* IFTA Summary */}
+          {/* IFTA-Fuel Sync */}
           <div className="mb-6">
-            <IFTASummary 
-              trips={trips} 
-              stats={stats}
-              isLoading={loading || tripLoading} 
+            <IFTAFuelSync 
+              userId={user?.id} 
+              quarter={activeQuarter} 
+              onSyncComplete={handleSyncComplete}
             />
+          </div>
+
+          {/* IFTA Summary - Use Enhanced or Regular based on syncResult */}
+          <div className="mb-6">
+            {useEnhancedSummary ? (
+              <EnhancedIFTASummary
+                userId={user?.id}
+                quarter={activeQuarter}
+                syncResult={syncResult}
+                isLoading={loading || tripLoading}
+              />
+            ) : (
+              <IFTASummary 
+                trips={trips} 
+                stats={stats}
+                isLoading={loading || tripLoading} 
+              />
+            )}
           </div>
 
           {/* Trip Entry Form */}
@@ -516,15 +498,6 @@ export default function IFTACalculatorPage() {
               trips={trips} 
               onRemoveTrip={handleDeleteTrip} 
               isLoading={tripLoading}
-            />
-          </div>
-
-          {/* State Data Grid */}
-          <div className="mb-6">
-            <StateDataGrid
-              trips={trips}
-              fuelData={fuelData}
-              isLoading={loading || fuelDataLoading || tripLoading}
             />
           </div>
         </div>

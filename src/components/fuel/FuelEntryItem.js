@@ -1,8 +1,12 @@
-// src/components/fuel/FuelEntryItem.js - without sync button
-import { CheckCircle, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink } from "lucide-react";
+// src/components/fuel/FuelEntryItem.js - with IFTA integration
+import { useState } from "react";
+import { CheckCircle, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink, Calculator } from "lucide-react";
 import Link from "next/link";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
+  // Add state for IFTA link status
+  const [iftaLinkHovered, setIftaLinkHovered] = useState(false);
+  
   // Format price to 3 decimal places
   const formatPrice = (price) => {
     return parseFloat(price).toFixed(3);
@@ -21,6 +25,19 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
     return new Date(dateString).toLocaleDateString();
   };
   
+  // Get current quarter for the fuel purchase date
+  const getQuarterString = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const quarter = Math.ceil((month + 1) / 3);
+    
+    return `${year}-Q${quarter}`;
+  };
+  
+  // Create IFTA quarter parameter for linking to IFTA page
+  const iftaQuarter = getQuarterString(fuelEntry.date);
+  
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -33,6 +50,17 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
             <div className="text-sm text-gray-500 flex items-center">
               <MapPin size={14} className="text-gray-400 mr-1" />
               {fuelEntry.state_name} ({fuelEntry.state})
+              
+              {/* Add IFTA link */}
+              <Link 
+                href={`/dashboard/ifta?quarter=${iftaQuarter}`}
+                className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center"
+                onMouseEnter={() => setIftaLinkHovered(true)}
+                onMouseLeave={() => setIftaLinkHovered(false)}
+              >
+                <Calculator size={14} className="mr-1" />
+                <span className={iftaLinkHovered ? "underline" : ""}>IFTA</span>
+              </Link>
             </div>
           </div>
         </div>

@@ -10,8 +10,12 @@ import {
   ArrowUpDown,
   Info,
   AlertTriangle,
-  MapPin
+  MapPin,
+  Fuel,
+  ExternalLink,
+  Calculator
 } from "lucide-react";
+import Link from "next/link";
 
 export default function StateDataGrid({ trips = [], fuelData = [], isLoading = false }) {
   const [filters, setFilters] = useState({
@@ -21,6 +25,7 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
     showZeroMiles: false
   });
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showFuelColumn, setShowFuelColumn] = useState(true);
 
   // Process trips to get per-jurisdiction data
   const calculateJurisdictionData = () => {
@@ -31,6 +36,11 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
       if (trip.end_jurisdiction) allJurisdictions.add(trip.end_jurisdiction);
     });
 
+    // Also add jurisdictions from fuel data
+    fuelData.forEach(entry => {
+      if (entry.state) allJurisdictions.add(entry.state);
+    });
+
     // Create a map of jurisdiction data
     const jurisdictionMap = {};
     allJurisdictions.forEach(jurisdiction => {
@@ -39,7 +49,9 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
         totalMiles: 0,
         taxableMiles: 0,
         taxPaidGallons: 0,
-        netTaxableGallons: 0
+        netTaxableGallons: 0,
+        lastFuelPurchase: null,
+        fuelPurchases: 0
       };
     });
 
@@ -76,6 +88,14 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
       const jurisdiction = entry.state;
       if (jurisdiction && jurisdictionMap[jurisdiction]) {
         jurisdictionMap[jurisdiction].taxPaidGallons += parseFloat(entry.gallons) || 0;
+        jurisdictionMap[jurisdiction].fuelPurchases += 1;
+        
+        // Track the most recent fuel purchase date
+        const purchaseDate = new Date(entry.date);
+        if (!jurisdictionMap[jurisdiction].lastFuelPurchase || 
+            purchaseDate > new Date(jurisdictionMap[jurisdiction].lastFuelPurchase)) {
+          jurisdictionMap[jurisdiction].lastFuelPurchase = entry.date;
+        }
       }
     });
 
@@ -134,7 +154,8 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
     totalMiles: filteredData.reduce((sum, j) => sum + j.totalMiles, 0),
     taxableMiles: filteredData.reduce((sum, j) => sum + j.taxableMiles, 0),
     taxPaidGallons: filteredData.reduce((sum, j) => sum + j.taxPaidGallons, 0),
-    netTaxableGallons: filteredData.reduce((sum, j) => sum + j.netTaxableGallons, 0)
+    netTaxableGallons: filteredData.reduce((sum, j) => sum + j.netTaxableGallons, 0),
+    fuelPurchases: filteredData.reduce((sum, j) => sum + j.fuelPurchases, 0)
   };
 
   // Handle sort
@@ -162,17 +183,34 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
     if (filteredData.length === 0) return;
 
     // Create array of data for CSV
+    const columns = ['Jurisdiction', 'Total Miles', 'Taxable Miles', 'Tax Paid Gallons', 'Net Taxable Gallons'];
+    
+    if (showFuelColumn) {
+      columns.push('Fuel Purchases', 'Last Purchase Date');
+    }
+    
     const csvRows = [
       // Header row
-      ['Jurisdiction', 'Total Miles', 'Taxable Miles', 'Tax Paid Gallons', 'Net Taxable Gallons'].join(','),
+      columns.join(','),
       // Data rows
-      ...filteredData.map(j => [
-        j.jurisdiction,
-        j.totalMiles.toFixed(1),
-        j.taxableMiles.toFixed(1),
-        j.taxPaidGallons.toFixed(3),
-        j.netTaxableGallons.toFixed(3)
-      ].join(','))
+      ...filteredData.map(j => {
+        const baseData = [
+          j.jurisdiction,
+          j.totalMiles.toFixed(1),
+          j.taxableMiles.toFixed(1),
+          j.taxPaidGallons.toFixed(3),
+          j.netTaxableGallons.toFixed(3)
+        ];
+        
+        if (showFuelColumn) {
+          baseData.push(
+            j.fuelPurchases,
+            j.lastFuelPurchase ? j.lastFuelPurchase : 'None'
+          );
+        }
+        
+        return baseData.join(',');
+      })
     ];
 
     // Create blob and download link
@@ -185,6 +223,14 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Get the current quarter based on today's date
+  const getCurrentQuarter = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const quarter = Math.ceil((now.getMonth() + 1) / 3);
+    return `${year}-Q${quarter}`;
   };
 
   return (
@@ -212,6 +258,19 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
             />
             <label htmlFor="show-zero-miles" className="ml-2 text-sm text-gray-700">
               Show zero miles
+            </label>
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="show-fuel-column"
+              checked={showFuelColumn}
+              onChange={(e) => setShowFuelColumn(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="show-fuel-column" className="ml-2 text-sm text-gray-700">
+              Show fuel data
             </label>
           </div>
           
@@ -256,7 +315,7 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
                 <ul className="list-disc pl-5 mt-1 space-y-1">
                   <li>Total Miles: Miles traveled in each jurisdiction</li>
                   <li>Taxable Miles: Miles subject to fuel tax</li>
-                  <li>Tax Paid Gallons: Fuel purchased in each jurisdiction</li>
+                  <li>Tax Paid Gallons: Fuel purchased in each jurisdiction (from Fuel Tracker)</li>
                   <li>Net Taxable Gallons: Calculated as (Taxable Miles ÷ Fleet MPG) - Tax Paid Gallons</li>
                 </ul>
                 <p className="mt-2">
@@ -283,10 +342,10 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
             <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-blue-500" />
             <p className="text-gray-500">Calculating IFTA data...</p>
           </div>
-        ) : !trips.length ? (
+        ) : !trips.length && !fuelData.length ? (
           <div className="p-12 text-center">
             <p className="text-gray-500">
-              No trip data available. Add trips using the form above to see jurisdiction calculations.
+              No trip or fuel data available. Add trips using the form above or record fuel purchases in the Fuel Tracker to see jurisdiction calculations.
             </p>
           </div>
         ) : filteredData.length === 0 ? (
@@ -339,6 +398,18 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
                     {getSortIcon("taxPaidGallons")}
                   </div>
                 </th>
+                {showFuelColumn && (
+                  <th 
+                    scope="col" 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort("fuelPurchases")}
+                  >
+                    <div className="flex items-center">
+                      Fuel Tracker
+                      {getSortIcon("fuelPurchases")}
+                    </div>
+                  </th>
+                )}
                 <th 
                   scope="col" 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -366,6 +437,32 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {j.taxPaidGallons.toFixed(3)}
                   </td>
+                  {showFuelColumn && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {j.fuelPurchases > 0 ? (
+                        <div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {j.fuelPurchases} purchase{j.fuelPurchases !== 1 ? 's' : ''}
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Last: {j.lastFuelPurchase ? new Date(j.lastFuelPurchase).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <Link 
+                            href={`/dashboard/fuel?state=${j.jurisdiction}`}
+                            className="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center"
+                          >
+                            <Fuel size={12} className="mr-1" />
+                            View fuel data
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-yellow-600 inline-flex items-center">
+                          <AlertTriangle size={12} className="mr-1" />
+                          No fuel purchases
+                        </div>
+                      )}
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <span className={j.netTaxableGallons < 0 ? "text-red-600" : "text-green-600"}>
                       {j.netTaxableGallons.toFixed(3)} {j.netTaxableGallons < 0 ? "(Credit)" : ""}
@@ -388,6 +485,11 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {totals.taxPaidGallons.toFixed(3)}
                 </td>
+                {showFuelColumn && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {totals.fuelPurchases} purchases
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={totals.netTaxableGallons < 0 ? "text-red-600" : "text-green-600"}>
                     {totals.netTaxableGallons.toFixed(3)} {totals.netTaxableGallons < 0 ? "(Net Credit)" : "(Net Due)"}
@@ -400,7 +502,18 @@ export default function StateDataGrid({ trips = [], fuelData = [], isLoading = f
       </div>
       
       <div className="px-6 py-3 bg-gray-50 text-gray-500 text-xs border-t border-gray-200">
-        Note: This is an estimate based on your recorded trips and fuel purchases. Please consult with a tax professional for official IFTA filings.
+        <div className="flex justify-between items-center">
+          <span>
+            Note: This is an estimate based on your recorded trips and fuel purchases. Please consult with a tax professional for official IFTA filings.
+          </span>
+          <Link 
+            href={`/dashboard/ifta?quarter=${getCurrentQuarter()}`} 
+            className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+          >
+            <Calculator size={14} className="mr-1" />
+            Go to IFTA Calculator
+          </Link>
+        </div>
       </div>
     </div>
   );
