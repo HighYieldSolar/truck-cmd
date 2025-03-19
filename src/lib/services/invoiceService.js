@@ -435,11 +435,45 @@ export async function recordPayment(invoiceId, paymentData) {
     // Get the current user for activity tracking
     const { data: { user } } = await supabase.auth.getUser();
     
+    // First check if this invoice already has the correct payment amount
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('invoices')
+      .select('total, amount_paid, status')
+      .eq('id', invoiceId)
+      .single();
+      
+    if (invoiceError) throw invoiceError;
+    
+    // Calculate what the new total paid amount would be
+    const currentAmountPaid = parseFloat(invoice.amount_paid) || 0;
+    const paymentAmount = parseFloat(paymentData.amount) || 0;
+    const invoiceTotal = parseFloat(invoice.total) || 0;
+    
+    // If the invoice is already fully paid, don't add another payment
+    if (currentAmountPaid >= invoiceTotal || invoice.status === 'Paid') {
+      console.log('Invoice is already paid. Not adding duplicate payment.');
+      return null;
+    }
+    
+    // If this payment would exceed the invoice total, adjust it
+    const adjustedPaymentAmount = Math.min(paymentAmount, invoiceTotal - currentAmountPaid);
+    
+    if (adjustedPaymentAmount <= 0) {
+      console.log('No additional payment needed.');
+      return null;
+    }
+    
+    // Adjust payment data amount if needed
+    const finalPaymentData = {
+      ...paymentData,
+      amount: adjustedPaymentAmount
+    };
+    
     // Insert payment record
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert([{
-        ...paymentData,
+        ...finalPaymentData,
         invoice_id: invoiceId,
         user_id: user?.id
       }])
@@ -447,17 +481,9 @@ export async function recordPayment(invoiceId, paymentData) {
       
     if (paymentError) throw paymentError;
     
-    // Update invoice payment status
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
-      .select('total, amount_paid')
-      .eq('id', invoiceId)
-      .single();
-      
-    if (invoiceError) throw invoiceError;
-    
-    const newAmountPaid = (parseFloat(invoice.amount_paid) || 0) + parseFloat(paymentData.amount);
-    const newStatus = newAmountPaid >= invoice.total ? 'Paid' : 'Partially Paid';
+    // Update the invoice with the new amount paid
+    const newAmountPaid = currentAmountPaid + adjustedPaymentAmount;
+    const newStatus = newAmountPaid >= invoiceTotal ? 'Paid' : 'Partially Paid';
     
     const { error: updateError } = await supabase
       .from('invoices')
@@ -476,7 +502,7 @@ export async function recordPayment(invoiceId, paymentData) {
       .insert([{
         invoice_id: invoiceId,
         activity_type: 'payment',
-        description: `Payment of $${paymentData.amount.toFixed(2)} recorded`,
+        description: `Payment of $${adjustedPaymentAmount.toFixed(2)} recorded`,
         user_id: user?.id,
         user_name: user?.email
       }]);

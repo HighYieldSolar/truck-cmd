@@ -687,7 +687,29 @@ export default function InvoiceDetail({ invoiceId }) {
           router.push(`/dashboard/invoices/${invoiceId}/edit`);
           break;
         case 'markPaid':
-          await updateInvoiceStatus(invoiceId, 'Paid');
+          // Calculate remaining balance to pay
+          const total = parseFloat(invoice.total) || 0;
+          const amountPaid = parseFloat(invoice.amount_paid) || 0;
+          const remainingBalance = total - amountPaid;
+          
+          // Only record a payment if there's an outstanding balance
+          if (remainingBalance > 0) {
+            // Create payment data for the remaining balance
+            const paymentData = {
+              amount: remainingBalance,
+              method: 'manual',
+              date: new Date().toISOString().split('T')[0],
+              reference: 'Marked as paid',
+              description: `Payment for invoice ${invoice.invoice_number}`,
+              status: 'completed'
+            };
+            
+            // Record the payment (this will also update the status)
+            await recordPayment(invoiceId, paymentData);
+          } else {
+            // If already paid, just update the status
+            await updateInvoiceStatus(invoiceId, 'Paid');
+          }
           
           // Force refresh of stats by setting a session flag
           if (typeof window !== 'undefined') {

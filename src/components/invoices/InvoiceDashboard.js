@@ -209,37 +209,54 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
   // Handle marking an invoice as paid
   const handleMarkAsPaid = async (invoiceId) => {
     try {
-      await onMarkAsPaid(invoiceId);
-    } catch (error) {
-      console.error("Error marking invoice as paid:", error);
+      // Find the invoice to get its total amount
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      // Check if the invoice is already paid or has payments
+      if (invoice.status === 'Paid' || (invoice.amount_paid && parseFloat(invoice.amount_paid) >= parseFloat(invoice.total))) {
+        console.log('Invoice is already paid or has sufficient payments');
+        return;
+      }
+      
+      // Calculate remaining balance to pay
+      const amountPaid = parseFloat(invoice.amount_paid) || 0;
+      const total = parseFloat(invoice.total) || 0;
+      const remainingBalance = total - amountPaid;
+      
+      if (remainingBalance <= 0) {
+        console.log('Invoice already has full payment amount');
+        // Just update status if needed
+        if (invoice.status !== 'Paid') {
+          await updateInvoiceStatus(invoiceId, 'Paid');
+        }
+        return;
+      }
+      
+      // First record payment for the remaining balance
+      const paymentData = {
+        amount: remainingBalance,
+        method: 'manual',
+        date: new Date().toISOString().split('T')[0],
+        reference: 'Marked as paid',
+        description: `Payment for invoice ${invoice.invoice_number}`,
+        status: 'completed'
+      };
+      
+      console.log('Recording payment for remaining balance:', remainingBalance);
+      
+      // Record payment first - this should also update the invoice status to Paid
+      // if the payment completes the total
+      await recordPayment(invoiceId, paymentData);
+      
+      // Update will be handled by the real-time subscription
+    } catch (err) {
+      console.error('Error marking invoice as paid:', err);
+      setError('Failed to update invoice. Please try again.');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <RefreshCw size={24} className="animate-spin text-blue-500" />
-        <span className="ml-2 text-gray-600">Loading invoices...</span>
-      </div>
-    );
-  }
-
-  if (invoices.length === 0) {
-    return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900">No invoices found</h3>
-        <p className="mt-2 text-gray-500 mb-6">Get started by creating your first invoice</p>
-        <Link
-          href="/dashboard/invoices/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus size={16} className="mr-2" />
-          Create Invoice
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow">
