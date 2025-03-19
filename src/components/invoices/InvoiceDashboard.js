@@ -334,7 +334,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                     <Download size={18} />
                   </button>
                   <button 
-                    onClick={() => onDelete(invoice.id)}
+                    onClick={() => onDelete(invoice)}
                     className="text-red-600 hover:text-red-900"
                     title="Delete"
                   >
@@ -354,9 +354,14 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
 };
 
 // Delete Invoice Modal Component
-const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber, isDeleting }) => {
-  if (!isOpen) return null;
+const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting }) => {
+  const [deleteAssociatedLoad, setDeleteAssociatedLoad] = useState(false);
+  
+  if (!isOpen || !invoice) return null;
 
+  // Check if invoice has an associated load
+  const hasAssociatedLoad = invoice.load_id || (invoice.loads && invoice.loads.length > 0);
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -365,8 +370,30 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber, isDelet
         </div>
         <h3 className="text-lg font-medium text-center mb-2">Delete Invoice</h3>
         <p className="text-center text-gray-500 mb-6">
-          Are you sure you want to delete invoice {invoiceNumber}? This action cannot be undone.
+          Are you sure you want to delete invoice {invoice.invoice_number}? This action cannot be undone.
         </p>
+        
+        {/* Show option to delete load if there's an associated load */}
+        {hasAssociatedLoad && (
+          <div className="mb-6">
+            <div className="flex items-center">
+              <input
+                id="delete-load-checkbox"
+                type="checkbox"
+                checked={deleteAssociatedLoad}
+                onChange={() => setDeleteAssociatedLoad(!deleteAssociatedLoad)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="delete-load-checkbox" className="ml-2 block text-sm text-gray-700">
+                Also delete associated load
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-1 ml-6">
+              If checked, the load linked to this invoice will also be deleted.
+            </p>
+          </div>
+        )}
+        
         <div className="flex justify-center space-x-4">
           <button
             onClick={onClose}
@@ -376,7 +403,7 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoiceNumber, isDelet
             Cancel
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm(deleteAssociatedLoad)}
             className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center"
             disabled={isDeleting}
           >
@@ -660,36 +687,33 @@ export default function InvoiceDashboard() {
   };
 
   // Handle deleting an invoice
-  const handleDeleteInvoice = (invoiceId) => {
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    if (invoice) {
-      setInvoiceToDelete(invoice);
-      setDeleteModalOpen(true);
-    }
+  const handleDeleteInvoice = (invoice) => {
+    setInvoiceToDelete(invoice);
+    setDeleteModalOpen(true);
   };
 
-  // Confirm invoice deletion
-  const confirmDeleteInvoice = async () => {
-    try {
-      if (invoiceToDelete && user) {
-        setIsDeleting(true);
-        
-        // Delete from database
-        await deleteInvoice(invoiceToDelete.id);
-        
-        // Update will be handled by the real-time subscription
-        
-        // Close modal
-        setDeleteModalOpen(false);
-        setInvoiceToDelete(null);
-      }
-    } catch (err) {
-      console.error('Error deleting invoice:', err);
-      setError('Failed to delete invoice. Please try again.');
-    } finally {
-      setIsDeleting(false);
+// Confirm invoice deletion
+const confirmDeleteInvoice = async (deleteAssociatedLoad = false) => {
+  try {
+    if (invoiceToDelete && user) {
+      setIsDeleting(true);
+      
+      // Delete from database with option to delete associated load
+      await deleteInvoice(invoiceToDelete.id, deleteAssociatedLoad);
+      
+      // Update will be handled by the real-time subscription
+      
+      // Close modal
+      setDeleteModalOpen(false);
+      setInvoiceToDelete(null);
     }
-  };
+  } catch (err) {
+    console.error('Error deleting invoice:', err);
+    setError('Failed to delete invoice. Please try again.');
+  } finally {
+    setIsDeleting(false);
+  }
+};
 
   // Handle view invoice
   const handleViewInvoice = (invoiceId) => {
@@ -873,11 +897,11 @@ export default function InvoiceDashboard() {
       <DeleteInvoiceModal
         isOpen={deleteModalOpen}
         onClose={() => {
-          setDeleteModalOpen(false);
-          setInvoiceToDelete(null);
-        }}
+        setDeleteModalOpen(false);
+        setInvoiceToDelete(null);
+      }}
         onConfirm={confirmDeleteInvoice}
-        invoiceNumber={invoiceToDelete?.invoice_number}
+        invoice={invoiceToDelete}
         isDeleting={isDeleting}
       />
     </div>

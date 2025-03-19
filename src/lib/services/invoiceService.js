@@ -337,10 +337,25 @@ export async function updateInvoice(id, invoiceData) {
 /**
  * Delete an invoice
  * @param {string} id - Invoice ID
+ * @param {boolean} deleteAssociatedLoad - Whether to also delete associated load
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteInvoice(id) {
+export async function deleteInvoice(id, deleteAssociatedLoad = false) {
   try {
+    // Get the invoice first to check for associated load
+    let loadId = null;
+    if (deleteAssociatedLoad) {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('load_id')
+        .eq('id', id)
+        .single();
+        
+      if (!invoiceError && invoice && invoice.load_id) {
+        loadId = invoice.load_id;
+      }
+    }
+    
     // First delete related records (to maintain referential integrity)
     
     // 1. Delete invoice items
@@ -367,13 +382,32 @@ export async function deleteInvoice(id) {
       
     if (paymentsError) throw paymentsError;
     
-    // 4. Finally delete the invoice
+    // 4. Delete the invoice
     const { error } = await supabase
       .from('invoices')
       .delete()
       .eq('id', id);
       
     if (error) throw error;
+    
+    // 5. Delete associated load if requested and it exists
+    if (deleteAssociatedLoad && loadId) {
+      console.log('Deleting associated load:', loadId);
+      
+      // Delete any load-related records first
+      // This is simplified - you may need to add more tables depending on your schema
+      
+      // Delete the load
+      const { error: loadError } = await supabase
+        .from('loads')
+        .delete()
+        .eq('id', loadId);
+      
+      if (loadError) {
+        console.error('Error deleting associated load:', loadError);
+        // We don't throw here since the invoice was already deleted successfully
+      }
+    }
     
     return true;
   } catch (error) {
