@@ -1,4 +1,4 @@
-// src/lib/services/expenseFuelIntegration.js
+// Update syncFuelToExpenses function in src/lib/services/expenseFuelIntegration.js
 
 import { supabase } from "../supabaseClient";
 
@@ -90,6 +90,87 @@ export async function syncFuelToExpenses(userId) {
     };
   } catch (error) {
     console.error('Error syncing fuel to expenses:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sync a single fuel entry to expenses with duplicate prevention
+ * @param {string} userId - User ID
+ * @param {string} fuelEntryId - Fuel entry ID
+ * @returns {Promise<Object|null>} - The created expense or null if already synced
+ */
+export async function syncSingleFuelEntryToExpense(userId, fuelEntryId) {
+  try {
+    // Get the specific fuel entry
+    const { data: fuelEntry, error: fuelError } = await supabase
+      .from('fuel_entries')
+      .select('*')
+      .eq('id', fuelEntryId)
+      .single();
+      
+    if (fuelError) throw fuelError;
+    
+    if (!fuelEntry) {
+      throw new Error('Fuel entry not found');
+    }
+    
+    // Check if this fuel entry is already synced to an expense
+    if (fuelEntry.expense_id) {
+      console.log(`Fuel entry ${fuelEntryId} is already synced to expense ${fuelEntry.expense_id}`);
+      
+      // Get the existing expense to return it
+      const { data: existingExpense, error: expenseError } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('id', fuelEntry.expense_id)
+        .single();
+        
+      if (expenseError) {
+        console.warn(`Linked expense ${fuelEntry.expense_id} not found, may need to recreate`);
+        // The expense_id exists but expense doesn't - could clear the expense_id to allow re-sync
+      } else {
+        return existingExpense; // Return the existing expense
+      }
+    }
+    
+    // Create expense entry
+    const expenseData = {
+      user_id: userId,
+      description: `Fuel - ${fuelEntry.location}`,
+      amount: fuelEntry.total_amount,
+      date: fuelEntry.date,
+      category: 'Fuel',
+      payment_method: fuelEntry.payment_method || 'Credit Card',
+      notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+      receipt_image: fuelEntry.receipt_image,
+      vehicle_id: fuelEntry.vehicle_id,
+      deductible: true // Fuel is typically deductible for business
+    };
+    
+    // Insert expense
+    const { data: expense, error: expenseError } = await supabase
+      .from('expenses')
+      .insert([expenseData])
+      .select();
+      
+    if (expenseError) throw expenseError;
+    
+    if (!expense || expense.length === 0) {
+      throw new Error('Failed to create expense');
+    }
+    
+    // Update fuel entry with expense_id reference
+    const { error: updateError } = await supabase
+      .from('fuel_entries')
+      .update({ expense_id: expense[0].id })
+      .eq('id', fuelEntryId);
+      
+    if (updateError) throw updateError;
+    
+    return expense[0];
+  } catch (error) {
+    console.error('Error syncing single fuel entry:', error);
     throw error;
   }
 }

@@ -110,14 +110,25 @@ export async function createFuelEntry(fuelEntryData) {
       throw new Error("User ID is required");
     }
     
+    console.log("Creating fuel entry with data:", fuelEntryData);
+    
+    // Create the entry
     const { data, error } = await supabase
       .from('fuel_entries')
       .insert([fuelEntryData])
       .select();
       
-    if (error) throw error;
+    if (error) {
+      console.error("Error in createFuelEntry:", error);
+      throw error;
+    }
     
-    return data?.[0] || null;
+    if (!data || data.length === 0) {
+      throw new Error("No data returned from fuel entry creation");
+    }
+    
+    console.log("Fuel entry created successfully:", data[0]);
+    return data[0];
   } catch (error) {
     console.error('Error creating fuel entry:', error);
     throw error;

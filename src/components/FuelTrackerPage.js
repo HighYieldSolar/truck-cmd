@@ -1,5 +1,4 @@
-// Update the FuelTrackerPage.js file to add sync to expenses functionality
-
+// src/components/FuelTrackerPage.js
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -18,7 +17,6 @@ import {
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
 import { exportFuelDataForIFTA } from "@/lib/services/fuelService";
-import { syncFuelToExpenses } from "@/lib/services/expenseFuelIntegration"; // Add this import
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FilterBar from "@/components/fuel/FilterBar";
 import FuelStats from "@/components/fuel/FuelStats";
@@ -26,7 +24,7 @@ import StateSummary from "@/components/fuel/StateSummary";
 import FuelEntryItem from "@/components/fuel/FuelEntryItem";
 import FuelEntryForm from "@/components/fuel/FuelEntryForm";
 import ReceiptViewerModal from "@/components/fuel/ReceiptViewerModal";
-import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
+import FuelDeletionModal from "@/components/fuel/FuelDeletionModal";
 import EmptyState from "@/components/common/EmptyState";
 
 export default function FuelTrackerPage() {
@@ -54,9 +52,11 @@ export default function FuelTrackerPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState(null);
   
-  // Add sync to expenses state
-  const [syncLoading, setSyncLoading] = useState(false);
-  const [syncMessage, setSyncMessage] = useState(null);
+  // Add dedicated loading state for deletion
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  
+  // State for showing operation messages
+  const [operationMessage, setOperationMessage] = useState(null);
   
   // Get the fuel data and functions from our custom hook
   const {
@@ -110,9 +110,23 @@ export default function FuelTrackerPage() {
   const handleAddFuelEntry = async (formData) => {
     try {
       await addFuelEntry(formData);
+      
+      setOperationMessage({
+        type: 'success',
+        text: 'Fuel entry added and expense record created.'
+      });
+      
+      setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
       console.error('Error adding fuel entry:', error);
+      
+      setOperationMessage({
+        type: 'error',
+        text: `Error adding fuel entry: ${error.message}`
+      });
+      
+      setTimeout(() => setOperationMessage(null), 5000);
       return false;
     }
   };
@@ -121,9 +135,23 @@ export default function FuelTrackerPage() {
   const handleUpdateFuelEntry = async (id, formData) => {
     try {
       await updateFuelEntry(id, formData);
+      
+      setOperationMessage({
+        type: 'success',
+        text: 'Fuel entry updated successfully.'
+      });
+      
+      setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
       console.error('Error updating fuel entry:', error);
+      
+      setOperationMessage({
+        type: 'error',
+        text: `Error updating fuel entry: ${error.message}`
+      });
+      
+      setTimeout(() => setOperationMessage(null), 5000);
       return false;
     }
   };
@@ -150,15 +178,34 @@ export default function FuelTrackerPage() {
   };
   
   // Confirm deletion of a fuel entry
-  const confirmDeleteFuelEntry = async () => {
+  const handleConfirmDelete = async (deleteLinkedExpense = false) => {
     if (!fuelEntryToDelete) return;
     
     try {
-      await deleteFuelEntry(fuelEntryToDelete.id);
+      setDeleteLoading(true); // Use dedicated loading state for deletion
+      
+      // Pass the deleteLinkedExpense flag to the deleteFuelEntry function
+      await deleteFuelEntry(fuelEntryToDelete.id, deleteLinkedExpense);
+      
       setDeleteModalOpen(false);
       setFuelEntryToDelete(null);
+      
+      // Show a success message
+      setOperationMessage({
+        type: 'success',
+        text: `Fuel entry deleted successfully${deleteLinkedExpense && fuelEntryToDelete.expense_id ? ' along with linked expense' : ''}.`
+      });
+      
+      // Clear the message after a few seconds
+      setTimeout(() => setOperationMessage(null), 3000);
     } catch (error) {
       console.error('Error deleting fuel entry:', error);
+      setOperationMessage({
+        type: 'error',
+        text: `Error deleting fuel entry: ${error.message}`
+      });
+    } finally {
+      setDeleteLoading(false);
     }
   };
   
@@ -178,129 +225,6 @@ export default function FuelTrackerPage() {
       endDate: "",
       vehicleId: ""
     });
-  };
-  
-  // Handle syncing fuel entry to expenses
-  const handleSyncToExpense = async (fuelEntry) => {
-    if (!user || !fuelEntry) return;
-    
-    try {
-      setSyncLoading(true);
-      setSyncMessage(null);
-      
-      // Call the sync function for a single fuel entry
-      const result = await syncSingleFuelEntryToExpense(user.id, fuelEntry.id);
-      
-      // Reload fuel entries to update the UI
-      await loadFuelEntries(filters);
-      
-      setSyncMessage({
-        type: 'success',
-        text: `Successfully synced fuel entry to expenses.`
-      });
-      
-      // Clear the success message after 3 seconds
-      setTimeout(() => setSyncMessage(null), 3000);
-      
-      return result;
-    } catch (error) {
-      console.error('Error syncing to expense:', error);
-      setSyncMessage({
-        type: 'error',
-        text: `Error syncing to expenses: ${error.message}`
-      });
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-  
-  // Sync a single fuel entry to expenses
-  const syncSingleFuelEntryToExpense = async (userId, fuelEntryId) => {
-    try {
-      // Get the specific fuel entry
-      const { data: fuelEntry, error: fuelError } = await supabase
-        .from('fuel_entries')
-        .select('*')
-        .eq('id', fuelEntryId)
-        .single();
-        
-      if (fuelError) throw fuelError;
-      
-      if (!fuelEntry) {
-        throw new Error('Fuel entry not found');
-      }
-      
-      // Create expense entry
-      const expenseData = {
-        user_id: userId,
-        description: `Fuel - ${fuelEntry.location}`,
-        amount: fuelEntry.total_amount,
-        date: fuelEntry.date,
-        category: 'Fuel',
-        payment_method: fuelEntry.payment_method || 'Credit Card',
-        notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
-        receipt_image: fuelEntry.receipt_image,
-        vehicle_id: fuelEntry.vehicle_id,
-        deductible: true // Fuel is typically deductible for business
-      };
-      
-      // Insert expense
-      const { data: expense, error: expenseError } = await supabase
-        .from('expenses')
-        .insert([expenseData])
-        .select();
-        
-      if (expenseError) throw expenseError;
-      
-      if (!expense || expense.length === 0) {
-        throw new Error('Failed to create expense');
-      }
-      
-      // Update fuel entry with expense_id reference
-      const { error: updateError } = await supabase
-        .from('fuel_entries')
-        .update({ expense_id: expense[0].id })
-        .eq('id', fuelEntryId);
-        
-      if (updateError) throw updateError;
-      
-      return expense[0];
-    } catch (error) {
-      console.error('Error syncing single fuel entry:', error);
-      throw error;
-    }
-  };
-  
-  // Sync all fuel entries to expenses
-  const handleSyncAllToExpenses = async () => {
-    if (!user) return;
-    
-    try {
-      setSyncLoading(true);
-      setSyncMessage(null);
-      
-      // Call the syncFuelToExpenses function from the service
-      const result = await syncFuelToExpenses(user.id);
-      
-      // Reload fuel entries to update the UI
-      await loadFuelEntries(filters);
-      
-      setSyncMessage({
-        type: 'success',
-        text: `Successfully synced ${result.syncedCount} fuel entries to expenses.`
-      });
-      
-      // Clear the success message after 5 seconds
-      setTimeout(() => setSyncMessage(null), 5000);
-    } catch (error) {
-      console.error('Error syncing to expenses:', error);
-      setSyncMessage({
-        type: 'error',
-        text: `Error syncing to expenses: ${error.message}`
-      });
-    } finally {
-      setSyncLoading(false);
-    }
   };
   
   // Export IFTA data
@@ -333,8 +257,22 @@ export default function FuelTrackerPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      setOperationMessage({
+        type: 'success',
+        text: 'IFTA data exported successfully.'
+      });
+      
+      setTimeout(() => setOperationMessage(null), 3000);
     } catch (error) {
       console.error('Error exporting IFTA data:', error);
+      
+      setOperationMessage({
+        type: 'error',
+        text: `Error exporting IFTA data: ${error.message}`
+      });
+      
+      setTimeout(() => setOperationMessage(null), 5000);
     }
   };
   
@@ -375,18 +313,6 @@ export default function FuelTrackerPage() {
                 <Download size={16} className="mr-2" />
                 Export IFTA
               </button>
-              <button
-                onClick={handleSyncAllToExpenses}
-                disabled={syncLoading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none"
-              >
-                {syncLoading ? (
-                  <RefreshCw size={16} className="mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw size={16} className="mr-2" />
-                )}
-                Sync All to Expenses
-              </button>
             </div>
           </div>
 
@@ -404,26 +330,32 @@ export default function FuelTrackerPage() {
             </div>
           )}
           
-          {/* Show sync message if present */}
-          {syncMessage && (
+          {/* Show operation message if present */}
+          {operationMessage && (
             <div className={`mb-6 ${
-              syncMessage.type === 'success' 
+              operationMessage.type === 'success' 
                 ? 'bg-green-50 border-l-4 border-green-400' 
+                : operationMessage.type === 'warning'
+                ? 'bg-yellow-50 border-l-4 border-yellow-400'
                 : 'bg-red-50 border-l-4 border-red-400'
             } p-4 rounded-md`}>
               <div className="flex">
                 <div className="flex-shrink-0">
-                  {syncMessage.type === 'success' ? (
+                  {operationMessage.type === 'success' ? (
                     <CheckCircle className="h-5 w-5 text-green-400" />
+                  ) : operationMessage.type === 'warning' ? (
+                    <AlertCircle className="h-5 w-5 text-yellow-400" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-red-400" />
                   )}
                 </div>
                 <div className="ml-3">
                   <p className={`text-sm ${
-                    syncMessage.type === 'success' ? 'text-green-700' : 'text-red-700'
+                    operationMessage.type === 'success' ? 'text-green-700' : 
+                    operationMessage.type === 'warning' ? 'text-yellow-700' :
+                    'text-red-700'
                   }`}>
-                    {syncMessage.text}
+                    {operationMessage.text}
                   </p>
                 </div>
               </div>
@@ -523,7 +455,6 @@ export default function FuelTrackerPage() {
                         onEdit={handleEditFuelEntry}
                         onDelete={handleDeleteFuelEntry}
                         onViewReceipt={handleViewReceipt}
-                        onSyncToExpense={handleSyncToExpense}
                       />
                     ))}
                   </tbody>
@@ -569,16 +500,16 @@ export default function FuelTrackerPage() {
         receipt={selectedReceipt}
       />
       
-      <DeleteConfirmationModal 
+      {/* Custom Fuel Deletion Modal */}
+      <FuelDeletionModal 
         isOpen={deleteModalOpen}
         onClose={() => {
           setDeleteModalOpen(false);
           setFuelEntryToDelete(null);
         }}
-        onConfirm={confirmDeleteFuelEntry}
-        title="Delete Fuel Purchase"
-        itemName={fuelEntryToDelete?.location}
-        isDeleting={loading}
+        onConfirm={handleConfirmDelete}
+        fuelEntry={fuelEntryToDelete}
+        isDeleting={deleteLoading}
       />
     </DashboardLayout>
   );

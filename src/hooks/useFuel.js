@@ -1,4 +1,4 @@
-// src/hooks/useFuel.js - Enhanced with expense integration
+// src/hooks/useFuel.js - Fixed version with proper error handling
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
@@ -6,7 +6,7 @@ import {
   getFuelEntryById, 
   createFuelEntry, 
   updateFuelEntry, 
-  deleteFuelEntry,
+  deleteFuelEntry as deleteFuelEntryService,
   getFuelStats,
   uploadReceiptImage,
   getVehiclesWithFuelRecords
@@ -120,23 +120,111 @@ export default function useFuel(userId) {
       // Remove receipt_file from data before saving to database
       const { receipt_file, receipt_preview, ...dataToSave } = entryData;
       
-      // Add receipt URL and user ID
-      const entry = await createFuelEntry({
+      // Create the fuel entry
+      const fuelEntryData = {
         ...dataToSave,
         receipt_image: receiptUrl || entryData.receipt_image,
         user_id: userId,
-        expense_id: null // Initialize with no expense link
-      });
+      };
+      
+      console.log("Creating fuel entry with data:", fuelEntryData);
+      
+      // Insert directly with supabase client
+      const { data: fuelEntryResult, error: fuelError } = await supabase
+        .from('fuel_entries')
+        .insert([fuelEntryData])
+        .select();
+      
+      if (fuelError) {
+        console.error("Error creating fuel entry:", fuelError);
+        throw fuelError;
+      }
+      
+      if (!fuelEntryResult || fuelEntryResult.length === 0) {
+        throw new Error("No data returned after creating fuel entry");
+      }
+      
+      const newFuelEntry = fuelEntryResult[0];
+      console.log("Fuel entry created successfully:", newFuelEntry);
+      
+      // Important: Wait a short time and check if an expense was already created
+      // This handles the case where a database trigger might also be creating an expense
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Fetch the fuel entry again to see if it has an expense_id
+      const { data: refreshedEntry, error: refreshError } = await supabase
+        .from('fuel_entries')
+        .select('*')
+        .eq('id', newFuelEntry.id)
+        .single();
+        
+      if (!refreshError && refreshedEntry && refreshedEntry.expense_id) {
+        console.log("Fuel entry already has an expense_id:", refreshedEntry.expense_id);
+        
+        // Use the refreshed entry (which includes expense_id)
+        const updatedEntry = refreshedEntry;
+        
+        // Update local state
+        setFuelEntries(prev => [updatedEntry, ...prev.filter(e => e.id !== updatedEntry.id)]);
+        await loadStats();
+        await loadVehicles();
+        
+        return updatedEntry;
+      }
+      
+      // If no expense was automatically created, create one manually
+      console.log("No existing expense found, creating one manually");
+      
+      // Create a corresponding expense record
+      const expenseData = {
+        user_id: userId,
+        description: `Fuel - ${newFuelEntry.location || 'Unknown Location'}`,
+        amount: newFuelEntry.total_amount || 0,
+        date: newFuelEntry.date || new Date().toISOString().split('T')[0],
+        category: 'Fuel',
+        payment_method: 'Credit Card',
+        notes: `Vehicle: ${newFuelEntry.vehicle_id || ''}, ${newFuelEntry.gallons || 0} gallons at ${newFuelEntry.state || ''}`,
+        receipt_image: newFuelEntry.receipt_image,
+        ...(newFuelEntry.vehicle_id ? { vehicle_id: newFuelEntry.vehicle_id } : {})
+      };
+      
+      console.log("Creating expense with data:", expenseData);
+      
+      // Insert the expense
+      const { data: expenseResult, error: expenseError } = await supabase
+        .from('expenses')
+        .insert([expenseData])
+        .select();
+      
+      if (expenseError) {
+        console.error("Error creating expense:", expenseError);
+      } else if (expenseResult && expenseResult.length > 0) {
+        console.log("Expense created successfully:", expenseResult[0]);
+        
+        // Update the fuel entry with the expense_id
+        const { error: updateError } = await supabase
+          .from('fuel_entries')
+          .update({ expense_id: expenseResult[0].id })
+          .eq('id', newFuelEntry.id);
+        
+        if (updateError) {
+          console.error("Error updating fuel entry with expense_id:", updateError);
+        } else {
+          // Update our local copy with the expense_id
+          newFuelEntry.expense_id = expenseResult[0].id;
+        }
+      }
       
       // Update local state
-      setFuelEntries(prev => [entry, ...prev]);
+      setFuelEntries(prev => [newFuelEntry, ...prev]);
       await loadStats();
       await loadVehicles();
       
-      return entry;
+      return newFuelEntry;
     } catch (err) {
       console.error('Error creating fuel entry:', err);
-      setError('Failed to create fuel entry: ' + err.message);
+      const errorMessage = err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      setError('Failed to create fuel entry: ' + errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -212,38 +300,82 @@ export default function useFuel(userId) {
     }
   };
 
-  // Delete a fuel entry
-  const removeFuelEntry = useCallback(async (id) => {
+  // Delete a fuel entry (with optional linked expense deletion)
+  const removeFuelEntry = useCallback(async (id, deleteLinkedExpense = false) => {
     try {
       setLoading(true);
       
-      // Check if this entry is linked to an expense
-      if (syncedEntries[id]) {
-        // Delete the linked expense first
-        const { error: expenseError } = await supabase
-          .from('expenses')
-          .delete()
-          .eq('id', syncedEntries[id]);
+      // First get the fuel entry to check for expense_id
+      const { data: fuelEntry, error: fetchError } = await supabase
+        .from('fuel_entries')
+        .select('expense_id')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching fuel entry for deletion:', fetchError);
+        // Continue anyway to attempt deleting the fuel entry
+      }
+      
+      // If we have a linked expense
+      let expenseId = null;
+      if (fuelEntry && fuelEntry.expense_id) {
+        expenseId = fuelEntry.expense_id;
+        console.log(`Found linked expense: ${expenseId}`);
+        
+        // Important: First clear the expense_id reference to handle any foreign key constraints
+        const { error: updateError } = await supabase
+          .from('fuel_entries')
+          .update({ expense_id: null })
+          .eq('id', id);
+        
+        if (updateError) {
+          console.error('Error clearing expense reference:', updateError);
+          // Continue anyway to try the deletion
+        } else {
+          console.log('Successfully cleared expense_id reference');
+        }
+        
+        // If we should delete the linked expense
+        if (deleteLinkedExpense && expenseId) {
+          console.log(`Attempting to delete expense: ${expenseId}`);
           
-        if (expenseError) {
-          console.error('Error deleting linked expense:', expenseError);
-          // Continue with fuel entry deletion even if expense deletion fails
+          const { error: expenseError } = await supabase
+            .from('expenses')
+            .delete()
+            .eq('id', expenseId);
+          
+          if (expenseError) {
+            console.error('Error deleting linked expense:', expenseError);
+            // Continue with fuel entry deletion anyway
+          } else {
+            console.log(`Successfully deleted expense ${expenseId}`);
+          }
         }
       }
       
-      // Delete the fuel entry
-      await deleteFuelEntry(id);
+      // Now delete the fuel entry
+      console.log(`Deleting fuel entry: ${id}`);
+      const { error: deleteError } = await supabase
+        .from('fuel_entries')
+        .delete()
+        .eq('id', id);
+      
+      if (deleteError) {
+        throw deleteError;
+      }
       
       // Update local state
       setFuelEntries(prev => prev.filter(entry => entry.id !== id));
       
       // Remove from synced entries
-      const updatedSyncedEntries = {...syncedEntries};
-      delete updatedSyncedEntries[id];
-      setSyncedEntries(updatedSyncedEntries);
+      if (syncedEntries[id]) {
+        const updatedSyncedEntries = {...syncedEntries};
+        delete updatedSyncedEntries[id];
+        setSyncedEntries(updatedSyncedEntries);
+      }
       
       await loadStats();
-      
       return true;
     } catch (err) {
       console.error('Error deleting fuel entry:', err);
@@ -254,10 +386,44 @@ export default function useFuel(userId) {
     }
   }, [loadStats, syncedEntries]);
 
-  // Sync a fuel entry to expenses
+  // Sync a fuel entry to expenses with duplicate prevention
   const syncToExpense = useCallback(async (entryId) => {
     try {
       if (!userId || !entryId) return null;
+      
+      // Check if entry already has an expense_id first
+      const existingExpenseId = syncedEntries[entryId];
+      if (existingExpenseId) {
+        console.log(`Fuel entry ${entryId} is already synced to expense ${existingExpenseId}`);
+        
+        // Get the existing expense to return it
+        const { data: expense, error: expenseError } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('id', existingExpenseId)
+          .single();
+          
+        if (expenseError) {
+          console.warn(`Existing expense ${existingExpenseId} not found, may need to recreate`);
+          // Could clear the expense_id to allow re-sync
+          
+          // Update the fuel entry to clear the invalid expense_id
+          await supabase
+            .from('fuel_entries')
+            .update({ expense_id: null })
+            .eq('id', entryId);
+            
+          // Remove from synced entries
+          const updatedSyncedEntries = {...syncedEntries};
+          delete updatedSyncedEntries[entryId];
+          setSyncedEntries(updatedSyncedEntries);
+          
+          // Now we could allow re-syncing, but for now we'll just return null
+          return null;
+        }
+        
+        return expense; // Return the existing expense
+      }
       
       // Get the fuel entry
       const { data: entry, error: entryError } = await supabase
@@ -290,6 +456,10 @@ export default function useFuel(userId) {
         
       if (expenseError) throw expenseError;
       
+      if (!expense || expense.length === 0) {
+        throw new Error("Failed to create expense record");
+      }
+      
       // Update the fuel entry with the expense ID
       const { error: updateError } = await supabase
         .from('fuel_entries')
@@ -318,7 +488,7 @@ export default function useFuel(userId) {
       console.error('Error syncing fuel entry to expense:', err);
       throw err;
     }
-  }, [userId]);
+  }, [userId, syncedEntries]);
 
   // Initial data loading
   useEffect(() => {

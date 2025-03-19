@@ -1,9 +1,8 @@
-"use client";
-
-import { CheckCircle, RefreshCw, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink } from "lucide-react";
+// src/components/fuel/FuelEntryItem.js - without sync button
+import { CheckCircle, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt, onSyncToExpense }) {
+export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   // Format price to 3 decimal places
   const formatPrice = (price) => {
     return parseFloat(price).toFixed(3);
@@ -110,7 +109,7 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
         {fuelEntry.expense_id ? (
           <div className="flex items-center text-green-600">
             <CheckCircle size={16} className="mr-1" />
-            <span>Synced</span>
+            <span>Added to expenses</span>
             <Link 
               href={`/dashboard/expenses?id=${fuelEntry.expense_id}`}
               className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center"
@@ -120,13 +119,9 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
             </Link>
           </div>
         ) : (
-          <button
-            onClick={() => onSyncToExpense(fuelEntry)}
-            className="text-blue-600 hover:text-blue-800 inline-flex items-center"
-          >
-            <RefreshCw size={16} className="mr-1" />
-            Sync to Expenses
-          </button>
+          <span className="text-gray-500">
+            Processing...
+          </span>
         )}
       </td>
     </tr>
