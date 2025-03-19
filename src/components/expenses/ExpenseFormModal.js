@@ -3,14 +3,65 @@
 
 import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient"; // Add this import
+import { supabase } from "@/lib/supabaseClient";
 import { createExpense, updateExpense, uploadReceiptImage } from "@/lib/services/expenseService";
+
+// Helper function to ensure correct date formatting for forms
+function formatDateForInput(dateString) {
+  if (!dateString) return '';
+  
+  try {
+    // Parse date using local timezone  
+    const date = new Date(dateString);
+    
+    // For UTC date strings that need adjustment
+    if (dateString.includes('T') && dateString.includes('Z')) {
+      // Add the timezone offset to convert to local date
+      const timezoneOffset = date.getTimezoneOffset() * 60000;
+      date.setTime(date.getTime() + timezoneOffset);
+    }
+    
+    // Format to YYYY-MM-DD
+    return date.toISOString().split('T')[0];
+  } catch (error) {
+    console.error("Date formatting error:", error);
+    return '';
+  }
+}
+
+// Get current date with timezone-safe approach
+function getCurrentDateFormatted() {
+  const now = new Date();
+  return now.toISOString().split('T')[0]; // YYYY-MM-DD format
+}
+
+// Helper to prepare date for submission to the server
+function prepareDateForSubmission(dateString) {
+  if (!dateString) return '';
+  
+  try {
+    // Create date from input value (which is already in YYYY-MM-DD format)
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // months are 0-indexed
+    const day = parseInt(parts[2], 10);
+    
+    // Create date at midnight in local timezone
+    const date = new Date(year, month, day);
+    
+    // Format to YYYY-MM-DD (this should be identical to input)
+    return date.toISOString().split('T')[0];
+  } catch (error) {
+    console.error("Date preparation error:", error);
+    return dateString; // Return original if there's an error
+  }
+}
 
 export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
-    date: '',
+    date: getCurrentDateFormatted(),
     category: 'Fuel',
     payment_method: 'Credit Card',
     notes: '',
@@ -25,10 +76,14 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
   useEffect(() => {
     if (expense) {
+      console.log("Original expense date:", expense.date);
+      // Format the date properly for an existing expense
+      const formattedDate = formatDateForInput(expense.date);
+      console.log("Formatted date for form:", formattedDate);
+      
       setFormData({
         ...expense,
-        // Format date to YYYY-MM-DD for the date input
-        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : '',
+        date: formattedDate,
         amount: expense.amount.toString(),
         receipt_file: null // Reset file input when editing
       });
@@ -37,7 +92,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       setFormData({
         description: '',
         amount: '',
-        date: new Date().toISOString().split('T')[0], // Today's date
+        date: getCurrentDateFormatted(),
         category: 'Fuel',
         payment_method: 'Credit Card',
         notes: '',
@@ -97,7 +152,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       const expenseData = {
         description: formData.description,
         amount: parseFloat(formData.amount),
-        date: formData.date,
+        date: prepareDateForSubmission(formData.date),
         category: formData.category,
         payment_method: formData.payment_method,
         notes: formData.notes,
@@ -105,6 +160,8 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
         vehicle_id: formData.vehicle_id,
         deductible: formData.deductible
       };
+      
+      console.log("Submitting date:", expenseData.date);
       
       // Add user_id for new expenses
       if (!expense) {
