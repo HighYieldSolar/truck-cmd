@@ -5,10 +5,7 @@ import {
   Fuel, 
   DollarSign, 
   Calculator, 
-  MapPin, 
-  TrendingUp,
-  TrendingDown,
-  RefreshCw
+  MapPin
 } from "lucide-react";
 
 export default function IFTASummary({ trips = [], stats = {}, isLoading = false }) {
@@ -30,7 +27,7 @@ export default function IFTASummary({ trips = [], stats = {}, isLoading = false 
       color === 'red' ? 'border-red-500' :
       'border-gray-500'
     }`}>
-      <div className="flex justify-between items-start">
+      <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-500">{title}</p>
           <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
@@ -48,25 +45,6 @@ export default function IFTASummary({ trips = [], stats = {}, isLoading = false 
       </div>
     </div>
   );
-
-  // Placeholder for loading state
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map(index => (
-          <div key={index} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-gray-200 animate-pulse">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="h-3 w-24 bg-gray-200 rounded"></div>
-                <div className="mt-1 h-6 w-16 bg-gray-300 rounded"></div>
-              </div>
-              <div className="p-2 rounded-md bg-gray-200 h-8 w-8"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   // If no stats are provided, show default values
   const {

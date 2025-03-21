@@ -11,7 +11,6 @@ import {
   Calendar, 
   DollarSign, 
   Fuel,
-  RefreshCw,
   ChevronsUpDown
 } from "lucide-react";
 
@@ -217,12 +216,7 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
       </div>
       
       <div className="overflow-x-auto">
-        {isLoading ? (
-          <div className="p-12 text-center">
-            <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-blue-500" />
-            <p className="text-gray-500">Loading trips...</p>
-          </div>
-        ) : trips.length === 0 ? (
+        {trips.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-gray-500">No trips recorded yet. Add a trip using the form above.</p>
           </div>

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Calculator, 
   DownloadCloud, 
-  RefreshCw, 
   Flag, 
   AlertTriangle, 
   Fuel,
@@ -31,7 +30,7 @@ export default function EnhancedIFTASummary({
   // Wrap loadSummaryData in useCallback to avoid dependency issues
   const loadSummaryData = useCallback(async () => {
     try {
-      setSummaryLoading(true);
+      setSummaryLoading(false); // Don't show loading state
       setError(null);
       
       const summary = await getIFTASummary(userId, quarter);
@@ -182,18 +181,6 @@ export default function EnhancedIFTASummary({
       alert("Failed to export report. Please try again.");
     }
   };
-
-  // Show loading state
-  if (isLoading || summaryLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow mb-6 p-6">
-        <div className="flex items-center justify-center py-8">
-          <RefreshCw size={32} className="animate-spin text-blue-500 mr-2" />
-          <h3 className="text-lg font-medium text-gray-700">Loading IFTA summary...</h3>
-        </div>
-      </div>
-    );
-  }
 
   // Show error
   if (error) {

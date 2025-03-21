@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Check, 
   AlertTriangle, 
-  RefreshCw, 
   Truck, 
   Fuel, 
   FileCheck,
@@ -22,7 +21,7 @@ import { syncFuelDataWithIFTA, createMissingFuelOnlyTrips } from "@/lib/services
 
 export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   // State management with improved defaults
-  const [syncStatus, setSyncStatus] = useState('idle'); // idle, loading, success, error
+  const [syncStatus, setSyncStatus] = useState('idle'); // idle, success, error
   const [syncResult, setSyncResult] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
   const [autoFixEnabled, setAutoFixEnabled] = useState(false);
@@ -30,6 +29,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   const [fixLoading, setFixLoading] = useState(false);
   const [tableStatus, setTableStatus] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [syncComplete, setSyncComplete] = useState(false);
 
   // Check if database tables exist - more robust implementation
   const checkDatabaseTables = useCallback(async () => {
@@ -81,8 +81,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
         return;
       }
       
-      setSyncStatus('loading');
-      setSyncResult(null);
+      // Don't change the sync status here - no more flashing UI
       setFixResult(null);
       setErrorDetails(null);
       
@@ -98,6 +97,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
       
       setSyncResult(result);
       setSyncStatus('success');
+      setSyncComplete(true);
       
       if (onSyncComplete) {
         onSyncComplete(result);
@@ -109,10 +109,10 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     }
   }, [userId, quarter, onSyncComplete]);
 
-  // Run sync when component mounts or quarter changes
+  // Run sync when component mounts or quarter changes, but prevent re-render loop
   useEffect(() => {
     // Only run once and when dependencies change
-    if (isFirstLoad || userId || quarter) {
+    if ((isFirstLoad || quarter) && !syncComplete) {
       setIsFirstLoad(false);
       
       if (!userId || !quarter) return;
@@ -126,13 +126,8 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
             return;
           }
           
-          // If tables exist, proceed with sync after a small delay to prevent UI glitches
-          const timer = setTimeout(() => {
-            handleSync();
-          }, 500);
-          
-          // Clean up the timer
-          return () => clearTimeout(timer);
+          // If tables exist, proceed with sync once
+          handleSync();
         })
         .catch(error => {
           console.error("Error checking database:", error);
@@ -140,7 +135,12 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
           setErrorDetails("Failed to check database structure. Please try again later.");
         });
     }
-  }, [userId, quarter, handleSync, checkDatabaseTables, isFirstLoad]);
+  }, [userId, quarter, handleSync, checkDatabaseTables, isFirstLoad, syncComplete]);
+
+  // Reset sync complete when quarter changes
+  useEffect(() => {
+    setSyncComplete(false);
+  }, [quarter]);
 
   // Handle auto-fix operation
   const handleAutoFix = async () => {
@@ -149,7 +149,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     }
     
     try {
-      setFixLoading(true);
+      // Don't show loading state
       
       const result = await createMissingFuelOnlyTrips(
         userId, 
@@ -165,8 +165,6 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
       console.error("Error fixing IFTA fuel discrepancies:", error);
       setErrorDetails(`Failed to create fuel-only trips: ${error.message}`);
       setSyncStatus('error');
-    } finally {
-      setFixLoading(false);
     }
   };
 
@@ -179,18 +177,6 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   const formatGallons = (gallons) => {
     return parseFloat(gallons).toFixed(3);
   };
-
-  // Render stable loading state
-  if (syncStatus === 'loading') {
-    return (
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <div className="flex justify-center items-center py-6">
-          <RefreshCw size={32} className="animate-spin text-blue-500 mr-2" />
-          <h3 className="text-lg font-medium text-gray-700">Syncing IFTA data with fuel purchases...</h3>
-        </div>
-      </div>
-    );
-  }
 
   // Show meaningful error with action buttons
   if (syncStatus === 'error') {
@@ -240,26 +226,14 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     );
   }
 
-  // Handle case when no data is available yet
-  if (!syncResult) {
-    // Show a subtle placeholder while waiting for initial data
-    return (
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <div className="flex items-center">
-          <Fuel size={24} className="text-blue-500 mr-2" />
-          <h3 className="text-lg font-medium text-gray-800">
-            IFTA Fuel Synchronization
-          </h3>
-        </div>
-        <p className="text-gray-600 mt-2">
-          Connecting IFTA records with your fuel purchase data...
-        </p>
-      </div>
-    );
+  // Handle case when no data is available yet - this is what's flickering
+  // Only show this if we don't have data yet AND we haven't completed a sync
+  if (!syncResult && !syncComplete) {
+    return null; // Return nothing to prevent flickering
   }
 
   // If no discrepancies, show success message
-  if (!syncResult.hasDiscrepancies) {
+  if (syncResult && !syncResult.hasDiscrepancies) {
     return (
       <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md mb-6">
         <div className="flex">
@@ -281,7 +255,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   }
 
   // Show discrepancies and offer to fix them
-  return (
+  return syncResult ? (
     <div className="bg-white shadow rounded-lg overflow-hidden mb-6">
       <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-4">
         <div className="flex items-start">
@@ -409,30 +383,20 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
             onClick={handleSync}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
-            <RefreshCw size={16} className="inline-block mr-2" />
             Refresh Sync
           </button>
           
           <button
             onClick={handleAutoFix}
-            disabled={!autoFixEnabled || fixLoading}
+            disabled={!autoFixEnabled}
             className={`px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white ${
               autoFixEnabled
                 ? 'bg-blue-600 hover:bg-blue-700'
                 : 'bg-gray-300 cursor-not-allowed'
             } flex items-center`}
           >
-            {fixLoading ? (
-              <>
-                <RefreshCw size={16} className="animate-spin mr-2" />
-                Fixing...
-              </>
-            ) : (
-              <>
-                <FileCheck size={16} className="mr-2" />
-                Create Fuel-Only Trips
-              </>
-            )}
+            <FileCheck size={16} className="mr-2" />
+            Create Fuel-Only Trips
           </button>
         </div>
         
@@ -498,5 +462,5 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
         )}
       </div>
     </div>
-  );
+  ) : null; // Return null if no syncResult, to avoid flicker
 }

@@ -9,7 +9,6 @@ import {
   FileDown,
   Plus,
   Trash2,
-  RefreshCw,
   AlertTriangle,
   Info,
   Download,
@@ -53,8 +52,6 @@ export default function IFTACalculatorPage() {
   const [trips, setTrips] = useState([]);
   const [fuelData, setFuelData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [tripLoading, setTripLoading] = useState(false);
-  const [fuelDataLoading, setFuelDataLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -74,6 +71,9 @@ export default function IFTACalculatorPage() {
   const [useEnhancedSummary, setUseEnhancedSummary] = useState(true);
   const [diagnosisMode, setDiagnosisMode] = useState(false);
   const [diagnosisResults, setDiagnosisResults] = useState(null);
+  
+  // Add a single consolidated data loading state
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Run database diagnostics
   const runDiagnostics = async () => {
@@ -151,8 +151,6 @@ export default function IFTACalculatorPage() {
     if (!user?.id || !activeQuarter || dataLoadingRef.current) return null;
     
     try {
-      setFuelDataLoading(true);
-      
       // Parse the quarter into dateRange filter
       const [year, quarter] = activeQuarter.split('-Q');
       const quarterStartMonth = (parseInt(quarter) - 1) * 3;
@@ -175,8 +173,6 @@ export default function IFTACalculatorPage() {
       console.error('Error loading fuel data:', error);
       setError('Failed to load fuel data. Your calculations may be incomplete.');
       return [];
-    } finally {
-      setFuelDataLoading(false);
     }
   }, [user?.id, activeQuarter]);
 
@@ -185,7 +181,6 @@ export default function IFTACalculatorPage() {
     if (!user?.id || !activeQuarter || dataLoadingRef.current) return;
     
     try {
-      setTripLoading(true);
       dataLoadingRef.current = true;
       
       const { data, error: tripsError } = await supabase
@@ -212,11 +207,13 @@ export default function IFTACalculatorPage() {
       
       // Calculate summary statistics
       calculateStats(data || [], currentFuelData || []);
+      
+      return data;
     } catch (error) {
       console.error('Error loading trips:', error);
       setError('Failed to load trip records. ' + error.message);
+      return null;
     } finally {
-      setTripLoading(false);
       dataLoadingRef.current = false;
     }
   }, [user?.id, activeQuarter, fuelData, loadFuelData, calculateStats]);
@@ -259,49 +256,50 @@ export default function IFTACalculatorPage() {
     initializeData();
   }, [router]);
 
-// Add this state near your other state declarations
-const [dataLoaded, setDataLoaded] = useState(false);
-
-// Then modify your useEffect
-useEffect(() => {
-  if (user && activeQuarter && !initialLoading && !dataLoaded) {
-    const loadAllData = async () => {
-      if (dataLoadingRef.current) return;
-      dataLoadingRef.current = true;
+  // Load data once when parameters are available - with no loading states
+  useEffect(() => {
+    if (user && activeQuarter && !initialLoading && !dataLoaded) {
+      const loadAllData = async () => {
+        if (dataLoadingRef.current) return;
+        dataLoadingRef.current = true;
+        
+        try {
+          setError(null);
+          setDatabaseError(null);
+          
+          // Load fuel data first
+          const fuelEntries = await loadFuelData();
+          
+          // Then load trips
+          await loadTrips();
+          
+          // Mark data as loaded after successful fetch
+          setDataLoaded(true);
+        } catch (err) {
+          console.error("Error loading data:", err);
+          // Errors are already handled in the individual load functions
+        } finally {
+          dataLoadingRef.current = false;
+        }
+      };
       
-      try {
-        setError(null);
-        setDatabaseError(null);
-        const fuelEntries = await loadFuelData();
-        await loadTrips();
-        // Mark data as loaded after successful fetch
-        setDataLoaded(true);
-      } catch (err) {
-        console.error("Error loading data:", err);
-        // Handle errors...
-      } finally {
-        dataLoadingRef.current = false;
-      }
-    };
-    
-    loadAllData();
-  }
-}, [user, activeQuarter, initialLoading, dataLoaded, loadFuelData, loadTrips]);
+      loadAllData();
+    }
+  }, [user, activeQuarter, initialLoading, dataLoaded, loadFuelData, loadTrips]);
 
-// Add another useEffect to reset dataLoaded when quarter changes
-useEffect(() => {
-  setDataLoaded(false);
-}, [activeQuarter]);
+  // Reset dataLoaded when quarter changes
+  useEffect(() => {
+    setDataLoaded(false);
+  }, [activeQuarter]);
 
   // Handle sync result from the IFTA-Fuel Sync component
   const handleSyncComplete = (result) => {
     setSyncResult(result);
   };
 
-  // Handle adding a new trip
+  // Handle adding a new trip - without loading state
   const handleAddTrip = async (tripData) => {
     try {
-      setLoading(true);
       setError(null);
       
       // Format data for insertion
@@ -346,8 +344,6 @@ useEffect(() => {
       console.error('Error adding trip:', error);
       setError('Failed to add trip: ' + (error.message || "Unknown error"));
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -357,12 +353,11 @@ useEffect(() => {
     setDeleteModalOpen(true);
   };
 
-  // Confirm deletion of a trip
+  // Confirm deletion of a trip - without loading state
   const confirmDeleteTrip = async () => {
     if (!tripToDelete) return;
     
     try {
-      setLoading(true);
       setError(null);
       
       const { error: deleteError } = await supabase
@@ -380,8 +375,6 @@ useEffect(() => {
     } catch (error) {
       console.error('Error deleting trip:', error);
       setError('Failed to delete trip: ' + (error.message || "Unknown error"));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -426,10 +419,9 @@ useEffect(() => {
     }
   };
 
-  // Handle generating a report or saving report data
+  // Handle generating a report or saving report data - without loading state
   const handleSaveReport = async (reportData) => {
     try {
-      setLoading(true);
       setError(null);
       
       const savedReport = await saveIFTAReport(user.id, reportData);
@@ -439,22 +431,10 @@ useEffect(() => {
       console.error('Error saving report:', error);
       setError('Failed to save report: ' + (error.message || "Unknown error"));
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Combine all loading states for UI to avoid flicker
-  const isLoading = initialLoading || loading || tripLoading || fuelDataLoading;
-
-  // Show stable loading indicator only for initial load
-  if (initialLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  // Skip loading indicator completely
 
   return (
     <DashboardLayout activePage="ifta calculator">
@@ -470,7 +450,7 @@ useEffect(() => {
               <button
                 onClick={() => setReportModalOpen(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                disabled={trips.length === 0 || loading}
+                disabled={trips.length === 0}
               >
                 <FileDown size={16} className="mr-2" />
                 Generate Report
@@ -478,7 +458,7 @@ useEffect(() => {
               <button
                 onClick={handleExportData}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
-                disabled={trips.length === 0 || loading}
+                disabled={trips.length === 0}
               >
                 <Download size={16} className="mr-2" />
                 Export Data
@@ -571,7 +551,7 @@ useEffect(() => {
             <QuarterSelector 
               activeQuarter={activeQuarter} 
               setActiveQuarter={setActiveQuarter} 
-              isLoading={loading || tripLoading}
+              isLoading={false} 
             />
           </div>
 
@@ -594,13 +574,13 @@ useEffect(() => {
                   userId={user?.id}
                   quarter={activeQuarter}
                   syncResult={syncResult}
-                  isLoading={loading || tripLoading}
+                  isLoading={false}
                 />
               ) : (
                 <IFTASummary 
                   trips={trips} 
                   stats={stats}
-                  isLoading={loading || tripLoading} 
+                  isLoading={false} 
                 />
               )}
             </div>
@@ -610,7 +590,7 @@ useEffect(() => {
           <div className="mb-6">
             <TripEntryForm 
               onAddTrip={handleAddTrip} 
-              isLoading={loading}
+              isLoading={false}
               fuelData={fuelData}
             />
           </div>
@@ -620,7 +600,7 @@ useEffect(() => {
             <TripsList 
               trips={trips} 
               onRemoveTrip={handleDeleteTrip} 
-              isLoading={tripLoading}
+              isLoading={false}
             />
           </div>
         </div>
@@ -637,7 +617,7 @@ useEffect(() => {
         title="Delete Trip"
         message="Are you sure you want to delete this trip? This action cannot be undone."
         itemName={tripToDelete ? `Trip from ${tripToDelete.start_jurisdiction} to ${tripToDelete.end_jurisdiction}` : ""}
-        isDeleting={loading}
+        isDeleting={false}
       />
 
       {/* Report Generator Modal */}

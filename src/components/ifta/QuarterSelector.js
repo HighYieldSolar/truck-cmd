@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, ChevronDown, RefreshCw } from "lucide-react";
+import { Calendar, ChevronDown } from "lucide-react";
 
 export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoading = false }) {
   const [quarters, setQuarters] = useState([]);
@@ -98,7 +98,6 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
             className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
             value={activeQuarter}
             onChange={handleQuarterChange}
-            disabled={isLoading}
           >
             {quarters.map((quarter) => (
               <option 
@@ -111,11 +110,7 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
             ))}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-            {isLoading ? (
-              <RefreshCw size={16} className="animate-spin" />
-            ) : (
-              <ChevronDown size={16} className="text-gray-400" />
-            )}
+            <ChevronDown size={16} className="text-gray-400" />
           </div>
         </div>
       </div>
