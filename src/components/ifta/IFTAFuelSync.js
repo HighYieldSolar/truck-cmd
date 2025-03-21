@@ -16,17 +16,57 @@ import {
   Database
 } from "lucide-react";
 
+// Import the supabase client directly
+import { supabase } from "@/lib/supabaseClient";
 import { syncFuelDataWithIFTA, createMissingFuelOnlyTrips } from "@/lib/services/iftaService";
 
 export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
+  // State management with improved defaults
   const [syncStatus, setSyncStatus] = useState('idle'); // idle, loading, success, error
   const [syncResult, setSyncResult] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
   const [autoFixEnabled, setAutoFixEnabled] = useState(false);
   const [fixResult, setFixResult] = useState(null);
   const [fixLoading, setFixLoading] = useState(false);
+  const [tableStatus, setTableStatus] = useState(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  // Define handleSync with useCallback to avoid dependency issues
+  // Check if database tables exist - more robust implementation
+  const checkDatabaseTables = useCallback(async () => {
+    if (!userId) return false;
+    
+    try {
+      // Check for ifta_trip_records
+      const { data: tripRecordsData, error: tripRecordsError } = await supabase
+        .from('ifta_trip_records')
+        .select('id')
+        .limit(1);
+      
+      // Check for fuel_entries
+      const { data: fuelEntriesData, error: fuelEntriesError } = await supabase
+        .from('fuel_entries')
+        .select('id')
+        .limit(1);
+      
+      // Store table status for debugging
+      setTableStatus({
+        ifta_trip_records: !tripRecordsError,
+        fuel_entries: !fuelEntriesError
+      });
+      
+      // Both tables exist if no errors
+      return !tripRecordsError && !fuelEntriesError;
+    } catch (error) {
+      console.error("Error checking database tables:", error);
+      setTableStatus({
+        error: error.message,
+        exists: false
+      });
+      return false;
+    }
+  }, [userId]);
+
+  // Define handleSync with useCallback to avoid dependency issues and improve stability
   const handleSync = useCallback(async () => {
     try {
       if (!userId) {
@@ -67,49 +107,17 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
       setSyncStatus('error');
       setErrorDetails(error.message || "An unknown error occurred during synchronization");
     }
-  }, [userId, quarter, onSyncComplete]); // Include all dependencies
-
-  // Check if database tables exist
-  const checkDatabaseTables = useCallback(async () => {
-    try {
-      // Simple check to see if we have access to the necessary tables
-      if (!userId) return false;
-      
-      // We'll try a minimal query just to check table existence
-      const { error: fuelError } = await window.supabase
-        .from('fuel_entries')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1);
-      
-      const { error: iftaError } = await window.supabase
-        .from('ifta_trip_records')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1);
-      
-      // If either table doesn't exist, the query will return an error
-      if (fuelError && fuelError.code === '42P01') {
-        // Table doesn't exist error
-        return false;
-      }
-      
-      if (iftaError && iftaError.code === '42P01') {
-        // Table doesn't exist error
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking database tables:", error);
-      return false;
-    }
-  }, [userId]);
+  }, [userId, quarter, onSyncComplete]);
 
   // Run sync when component mounts or quarter changes
   useEffect(() => {
-    if (userId && quarter) {
-      // First check if tables exist
+    // Only run once and when dependencies change
+    if (isFirstLoad || userId || quarter) {
+      setIsFirstLoad(false);
+      
+      if (!userId || !quarter) return;
+      
+      // Verify database tables first
       checkDatabaseTables()
         .then(tablesExist => {
           if (!tablesExist) {
@@ -118,8 +126,13 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
             return;
           }
           
-          // If tables exist, proceed with sync
-          handleSync();
+          // If tables exist, proceed with sync after a small delay to prevent UI glitches
+          const timer = setTimeout(() => {
+            handleSync();
+          }, 500);
+          
+          // Clean up the timer
+          return () => clearTimeout(timer);
         })
         .catch(error => {
           console.error("Error checking database:", error);
@@ -127,7 +140,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
           setErrorDetails("Failed to check database structure. Please try again later.");
         });
     }
-  }, [userId, quarter, handleSync, checkDatabaseTables]); // Now correctly includes handleSync and checkDatabaseTables
+  }, [userId, quarter, handleSync, checkDatabaseTables, isFirstLoad]);
 
   // Handle auto-fix operation
   const handleAutoFix = async () => {
@@ -167,6 +180,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     return parseFloat(gallons).toFixed(3);
   };
 
+  // Render stable loading state
   if (syncStatus === 'loading') {
     return (
       <div className="bg-white shadow rounded-lg p-6 mb-6">
@@ -178,6 +192,7 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     );
   }
 
+  // Show meaningful error with action buttons
   if (syncStatus === 'error') {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md mb-6">
@@ -189,12 +204,20 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
               {errorDetails || "Failed to synchronize IFTA data with fuel purchases. Please try again."}
             </p>
             
-            {/* Debugging information - only show in non-production */}
-            <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800 font-mono overflow-auto max-h-32">
-              <p>User ID: {userId || 'Not provided'}</p>
-              <p>Quarter: {quarter || 'Not provided'}</p>
-              <p>Last sync attempt: {new Date().toLocaleString()}</p>
-            </div>
+            {/* Show database table status for easier debugging */}
+            {tableStatus && (
+              <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800 font-mono overflow-auto max-h-32">
+                <p>User ID: {userId || 'Not provided'}</p>
+                <p>Quarter: {quarter || 'Not provided'}</p>
+                <p>Last sync attempt: {new Date().toLocaleString()}</p>
+                {tableStatus.ifta_trip_records !== undefined && (
+                  <p>IFTA Trip Records table: {tableStatus.ifta_trip_records ? 'Found' : 'Not found'}</p>
+                )}
+                {tableStatus.fuel_entries !== undefined && (
+                  <p>Fuel Entries table: {tableStatus.fuel_entries ? 'Found' : 'Not found'}</p>
+                )}
+              </div>
+            )}
             
             <div className="mt-4 flex space-x-3">
               <button
@@ -217,22 +240,20 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     );
   }
 
+  // Handle case when no data is available yet
   if (!syncResult) {
-    // Show a placeholder while waiting for initial data
+    // Show a subtle placeholder while waiting for initial data
     return (
-      <div className="bg-white shadow rounded-lg p-6 mb-6 animate-pulse">
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
         <div className="flex items-center">
-          <div className="rounded-full bg-gray-200 h-10 w-10"></div>
-          <div className="ml-4 flex-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="mt-2 h-3 bg-gray-200 rounded w-1/2"></div>
-          </div>
+          <Fuel size={24} className="text-blue-500 mr-2" />
+          <h3 className="text-lg font-medium text-gray-800">
+            IFTA Fuel Synchronization
+          </h3>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <div className="h-20 bg-gray-200 rounded"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
-        </div>
+        <p className="text-gray-600 mt-2">
+          Connecting IFTA records with your fuel purchase data...
+        </p>
       </div>
     );
   }

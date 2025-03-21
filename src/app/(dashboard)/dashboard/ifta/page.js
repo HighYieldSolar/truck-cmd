@@ -259,35 +259,39 @@ export default function IFTACalculatorPage() {
     initializeData();
   }, [router]);
 
-  // Load data when quarter changes or user changes
-  useEffect(() => {
-    if (user && activeQuarter && !initialLoading) {
-      const loadAllData = async () => {
-        if (dataLoadingRef.current) return;
-        dataLoadingRef.current = true;
-        
-        try {
-          setError(null);
-          setDatabaseError(null);
-          const fuelEntries = await loadFuelData();
-          await loadTrips();
-        } catch (err) {
-          console.error("Error loading data:", err);
-          
-          // Check if this is a database structure error
-          if (err.message && err.message.includes("table doesn't exist")) {
-            setDatabaseError("Database structure issue detected. Please run diagnostics.");
-          } else {
-            setError("Failed to load data: " + err.message);
-          }
-        } finally {
-          dataLoadingRef.current = false;
-        }
-      };
+// Add this state near your other state declarations
+const [dataLoaded, setDataLoaded] = useState(false);
+
+// Then modify your useEffect
+useEffect(() => {
+  if (user && activeQuarter && !initialLoading && !dataLoaded) {
+    const loadAllData = async () => {
+      if (dataLoadingRef.current) return;
+      dataLoadingRef.current = true;
       
-      loadAllData();
-    }
-  }, [user, activeQuarter, initialLoading, loadFuelData, loadTrips]);
+      try {
+        setError(null);
+        setDatabaseError(null);
+        const fuelEntries = await loadFuelData();
+        await loadTrips();
+        // Mark data as loaded after successful fetch
+        setDataLoaded(true);
+      } catch (err) {
+        console.error("Error loading data:", err);
+        // Handle errors...
+      } finally {
+        dataLoadingRef.current = false;
+      }
+    };
+    
+    loadAllData();
+  }
+}, [user, activeQuarter, initialLoading, dataLoaded, loadFuelData, loadTrips]);
+
+// Add another useEffect to reset dataLoaded when quarter changes
+useEffect(() => {
+  setDataLoaded(false);
+}, [activeQuarter]);
 
   // Handle sync result from the IFTA-Fuel Sync component
   const handleSyncComplete = (result) => {
