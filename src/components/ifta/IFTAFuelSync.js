@@ -12,7 +12,8 @@ import {
   CheckCircle,
   ArrowRight,
   Calendar,
-  Info
+  Info,
+  Database
 } from "lucide-react";
 
 import { syncFuelDataWithIFTA, createMissingFuelOnlyTrips } from "@/lib/services/iftaService";
@@ -20,6 +21,7 @@ import { syncFuelDataWithIFTA, createMissingFuelOnlyTrips } from "@/lib/services
 export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   const [syncStatus, setSyncStatus] = useState('idle'); // idle, loading, success, error
   const [syncResult, setSyncResult] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
   const [autoFixEnabled, setAutoFixEnabled] = useState(false);
   const [fixResult, setFixResult] = useState(null);
   const [fixLoading, setFixLoading] = useState(false);
@@ -27,11 +29,33 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   // Define handleSync with useCallback to avoid dependency issues
   const handleSync = useCallback(async () => {
     try {
+      if (!userId) {
+        setErrorDetails("User ID is missing. Please make sure you're logged in.");
+        setSyncStatus('error');
+        return;
+      }
+      
+      if (!quarter) {
+        setErrorDetails("Quarter information is missing. Please select a valid quarter.");
+        setSyncStatus('error');
+        return;
+      }
+      
       setSyncStatus('loading');
       setSyncResult(null);
       setFixResult(null);
+      setErrorDetails(null);
+      
+      console.log(`Starting IFTA sync for user ${userId} and quarter ${quarter}`);
       
       const result = await syncFuelDataWithIFTA(userId, quarter);
+      
+      // Check if result contains an error
+      if (result.error) {
+        console.error("Error returned from syncFuelDataWithIFTA:", result.errorMessage);
+        throw new Error(result.errorMessage || "Sync failed");
+      }
+      
       setSyncResult(result);
       setSyncStatus('success');
       
@@ -41,15 +65,69 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
     } catch (error) {
       console.error("Error syncing IFTA fuel data:", error);
       setSyncStatus('error');
+      setErrorDetails(error.message || "An unknown error occurred during synchronization");
     }
   }, [userId, quarter, onSyncComplete]); // Include all dependencies
+
+  // Check if database tables exist
+  const checkDatabaseTables = useCallback(async () => {
+    try {
+      // Simple check to see if we have access to the necessary tables
+      if (!userId) return false;
+      
+      // We'll try a minimal query just to check table existence
+      const { error: fuelError } = await window.supabase
+        .from('fuel_entries')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+      
+      const { error: iftaError } = await window.supabase
+        .from('ifta_trip_records')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+      
+      // If either table doesn't exist, the query will return an error
+      if (fuelError && fuelError.code === '42P01') {
+        // Table doesn't exist error
+        return false;
+      }
+      
+      if (iftaError && iftaError.code === '42P01') {
+        // Table doesn't exist error
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking database tables:", error);
+      return false;
+    }
+  }, [userId]);
 
   // Run sync when component mounts or quarter changes
   useEffect(() => {
     if (userId && quarter) {
-      handleSync();
+      // First check if tables exist
+      checkDatabaseTables()
+        .then(tablesExist => {
+          if (!tablesExist) {
+            setSyncStatus('error');
+            setErrorDetails("Database tables not found. Please make sure your database is properly set up.");
+            return;
+          }
+          
+          // If tables exist, proceed with sync
+          handleSync();
+        })
+        .catch(error => {
+          console.error("Error checking database:", error);
+          setSyncStatus('error');
+          setErrorDetails("Failed to check database structure. Please try again later.");
+        });
     }
-  }, [userId, quarter, handleSync]); // Now correctly includes handleSync
+  }, [userId, quarter, handleSync, checkDatabaseTables]); // Now correctly includes handleSync and checkDatabaseTables
 
   // Handle auto-fix operation
   const handleAutoFix = async () => {
@@ -72,6 +150,8 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
       await handleSync();
     } catch (error) {
       console.error("Error fixing IFTA fuel discrepancies:", error);
+      setErrorDetails(`Failed to create fuel-only trips: ${error.message}`);
+      setSyncStatus('error');
     } finally {
       setFixLoading(false);
     }
@@ -105,13 +185,32 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
           <AlertTriangle className="h-6 w-6 text-red-500 mr-3" />
           <div>
             <h3 className="text-lg font-medium text-red-800">Sync Error</h3>
-            <p className="text-red-700">Failed to synchronize IFTA data with fuel purchases. Please try again.</p>
-            <button
-              onClick={handleSync}
-              className="mt-3 px-4 py-2 bg-white border border-red-300 rounded-md text-red-700 text-sm font-medium hover:bg-red-50"
-            >
-              Retry Sync
-            </button>
+            <p className="text-red-700">
+              {errorDetails || "Failed to synchronize IFTA data with fuel purchases. Please try again."}
+            </p>
+            
+            {/* Debugging information - only show in non-production */}
+            <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800 font-mono overflow-auto max-h-32">
+              <p>User ID: {userId || 'Not provided'}</p>
+              <p>Quarter: {quarter || 'Not provided'}</p>
+              <p>Last sync attempt: {new Date().toLocaleString()}</p>
+            </div>
+            
+            <div className="mt-4 flex space-x-3">
+              <button
+                onClick={handleSync}
+                className="px-4 py-2 bg-white border border-red-300 rounded-md text-red-700 text-sm font-medium hover:bg-red-50"
+              >
+                Retry Sync
+              </button>
+              
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 text-sm font-medium hover:bg-gray-50"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -119,7 +218,23 @@ export default function IFTAFuelSync({ userId, quarter, onSyncComplete }) {
   }
 
   if (!syncResult) {
-    return null;
+    // Show a placeholder while waiting for initial data
+    return (
+      <div className="bg-white shadow rounded-lg p-6 mb-6 animate-pulse">
+        <div className="flex items-center">
+          <div className="rounded-full bg-gray-200 h-10 w-10"></div>
+          <div className="ml-4 flex-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="mt-2 h-3 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
   }
 
   // If no discrepancies, show success message

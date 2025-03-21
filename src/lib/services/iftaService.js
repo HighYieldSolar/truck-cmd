@@ -1,6 +1,5 @@
-// src/lib/services/iftaService.js
+// src/lib/services/iftaService.js - Updated version with improved error handling
 import { supabase } from "../supabaseClient";
-import { formatError } from "../supabaseClient";
 
 /**
  * IFTA Service - Handles the synchronization between fuel entries and IFTA trip data
@@ -19,6 +18,8 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
       throw new Error("User ID and quarter are required");
     }
     
+    console.log(`Fetching fuel data for user ${userId} in quarter ${quarter}`);
+    
     // Parse the quarter to get date range
     const [year, qPart] = quarter.split('-Q');
     const quarterNum = parseInt(qPart);
@@ -35,6 +36,8 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
     
+    console.log(`Calculated date range: ${startDateStr} to ${endDateStr}`);
+    
     // Query fuel entries within the date range
     const { data, error } = await supabase
       .from('fuel_entries')
@@ -45,8 +48,11 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
       .order('date', { ascending: true });
     
     if (error) {
+      console.error("Supabase error fetching fuel entries:", error);
       throw error;
     }
+    
+    console.log(`Found ${data?.length || 0} fuel entries for IFTA`);
     
     // Process data for IFTA use - group by jurisdiction (state)
     const fuelByState = {};
@@ -80,7 +86,7 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
     return Object.values(fuelByState);
   } catch (error) {
     console.error('Error fetching fuel data for IFTA:', error);
-    throw error;
+    throw new Error(`Failed to fetch fuel data: ${error.message || "Unknown error"}`);
   }
 }
 
@@ -92,18 +98,47 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
  */
 export async function syncFuelDataWithIFTA(userId, quarter) {
   try {
+    if (!userId) {
+      console.error("syncFuelDataWithIFTA called without userId");
+      throw new Error("User ID is required");
+    }
+    
+    if (!quarter) {
+      console.error("syncFuelDataWithIFTA called without quarter");
+      throw new Error("Quarter is required");
+    }
+    
+    console.log(`Starting IFTA fuel sync for user ${userId}, quarter ${quarter}`);
+    
     // Get fuel data for the quarter
-    const fuelData = await fetchFuelDataForIFTA(userId, quarter);
+    let fuelData;
+    try {
+      fuelData = await fetchFuelDataForIFTA(userId, quarter);
+      console.log(`Fetched fuel data: ${fuelData.length} state entries`);
+    } catch (fuelError) {
+      console.error("Error in fetchFuelDataForIFTA:", fuelError);
+      throw new Error(`Failed to fetch fuel data: ${fuelError.message}`);
+    }
     
     // Get existing IFTA trip records for the quarter
-    const { data: existingTrips, error: tripsError } = await supabase
-      .from('ifta_trip_records')
-      .select('id, vehicle_id, start_jurisdiction, end_jurisdiction, gallons, fuel_cost')
-      .eq('user_id', userId)
-      .eq('quarter', quarter);
-    
-    if (tripsError) {
-      throw tripsError;
+    let existingTrips;
+    try {
+      const { data, error } = await supabase
+        .from('ifta_trip_records')
+        .select('id, vehicle_id, start_jurisdiction, end_jurisdiction, gallons, fuel_cost')
+        .eq('user_id', userId)
+        .eq('quarter', quarter);
+        
+      if (error) {
+        console.error("Supabase error fetching trips:", error);
+        throw error;
+      }
+      
+      existingTrips = data || [];
+      console.log(`Fetched ${existingTrips.length} IFTA trip records`);
+    } catch (tripsError) {
+      console.error("Error fetching IFTA trips:", tripsError);
+      throw new Error(`Failed to fetch IFTA trips: ${tripsError.message}`);
     }
     
     // Calculate total fuel gallons by trip jurisdiction (for comparison)
@@ -161,6 +196,8 @@ export async function syncFuelDataWithIFTA(userId, quarter) {
       }
     });
     
+    console.log(`Found ${Object.keys(discrepancies).length} jurisdictions with discrepancies`);
+    
     return {
       fuelData,
       existingTrips: existingTrips || [],
@@ -169,8 +206,28 @@ export async function syncFuelDataWithIFTA(userId, quarter) {
       hasDiscrepancies: Object.keys(discrepancies).length > 0
     };
   } catch (error) {
+    // Enhanced error handling
     console.error('Error syncing fuel data with IFTA:', error);
-    throw error;
+    
+    // Create a detailed error with stack trace
+    const detailedError = new Error(`IFTA sync failed: ${error.message || "Unknown error"}`);
+    detailedError.originalError = error;
+    detailedError.userId = userId;
+    detailedError.quarter = quarter;
+    
+    // Log the detailed error
+    console.error('Detailed IFTA sync error:', detailedError);
+    
+    // Return a default response with error info instead of throwing
+    return {
+      error: true,
+      errorMessage: detailedError.message,
+      fuelData: [],
+      existingTrips: [],
+      fuelByState: {},
+      discrepancies: [],
+      hasDiscrepancies: false
+    };
   }
 }
 
@@ -256,17 +313,51 @@ export async function createMissingFuelOnlyTrips(userId, quarter, discrepancies)
  */
 export async function getIFTASummary(userId, quarter) {
   try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+    
+    if (!quarter) {
+      throw new Error("Quarter is required");
+    }
+    
+    console.log(`Getting IFTA summary for user ${userId}, quarter ${quarter}`);
+    
     // Run the sync to get all the data we need
-    const syncResult = await syncFuelDataWithIFTA(userId, quarter);
+    let syncResult;
+    try {
+      syncResult = await syncFuelDataWithIFTA(userId, quarter);
+      
+      // Check if syncResult contains an error
+      if (syncResult.error) {
+        console.error("Error in sync result:", syncResult.errorMessage);
+        throw new Error(syncResult.errorMessage);
+      }
+    } catch (syncError) {
+      console.error("Error in syncFuelDataWithIFTA:", syncError);
+      throw new Error(`Failed to sync IFTA data: ${syncError.message}`);
+    }
     
     // Get all trips for the quarter
-    const { data: trips, error: tripError } = await supabase
-      .from('ifta_trip_records')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('quarter', quarter);
+    let trips;
+    try {
+      const { data, error } = await supabase
+        .from('ifta_trip_records')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('quarter', quarter);
+        
+      if (error) {
+        console.error("Supabase error fetching trips for summary:", error);
+        throw error;
+      }
       
-    if (tripError) throw tripError;
+      trips = data || [];
+      console.log(`Found ${trips.length} trips for IFTA summary`);
+    } catch (tripError) {
+      console.error("Error fetching trips for summary:", tripError);
+      throw new Error(`Failed to fetch trips: ${tripError.message}`);
+    }
     
     // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
@@ -346,7 +437,19 @@ export async function getIFTASummary(userId, quarter) {
     };
   } catch (error) {
     console.error('Error generating IFTA summary:', error);
-    throw error;
+    
+    // Enhanced error handling with default response
+    return {
+      error: true,
+      errorMessage: error.message || "Failed to generate IFTA summary",
+      quarter,
+      totalMiles: 0,
+      totalGallons: 0,
+      avgMpg: 0,
+      jurisdictionSummary: [],
+      hasDiscrepancies: false,
+      discrepancies: []
+    };
   }
 }
 

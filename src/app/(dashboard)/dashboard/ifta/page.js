@@ -10,7 +10,7 @@ import {
   Plus,
   Trash2,
   RefreshCw,
-  AlertCircle,
+  AlertTriangle,
   Info,
   Download,
   Truck,
@@ -18,8 +18,12 @@ import {
   MapPin,
   Fuel,
   DollarSign,
-  Clock
+  Clock,
+  Database
 } from "lucide-react";
+
+// Import utilities
+import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
 
 // Import custom components
 import TripEntryForm from "@/components/ifta/TripEntryForm";
@@ -55,6 +59,7 @@ export default function IFTACalculatorPage() {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [databaseError, setDatabaseError] = useState(null);
   const [stats, setStats] = useState({
     totalMiles: 0,
     totalGallons: 0,
@@ -67,6 +72,28 @@ export default function IFTACalculatorPage() {
   // New state for fuel integration
   const [syncResult, setSyncResult] = useState(null);
   const [useEnhancedSummary, setUseEnhancedSummary] = useState(true);
+  const [diagnosisMode, setDiagnosisMode] = useState(false);
+  const [diagnosisResults, setDiagnosisResults] = useState(null);
+
+  // Run database diagnostics
+  const runDiagnostics = async () => {
+    setDiagnosisMode(true);
+    
+    try {
+      const results = await runDatabaseDiagnostics();
+      setDiagnosisResults(results);
+      
+      if (!results.success) {
+        setDatabaseError(results.issues.join('. '));
+      }
+    } catch (error) {
+      console.error("Error running diagnostics:", error);
+      setDiagnosisResults({
+        success: false,
+        issues: [error.message || "Unknown error running diagnostics"]
+      });
+    }
+  };
 
   // Define calculateStats with useCallback and include the calculation logic inside
   const calculateStats = useCallback((tripsData, fuelEntries) => {
@@ -168,7 +195,15 @@ export default function IFTACalculatorPage() {
         .eq('quarter', activeQuarter)
         .order('start_date', { ascending: false });
         
-      if (tripsError) throw tripsError;
+      if (tripsError) {
+        if (tripsError.code === '42P01') { // PostgreSQL code for relation does not exist
+          console.error("ifta_trip_records table doesn't exist:", tripsError);
+          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support to set up your database.");
+          throw new Error("Database table 'ifta_trip_records' doesn't exist");
+        } else {
+          throw tripsError;
+        }
+      }
       
       setTrips(data || []);
       
@@ -179,7 +214,7 @@ export default function IFTACalculatorPage() {
       calculateStats(data || [], currentFuelData || []);
     } catch (error) {
       console.error('Error loading trips:', error);
-      setError('Failed to load trip records.');
+      setError('Failed to load trip records. ' + error.message);
     } finally {
       setTripLoading(false);
       dataLoadingRef.current = false;
@@ -233,11 +268,18 @@ export default function IFTACalculatorPage() {
         
         try {
           setError(null);
+          setDatabaseError(null);
           const fuelEntries = await loadFuelData();
           await loadTrips();
         } catch (err) {
           console.error("Error loading data:", err);
-          setError("Failed to load data. Please try again.");
+          
+          // Check if this is a database structure error
+          if (err.message && err.message.includes("table doesn't exist")) {
+            setDatabaseError("Database structure issue detected. Please run diagnostics.");
+          } else {
+            setError("Failed to load data: " + err.message);
+          }
         } finally {
           dataLoadingRef.current = false;
         }
@@ -283,7 +325,14 @@ export default function IFTACalculatorPage() {
         .insert([newTrip])
         .select();
         
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === '42P01') { // PostgreSQL code for relation does not exist
+          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support.");
+          throw new Error("Database table doesn't exist");
+        } else {
+          throw insertError;
+        }
+      }
       
       // Reload trips to update the list
       await loadTrips();
@@ -291,7 +340,7 @@ export default function IFTACalculatorPage() {
       return true;
     } catch (error) {
       console.error('Error adding trip:', error);
-      setError('Failed to add trip. Please try again.');
+      setError('Failed to add trip: ' + (error.message || "Unknown error"));
       return false;
     } finally {
       setLoading(false);
@@ -326,7 +375,7 @@ export default function IFTACalculatorPage() {
       setTripToDelete(null);
     } catch (error) {
       console.error('Error deleting trip:', error);
-      setError('Failed to delete trip. Please try again.');
+      setError('Failed to delete trip: ' + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -369,7 +418,7 @@ export default function IFTACalculatorPage() {
       document.body.removeChild(link);
     } catch (err) {
       console.error('Error exporting data:', err);
-      setError('Failed to export data. Please try again.');
+      setError('Failed to export data: ' + (err.message || "Unknown error"));
     }
   };
 
@@ -384,7 +433,7 @@ export default function IFTACalculatorPage() {
       return true;
     } catch (error) {
       console.error('Error saving report:', error);
-      setError('Failed to save report. Please try again.');
+      setError('Failed to save report: ' + (error.message || "Unknown error"));
       return false;
     } finally {
       setLoading(false);
@@ -430,15 +479,81 @@ export default function IFTACalculatorPage() {
                 <Download size={16} className="mr-2" />
                 Export Data
               </button>
+              <button
+                onClick={runDiagnostics}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+              >
+                <Database size={16} className="mr-2" />
+                Diagnose
+              </button>
             </div>
           </div>
 
-          {/* Show errors if present */}
-          {error && (
+          {/* Show database errors if present */}
+          {databaseError && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Database className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-red-800">Database Configuration Error</h3>
+                  <p className="text-sm text-red-700">{databaseError}</p>
+                  <button
+                    onClick={runDiagnostics}
+                    className="mt-2 inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none"
+                  >
+                    <Database size={12} className="mr-1" />
+                    Run Database Diagnostics
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show diagnostics results if available */}
+          {diagnosisMode && diagnosisResults && (
+            <div className={`mb-6 ${diagnosisResults.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-yellow-50 border-l-4 border-yellow-500'} p-4 rounded-md`}>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Database className={`h-5 w-5 ${diagnosisResults.success ? 'text-green-400' : 'text-yellow-400'}`} />
+                </div>
+                <div className="ml-3">
+                  <h3 className={`text-lg font-medium ${diagnosisResults.success ? 'text-green-800' : 'text-yellow-800'}`}>
+                    Database Diagnosis Results
+                  </h3>
+                  {diagnosisResults.success ? (
+                    <p className="text-sm text-green-700">All database tables are properly configured.</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-yellow-700">Database issues detected:</p>
+                      <ul className="list-disc list-inside text-sm text-yellow-700 mt-1">
+                        {diagnosisResults.issues.map((issue, i) => (
+                          <li key={i}>{issue}</li>
+                        ))}
+                      </ul>
+                      <p className="text-sm text-yellow-700 mt-2">
+                        Please contact support to resolve these database issues.
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setDiagnosisMode(false)}
+                    className="mt-2 inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  >
+                    Hide Diagnostics
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show other errors if present */}
+          {error && !databaseError && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-red-400" />
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-700">{error}</p>
@@ -456,32 +571,36 @@ export default function IFTACalculatorPage() {
             />
           </div>
 
-          {/* IFTA-Fuel Sync */}
-          <div className="mb-6">
-            <IFTAFuelSync 
-              userId={user?.id} 
-              quarter={activeQuarter} 
-              onSyncComplete={handleSyncComplete}
-            />
-          </div>
+          {/* IFTA-Fuel Sync - Only show if no database errors */}
+          {!databaseError && (
+            <div className="mb-6">
+              <IFTAFuelSync 
+                userId={user?.id} 
+                quarter={activeQuarter} 
+                onSyncComplete={handleSyncComplete}
+              />
+            </div>
+          )}
 
-          {/* IFTA Summary - Use Enhanced or Regular based on syncResult */}
-          <div className="mb-6">
-            {useEnhancedSummary ? (
-              <EnhancedIFTASummary
-                userId={user?.id}
-                quarter={activeQuarter}
-                syncResult={syncResult}
-                isLoading={loading || tripLoading}
-              />
-            ) : (
-              <IFTASummary 
-                trips={trips} 
-                stats={stats}
-                isLoading={loading || tripLoading} 
-              />
-            )}
-          </div>
+          {/* IFTA Summary - Only show if no database errors */}
+          {!databaseError && (
+            <div className="mb-6">
+              {useEnhancedSummary ? (
+                <EnhancedIFTASummary
+                  userId={user?.id}
+                  quarter={activeQuarter}
+                  syncResult={syncResult}
+                  isLoading={loading || tripLoading}
+                />
+              ) : (
+                <IFTASummary 
+                  trips={trips} 
+                  stats={stats}
+                  isLoading={loading || tripLoading} 
+                />
+              )}
+            </div>
+          )}
 
           {/* Trip Entry Form */}
           <div className="mb-6">
