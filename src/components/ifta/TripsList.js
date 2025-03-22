@@ -1,3 +1,4 @@
+// Modified version of TripsList component to show load import indicators
 "use client";
 
 import { useState } from "react";
@@ -11,14 +12,18 @@ import {
   Calendar, 
   DollarSign, 
   Fuel,
-  ChevronsUpDown
+  ChevronsUpDown,
+  FileText,
+  Link as LinkIcon
 } from "lucide-react";
+import Link from "next/link";
 
 export default function TripsList({ trips = [], onRemoveTrip, isLoading = false }) {
   const [filters, setFilters] = useState({
     search: "",
     jurisdiction: "",
-    vehicle: ""
+    vehicle: "",
+    showImported: true // New filter to optionally hide imported trips
   });
   const [sortConfig, setSortConfig] = useState({
     key: 'start_date',
@@ -78,6 +83,11 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
         return false;
       }
       
+      // Imported filter - if not showing imported, filter out trips with is_imported flag
+      if (!filters.showImported && (trip.is_imported || trip.load_id)) {
+        return false;
+      }
+      
       return true;
     });
     
@@ -127,6 +137,9 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
   const formatJurisdiction = (jurisdictionCode) => {
     return jurisdictionCode || '—';
   };
+  
+  // Count imported trips
+  const importedTripsCount = trips.filter(trip => trip.is_imported || trip.load_id).length;
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -134,6 +147,22 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
         <h3 className="text-lg font-medium text-gray-900">Recorded Trips</h3>
         <div className="flex items-center">
           <span className="text-sm text-gray-500 mr-4">Total Trips: {sortedAndFilteredTrips.length}</span>
+          {importedTripsCount > 0 && (
+            <div className="flex items-center">
+              <label className="flex items-center text-sm text-gray-600 mr-2">
+                <input
+                  type="checkbox"
+                  checked={filters.showImported}
+                  onChange={() => setFilters({...filters, showImported: !filters.showImported})}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-1"
+                />
+                Show Imported
+              </label>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                {importedTripsCount} from loads
+              </span>
+            </div>
+          )}
         </div>
       </div>
       
@@ -206,7 +235,7 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
           <div className="md:w-32">
             <button
               type="button"
-              onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "" })}
+              onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", showImported: true })}
               className="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
             >
               Reset
@@ -288,6 +317,9 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                     {getSortIcon('fuel_cost')}
                   </div>
                 </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <span>Source</span>
+                </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -325,6 +357,24 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {(trip.is_imported || trip.load_id) ? (
+                      <Link 
+                        href={`/dashboard/dispatching/${trip.load_id}`}
+                        className="inline-flex items-center text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+                        target="_blank"
+                      >
+                        <Truck size={12} className="mr-1" />
+                        From Load
+                        <LinkIcon size={10} className="ml-1" />
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        <Calendar size={12} className="inline mr-1" />
+                        Manual Entry
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => onRemoveTrip(trip)}
@@ -351,7 +401,7 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   ${totalFuelCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                <td></td>
+                <td colSpan="2"></td>
               </tr>
             </tfoot>
           </table>

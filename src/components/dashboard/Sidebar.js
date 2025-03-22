@@ -8,7 +8,8 @@ import {
   FileText, 
   Wallet, 
   Users, 
-  Bell 
+  Bell,
+  MapPin
 } from 'lucide-react';
 
 export default function DashboardSidebar({ activePage = 'dashboard' }) {
@@ -19,6 +20,8 @@ export default function DashboardSidebar({ activePage = 'dashboard' }) {
     { name: 'Invoices', href: '/dashboard/invoices', icon: <FileText size={18} /> },
     { name: 'Expenses', href: '/dashboard/expenses', icon: <Wallet size={18} /> },
     { name: 'Customers', href: '/dashboard/customers', icon: <Users size={18} /> },
+    // Add the new State Mileage option here
+    { name: 'State Mileage', href: '/dashboard/mileage', icon: <MapPin size={18} /> },
     { name: 'Reminders', href: '/dashboard/reminders', icon: <Bell size={18} /> },
   ];
 

@@ -1,123 +1,130 @@
-// src/utils/databaseCheck.js
-import { supabase } from "@/lib/supabaseClient";
+// src/lib/utils/databaseCheck.js
+import { supabase } from "../supabaseClient";
 
 /**
- * Utility to check if required database tables exist
- * This helps diagnose issues with missing tables
+ * Utility to check if the required database tables exist
+ * This helps troubleshoot issues with missing tables
+ * @returns {Promise<Object>} - Results of database checks
  */
-
-/**
- * Check if essential IFTA-related tables exist in the database
- * @param {boolean} verbose - Whether to log detailed information
- * @returns {Promise<{success: boolean, missingTables: string[], error: any}>}
- */
-export async function checkIFTATables(verbose = false) {
-  const requiredTables = [
-    'fuel_entries',
-    'ifta_trip_records',
-    'ifta_reports',
-    'ifta_tax_rates'
-  ];
-  
-  const results = {
-    success: true,
-    missingTables: [],
-    error: null
-  };
-  
+export async function runDatabaseDiagnostics() {
   try {
-    if (verbose) console.log('Checking IFTA-related database tables...');
+    console.log("Running database diagnostics...");
+    const issues = [];
+    const tables = [
+      'ifta_trip_records',
+      'loads',
+      'fuel_entries'
+    ];
     
-    // Use a simple query to fetch just one row from each table
-    // If the table doesn't exist, it will return a specific error
-    for (const table of requiredTables) {
+    // Check for each required table
+    const tableChecks = await Promise.all(
+      tables.map(async (tableName) => {
+        try {
+          const { count, error } = await supabase
+            .from(tableName)
+            .select('*', { count: 'exact', head: true });
+            
+          if (error) {
+            if (error.code === '42P01') { // PostgreSQL code for relation does not exist
+              issues.push(`Table "${tableName}" does not exist in the database.`);
+              return { table: tableName, exists: false, error: error.message };
+            } else {
+              issues.push(`Error checking table "${tableName}": ${error.message}`);
+              return { table: tableName, exists: false, error: error.message };
+            }
+          }
+          
+          return { table: tableName, exists: true, count };
+        } catch (err) {
+          issues.push(`Error checking table "${tableName}": ${err.message}`);
+          return { table: tableName, exists: false, error: err.message };
+        }
+      })
+    );
+    
+    // Check schema for IFTA trip records
+    let iftaSchemaValid = false;
+    if (tableChecks.find(t => t.table === 'ifta_trip_records' && t.exists)) {
       try {
+        // Try a more detailed query to check if the schema supports load_id
         const { data, error } = await supabase
-          .from(table)
-          .select('id')
+          .from('ifta_trip_records')
+          .select('load_id')
           .limit(1);
+          
+        iftaSchemaValid = !error;
         
         if (error) {
-          if (error.code === '42P01') { // PostgreSQL code for "relation does not exist"
-            if (verbose) console.error(`Table '${table}' doesn't exist`);
-            results.missingTables.push(table);
-            results.success = false;
-          } else {
-            if (verbose) console.warn(`Other error accessing table '${table}':`, error);
-          }
-        } else {
-          if (verbose) console.log(`Table '${table}' exists`);
+          issues.push(`The ifta_trip_records table exists but is missing the load_id column needed for integration.`);
         }
       } catch (err) {
-        if (verbose) console.error(`Error checking table '${table}':`, err);
-        results.missingTables.push(table);
-        results.success = false;
+        issues.push(`Error checking ifta_trip_records schema: ${err.message}`);
       }
     }
     
-    if (!results.success) {
-      results.error = `Missing tables: ${results.missingTables.join(', ')}`;
+    // Create a detailed diagnostic result
+    const result = {
+      success: issues.length === 0,
+      issues,
+      tables: tableChecks,
+      iftaSchemaValid
+    };
+    
+    console.log("Database diagnostic results:", result);
+    return result;
+  } catch (error) {
+    console.error("Error running database diagnostics:", error);
+    return {
+      success: false,
+      issues: [error.message || "Unknown error during database diagnostics"],
+      tables: [],
+      iftaSchemaValid: false
+    };
+  }
+}
+
+/**
+ * Create necessary database tables if they don't exist
+ * This is useful for fresh installations
+ * @returns {Promise<Object>} - Results of table creation
+ */
+export async function setupRequiredTables() {
+  try {
+    const results = {
+      success: true,
+      created: [],
+      errors: []
+    };
+    
+    // Check if ifta_trip_records table exists
+    const { count: iftaCount, error: iftaError } = await supabase
+      .from('ifta_trip_records')
+      .select('*', { count: 'exact', head: true });
+      
+    if (iftaError && iftaError.code === '42P01') {
+      // Create the ifta_trip_records table
+      const { error: createError } = await supabase.rpc('create_ifta_trip_records_table');
+      
+      if (createError) {
+        results.success = false;
+        results.errors.push({
+          table: 'ifta_trip_records',
+          error: createError.message
+        });
+      } else {
+        results.created.push('ifta_trip_records');
+      }
     }
+    
+    // Add similar checks for other required tables
     
     return results;
   } catch (error) {
-    console.error('Error checking database tables:', error);
+    console.error("Error setting up required tables:", error);
     return {
       success: false,
-      missingTables: [],
-      error: error.message || "Unknown error checking database tables"
+      created: [],
+      errors: [{ general: error.message || "Unknown error during table setup" }]
     };
   }
-}
-
-/**
- * Verify if Supabase connection is working properly
- * @returns {Promise<{success: boolean, error: any}>}
- */
-export async function checkSupabaseConnection() {
-  try {
-    // Simple test query to check connection
-    const { data, error } = await supabase.from('fuel_entries').select('count').limit(1);
-    
-    if (error) {
-      console.error('Supabase connection check failed:', error);
-      return { 
-        success: false, 
-        error: error.message || "Unknown error checking Supabase connection" 
-      };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Error connecting to Supabase:', error);
-    return { 
-      success: false, 
-      error: error.message || "Unknown error checking Supabase connection" 
-    };
-  }
-}
-
-/**
- * Run diagnostics on the database setup
- * @returns {Promise<{success: boolean, issues: string[]}>}
- */
-export async function runDatabaseDiagnostics() {
-  const issues = [];
-  
-  // Check Supabase connection
-  const connectionCheck = await checkSupabaseConnection();
-  if (!connectionCheck.success) {
-    issues.push(`Supabase connection problem: ${connectionCheck.error}`);
-  }
-  
-  // Check IFTA tables
-  const tablesCheck = await checkIFTATables(true);
-  if (!tablesCheck.success) {
-    issues.push(`IFTA tables problem: ${tablesCheck.error}`);
-  }
-  
-  return {
-    success: issues.length === 0,
-    issues
-  };
 }

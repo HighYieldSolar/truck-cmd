@@ -22,7 +22,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  User
+  User,
+  MapPin
 } from "lucide-react";
 
 export default function DashboardLayout({ children }) {
@@ -121,6 +122,11 @@ export default function DashboardLayout({ children }) {
       href: '/dashboard/dispatching', 
       icon: <Truck size={20} />,
       active: activePage === 'dispatching'
+    },
+    {
+      name: 'State Mileage', 
+      href: '/dashboard/mileage', 
+      icon: <MapPin size={18} />
     },
     { 
       name: 'Invoices', 

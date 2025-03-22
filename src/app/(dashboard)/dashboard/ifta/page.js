@@ -18,8 +18,11 @@ import {
   Fuel,
   DollarSign,
   Clock,
-  Database
+  Database,
+  RefreshCw,
+  Link as LinkIcon
 } from "lucide-react";
+import Link from "next/link";
 
 // Import utilities
 import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
@@ -32,13 +35,17 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
 
-// Import new IFTA-Fuel integration components
+// Import IFTA-Fuel integration components
 import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
 import EnhancedIFTASummary from "@/components/ifta/EnhancedIFTASummary";
+
+// Import our new Load integration component
+import LoadToIFTAImporter from "@/components/ifta/LoadToIFTAImporter";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
 import { saveIFTAReport } from "@/lib/services/iftaService";
+import { getLoadToIftaStats } from "@/lib/services/loadIftaService";
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
@@ -74,6 +81,10 @@ export default function IFTACalculatorPage() {
   
   // Add a single consolidated data loading state
   const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // New state for load integration
+  const [loadImportStats, setLoadImportStats] = useState(null);
+  const [showLoadImporter, setShowLoadImporter] = useState(true);
 
   // Run database diagnostics
   const runDiagnostics = async () => {
@@ -207,6 +218,18 @@ export default function IFTACalculatorPage() {
       
       // Calculate summary statistics
       calculateStats(data || [], currentFuelData || []);
+      
+      // Get load import statistics
+      try {
+        const loadStats = await getLoadToIftaStats(user.id, activeQuarter);
+        setLoadImportStats(loadStats);
+        
+        // Only show load importer if there are available loads
+        setShowLoadImporter(loadStats.available > 0);
+      } catch (err) {
+        console.error("Error getting load import stats:", err);
+        // Don't block the main functionality if this fails
+      }
       
       return data;
     } catch (error) {
@@ -386,7 +409,7 @@ export default function IFTACalculatorPage() {
       // Create array of data for CSV
       const csvRows = [
         // Header row
-        ['Trip ID', 'Date', 'Vehicle ID', 'Driver ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'Fuel Cost', 'Starting Odometer', 'Ending Odometer'].join(','),
+        ['Trip ID', 'Date', 'Vehicle ID', 'Driver ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'Fuel Cost', 'Starting Odometer', 'Ending Odometer', 'Load ID'].join(','),
         // Data rows
         ...trips.map(trip => [
           trip.id,
@@ -399,7 +422,8 @@ export default function IFTACalculatorPage() {
           trip.gallons || 0,
           trip.fuel_cost || 0,
           trip.starting_odometer || 0,
-          trip.ending_odometer || 0
+          trip.ending_odometer || 0,
+          trip.load_id || ''
         ].join(','))
       ];
 
@@ -433,9 +457,14 @@ export default function IFTACalculatorPage() {
       return false;
     }
   };
-
+  
+  // Handle imported trips from load management
+  const handleImportedTrips = async (newTrips) => {
+    // Refresh the trips list to include the newly imported trips
+    await loadTrips();
+  };
+  
   // Skip loading indicator completely
-
   return (
     <DashboardLayout activePage="ifta calculator">
       <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
@@ -463,13 +492,13 @@ export default function IFTACalculatorPage() {
                 <Download size={16} className="mr-2" />
                 Export Data
               </button>
-              <button
-                onClick={runDiagnostics}
+              <Link
+                href="/dashboard/dispatching"
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
               >
-                <Database size={16} className="mr-2" />
-                Diagnose
-              </button>
+                <Truck size={16} className="mr-2" />
+                Manage Loads
+              </Link>
             </div>
           </div>
 
@@ -489,43 +518,6 @@ export default function IFTACalculatorPage() {
                   >
                     <Database size={12} className="mr-1" />
                     Run Database Diagnostics
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Show diagnostics results if available */}
-          {diagnosisMode && diagnosisResults && (
-            <div className={`mb-6 ${diagnosisResults.success ? 'bg-green-50 border-l-4 border-green-500' : 'bg-yellow-50 border-l-4 border-yellow-500'} p-4 rounded-md`}>
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Database className={`h-5 w-5 ${diagnosisResults.success ? 'text-green-400' : 'text-yellow-400'}`} />
-                </div>
-                <div className="ml-3">
-                  <h3 className={`text-lg font-medium ${diagnosisResults.success ? 'text-green-800' : 'text-yellow-800'}`}>
-                    Database Diagnosis Results
-                  </h3>
-                  {diagnosisResults.success ? (
-                    <p className="text-sm text-green-700">All database tables are properly configured.</p>
-                  ) : (
-                    <div>
-                      <p className="text-sm text-yellow-700">Database issues detected:</p>
-                      <ul className="list-disc list-inside text-sm text-yellow-700 mt-1">
-                        {diagnosisResults.issues.map((issue, i) => (
-                          <li key={i}>{issue}</li>
-                        ))}
-                      </ul>
-                      <p className="text-sm text-yellow-700 mt-2">
-                        Please contact support to resolve these database issues.
-                      </p>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setDiagnosisMode(false)}
-                    className="mt-2 inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                  >
-                    Hide Diagnostics
                   </button>
                 </div>
               </div>
@@ -555,7 +547,19 @@ export default function IFTACalculatorPage() {
             />
           </div>
 
-          {/* IFTA-Fuel Sync - Only show if no database errors */}
+          {/* NEW: Load to IFTA Importer - Show only if we have available loads */}
+          {!databaseError && showLoadImporter && (
+            <div className="mb-6">
+              <LoadToIFTAImporter 
+                userId={user?.id} 
+                quarter={activeQuarter} 
+                onImportComplete={handleImportedTrips}
+                existingTrips={trips}
+              />
+            </div>
+          )}
+
+          {/* IFTA-Fuel Sync */}
           {!databaseError && (
             <div className="mb-6">
               <IFTAFuelSync 
@@ -566,7 +570,7 @@ export default function IFTACalculatorPage() {
             </div>
           )}
 
-          {/* IFTA Summary - Only show if no database errors */}
+          {/* IFTA Summary */}
           {!databaseError && (
             <div className="mb-6">
               {useEnhancedSummary ? (
