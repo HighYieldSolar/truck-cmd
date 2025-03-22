@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { 
   MapPin, 
@@ -110,10 +110,10 @@ const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
       <div className="flex-grow p-3 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <span className="font-medium text-gray-700">{crossing.state_name}</span>
-            <div className="text-sm text-gray-500">Odometer: {crossing.odometer.toLocaleString()}</div>
+            <span className="font-medium text-gray-900">{crossing.state_name}</span>
+            <div className="text-sm text-gray-700">Odometer: {crossing.odometer.toLocaleString()}</div>
             {crossing.timestamp && (
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-gray-600">
                 {new Date(crossing.timestamp).toLocaleString()}
               </div>
             )}
@@ -149,12 +149,12 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected }) => {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="font-medium text-gray-900">{vehicleName}</h3>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-700">
             <Calendar size={14} className="mr-1" /> 
             <span>{tripDuration}</span>
           </div>
         </div>
-        <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`h-5 w-5 text-gray-500 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
       </div>
     </div>
   );
@@ -167,6 +167,7 @@ export default function StateMileageLogger() {
   const [loading, setLoading] = useState(true);
   const [activeTrips, setActiveTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
+  const [completedTripCrossings, setCompletedTripCrossings] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -319,6 +320,32 @@ export default function StateMileageLogger() {
       
       setCompletedTrips(data || []);
       
+      // Load crossings for all completed trips
+      if (data && data.length > 0) {
+        const tripIds = data.map(trip => trip.id);
+        const { data: crossings, error: crossingsError } = await supabase
+          .from('driver_mileage_crossings')
+          .select('*')
+          .in('trip_id', tripIds)
+          .order('timestamp', { ascending: true });
+          
+        if (crossingsError) throw crossingsError;
+        
+        // Organize crossings by trip_id
+        const crossingsByTrip = {};
+        
+        if (crossings) {
+          crossings.forEach(crossing => {
+            if (!crossingsByTrip[crossing.trip_id]) {
+              crossingsByTrip[crossing.trip_id] = [];
+            }
+            crossingsByTrip[crossing.trip_id].push(crossing);
+          });
+        }
+        
+        setCompletedTripCrossings(crossingsByTrip);
+      }
+      
     } catch (error) {
       console.error('Error loading completed trips:', error);
       setError('Failed to load trip history. Please refresh the page.');
@@ -346,7 +373,20 @@ export default function StateMileageLogger() {
         mileageByState: []
       });
       
-      // Load crossings for this trip
+      // Check if we already have the crossings in state
+      if (completedTripCrossings[trip.id]) {
+        const crossings = completedTripCrossings[trip.id];
+        const mileageByState = calculateStateMileageFromCrossings(crossings);
+        
+        setSelectedPastTripData({
+          crossings,
+          loading: false,
+          mileageByState
+        });
+        return;
+      }
+      
+      // Otherwise, load crossings for this trip
       const { data, error } = await supabase
         .from('driver_mileage_crossings')
         .select('*')
@@ -373,7 +413,7 @@ export default function StateMileageLogger() {
         mileageByState: []
       });
     }
-  }, [selectedPastTrip]);
+  }, [selectedPastTrip, completedTripCrossings]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -610,6 +650,13 @@ export default function StateMileageLogger() {
         
       if (error) throw error;
       
+      // Update the completed trip crossings
+      const tripId = selectedTrip.id;
+      setCompletedTripCrossings(prev => ({
+        ...prev,
+        [tripId]: selectedTripData.crossings
+      }));
+      
       // Reload trips
       await loadActiveTrips(user.id);
       await loadCompletedTrips(user.id);
@@ -667,43 +714,39 @@ export default function StateMileageLogger() {
     return stateMileage.sort((a, b) => b.miles - a.miles);
   };
   
-  // Calculate total miles for all historical trips
-  const calculateTotalHistoricalMileage = () => {
+  // Calculate total miles for all historical trips - using memo to keep consistent values
+  const totalHistoricalMileage = useMemo(() => {
     const stateTotals = new Map();
     
-    completedTrips.forEach(trip => {
-      // We need to call our API to get the crossings for each trip
-      // This is simplified in this example
-      // In a real implementation, you would need to fetch this data
+    Object.entries(completedTripCrossings).forEach(([tripId, crossings]) => {
+      if (!crossings || crossings.length < 2) return;
       
-      // For now, we'll just simulate some numbers
-      const stateData = [
-        { state: "CA", stateName: "California", miles: Math.round(Math.random() * 1000) },
-        { state: "AZ", stateName: "Arizona", miles: Math.round(Math.random() * 500) },
-        { state: "NV", stateName: "Nevada", miles: Math.round(Math.random() * 300) },
-        { state: "OR", stateName: "Oregon", miles: Math.round(Math.random() * 200) }
-      ];
-      
-      stateData.forEach(data => {
-        if (stateTotals.has(data.state)) {
-          stateTotals.set(data.state, {
-            ...stateTotals.get(data.state),
-            miles: stateTotals.get(data.state).miles + data.miles
+      for (let i = 0; i < crossings.length - 1; i++) {
+        const currentState = crossings[i].state;
+        const stateName = crossings[i].state_name;
+        const currentOdometer = crossings[i].odometer;
+        const nextOdometer = crossings[i + 1].odometer;
+        const milesDriven = nextOdometer - currentOdometer;
+        
+        if (stateTotals.has(currentState)) {
+          stateTotals.set(currentState, {
+            ...stateTotals.get(currentState),
+            miles: stateTotals.get(currentState).miles + milesDriven
           });
         } else {
-          stateTotals.set(data.state, {
-            state: data.state,
-            state_name: data.stateName,
-            miles: data.miles
+          stateTotals.set(currentState, {
+            state: currentState,
+            state_name: stateName,
+            miles: milesDriven
           });
         }
-      });
+      }
     });
     
     // Convert map to array and sort by miles
     return Array.from(stateTotals.values())
       .sort((a, b) => b.miles - a.miles);
-  };
+  }, [completedTripCrossings]);
   
   // Loading state
   if (loading && !selectedTrip) {
@@ -717,249 +760,147 @@ export default function StateMileageLogger() {
   // Calculate state mileage for the selected trip
   const stateMileage = calculateStateMileage();
 
-return (
-  <div className="max-w-6xl mx-auto p-4">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">State Mileage Tracker</h1>
-        <p className="text-gray-600">Track and record miles driven in each state for IFTA reporting</p>
+  return (
+    <div className="max-w-6xl mx-auto p-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">State Mileage Tracker</h1>
+          <p className="text-gray-700">Track and record miles driven in each state for IFTA reporting</p>
+        </div>
+        
+        {/* Tabs navigation */}
+        <div className="flex space-x-2 mt-4 md:mt-0">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              activeTab === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Active Trips
+          </button>
+          <button
+            onClick={() => setActiveTab('past')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              activeTab === 'past' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Trip History
+          </button>
+          <button
+            onClick={() => setActiveTab('summary')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              activeTab === 'summary' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Summary
+          </button>
+        </div>
       </div>
       
-      {/* Tabs navigation */}
-      <div className="flex space-x-2 mt-4 md:mt-0">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Active Trips
-        </button>
-        <button
-          onClick={() => setActiveTab('past')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === 'past' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Trip History
-        </button>
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            activeTab === 'summary' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Summary
-        </button>
-      </div>
-    </div>
-    
-    {/* Error and success messages */}
-    {error && (
-      <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-        <div className="flex">
-          <AlertTriangle className="h-5 w-5 text-red-500 mr-3" />
-          <p className="text-red-700">{error}</p>
+      {/* Error and success messages */}
+      {error && (
+        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+          <div className="flex">
+            <AlertTriangle className="h-5 w-5 text-red-500 mr-3" />
+            <p className="text-red-700">{error}</p>
+          </div>
         </div>
-      </div>
-    )}
-    
-    {success && (
-      <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
-        <div className="flex">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <p className="text-green-700">{success}</p>
+      )}
+      
+      {success && (
+        <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
+          <div className="flex">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <p className="text-green-700">{success}</p>
+          </div>
         </div>
-      </div>
-    )}
-    
-    {/* Active Trips Tab */}
-    {activeTab === 'active' && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - New trip form or active trip */}
-        <div className="lg:col-span-2">
-          {selectedTrip ? (
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center">
-                <Truck className="h-5 w-5 text-blue-500 mr-2" />
-                Active Trip
-              </h2>
-              
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-500">Vehicle</div>
-                <div className="text-lg font-medium">
-                  {vehicles.find(v => v.id === selectedTrip.vehicle_id)?.name || selectedTrip.vehicle_id}
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-500">Trip Started</div>
-                <div className="text-lg font-medium">
-                  {new Date(selectedTrip.start_date).toLocaleDateString()}
-                </div>
-              </div>
-              
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-500">Total Miles</div>
-                <div className="text-lg font-medium">
-                  {selectedTripData.crossings.length > 0 
-                    ? (selectedTripData.crossings[selectedTripData.crossings.length - 1].odometer - 
-                       selectedTripData.crossings[0].odometer).toLocaleString()
-                    : 0}
-                </div>
-              </div>
-              
-              <button
-                onClick={handleEndTrip}
-                className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                disabled={loading}
-              >
-                {loading ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                Complete Trip
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Start New Trip</h2>
-                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Step 1</div>
-              </div>
-              
-              <form onSubmit={handleStartTrip}>
+      )}
+      
+      {/* Active Trips Tab */}
+      {activeTab === 'active' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column - New trip form or active trip */}
+          <div className="lg:col-span-2">
+            {selectedTrip ? (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+                  <Truck className="h-5 w-5 text-blue-500 mr-2" />
+                  Active Trip
+                </h2>
+                
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Vehicle
-                  </label>
-                  <select
-                    name="vehicle_id"
-                    value={newTripForm.vehicle_id}
-                    onChange={handleNewTripChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select Vehicle</option>
-                    {vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.name} {vehicle.license_plate ? `(${vehicle.license_plate})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="text-sm font-medium text-gray-700">Vehicle</div>
+                  <div className="text-lg font-medium text-gray-900">
+                    {vehicles.find(v => v.id === selectedTrip.vehicle_id)?.name || selectedTrip.vehicle_id}
+                  </div>
                 </div>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Starting State
-                  </label>
-                  <select
-                    name="start_state"
-                    value={newTripForm.start_state}
-                    onChange={handleNewTripChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select State</option>
-                    {states.map(state => (
-                      <option key={state.code} value={state.code}>{state.name}</option>
-                    ))}
-                  </select>
+                  <div className="text-sm font-medium text-gray-700">Trip Started</div>
+                  <div className="text-lg font-medium text-gray-900">
+                    {new Date(selectedTrip.start_date).toLocaleDateString()}
+                  </div>
                 </div>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Starting Odometer
-                  </label>
-                  <input
-                    type="number"
-                    name="start_odometer"
-                    value={newTripForm.start_odometer}
-                    onChange={handleNewTripChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Odometer reading"
-                    required
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={newTripForm.date}
-                    onChange={handleNewTripChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
+                  <div className="text-sm font-medium text-gray-700">Total Miles</div>
+                  <div className="text-lg font-medium text-gray-900">
+                    {selectedTripData.crossings.length > 0 
+                      ? (selectedTripData.crossings[selectedTripData.crossings.length - 1].odometer - 
+                         selectedTripData.crossings[0].odometer).toLocaleString()
+                      : 0}
+                  </div>
                 </div>
                 
                 <button
-                  type="submit"
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                  onClick={handleEndTrip}
+                  className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
                   disabled={loading}
                 >
                   {loading ? (
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
-                    <Truck className="h-4 w-4 mr-2" />
+                    <CheckCircle className="h-4 w-4 mr-2" />
                   )}
-                  Start Trip
+                  Complete Trip
                 </button>
-              </form>
-            </div>
-          )}
-          
-          {/* State crossings */}
-          {selectedTrip && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold flex items-center">
-                  <MapPin className="h-5 w-5 text-blue-500 mr-2" />
-                  State Crossings
-                </h2>
-                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Step 2</div>
               </div>
-              
-              {selectedTripData.loading ? (
-                <div className="py-8 flex justify-center">
-                  <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+            ) : (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Start New Trip</h2>
+                  <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Step 1</div>
                 </div>
-              ) : selectedTripData.crossings.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
-                  No state crossings recorded yet.
-                </div>
-              ) : (
-                <div className="mb-6">
-                  {selectedTripData.crossings.map((crossing, index) => (
-                    <StateCrossing
-                      key={index}
-                      crossing={crossing}
-                      index={index}
-                      onDelete={handleDeleteCrossing}
-                      isFirst={index === 0}
-                      isLast={index === selectedTripData.crossings.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
-              
-              {/* Add new crossing form */}
-              <form onSubmit={handleAddCrossing} className="mt-4 pt-4 border-t border-gray-200">
-                <h3 className="text-md font-medium mb-3">Add State Crossing</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <form onSubmit={handleStartTrip}>
+                  <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Entering State
+                      Vehicle
                     </label>
                     <select
-                      name="state"
-                      value={crossingForm.state}
-                      onChange={handleCrossingChange}
+                      name="vehicle_id"
+                      value={newTripForm.vehicle_id}
+                      onChange={handleNewTripChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="">Select Vehicle</option>
+                      {vehicles.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.name} {vehicle.license_plate ? `(${vehicle.license_plate})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Starting State
+                    </label>
+                    <select
+                      name="start_state"
+                      value={newTripForm.start_state}
+                      onChange={handleNewTripChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
@@ -970,289 +911,391 @@ return (
                     </select>
                   </div>
                   
-                  <div>
+                  <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Odometer
+                      Starting Odometer
                     </label>
                     <input
                       type="number"
-                      name="odometer"
-                      value={crossingForm.odometer}
-                      onChange={handleCrossingChange}
+                      name="start_odometer"
+                      value={newTripForm.start_odometer}
+                      onChange={handleNewTripChange}
                       className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Odometer reading"
                       required
                     />
                   </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={newTripForm.date}
+                      onChange={handleNewTripChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Truck className="h-4 w-4 mr-2" />
+                    )}
+                    Start Trip
+                  </button>
+                </form>
+              </div>
+            )}
+            
+            {/* State crossings */}
+            {selectedTrip && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold flex items-center text-gray-900">
+                    <MapPin className="h-5 w-5 text-blue-500 mr-2" />
+                    State Crossings
+                  </h2>
+                  <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Step 2</div>
                 </div>
                 
-                <button
-                  type="submit"
-                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4 mr-2" />
-                  )}
-                  Add State Crossing
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
-        
-        {/* Right column - Active trips and state mileage */}
-        <div className="space-y-6">
-          {/* Active trips list */}
-          {activeTrips.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-lg font-semibold mb-3">Active Trips</h2>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {activeTrips.map(trip => (
-                  <div 
-                    key={trip.id} 
-                    className={`p-3 rounded-lg border ${selectedTrip && selectedTrip.id === trip.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'} cursor-pointer`}
-                    onClick={() => handleSelectTrip(trip)}
+                {selectedTripData.loading ? (
+                  <div className="py-8 flex justify-center">
+                    <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+                  </div>
+                ) : selectedTripData.crossings.length === 0 ? (
+                  <div className="py-8 text-center text-gray-700">
+                    No state crossings recorded yet.
+                  </div>
+                ) : (
+                  <div className="mb-6">
+                    {selectedTripData.crossings.map((crossing, index) => (
+                      <StateCrossing
+                        key={index}
+                        crossing={crossing}
+                        index={index}
+                        onDelete={handleDeleteCrossing}
+                        isFirst={index === 0}
+                        isLast={index === selectedTripData.crossings.length - 1}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add new crossing form */}
+                <form onSubmit={handleAddCrossing} className="mt-4 pt-4 border-t border-gray-200">
+                  <h3 className="text-md font-medium mb-3 text-gray-900">Add State Crossing</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Entering State
+                      </label>
+                      <select
+                        name="state"
+                        value={crossingForm.state}
+                        onChange={handleCrossingChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Select State</option>
+                        {states.map(state => (
+                          <option key={state.code} value={state.code}>{state.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Current Odometer
+                      </label>
+                      <input
+                        type="number"
+                        name="odometer"
+                        value={crossingForm.odometer}
+                        onChange={handleCrossingChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Odometer reading"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                    disabled={loading}
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">
-                          {vehicles.find(v => v.id === trip.vehicle_id)?.name || trip.vehicle_id}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Started: {new Date(trip.start_date).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <Truck className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-                ))}
+                    {loading ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4 mr-2" />
+                    )}
+                    Add State Crossing
+                  </button>
+                </form>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           
-          {/* State mileage summary for active trip */}
-          {selectedTrip && stateMileage.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-lg font-semibold mb-3 flex items-center">
-                <BarChart2 className="h-5 w-5 text-blue-500 mr-2" />
-                Miles by State
-              </h2>
-              
-              <div className="space-y-2 mb-4">
-                {stateMileage.map(entry => (
-                  <div key={entry.state} className="p-2">
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="font-medium">{entry.state_name}</div>
-                      <div className="text-lg font-semibold">{entry.miles.toLocaleString()} mi</div>
+          {/* Right column - Active trips and state mileage */}
+          <div className="space-y-6">
+            {/* Active trips list */}
+            {activeTrips.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">Active Trips</h2>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {activeTrips.map(trip => (
+                    <div 
+                      key={trip.id} 
+                      className={`p-3 rounded-lg border ${selectedTrip && selectedTrip.id === trip.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'} cursor-pointer`}
+                      onClick={() => handleSelectTrip(trip)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {vehicles.find(v => v.id === trip.vehicle_id)?.name || trip.vehicle_id}
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            Started: {new Date(trip.start_date).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Truck className="h-5 w-5 text-gray-600" />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${(entry.miles / stateMileage[0].miles) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Total miles */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div className="font-medium">Total</div>
-                  <div className="text-lg font-semibold text-blue-600">
-                    {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} mi
-                  </div>
+                  ))}
                 </div>
               </div>
-              
-              {/* Export button */}
-              <div className="mt-4">
-                <ExportMileageButton 
-                  tripId={selectedTrip.id} 
-                  stateMileage={stateMileage} 
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-    
-    {/* Past Trips Tab */}
-    {activeTab === 'past' && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Past Trips List */}
-        <div>
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-semibold mb-3 flex items-center">
-              <History className="h-5 w-5 text-blue-500 mr-2" />
-              Trip History
-            </h2>
+            )}
             
-            {completedTrips.length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                <Clock className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                <p>No completed trips found</p>
-                <p className="text-sm mt-1">Complete a trip to see it here</p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {completedTrips.map(trip => (
-                  <TripCard
-                    key={trip.id}
-                    trip={trip}
-                    vehicles={vehicles}
-                    onSelect={handleSelectPastTrip}
-                    isSelected={selectedPastTrip && selectedPastTrip.id === trip.id}
+            {/* State mileage summary for active trip */}
+            {selectedTrip && stateMileage.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h2 className="text-lg font-semibold mb-3 flex items-center text-gray-900">
+                  <BarChart2 className="h-5 w-5 text-blue-500 mr-2" />
+                  Miles by State
+                </h2>
+                
+                <div className="space-y-2 mb-4">
+                  {stateMileage.map(entry => (
+                    <div key={entry.state} className="p-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="font-medium text-gray-900">{entry.state_name}</div>
+                        <div className="text-lg font-semibold text-gray-900">{entry.miles.toLocaleString()} mi</div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${(entry.miles / stateMileage[0].miles) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Total miles */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <div className="font-medium text-gray-900">Total</div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} mi
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Export button */}
+                <div className="mt-4">
+                  <ExportMileageButton 
+                    tripId={selectedTrip.id} 
+                    stateMileage={stateMileage} 
                   />
-                ))}
+                </div>
               </div>
             )}
           </div>
         </div>
-        
-        {/* Right column - Trip Details */}
-        <div className="lg:col-span-2">
-          {selectedPastTrip ? (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold mb-4">
-                Trip Details - {vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id}
+      )}
+      
+      {/* Past Trips Tab */}
+      {activeTab === 'past' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column - Past Trips List */}
+          <div>
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <h2 className="text-lg font-semibold mb-3 flex items-center text-gray-900">
+                <History className="h-5 w-5 text-blue-500 mr-2" />
+                Trip History
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-500">Trip Duration</div>
-                  <div className="text-lg font-medium flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                    {new Date(selectedPastTrip.start_date).toLocaleDateString()} 
-                    <ArrowRight className="h-4 w-4 mx-2" /> 
-                    {new Date(selectedPastTrip.end_date).toLocaleDateString()}
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm font-medium text-gray-500">Total Miles</div>
-                  <div className="text-lg font-medium">
-                    {selectedPastTripData.crossings.length > 0 
-                      ? (selectedPastTripData.crossings[selectedPastTripData.crossings.length - 1].odometer - 
-                         selectedPastTripData.crossings[0].odometer).toLocaleString()
-                      : 'Calculating...'}
-                  </div>
-                </div>
-              </div>
-              
-              {/* State mileage for past trip */}
-              {selectedPastTripData.mileageByState.length > 0 ? (
-                <>
-                  <h3 className="text-md font-medium mb-3">Miles by State</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {selectedPastTripData.mileageByState.map(entry => (
-                      <div key={entry.state} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="font-medium">{entry.state_name}</div>
-                          <div className="text-lg font-semibold">{entry.miles.toLocaleString()} mi</div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${(entry.miles / selectedPastTripData.mileageByState[0].miles) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Export button */}
-                  <ExportMileageButton 
-                    tripId={selectedPastTrip.id} 
-                    stateMileage={selectedPastTripData.mileageByState} 
-                  />
-                </>
-              ) : selectedPastTripData.loading ? (
-                <div className="flex justify-center items-center py-10">
-                  <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+              {completedTrips.length === 0 ? (
+                <div className="text-center py-10 text-gray-700">
+                  <Clock className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                  <p>No completed trips found</p>
+                  <p className="text-sm mt-1">Complete a trip to see it here</p>
                 </div>
               ) : (
-                <div className="text-center py-10 text-gray-500">
-                  <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p>No state crossings found for this trip</p>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {completedTrips.map(trip => (
+                    <TripCard
+                      key={trip.id}
+                      trip={trip}
+                      vehicles={vehicles}
+                      onSelect={handleSelectPastTrip}
+                      isSelected={selectedPastTrip && selectedPastTrip.id === trip.id}
+                    />
+                  ))}
                 </div>
               )}
             </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <History className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Select a trip to view details</h3>
-              <p className="text-gray-500">
-                Select any completed trip from the list to view state-by-state mileage information
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-    
-    {/* Summary Tab */}
-    {activeTab === 'summary' && (
-      <div className="grid grid-cols-1 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <BarChart2 className="h-5 w-5 text-blue-500 mr-2" />
-            Mileage Summary by State (All Time)
-          </h2>
+          </div>
           
-          {completedTrips.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-              <p>No historical mileage data available</p>
-              <p className="text-sm mt-1">Complete trips to see your mileage summary</p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                {calculateTotalHistoricalMileage().slice(0, 6).map(entry => (
-                  <div key={entry.state} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="font-medium">{entry.state_name}</div>
-                      <div className="text-lg font-semibold">{entry.miles.toLocaleString()} mi</div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${(entry.miles / calculateTotalHistoricalMileage()[0].miles) * 100}%` }}
-                      ></div>
+          {/* Right column - Trip Details */}
+          <div className="lg:col-span-2">
+            {selectedPastTrip ? (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900">
+                  Trip Details - {vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id}
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700">Trip Duration</div>
+                    <div className="text-lg font-medium flex items-center text-gray-900">
+                      <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                      {new Date(selectedPastTrip.start_date).toLocaleDateString()} 
+                      <ArrowRight className="h-4 w-4 mx-2" /> 
+                      {new Date(selectedPastTrip.end_date).toLocaleDateString()}
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-md font-medium mb-3">Total Mileage Stats</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500">Total States Driven</div>
-                    <div className="text-2xl font-bold text-blue-600">{calculateTotalHistoricalMileage().length}</div>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500">Total Miles</div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {calculateTotalHistoricalMileage().reduce((sum, item) => sum + item.miles, 0).toLocaleString()}
+                  
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700">Total Miles</div>
+                    <div className="text-lg font-medium text-gray-900">
+                      {selectedPastTripData.crossings.length > 0 
+                        ? (selectedPastTripData.crossings[selectedPastTripData.crossings.length - 1].odometer - 
+                           selectedPastTripData.crossings[0].odometer).toLocaleString()
+                        : 'Calculating...'}
                     </div>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-sm font-medium text-gray-500">Completed Trips</div>
-                    <div className="text-2xl font-bold text-blue-600">{completedTrips.length}</div>
                   </div>
                 </div>
+                
+                {/* State mileage for past trip */}
+                {selectedPastTripData.mileageByState.length > 0 ? (
+                  <>
+                    <h3 className="text-md font-medium mb-3 text-gray-900">Miles by State</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {selectedPastTripData.mileageByState.map(entry => (
+                        <div key={entry.state} className="p-4 bg-gray-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="font-medium text-gray-900">{entry.state_name}</div>
+                            <div className="text-lg font-semibold text-gray-900">{entry.miles.toLocaleString()} mi</div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                            <div 
+                              className="bg-blue-600 h-2.5 rounded-full" 
+                              style={{ width: `${(entry.miles / selectedPastTripData.mileageByState[0].miles) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Export button */}
+                    <ExportMileageButton 
+                      tripId={selectedPastTrip.id} 
+                      stateMileage={selectedPastTripData.mileageByState} 
+                    />
+                  </>
+                ) : selectedPastTripData.loading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-gray-700">
+                    <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                    <p>No state crossings found for this trip</p>
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            ) : (
+              <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                <History className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a trip to view details</h3>
+                <p className="text-gray-700">
+                  Select any completed trip from the list to view state-by-state mileage information
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+      
+      {/* Summary Tab */}
+      {activeTab === 'summary' && (
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+              <BarChart2 className="h-5 w-5 text-blue-500 mr-2" />
+              Mileage Summary by State (All Time)
+            </h2>
+            
+            {totalHistoricalMileage.length === 0 ? (
+              <div className="text-center py-10 text-gray-700">
+                <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                <p>No historical mileage data available</p>
+                <p className="text-sm mt-1">Complete trips to see your mileage summary</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {totalHistoricalMileage.slice(0, 6).map(entry => (
+                    <div key={entry.state} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="font-medium text-gray-900">{entry.state_name}</div>
+                        <div className="text-lg font-semibold text-gray-900">{entry.miles.toLocaleString()} mi</div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${(entry.miles / totalHistoricalMileage[0].miles) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-md font-medium mb-3 text-gray-900">Total Mileage Stats</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-700">Total States Driven</div>
+                      <div className="text-2xl font-bold text-blue-600">{totalHistoricalMileage.length}</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-700">Total Miles</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {totalHistoricalMileage.reduce((sum, item) => sum + item.miles, 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-sm font-medium text-gray-700">Completed Trips</div>
+                      <div className="text-2xl font-bold text-blue-600">{completedTrips.length}</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
