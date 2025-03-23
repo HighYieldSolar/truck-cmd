@@ -37,6 +37,7 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
 import StateMileageImporter from "@/components/ifta/StateMileageImporter";
+import EnhancedExportModal from "@/components/ifta/EnhancedExportModal";
 
 // Import IFTA-Fuel integration components
 import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
@@ -66,6 +67,7 @@ export default function IFTACalculatorPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [error, setError] = useState(null);
   const [databaseError, setDatabaseError] = useState(null);
   const [stats, setStats] = useState({
@@ -421,48 +423,26 @@ export default function IFTACalculatorPage() {
     }
   };
 
-  // Export IFTA data as CSV
-  const handleExportData = () => {
-    if (!trips || trips.length === 0) return;
-
-    try {
-      // Create array of data for CSV
-      const csvRows = [
-        // Header row
-        ['Trip ID', 'Date', 'Vehicle ID', 'Driver ID', 'Start Jurisdiction', 'End Jurisdiction', 'Miles', 'Gallons', 'Fuel Cost', 'Starting Odometer', 'Ending Odometer', 'Load ID', 'Mileage Trip ID', 'Source'].join(','),
-        // Data rows
-        ...trips.map(trip => [
-          trip.id,
-          trip.start_date,
-          trip.vehicle_id,
-          trip.driver_id || '',
-          trip.start_jurisdiction,
-          trip.end_jurisdiction,
-          trip.total_miles,
-          trip.gallons || 0,
-          trip.fuel_cost || 0,
-          trip.starting_odometer || 0,
-          trip.ending_odometer || 0,
-          trip.load_id || '',
-          trip.mileage_trip_id || '',
-          trip.mileage_trip_id ? 'mileage' : trip.load_id ? 'load' : 'manual'
-        ].join(','))
-      ];
-
-      // Create blob and download link
-      const csvString = csvRows.join('\n');
-      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `ifta_data_${activeQuarter.replace('-', '_')}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('Error exporting data:', err);
-      setError('Failed to export data: ' + (err.message || "Unknown error"));
+  // Handler for "Generate Report" button
+  const handleGenerateReport = () => {
+    if (!trips || trips.length === 0) {
+      setError("No trip data available to generate a report. Please add trips first.");
+      return;
     }
+    
+    // Open the report modal
+    setReportModalOpen(true);
+  };
+
+  // Handler for "Export Data" button
+  const handleExportData = () => {
+    if (!trips || trips.length === 0) {
+      setError("No trip data available to export. Please add trips first.");
+      return;
+    }
+    
+    // Open the enhanced export modal
+    setExportModalOpen(true);
   };
 
   // Handle generating a report or saving report data
@@ -505,164 +485,177 @@ export default function IFTACalculatorPage() {
   
   const uniqueVehicles = getUniqueVehicles();
   
+  if (initialLoading) {
+    return (
+      <DashboardLayout activePage="ifta calculator">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
   return (
     <DashboardLayout activePage="ifta calculator">
-      <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">IFTA Tax Calculator</h1>
-              <p className="text-gray-600">Track and calculate your Interstate Fuel Tax Agreement (IFTA) data</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
-              <button
-                onClick={() => setReportModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                disabled={trips.length === 0}
-              >
-                <FileDown size={16} className="mr-2" />
-                Generate Report
-              </button>
-              <button
-                onClick={handleExportData}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
-                disabled={trips.length === 0}
-              >
-                <Download size={16} className="mr-2" />
-                Export Data
-              </button>
-              <Link
-                href="/dashboard/mileage"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-              >
-                <MapPin size={16} className="mr-2" />
-                State Mileage
-              </Link>
-            </div>
-          </div>
-
-          {/* Show database errors if present */}
-          {databaseError && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Database className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-medium text-red-800">Database Configuration Error</h3>
-                  <p className="text-sm text-red-700">{databaseError}</p>
-                  <button
-                    onClick={runDiagnostics}
-                    className="mt-2 inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none"
-                  >
-                    <Database size={12} className="mr-1" />
-                    Run Database Diagnostics
-                  </button>
-                </div>
+      {/* Fixed the scrolling issue by properly wrapping the content */}
+      <div className="flex flex-col min-h-screen bg-gray-100">
+        <main className="flex-1 p-4 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {/* Page Header */}
+            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">IFTA Tax Calculator</h1>
+                <p className="text-gray-600">Track and calculate your Interstate Fuel Tax Agreement (IFTA) data</p>
+              </div>
+              <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
+                <button
+                  onClick={handleGenerateReport}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={trips.length === 0}
+                >
+                  <FileDown size={16} className="mr-2" />
+                  Generate Report
+                </button>
+                <button
+                  onClick={handleExportData}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={trips.length === 0}
+                >
+                  <Download size={16} className="mr-2" />
+                  Export Data
+                </button>
+                <Link
+                  href="/dashboard/mileage"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                >
+                  <MapPin size={16} className="mr-2" />
+                  State Mileage
+                </Link>
               </div>
             </div>
-          )}
 
-          {/* Show other errors if present */}
-          {error && !databaseError && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
+            {/* Show database errors if present */}
+            {databaseError && (
+              <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Database className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-medium text-red-800">Database Configuration Error</h3>
+                    <p className="text-sm text-red-700">{databaseError}</p>
+                    <button
+                      onClick={runDiagnostics}
+                      className="mt-2 inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none"
+                    >
+                      <Database size={12} className="mr-1" />
+                      Run Database Diagnostics
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Quarter Selector */}
-          <div className="mb-6">
-            <QuarterSelector 
-              activeQuarter={activeQuarter} 
-              setActiveQuarter={setActiveQuarter} 
-              isLoading={false} 
-            />
-          </div>
+            {/* Show other errors if present */}
+            {error && !databaseError && (
+              <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* State Mileage Importer */}
-          {!databaseError && showMileageImporter && (
+            {/* Quarter Selector */}
             <div className="mb-6">
-              <StateMileageImporter 
-                userId={user?.id} 
-                quarter={activeQuarter} 
-                onImportComplete={handleImportComplete}
-                showImportedTrips={showImportedTrips}
+              <QuarterSelector 
+                activeQuarter={activeQuarter} 
+                setActiveQuarter={setActiveQuarter} 
+                isLoading={loading} 
               />
             </div>
-          )}
 
-          {/* Load to IFTA Importer - Show only if we have available loads */}
-          {!databaseError && showLoadImporter && (
-            <div className="mb-6">
-              <LoadToIFTAImporter 
-                userId={user?.id} 
-                quarter={activeQuarter} 
-                onImportComplete={handleImportComplete}
-                existingTrips={trips}
-              />
-            </div>
-          )}
-
-          {/* IFTA-Fuel Sync */}
-          {!databaseError && (
-            <div className="mb-6">
-              <IFTAFuelSync 
-                userId={user?.id} 
-                quarter={activeQuarter} 
-                onSyncComplete={handleSyncComplete}
-              />
-            </div>
-          )}
-
-          {/* IFTA Summary */}
-          {!databaseError && (
-            <div className="mb-6">
-              {useEnhancedSummary ? (
-                <EnhancedIFTASummary
-                  userId={user?.id}
-                  quarter={activeQuarter}
-                  syncResult={syncResult}
-                  isLoading={false}
+            {/* State Mileage Importer */}
+            {!databaseError && showMileageImporter && (
+              <div className="mb-6">
+                <StateMileageImporter 
+                  userId={user?.id} 
+                  quarter={activeQuarter} 
+                  onImportComplete={handleImportComplete}
+                  showImportedTrips={showImportedTrips}
                 />
-              ) : (
-                <IFTASummary 
-                  trips={trips} 
-                  stats={stats}
-                  isLoading={false} 
+              </div>
+            )}
+
+            {/* Load to IFTA Importer - Show only if we have available loads */}
+            {!databaseError && showLoadImporter && (
+              <div className="mb-6">
+                <LoadToIFTAImporter 
+                  userId={user?.id} 
+                  quarter={activeQuarter} 
+                  onImportComplete={handleImportComplete}
+                  existingTrips={trips}
                 />
-              )}
+              </div>
+            )}
+
+            {/* IFTA-Fuel Sync */}
+            {!databaseError && (
+              <div className="mb-6">
+                <IFTAFuelSync 
+                  userId={user?.id} 
+                  quarter={activeQuarter} 
+                  onSyncComplete={handleSyncComplete}
+                />
+              </div>
+            )}
+
+            {/* IFTA Summary */}
+            {!databaseError && (
+              <div className="mb-6">
+                {useEnhancedSummary ? (
+                  <EnhancedIFTASummary
+                    userId={user?.id}
+                    quarter={activeQuarter}
+                    syncResult={syncResult}
+                    isLoading={loading}
+                  />
+                ) : (
+                  <IFTASummary 
+                    trips={trips} 
+                    stats={stats}
+                    isLoading={loading} 
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Trip Entry Form */}
+            <div className="mb-6">
+              <EnhancedTripEntryForm 
+                onAddTrip={handleAddTrip} 
+                isLoading={loading}
+                fuelData={fuelData}
+                vehicles={uniqueVehicles}
+              />
             </div>
-          )}
 
-          {/* Trip Entry Form */}
-          <div className="mb-6">
-            <EnhancedTripEntryForm 
-              onAddTrip={handleAddTrip} 
-              isLoading={false}
-              fuelData={fuelData}
-              vehicles={uniqueVehicles}
-            />
+            {/* Trips List */}
+            <div className="mb-6">
+              <TripsList 
+                trips={trips} 
+                onRemoveTrip={handleDeleteTrip} 
+                isLoading={loading}
+                showSourceBadges={true}
+              />
+            </div>
           </div>
-
-          {/* Trips List */}
-          <div className="mb-6">
-            <TripsList 
-              trips={trips} 
-              onRemoveTrip={handleDeleteTrip} 
-              isLoading={false}
-              showSourceBadges={true}
-            />
-          </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal 
@@ -688,6 +681,18 @@ export default function IFTACalculatorPage() {
           quarter={activeQuarter}
           fuelData={fuelData}
           onSave={handleSaveReport}
+        />
+      )}
+
+      {/* Enhanced Export Modal */}
+      {exportModalOpen && (
+        <EnhancedExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          trips={trips}
+          quarter={activeQuarter}
+          fuelData={fuelData}
+          stats={stats}
         />
       )}
     </DashboardLayout>
