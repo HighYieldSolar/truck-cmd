@@ -1,4 +1,3 @@
-// Modified version of TripsList component to show load import indicators
 "use client";
 
 import { useState } from "react";
@@ -14,21 +13,33 @@ import {
   Fuel,
   ChevronsUpDown,
   FileText,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Plus,
+  ChevronDown,
+  ArrowDown,
+  ArrowUp,
+  AlertTriangle,
+  CheckCircle
 } from "lucide-react";
 import Link from "next/link";
 
-export default function TripsList({ trips = [], onRemoveTrip, isLoading = false }) {
+export default function TripsList({ 
+  trips = [], 
+  onRemoveTrip, 
+  isLoading = false,
+  showSourceBadges = true
+}) {
   const [filters, setFilters] = useState({
     search: "",
     jurisdiction: "",
     vehicle: "",
-    showImported: true // New filter to optionally hide imported trips
+    source: "all" // 'all', 'mileage', 'load', 'manual'
   });
   const [sortConfig, setSortConfig] = useState({
     key: 'start_date',
     direction: 'desc'
   });
+  const [expandedFilters, setExpandedFilters] = useState(false);
 
   // Get unique values for filter dropdowns
   const getUniqueValues = (key) => {
@@ -43,7 +54,7 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
       }
     });
     
-    return Array.from(values);
+    return Array.from(values).sort();
   };
 
   const uniqueJurisdictions = getUniqueValues('jurisdiction');
@@ -83,8 +94,12 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
         return false;
       }
       
-      // Imported filter - if not showing imported, filter out trips with is_imported flag
-      if (!filters.showImported && (trip.is_imported || trip.load_id)) {
+      // Source filter
+      if (filters.source === 'mileage' && !trip.mileage_trip_id) {
+        return false;
+      } else if (filters.source === 'load' && !trip.load_id) {
+        return false;
+      } else if (filters.source === 'manual' && (trip.load_id || trip.mileage_trip_id)) {
         return false;
       }
       
@@ -127,120 +142,167 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
     }
     
     return sortConfig.direction === 'asc' ? (
-      <span className="ml-1 text-blue-500">↑</span>
+      <ArrowUp size={14} className="ml-1 text-blue-500" />
     ) : (
-      <span className="ml-1 text-blue-500">↓</span>
+      <ArrowDown size={14} className="ml-1 text-blue-500" />
     );
+  };
+
+  // Get source badge component
+  const SourceBadge = ({ trip }) => {
+    if (trip.mileage_trip_id) {
+      return (
+        <Link 
+          href={`/dashboard/mileage?trip=${trip.mileage_trip_id}`}
+          className="inline-flex items-center text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
+          target="_blank"
+        >
+          <MapPin size={12} className="mr-1" />
+          State Mileage
+          <LinkIcon size={10} className="ml-1" />
+        </Link>
+      );
+    } else if (trip.load_id) {
+      return (
+        <Link 
+          href={`/dashboard/dispatching/${trip.load_id}`}
+          className="inline-flex items-center text-xs bg-green-50 text-green-600 hover:bg-green-100 px-2 py-1 rounded border border-green-200"
+          target="_blank"
+        >
+          <Truck size={12} className="mr-1" />
+          From Load
+          <LinkIcon size={10} className="ml-1" />
+        </Link>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-200">
+          <Plus size={12} className="mr-1" />
+          Manual Entry
+        </span>
+      );
+    }
   };
 
   // Format jurisdiction for display
   const formatJurisdiction = (jurisdictionCode) => {
     return jurisdictionCode || '—';
   };
-  
-  // Count imported trips
-  const importedTripsCount = trips.filter(trip => trip.is_imported || trip.load_id).length;
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Recorded Trips</h3>
-        <div className="flex items-center">
-          <span className="text-sm text-gray-500 mr-4">Total Trips: {sortedAndFilteredTrips.length}</span>
-          {importedTripsCount > 0 && (
-            <div className="flex items-center">
-              <label className="flex items-center text-sm text-gray-600 mr-2">
-                <input
-                  type="checkbox"
-                  checked={filters.showImported}
-                  onChange={() => setFilters({...filters, showImported: !filters.showImported})}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-1"
-                />
-                Show Imported
-              </label>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                {importedTripsCount} from loads
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-      
+    <div>
       {/* Filters */}
       <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-          {/* Search input */}
-          <div className="flex-1 relative">
-            <label htmlFor="search-filter" className="sr-only">Search</label>
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search input */}
+            <div className="flex-1 relative">
+              <label htmlFor="search-filter" className="sr-only">Search</label>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-gray-400" />
+              </div>
+              <input
+                id="search-filter"
+                type="text"
+                placeholder="Search trips..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
             </div>
-            <input
-              id="search-filter"
-              type="text"
-              placeholder="Search trips..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            />
-          </div>
-          
-          {/* Jurisdiction filter */}
-          {uniqueJurisdictions.length > 0 && (
+            
+            {/* Data source filter */}
             <div className="md:w-48">
-              <label htmlFor="jurisdiction-filter" className="sr-only">Jurisdiction</label>
+              <label htmlFor="source-filter" className="sr-only">Data Source</label>
               <div className="relative">
                 <select
-                  id="jurisdiction-filter"
+                  id="source-filter"
                   className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={filters.jurisdiction}
-                  onChange={(e) => setFilters({ ...filters, jurisdiction: e.target.value })}
+                  value={filters.source}
+                  onChange={(e) => setFilters({ ...filters, source: e.target.value })}
                 >
-                  <option value="">All Jurisdictions</option>
-                  {uniqueJurisdictions.map((jurisdiction) => (
-                    <option key={jurisdiction} value={jurisdiction}>{formatJurisdiction(jurisdiction)}</option>
-                  ))}
+                  <option value="all">All Sources</option>
+                  <option value="mileage">State Mileage</option>
+                  <option value="load">Load Import</option>
+                  <option value="manual">Manual Entry</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <Filter size={16} className="text-gray-400" />
                 </div>
               </div>
             </div>
-          )}
-          
-          {/* Vehicle filter */}
-          {uniqueVehicles.length > 0 && (
-            <div className="md:w-48">
-              <label htmlFor="vehicle-filter" className="sr-only">Vehicle</label>
-              <div className="relative">
-                <select
-                  id="vehicle-filter"
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={filters.vehicle}
-                  onChange={(e) => setFilters({ ...filters, vehicle: e.target.value })}
-                >
-                  <option value="">All Vehicles</option>
-                  {uniqueVehicles.map((vehicle) => (
-                    <option key={vehicle} value={vehicle}>{vehicle}</option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                  <Truck size={16} className="text-gray-400" />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Reset filters */}
-          <div className="md:w-32">
+            
+            {/* Toggle advanced filters button */}
             <button
               type="button"
-              onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", showImported: true })}
-              className="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+              onClick={() => setExpandedFilters(!expandedFilters)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            >
+              <Filter size={16} className="mr-1.5" />
+              {expandedFilters ? 'Hide Filters' : 'More Filters'}
+              <ChevronDown size={16} className={`ml-1 transform transition-transform ${expandedFilters ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Reset filters */}
+            <button
+              type="button"
+              onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", source: "all" })}
+              className="md:w-24 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
             >
               Reset
             </button>
           </div>
+          
+          {/* Advanced filters (expandable) */}
+          {expandedFilters && (
+            <div className="flex flex-col md:flex-row gap-4 pt-3 border-t border-gray-200">
+              {/* Jurisdiction filter */}
+              {uniqueJurisdictions.length > 0 && (
+                <div className="md:w-48">
+                  <label htmlFor="jurisdiction-filter" className="sr-only">Jurisdiction</label>
+                  <div className="relative">
+                    <select
+                      id="jurisdiction-filter"
+                      className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      value={filters.jurisdiction}
+                      onChange={(e) => setFilters({ ...filters, jurisdiction: e.target.value })}
+                    >
+                      <option value="">All Jurisdictions</option>
+                      {uniqueJurisdictions.map((jurisdiction) => (
+                        <option key={jurisdiction} value={jurisdiction}>{formatJurisdiction(jurisdiction)}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <MapPin size={16} className="text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Vehicle filter */}
+              {uniqueVehicles.length > 0 && (
+                <div className="md:w-48">
+                  <label htmlFor="vehicle-filter" className="sr-only">Vehicle</label>
+                  <div className="relative">
+                    <select
+                      id="vehicle-filter"
+                      className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      value={filters.vehicle}
+                      onChange={(e) => setFilters({ ...filters, vehicle: e.target.value })}
+                    >
+                      <option value="">All Vehicles</option>
+                      {uniqueVehicles.map((vehicle) => (
+                        <option key={vehicle} value={vehicle}>{vehicle}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <Truck size={16} className="text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       
@@ -347,33 +409,34 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                         {formatJurisdiction(trip.end_jurisdiction)}
                       </span>
                     </div>
+                    {/* Show load reference if it exists */}
+                    {trip.load_id && trip.notes && trip.notes.includes('Load #') && (
+                      <div className="text-xs text-gray-400 mt-1">{trip.notes.split(':')[0]}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseFloat(trip.total_miles || 0).toLocaleString()} mi
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseFloat(trip.gallons || 0).toLocaleString()} gal
+                    {trip.gallons === 0 && (
+                      <div className="text-xs text-amber-500 flex items-center mt-1">
+                        <AlertTriangle size={10} className="mr-1" />
+                        Needs update
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {trip.fuel_cost === 0 && (
+                      <div className="text-xs text-amber-500 flex items-center mt-1">
+                        <AlertTriangle size={10} className="mr-1" />
+                        Needs update
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {(trip.is_imported || trip.load_id) ? (
-                      <Link 
-                        href={`/dashboard/dispatching/${trip.load_id}`}
-                        className="inline-flex items-center text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200"
-                        target="_blank"
-                      >
-                        <Truck size={12} className="mr-1" />
-                        From Load
-                        <LinkIcon size={10} className="ml-1" />
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        <Calendar size={12} className="inline mr-1" />
-                        Manual Entry
-                      </span>
-                    )}
+                    {showSourceBadges && <SourceBadge trip={trip} />}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
@@ -401,7 +464,25 @@ export default function TripsList({ trips = [], onRemoveTrip, isLoading = false 
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   ${totalFuelCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                <td colSpan="2"></td>
+                <td colSpan="2" className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {/* Display source counts */}
+                  {showSourceBadges && (
+                    <div className="flex flex-wrap gap-2">
+                      <div className="text-xs inline-flex items-center">
+                        <MapPin size={10} className="mr-1 text-blue-600" />
+                        {trips.filter(t => t.mileage_trip_id).length} from mileage
+                      </div>
+                      <div className="text-xs inline-flex items-center">
+                        <Truck size={10} className="mr-1 text-green-600" />
+                        {trips.filter(t => t.load_id).length} from loads
+                      </div>
+                      <div className="text-xs inline-flex items-center">
+                        <Plus size={10} className="mr-1 text-purple-600" />
+                        {trips.filter(t => !t.load_id && !t.mileage_trip_id).length} manual
+                      </div>
+                    </div>
+                  )}
+                </td>
               </tr>
             </tfoot>
           </table>
