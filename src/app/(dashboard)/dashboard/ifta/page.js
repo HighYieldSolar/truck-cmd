@@ -441,7 +441,7 @@ export default function IFTACalculatorPage() {
       return;
     }
     
-    // Open the enhanced export modal
+    // Open the enhanced export modal instead of directly exporting
     setExportModalOpen(true);
   };
 

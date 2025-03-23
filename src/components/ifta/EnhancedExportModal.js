@@ -3,13 +3,16 @@
 
 import { useState } from "react";
 import { 
+  FileDown, 
   Download, 
   FileText, 
   RefreshCw, 
   X, 
+  FileIcon, 
   File,
   Database,
-  Code
+  Code,
+  Mail
 } from "lucide-react";
 
 /**
@@ -46,6 +49,8 @@ export default function EnhancedExportModal({
         return `${baseFilename}.json`;
       case "xml":
         return `${baseFilename}.xml`;
+      case "docx":
+        return `${baseFilename}.docx`;
       default:
         return `${baseFilename}.csv`;
     }
@@ -360,6 +365,13 @@ export default function EnhancedExportModal({
           mimeType = 'text/csv';
           alert("PDF export requires additional libraries. Downloading as CSV instead.");
           break;
+        case "docx":
+          // For DOCX we would normally use a library like docx.js
+          // This is a simplified version that just offers CSV instead
+          content = generateCSV();
+          mimeType = 'text/csv';
+          alert("Word document export requires additional libraries. Downloading as CSV instead.");
+          break;
         default:
           content = generateCSV();
           mimeType = 'text/csv';
@@ -427,8 +439,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportType("detailed")}
                           className="sr-only"
                         />
-                        <FileText size={24} className="mx-auto mb-2 text-blue-600" />
-                        <span className="block text-sm">Detailed Data</span>
+                        <FileText size={24} className="mx-auto mb-2 text-gray-700" />
+                        <span className="block text-sm text-gray-900">Detailed Data</span>
                         <span className="text-xs text-gray-500">All trip records</span>
                       </label>
                       
@@ -443,8 +455,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportType("summary")}
                           className="sr-only"
                         />
-                        <Database size={24} className="mx-auto mb-2 text-green-600" />
-                        <span className="block text-sm">Summary Report</span>
+                        <FileIcon size={24} className="mx-auto mb-2 text-gray-700" />
+                        <span className="block text-sm text-gray-900">Summary Report</span>
                         <span className="text-xs text-gray-500">State-by-state totals</span>
                       </label>
                     </div>
@@ -467,8 +479,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportFormat("csv")}
                           className="sr-only"
                         />
-                        <FileText size={20} className="mx-auto mb-1 text-blue-600" />
-                        <span className="block text-xs">CSV</span>
+                        <FileText size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">CSV</span>
                       </label>
                       
                       <label className={`border rounded-md p-2 text-center cursor-pointer ${
@@ -482,8 +494,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportFormat("xlsx")}
                           className="sr-only"
                         />
-                        <File size={20} className="mx-auto mb-1 text-green-600" />
-                        <span className="block text-xs">Excel</span>
+                        <FileIcon size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">Excel</span>
                       </label>
                       
                       <label className={`border rounded-md p-2 text-center cursor-pointer ${
@@ -497,8 +509,23 @@ export default function EnhancedExportModal({
                           onChange={() => setExportFormat("pdf")}
                           className="sr-only"
                         />
-                        <File size={20} className="mx-auto mb-1 text-red-600" />
-                        <span className="block text-xs">PDF</span>
+                        <File size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">PDF</span>
+                      </label>
+                      
+                      <label className={`border rounded-md p-2 text-center cursor-pointer ${
+                        exportFormat === "docx" ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                      }`}>
+                        <input
+                          type="radio"
+                          name="exportFormat"
+                          value="docx"
+                          checked={exportFormat === "docx"}
+                          onChange={() => setExportFormat("docx")}
+                          className="sr-only"
+                        />
+                        <Mail size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">Word</span>
                       </label>
                       
                       <label className={`border rounded-md p-2 text-center cursor-pointer ${
@@ -512,8 +539,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportFormat("json")}
                           className="sr-only"
                         />
-                        <Code size={20} className="mx-auto mb-1 text-yellow-600" />
-                        <span className="block text-xs">JSON</span>
+                        <Database size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">JSON</span>
                       </label>
                       
                       <label className={`border rounded-md p-2 text-center cursor-pointer ${
@@ -527,8 +554,8 @@ export default function EnhancedExportModal({
                           onChange={() => setExportFormat("xml")}
                           className="sr-only"
                         />
-                        <Code size={20} className="mx-auto mb-1 text-purple-600" />
-                        <span className="block text-xs">XML</span>
+                        <Code size={20} className="mx-auto mb-1 text-gray-700" />
+                        <span className="block text-xs text-gray-900">XML</span>
                       </label>
                     </div>
                   </div>
