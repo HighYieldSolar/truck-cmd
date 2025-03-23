@@ -162,12 +162,46 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       throw new Error("No state mileage data found for this trip");
     }
     
-    // Create IFTA trip records for each state with miles
-    const tripRecords = stateMileage.map(state => ({
+    // First check if this trip has already been imported to avoid constraint error
+    const { data: existingImports, error: checkError } = await supabase
+      .from('ifta_trip_records')
+      .select('id, start_jurisdiction')
+      .eq('user_id', userId)
+      .eq('quarter', quarter)
+      .eq('mileage_trip_id', tripId);
+      
+    if (checkError) throw checkError;
+    
+    // Create a map of existing imports by jurisdiction
+    const existingImportsByJurisdiction = {};
+    if (existingImports && existingImports.length > 0) {
+      existingImports.forEach(record => {
+        existingImportsByJurisdiction[record.start_jurisdiction] = record.id;
+      });
+    }
+    
+    // Filter out states that have already been imported
+    const newStatesToImport = stateMileage.filter(state => 
+      !existingImportsByJurisdiction[state.state]
+    );
+    
+    if (newStatesToImport.length === 0) {
+      return {
+        success: true,
+        importedCount: 0,
+        totalMiles: 0,
+        states: [],
+        alreadyImported: true,
+        message: "This trip has already been fully imported."
+      };
+    }
+    
+    // Create IFTA trip records for each state with miles that hasn't been imported yet
+    const tripRecords = newStatesToImport.map(state => ({
       user_id: userId,
       quarter: quarter,
       start_date: trip.start_date,
-      end_date: trip.end_date,
+      end_date: trip.end_date || trip.start_date,
       vehicle_id: trip.vehicle_id,
       mileage_trip_id: trip.id,
       start_jurisdiction: state.state,
@@ -182,26 +216,32 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       source: 'mileage_tracker'
     }));
     
-    // Insert all the trip records
-    const { data, error: insertError } = await supabase
-      .from('ifta_trip_records')
-      .insert(tripRecords)
-      .select();
-      
-    if (insertError) throw insertError;
+    // Only insert if there are new records to create
+    let insertedData = [];
+    if (tripRecords.length > 0) {
+      // Insert all the trip records
+      const { data, error: insertError } = await supabase
+        .from('ifta_trip_records')
+        .insert(tripRecords)
+        .select();
+          
+      if (insertError) throw insertError;
+      insertedData = data || [];
+    }
     
     return {
       success: true,
       importedCount: tripRecords.length,
-      totalMiles: stateMileage.reduce((sum, state) => sum + state.miles, 0),
-      states: stateMileage.map(state => state.state),
-      createdRecords: data
+      totalMiles: newStatesToImport.reduce((sum, state) => sum + state.miles, 0),
+      states: newStatesToImport.map(state => state.state),
+      createdRecords: insertedData,
+      partialImport: existingImports && existingImports.length > 0
     };
   } catch (error) {
     console.error('Error importing mileage trip to IFTA:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message || "An unknown error occurred during import"
     };
   }
 }
