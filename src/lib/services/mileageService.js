@@ -143,6 +143,50 @@ export async function completeTrip(tripId) {
 }
 
 /**
+ * Delete a mileage trip and its associated crossings
+ * @param {string} tripId - Trip ID
+ * @param {string} userId - User ID (for security verification)
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function deleteTrip(tripId, userId) {
+  try {
+    // Security check - make sure the trip belongs to this user
+    const { data: tripData, error: tripError } = await supabase
+      .from('driver_mileage_trips')
+      .select('id')
+      .eq('id', tripId)
+      .eq('user_id', userId)
+      .single();
+      
+    if (tripError || !tripData) {
+      throw new Error('Trip not found or you do not have permission to delete it');
+    }
+    
+    // Delete all associated crossings first (handle the foreign key constraint)
+    const { error: crossingDeleteError } = await supabase
+      .from('driver_mileage_crossings')
+      .delete()
+      .eq('trip_id', tripId);
+      
+    if (crossingDeleteError) throw crossingDeleteError;
+    
+    // Finally, delete the trip
+    const { error: tripDeleteError } = await supabase
+      .from('driver_mileage_trips')
+      .delete()
+      .eq('id', tripId)
+      .eq('user_id', userId); // Extra security to ensure only the owner can delete
+      
+    if (tripDeleteError) throw tripDeleteError;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting trip:', error);
+    throw error;
+  }
+}
+
+/**
  * Calculate mileage by state for a trip
  * @param {Array} crossings - Array of state crossings
  * @returns {Array} - Array of state mileage objects
