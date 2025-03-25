@@ -1,3 +1,4 @@
+// src/components/fuel/FuelEntryForm.js
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -5,6 +6,7 @@ import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle, Fuel, MapPin, Truck, DollarSign, Info, Maximize2, Calendar, CreditCard } from "lucide-react";
 import { getUSStates } from "@/lib/services/fuelService";
 
+// Basic implementation - without importing the new VehicleSelector yet
 export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -354,7 +356,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                 />
                 {errors.location && touched.location && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
+<AlertCircle size={12} className="mr-1" />
                     {errors.location}
                   </p>
                 )}

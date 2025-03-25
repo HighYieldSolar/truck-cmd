@@ -1,4 +1,4 @@
-// src/components/FuelTrackerPage.js
+// src/components/FuelTrackerPage.js - Modified to use the enhanced VehicleSelector
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ import FilterBar from "@/components/fuel/FilterBar";
 import FuelStats from "@/components/fuel/FuelStats";
 import StateSummary from "@/components/fuel/StateSummary";
 import FuelEntryItem from "@/components/fuel/FuelEntryItem";
+// Import updated components
 import FuelEntryForm from "@/components/fuel/FuelEntryForm";
 import ReceiptViewerModal from "@/components/fuel/ReceiptViewerModal";
 import FuelDeletionModal from "@/components/fuel/FuelDeletionModal";
@@ -58,6 +59,9 @@ export default function FuelTrackerPage() {
   // State for showing operation messages
   const [operationMessage, setOperationMessage] = useState(null);
   
+  // State for vehicle data
+  const [vehicleData, setVehicleData] = useState([]);
+  
   // Get the fuel data and functions from our custom hook
   const {
     fuelEntries,
@@ -89,6 +93,35 @@ export default function FuelTrackerPage() {
         }
         
         setUser(user);
+        
+        // Load vehicles for the selector
+        try {
+          // First try to get trucks from the vehicles table
+          let { data, error } = await supabase
+            .from('vehicles')
+            .select('id, name, license_plate')
+            .eq('user_id', user.id);
+          
+          // If that fails, try the trucks table instead
+          if (error || !data || data.length === 0) {
+            const { data: trucksData, error: trucksError } = await supabase
+              .from('trucks')
+              .select('id, name, license_plate')
+              .eq('user_id', user.id);
+              
+            if (!trucksError) {
+              data = trucksData;
+            }
+          }
+          
+          // If we found vehicle data, save it
+          if (data && data.length > 0) {
+            setVehicleData(data);
+          }
+        } catch (vehicleError) {
+          console.error("Error loading vehicles:", vehicleError);
+          // Continue without vehicle data
+        }
       } catch (error) {
         console.error('Error checking authentication:', error);
       } finally {
@@ -488,6 +521,7 @@ export default function FuelTrackerPage() {
         fuelEntry={currentFuelEntry}
         onSave={handleSaveFuelEntry}
         isSubmitting={loading}
+        // Pass vehicles array as-is - our new VehicleSelector component will handle this 
         vehicles={vehicles}
       />
       
