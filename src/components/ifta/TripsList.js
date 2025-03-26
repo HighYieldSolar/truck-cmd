@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { 
   Trash2, 
   Download, 
@@ -41,6 +42,7 @@ export default function TripsList({
     direction: 'desc'
   });
   const [expandedFilters, setExpandedFilters] = useState(false);
+  const [vehicleDetails, setVehicleDetails] = useState({});
 
   // Get unique values for filter dropdowns
   const getUniqueValues = (key) => {
@@ -60,6 +62,64 @@ export default function TripsList({
 
   const uniqueJurisdictions = getUniqueValues('jurisdiction');
   const uniqueVehicles = getUniqueValues('vehicle');
+
+  // Load vehicle details on component mount
+  useEffect(() => {
+    const loadVehicleDetails = async () => {
+      if (!trips || trips.length === 0) return;
+      
+      try {
+        // Get unique vehicle IDs from trips
+        const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
+        
+        if (vehicleIds.length === 0) return;
+        
+        // Try to get vehicle details from the vehicles table
+        let { data: vehiclesData, error: vehiclesError } = await supabase
+          .from('vehicles')
+          .select('id, name, license_plate')
+          .in('id', vehicleIds);
+        
+        // If no results or error, try the trucks table
+        if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
+          const { data: trucksData, error: trucksError } = await supabase
+            .from('trucks')
+            .select('id, name, license_plate')
+            .in('id', vehicleIds);
+            
+          if (!trucksError && trucksData && trucksData.length > 0) {
+            vehiclesData = trucksData;
+          }
+        }
+        
+        // Store vehicle details in state
+        if (vehiclesData && vehiclesData.length > 0) {
+          const vehicleMap = {};
+          vehiclesData.forEach(vehicle => {
+            vehicleMap[vehicle.id] = {
+              name: vehicle.name || vehicle.id,
+              licensePlate: vehicle.license_plate || ''
+            };
+          });
+          setVehicleDetails(vehicleMap);
+        }
+      } catch (error) {
+        console.error("Error loading vehicle details:", error);
+      }
+    };
+    
+    loadVehicleDetails();
+  }, [trips]);
+
+  // Format vehicle display with name and plate if available
+  const formatVehicleDisplay = (vehicleId) => {
+    if (!vehicleId) return 'Unknown';
+    
+    const details = vehicleDetails[vehicleId];
+    if (!details) return vehicleId;
+    
+    return details.name + (details.licensePlate ? ` (${details.licensePlate})` : '');
+  };
 
   // Handle sort
   const requestSort = (key) => {
@@ -358,7 +418,9 @@ export default function TripsList({
                       >
                         <option value="">All Vehicles</option>
                         {uniqueVehicles.map((vehicle) => (
-                          <option key={vehicle} value={vehicle}>{vehicle}</option>
+                          <option key={vehicle} value={vehicle}>
+                            {formatVehicleDisplay(vehicle)}
+                          </option>
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -464,7 +526,7 @@ export default function TripsList({
                       <span className="text-xs text-gray-500 ml-1">to {trip.end_date}</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                    {trip.vehicle_id}
+                    {formatVehicleDisplay(trip.vehicle_id)}
                     {trip.driver_id && <div className="text-xs text-gray-400">Driver: {trip.driver_id}</div>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

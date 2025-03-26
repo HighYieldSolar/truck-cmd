@@ -1,3 +1,4 @@
+// src/components/ifta/StateMileageImporter.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -37,6 +38,8 @@ export default function StateMileageImporter({
   const [message, setMessage] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
+  // New state for vehicle details
+  const [vehicleDetails, setVehicleDetails] = useState({});
 
   // Load mileage trips
   useEffect(() => {
@@ -50,6 +53,12 @@ export default function StateMileageImporter({
         // Fetch mileage trips for the quarter
         const trips = await getImportableMileageTrips(userId, quarter);
         setMileageTrips(trips);
+        
+        // Get vehicle details for each unique vehicle ID
+        const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
+        if (vehicleIds.length > 0) {
+          await fetchVehicleDetails(vehicleIds);
+        }
         
         // If there are no unimported trips, collapse the section if collapsible
         if (isCollapsible && trips.filter(t => !t.alreadyImported).length === 0 && !showImportedTrips) {
@@ -65,6 +74,54 @@ export default function StateMileageImporter({
     
     loadMileageTrips();
   }, [userId, quarter, isCollapsible, showImportedTrips]);
+
+  // Fetch vehicle details from the database
+  const fetchVehicleDetails = async (vehicleIds) => {
+    try {
+      // Try fetching from vehicles table first
+      let { data: vehiclesData, error: vehiclesError } = await supabase
+        .from('vehicles')
+        .select('id, name, license_plate')
+        .in('id', vehicleIds);
+      
+      // If we couldn't find vehicles, try the trucks table
+      if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
+        const { data: trucksData, error: trucksError } = await supabase
+          .from('trucks')
+          .select('id, name, license_plate')
+          .in('id', vehicleIds);
+          
+        if (!trucksError && trucksData && trucksData.length > 0) {
+          vehiclesData = trucksData;
+        }
+      }
+      
+      // Build a lookup object for vehicle details
+      if (vehiclesData && vehiclesData.length > 0) {
+        const detailsMap = {};
+        vehiclesData.forEach(vehicle => {
+          detailsMap[vehicle.id] = {
+            name: vehicle.name || vehicle.id,
+            licensePlate: vehicle.license_plate || ''
+          };
+        });
+        setVehicleDetails(detailsMap);
+      }
+    } catch (err) {
+      console.error("Error fetching vehicle details:", err);
+      // Continue without vehicle details, just use IDs
+    }
+  };
+
+  // Format vehicle display with name and plate if available
+  const formatVehicleDisplay = (vehicleId) => {
+    if (!vehicleId) return 'Unknown Vehicle';
+    
+    const details = vehicleDetails[vehicleId];
+    if (!details) return vehicleId;
+    
+    return details.name + (details.licensePlate ? ` (${details.licensePlate})` : '');
+  };
 
   // Handle selecting a mileage trip
   const handleSelectTrip = async (trip) => {
@@ -84,119 +141,133 @@ export default function StateMileageImporter({
     }
   };
 
-// Handle importing a single trip
-const handleImportTrip = async () => {
-  if (!selectedTrip || mileageData.length === 0) return;
-  
-  try {
-    setImportLoading(true);
-    setError(null);
+  // Handle importing a single trip
+  const handleImportTrip = async () => {
+    if (!selectedTrip || mileageData.length === 0) return;
     
-    // Import the trip
-    const result = await importMileageTripToIFTA(userId, quarter, selectedTrip.id);
-    
-    if (!result.success) {
-      throw new Error(result.error || "Failed to import trip");
-    }
-    
-    // Close modal and show appropriate success message
-    setMileageModalOpen(false);
-    
-    if (result.alreadyImported || result.importedCount === 0) {
-      setMessage({
-        type: "warning",
-        text: "This trip has already been imported."
-      });
-    } else {
-      setMessage({
-        type: "success",
-        text: `Successfully imported trip with ${result.importedCount} state entries and ${result.totalMiles.toFixed(1)} miles.`
-      });
-    }
-    
-    // Clear the message after 5 seconds
-    setTimeout(() => setMessage(null), 5000);
-    
-    // Refresh the trips list
-    const updatedTrips = await getImportableMileageTrips(userId, quarter);
-    setMileageTrips(updatedTrips);
-    
-    // Call the onImportComplete callback if provided
-    if (onImportComplete) {
-      onImportComplete();
-    }
-  } catch (err) {
-    console.error("Error importing mileage trip:", err);
-    setError("Failed to import mileage trip: " + (err.message || "Unknown error"));
-  } finally {
-    setImportLoading(false);
-  }
-};
-
-// Handle bulk import of all unimported trips
-const handleBulkImport = async () => {
-  // Get all unimported trips
-  const unimportedTrips = mileageTrips.filter(trip => !trip.alreadyImported);
-  
-  if (unimportedTrips.length === 0) return;
-  
-  try {
-    setBulkImportLoading(true);
-    setError(null);
-    
-    let successCount = 0;
-    let totalMiles = 0;
-    let alreadyImportedCount = 0;
-    
-    // Import each trip sequentially
-    for (const trip of unimportedTrips) {
-      const result = await importMileageTripToIFTA(userId, quarter, trip.id);
+    try {
+      setImportLoading(true);
+      setError(null);
       
-      if (result.success) {
-        if (result.alreadyImported || result.importedCount === 0) {
-          alreadyImportedCount++;
-        } else {
-          successCount++;
-          totalMiles += result.totalMiles;
+      // Import the trip
+      const result = await importMileageTripToIFTA(userId, quarter, selectedTrip.id);
+      
+      if (!result.success) {
+        console.error("Import failure details:", result);  // Add detailed logging
+        throw new Error(result.error || "Failed to import trip");
+      }
+      
+      // Close modal and show appropriate success message
+      setMileageModalOpen(false);
+      
+      if (result.alreadyImported || result.importedCount === 0) {
+        setMessage({
+          type: "warning",
+          text: "This trip has already been imported."
+        });
+      } else {
+        setMessage({
+          type: "success",
+          text: `Successfully imported trip with ${result.importedCount} state entries and ${result.totalMiles.toFixed(1)} miles.`
+        });
+      }
+      
+      // Clear the message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
+      
+      // Refresh the trips list
+      const updatedTrips = await getImportableMileageTrips(userId, quarter);
+      setMileageTrips(updatedTrips);
+      
+      // Call the onImportComplete callback if provided
+      if (onImportComplete) {
+        onImportComplete();
+      }
+    } catch (err) {
+      console.error("Error importing mileage trip:", err);
+      setError("Failed to import mileage trip: " + (err.message || "Unknown error"));
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // Handle bulk import of all unimported trips
+  const handleBulkImport = async () => {
+    // Get all unimported trips
+    const unimportedTrips = mileageTrips.filter(trip => !trip.alreadyImported);
+    
+    if (unimportedTrips.length === 0) return;
+    
+    try {
+      setBulkImportLoading(true);
+      setError(null);
+      
+      let successCount = 0;
+      let totalMiles = 0;
+      let alreadyImportedCount = 0;
+      let errorCount = 0;
+      
+      // Import each trip sequentially
+      for (const trip of unimportedTrips) {
+        try {
+          const result = await importMileageTripToIFTA(userId, quarter, trip.id);
+          
+          if (result.success) {
+            if (result.alreadyImported || result.importedCount === 0) {
+              alreadyImportedCount++;
+            } else {
+              successCount++;
+              totalMiles += result.totalMiles;
+            }
+          } else {
+            errorCount++;
+            console.error(`Error importing trip ${trip.id}:`, result.error);
+          }
+        } catch (tripError) {
+          errorCount++;
+          console.error(`Exception importing trip ${trip.id}:`, tripError);
         }
       }
+      
+      // Build the success message
+      let successText = "";
+      if (successCount > 0) {
+        successText = `Successfully imported ${successCount} trip${successCount !== 1 ? 's' : ''} with a total of ${totalMiles.toFixed(1)} miles.`;
+      }
+      
+      if (alreadyImportedCount > 0) {
+        successText += successCount > 0 ? " " : "";
+        successText += `${alreadyImportedCount} trip${alreadyImportedCount !== 1 ? 's were' : ' was'} already imported.`;
+      }
+      
+      if (errorCount > 0) {
+        successText += `${successText ? " " : ""}${errorCount} trip${errorCount !== 1 ? 's' : ''} failed to import. Check console for details.`;
+      }
+      
+      // Show success message
+      setMessage({
+        type: successCount > 0 ? "success" : "warning",
+        text: successText || "Import process completed."
+      });
+      
+      // Clear the message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
+      
+      // Refresh the trips list
+      const updatedTrips = await getImportableMileageTrips(userId, quarter);
+      setMileageTrips(updatedTrips);
+      
+      // Call the onImportComplete callback if provided
+      if (onImportComplete) {
+        onImportComplete();
+      }
+    } catch (err) {
+      console.error("Error in bulk import:", err);
+      setError("Failed to complete bulk import. Some trips may have been imported.");
+    } finally {
+      setBulkImportLoading(false);
     }
-    
-    // Build the success message
-    let successText = "";
-    if (successCount > 0) {
-      successText = `Successfully imported ${successCount} trip${successCount !== 1 ? 's' : ''} with a total of ${totalMiles.toFixed(1)} miles.`;
-    }
-    
-    if (alreadyImportedCount > 0) {
-      successText += successCount > 0 ? " " : "";
-      successText += `${alreadyImportedCount} trip${alreadyImportedCount !== 1 ? 's were' : ' was'} already imported.`;
-    }
-    
-    // Show success message
-    setMessage({
-      type: "success",
-      text: successText || "Import process completed."
-    });
-    
-    // Clear the message after 5 seconds
-    setTimeout(() => setMessage(null), 5000);
-    
-    // Refresh the trips list
-    const updatedTrips = await getImportableMileageTrips(userId, quarter);
-    setMileageTrips(updatedTrips);
-    
-    // Call the onImportComplete callback if provided
-    if (onImportComplete) {
-      onImportComplete();
-    }
-  } catch (err) {
-    console.error("Error in bulk import:", err);
-    setError("Failed to complete bulk import. Some trips may have been imported.");
-  } finally {
-    setBulkImportLoading(false);
-  }
-};
+  };
 
   // Get the number of importable and already imported trips
   const importableTripsCount = mileageTrips.filter(trip => !trip.alreadyImported).length;
@@ -394,7 +465,7 @@ const handleBulkImport = async () => {
                       <div>
                         <div className="font-medium text-gray-900 flex items-center">
                           <Truck size={16} className="mr-2 text-gray-500" />
-                          {trip.vehicle_id}
+                          {formatVehicleDisplay(trip.vehicle_id)}
                           {trip.alreadyImported && (
                             <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               <Check size={12} className="mr-1" />
@@ -471,7 +542,7 @@ const handleBulkImport = async () => {
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
                         {selectedTrip ? (
-                          <>Vehicle {selectedTrip.vehicle_id}: {new Date(selectedTrip.start_date).toLocaleDateString()} - {new Date(selectedTrip.end_date).toLocaleDateString()}</>
+                          <>Vehicle {formatVehicleDisplay(selectedTrip.vehicle_id)}: {new Date(selectedTrip.start_date).toLocaleDateString()} - {new Date(selectedTrip.end_date).toLocaleDateString()}</>
                         ) : (
                           'Select a mileage trip to import'
                         )}

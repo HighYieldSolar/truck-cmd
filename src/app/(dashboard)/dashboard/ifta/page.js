@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Calculator,
   FileDown,
@@ -29,22 +28,99 @@ import Link from "next/link";
 // Import utilities
 import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
 
-// Import custom components
+// Import custom components - add dynamic imports if needed
 import EnhancedTripEntryForm from "@/components/ifta/EnhancedTripEntryForm";
 import TripsList from "@/components/ifta/TripsList";
 import IFTASummary from "@/components/ifta/IFTASummary";
 import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReportGenerator from "@/components/ifta/ReportGenerator";
-import StateMileageImporter from "@/components/ifta/StateMileageImporter";
 import EnhancedExportModal from "@/components/ifta/EnhancedExportModal";
 
-// Import IFTA-Fuel integration components
-import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
-import EnhancedIFTASummary from "@/components/ifta/EnhancedIFTASummary";
+// Dynamic imports to fix potential loading issues
+import dynamic from 'next/dynamic';
 
-// Import load integration component
-import LoadToIFTAImporter from "@/components/ifta/LoadToIFTAImporter";
+// Dynamically import the DashboardLayout component to ensure it's fully loaded
+const DashboardLayout = dynamic(() => import('@/components/layout/DashboardLayout'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  )
+});
+
+// Dynamically import the StateMileageImporter component
+const StateMileageImporter = dynamic(() => import('@/components/ifta/StateMileageImporter'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 bg-white shadow rounded-lg mb-6">
+      <div className="animate-pulse flex space-x-4">
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+});
+
+// Dynamically import the LoadToIFTAImporter component
+const LoadToIFTAImporter = dynamic(() => import('@/components/ifta/LoadToIFTAImporter'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 bg-white shadow rounded-lg mb-6">
+      <div className="animate-pulse flex space-x-4">
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+});
+
+// Dynamically import the IFTAFuelSync component
+const IFTAFuelSync = dynamic(() => import('@/components/ifta/IFTAFuelSync'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 bg-white shadow rounded-lg mb-6">
+      <div className="animate-pulse flex space-x-4">
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+});
+
+// Dynamically import the EnhancedIFTASummary component
+const EnhancedIFTASummary = dynamic(() => import('@/components/ifta/EnhancedIFTASummary'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 bg-white shadow rounded-lg mb-6">
+      <div className="animate-pulse flex space-x-4">
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+});
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
@@ -487,11 +563,9 @@ export default function IFTACalculatorPage() {
   
   if (initialLoading) {
     return (
-      <DashboardLayout activePage="ifta calculator">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
     );
   }
   

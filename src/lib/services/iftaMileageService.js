@@ -2,11 +2,6 @@
 import { supabase } from "../supabaseClient";
 
 /**
- * Service to handle integration between State Mileage Tracker and IFTA Calculator
- * This service provides utilities for importing state mileage data into IFTA
- */
-
-/**
  * Get all state mileage trips that can be imported to IFTA for a specific quarter
  * @param {string} userId - User ID
  * @param {string} quarter - Quarter string (e.g., "2023-Q1")
@@ -70,7 +65,7 @@ export async function getImportableMileageTrips(userId, quarter) {
     return markedTrips;
   } catch (error) {
     console.error('Error getting importable mileage trips:', error);
-    throw new Error(`Failed to get importable mileage trips: ${error.message}`);
+    throw new Error(`Failed to get importable mileage trips: ${error.message || "Unknown error"}`);
   }
 }
 
@@ -104,6 +99,9 @@ export async function getStateMileageForTrip(tripId) {
         const nextOdometer = crossings[i + 1].odometer;
         const milesDriven = nextOdometer - currentOdometer;
         
+        // Skip negative or zero miles (possible data error)
+        if (milesDriven <= 0) continue;
+        
         // Add or update state mileage
         const existingEntry = stateMileage.find(entry => entry.state === currentState);
         if (existingEntry) {
@@ -111,7 +109,7 @@ export async function getStateMileageForTrip(tripId) {
         } else {
           stateMileage.push({
             state: currentState,
-            state_name: crossings[i].state_name,
+            state_name: crossings[i].state_name || currentState,
             miles: milesDriven
           });
         }
@@ -124,7 +122,7 @@ export async function getStateMileageForTrip(tripId) {
     return stateMileage;
   } catch (error) {
     console.error('Error getting state mileage for trip:', error);
-    throw new Error(`Failed to get state mileage: ${error.message}`);
+    throw new Error(`Failed to get state mileage: ${error.message || "Unknown error"}`);
   }
 }
 
@@ -136,8 +134,11 @@ export async function getStateMileageForTrip(tripId) {
  * @returns {Promise<Object>} - Import results
  */
 export async function importMileageTripToIFTA(userId, quarter, tripId) {
+  console.log(`Starting import of mileage trip ${tripId} for user ${userId} in quarter ${quarter}`);
+  
   try {
     if (!userId || !quarter || !tripId) {
+      console.error("Missing required parameters:", { userId, quarter, tripId });
       throw new Error("User ID, quarter, and trip ID are required");
     }
     
@@ -149,20 +150,39 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       .eq('user_id', userId)
       .single();
       
-    if (tripError) throw tripError;
+    if (tripError) {
+      console.error("Error fetching trip details:", tripError);
+      throw tripError;
+    }
     
     if (!trip) {
+      console.error("Mileage trip not found:", { tripId, userId });
       throw new Error("Mileage trip not found");
     }
     
     // Get state mileage for this trip
-    const stateMileage = await getStateMileageForTrip(tripId);
-    
-    if (stateMileage.length === 0) {
-      throw new Error("No state mileage data found for this trip");
+    let stateMileage;
+    try {
+      stateMileage = await getStateMileageForTrip(tripId);
+      console.log(`Found ${stateMileage.length} states with mileage for trip ${tripId}`);
+    } catch (stateError) {
+      console.error("Error getting state mileage:", stateError);
+      throw new Error(`Failed to get state mileage data: ${stateError.message}`);
     }
     
-    // First check if this trip has already been imported to avoid constraint error
+    if (stateMileage.length === 0) {
+      console.warn("No state mileage data found for trip:", tripId);
+      return {
+        success: true,
+        importedCount: 0,
+        totalMiles: 0,
+        states: [],
+        message: "No state mileage data found for this trip."
+      };
+    }
+    
+    // IMPORTANT: First check if this trip has already been imported
+    // This will help us catch any potential duplicates before we try to insert
     const { data: existingImports, error: checkError } = await supabase
       .from('ifta_trip_records')
       .select('id, start_jurisdiction')
@@ -170,34 +190,26 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       .eq('quarter', quarter)
       .eq('mileage_trip_id', tripId);
       
-    if (checkError) throw checkError;
-    
-    // Create a map of existing imports by jurisdiction
-    const existingImportsByJurisdiction = {};
-    if (existingImports && existingImports.length > 0) {
-      existingImports.forEach(record => {
-        existingImportsByJurisdiction[record.start_jurisdiction] = record.id;
-      });
+    if (checkError) {
+      console.error("Error checking existing imports:", checkError);
+      throw checkError;
     }
     
-    // Filter out states that have already been imported
-    const newStatesToImport = stateMileage.filter(state => 
-      !existingImportsByJurisdiction[state.state]
-    );
-    
-    if (newStatesToImport.length === 0) {
+    // If we found existing imports, return early with "already imported" status
+    if (existingImports && existingImports.length > 0) {
+      console.log(`Trip ${tripId} already has ${existingImports.length} imported records`);
       return {
         success: true,
         importedCount: 0,
         totalMiles: 0,
         states: [],
         alreadyImported: true,
-        message: "This trip has already been fully imported."
+        message: "This trip has already been imported to IFTA."
       };
     }
     
-    // Create IFTA trip records for each state with miles that hasn't been imported yet
-    const tripRecords = newStatesToImport.map(state => ({
+    // Prepare IFTA records for each state with miles
+    const tripRecords = stateMileage.map(state => ({
       user_id: userId,
       quarter: quarter,
       start_date: trip.start_date,
@@ -216,28 +228,81 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       source: 'mileage_tracker'
     }));
     
-    // Only insert if there are new records to create
+    console.log(`Prepared ${tripRecords.length} IFTA records for insertion`);
+    
+    // Only insert if there are records to create
     let insertedData = [];
     if (tripRecords.length > 0) {
-      // Insert all the trip records
-      const { data, error: insertError } = await supabase
-        .from('ifta_trip_records')
-        .insert(tripRecords)
-        .select();
+      try {
+        // Insert all the trip records
+        const { data, error: insertError } = await supabase
+          .from('ifta_trip_records')
+          .insert(tripRecords)
+          .select();
+            
+        if (insertError) {
+          // Check specifically for unique constraint violation
+          if (insertError.code === '23505' || 
+              (insertError.message && insertError.message.includes('duplicate key value violates unique constraint'))) {
+            console.log(`Duplicate record detected for trip ${tripId}`);
+            return {
+              success: true,
+              importedCount: 0,
+              totalMiles: 0,
+              alreadyImported: true,
+              message: "This trip has already been imported to IFTA."
+            };
+          }
           
-      if (insertError) throw insertError;
-      insertedData = data || [];
+          console.error("Error inserting IFTA records:", insertError);
+          throw insertError;
+        }
+        
+        insertedData = data || [];
+        console.log(`Successfully inserted ${insertedData.length} IFTA records`);
+      } catch (insertErr) {
+        // Handle PostgreSQL unique constraint violation
+        if (insertErr.code === '23505' || 
+            (insertErr.message && insertErr.message.includes('duplicate key value violates unique constraint'))) {
+          console.log(`Caught duplicate key error for trip ${tripId}`);
+          return {
+            success: true,
+            importedCount: 0,
+            totalMiles: 0,
+            alreadyImported: true,
+            message: "This trip has already been imported to IFTA."
+          };
+        }
+        
+        console.error("Exception during IFTA record insertion:", insertErr);
+        throw new Error(`Failed to insert IFTA records: ${insertErr.message}`);
+      }
     }
+    
+    // Calculate total miles for reporting
+    const totalMiles = stateMileage.reduce((sum, state) => sum + state.miles, 0);
     
     return {
       success: true,
       importedCount: tripRecords.length,
-      totalMiles: newStatesToImport.reduce((sum, state) => sum + state.miles, 0),
-      states: newStatesToImport.map(state => state.state),
-      createdRecords: insertedData,
-      partialImport: existingImports && existingImports.length > 0
+      totalMiles: totalMiles,
+      states: stateMileage.map(state => state.state),
+      createdRecords: insertedData
     };
   } catch (error) {
+    // Handle PostgreSQL unique constraint violation at the outer level too
+    if (error.code === '23505' || 
+        (error.message && error.message.includes('duplicate key value violates unique constraint'))) {
+      console.log(`Caught duplicate key error at outer level for trip ${tripId}`);
+      return {
+        success: true,
+        importedCount: 0,
+        totalMiles: 0,
+        alreadyImported: true,
+        message: "This trip has already been imported to IFTA."
+      };
+    }
+    
     console.error('Error importing mileage trip to IFTA:', error);
     return {
       success: false,
