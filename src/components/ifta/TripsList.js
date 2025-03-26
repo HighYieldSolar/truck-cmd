@@ -19,7 +19,8 @@ import {
   ArrowDown,
   ArrowUp,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Info
 } from "lucide-react";
 import Link from "next/link";
 
@@ -189,133 +190,200 @@ export default function TripsList({
     return jurisdictionCode || '—';
   };
 
-  return (
-    <div>
-      {/* Filters */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex flex-col space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search input */}
-            <div className="flex-1 relative">
-              <label htmlFor="search-filter" className="sr-only">Search</label>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-gray-400" />
-              </div>
-              <input
-                id="search-filter"
-                type="text"
-                placeholder="Search trips..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              />
-            </div>
-            
-            {/* Data source filter */}
-            <div className="md:w-48">
-              <label htmlFor="source-filter" className="sr-only">Data Source</label>
-              <div className="relative">
-                <select
-                  id="source-filter"
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={filters.source}
-                  onChange={(e) => setFilters({ ...filters, source: e.target.value })}
-                >
-                  <option value="all">All Sources</option>
-                  <option value="mileage">State Mileage</option>
-                  <option value="load">Load Import</option>
-                  <option value="manual">Manual Entry</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                  <Filter size={16} className="text-gray-400" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Toggle advanced filters button */}
-            <button
-              type="button"
-              onClick={() => setExpandedFilters(!expandedFilters)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-            >
-              <Filter size={16} className="mr-1.5" />
-              {expandedFilters ? 'Hide Filters' : 'More Filters'}
-              <ChevronDown size={16} className={`ml-1 transform transition-transform ${expandedFilters ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {/* Reset filters */}
-            <button
-              type="button"
-              onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", source: "all" })}
-              className="md:w-24 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-            >
-              Reset
-            </button>
-          </div>
-          
-          {/* Advanced filters (expandable) */}
-          {expandedFilters && (
-            <div className="flex flex-col md:flex-row gap-4 pt-3 border-t border-gray-200">
-              {/* Jurisdiction filter */}
-              {uniqueJurisdictions.length > 0 && (
-                <div className="md:w-48">
-                  <label htmlFor="jurisdiction-filter" className="sr-only">Jurisdiction</label>
-                  <div className="relative">
-                    <select
-                      id="jurisdiction-filter"
-                      className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      value={filters.jurisdiction}
-                      onChange={(e) => setFilters({ ...filters, jurisdiction: e.target.value })}
-                    >
-                      <option value="">All Jurisdictions</option>
-                      {uniqueJurisdictions.map((jurisdiction) => (
-                        <option key={jurisdiction} value={jurisdiction}>{formatJurisdiction(jurisdiction)}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <MapPin size={16} className="text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Vehicle filter */}
-              {uniqueVehicles.length > 0 && (
-                <div className="md:w-48">
-                  <label htmlFor="vehicle-filter" className="sr-only">Vehicle</label>
-                  <div className="relative">
-                    <select
-                      id="vehicle-filter"
-                      className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      value={filters.vehicle}
-                      onChange={(e) => setFilters({ ...filters, vehicle: e.target.value })}
-                    >
-                      <option value="">All Vehicles</option>
-                      {uniqueVehicles.map((vehicle) => (
-                        <option key={vehicle} value={vehicle}>{vehicle}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <Truck size={16} className="text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+  // Empty State Component
+  const EmptyState = ({ filtered = false }) => (
+    <div className="bg-white rounded-lg shadow py-10 px-6 text-center">
+      <div className="mx-auto mb-4 flex justify-center">
+        <div className="rounded-full bg-gray-100 p-4">
+          {filtered ? (
+            <Filter size={32} className="text-gray-400" />
+          ) : (
+            <Truck size={32} className="text-gray-400" />
           )}
         </div>
       </div>
+      <h3 className="text-lg font-medium text-gray-900 mb-2">
+        {filtered ? "No matching trips found" : "No trips recorded yet"}
+      </h3>
+      <p className="text-gray-500 max-w-md mx-auto mb-6">
+        {filtered 
+          ? "Try adjusting your filters or search criteria to see more results."
+          : "Start by adding trips manually or import data from your state mileage tracker or loads."}
+      </p>
       
-      <div className="overflow-x-auto">
-        {trips.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500">No trips recorded yet. Add a trip using the form above.</p>
+      {filtered && (
+        <button
+          onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", source: "all" })}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <Filter size={16} className="mr-2" />
+          Clear Filters
+        </button>
+      )}
+      
+      {!filtered && (
+        <div className="flex flex-col items-center">
+          <div className="flex gap-2">
+            <div className="inline-flex items-center text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-200">
+              <MapPin size={12} className="mr-1" />
+              State Mileage
+            </div>
+            <div className="inline-flex items-center text-xs bg-green-50 text-green-600 px-2 py-1 rounded border border-green-200">
+              <Truck size={12} className="mr-1" />
+              From Load
+            </div>
+            <div className="inline-flex items-center text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded border border-purple-200">
+              <Plus size={12} className="mr-1" />
+              Manual Entry
+            </div>
           </div>
-        ) : sortedAndFilteredTrips.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-gray-500">No trips match your filters. Try adjusting your search criteria.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            IFTA tracks data from multiple sources to ensure accurate reporting
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-lg font-medium text-gray-900 flex items-center">
+          <Truck size={20} className="text-blue-600 mr-2" />
+          IFTA Trip Records
+        </h3>
+        {trips.length > 0 && (
+          <span className="text-sm text-gray-500">{trips.length} trip{trips.length !== 1 ? 's' : ''} recorded</span>
+        )}
+      </div>
+      
+      {trips.length > 0 && (
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Search input */}
+              <div className="flex-1 relative">
+                <label htmlFor="search-filter" className="sr-only">Search</label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={16} className="text-gray-400" />
+                </div>
+                <input
+                  id="search-filter"
+                  type="text"
+                  placeholder="Search trips..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                />
+              </div>
+              
+              {/* Data source filter */}
+              <div className="md:w-48">
+                <label htmlFor="source-filter" className="sr-only">Data Source</label>
+                <div className="relative">
+                  <select
+                    id="source-filter"
+                    className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value={filters.source}
+                    onChange={(e) => setFilters({ ...filters, source: e.target.value })}
+                  >
+                    <option value="all">All Sources</option>
+                    <option value="mileage">State Mileage</option>
+                    <option value="load">Load Import</option>
+                    <option value="manual">Manual Entry</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <Filter size={16} className="text-gray-400" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Toggle advanced filters button */}
+              <button
+                type="button"
+                onClick={() => setExpandedFilters(!expandedFilters)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+              >
+                <Filter size={16} className="mr-1.5" />
+                {expandedFilters ? 'Hide Filters' : 'More Filters'}
+                <ChevronDown size={16} className={`ml-1 transform transition-transform ${expandedFilters ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Reset filters */}
+              <button
+                type="button"
+                onClick={() => setFilters({ search: "", jurisdiction: "", vehicle: "", source: "all" })}
+                className="md:w-24 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+              >
+                Reset
+              </button>
+            </div>
+            
+            {/* Advanced filters (expandable) */}
+            {expandedFilters && (
+              <div className="flex flex-col md:flex-row gap-4 pt-3 border-t border-gray-200">
+                {/* Jurisdiction filter */}
+                {uniqueJurisdictions.length > 0 && (
+                  <div className="md:w-48">
+                    <label htmlFor="jurisdiction-filter" className="sr-only">Jurisdiction</label>
+                    <div className="relative">
+                      <select
+                        id="jurisdiction-filter"
+                        className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        value={filters.jurisdiction}
+                        onChange={(e) => setFilters({ ...filters, jurisdiction: e.target.value })}
+                      >
+                        <option value="">All Jurisdictions</option>
+                        {uniqueJurisdictions.map((jurisdiction) => (
+                          <option key={jurisdiction} value={jurisdiction}>{formatJurisdiction(jurisdiction)}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <MapPin size={16} className="text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Vehicle filter */}
+                {uniqueVehicles.length > 0 && (
+                  <div className="md:w-48">
+                    <label htmlFor="vehicle-filter" className="sr-only">Vehicle</label>
+                    <div className="relative">
+                      <select
+                        id="vehicle-filter"
+                        className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        value={filters.vehicle}
+                        onChange={(e) => setFilters({ ...filters, vehicle: e.target.value })}
+                      >
+                        <option value="">All Vehicles</option>
+                        {uniqueVehicles.map((vehicle) => (
+                          <option key={vehicle} value={vehicle}>{vehicle}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <Truck size={16} className="text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        ) : (
+        </div>
+      )}
+      
+      {isLoading ? (
+        <div className="px-6 py-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading trip records...</p>
+        </div>
+      ) : trips.length === 0 ? (
+        <EmptyState filtered={false} />
+      ) : sortedAndFilteredTrips.length === 0 ? (
+        <EmptyState filtered={true} />
+      ) : (
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -486,8 +554,19 @@ export default function TripsList({
               </tr>
             </tfoot>
           </table>
-        )}
-      </div>
+        </div>
+      )}
+      
+      {trips.length > 0 && (
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500 flex items-center">
+              <Info size={12} className="mr-1 text-blue-500" />
+              Trip records are used to calculate your IFTA tax liability by jurisdiction
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
