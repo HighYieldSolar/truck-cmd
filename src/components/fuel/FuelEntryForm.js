@@ -3,10 +3,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, Fuel, MapPin, Truck, DollarSign, Info, Maximize2, Calendar, CreditCard } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard } from "lucide-react";
 import { getUSStates } from "@/lib/services/fuelService";
 
-// Basic implementation - without importing the new VehicleSelector yet
+// Import the VehicleSelector component
+import VehicleSelector from "@/components/fuel/VehicleSelector";
+
 export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -356,7 +358,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                 />
                 {errors.location && touched.location && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
-<AlertCircle size={12} className="mr-1" />
+                    <AlertCircle size={12} className="mr-1" />
                     {errors.location}
                   </p>
                 )}
@@ -467,42 +469,15 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                 </button>
               </div>
               
+              {/* Use the enhanced VehicleSelector component instead of basic select/input */}
               <div>
-                <label htmlFor="vehicle_id" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Truck size={16} className="text-gray-400 mr-1" /> Vehicle ID *
-                </label>
-                {vehicles.length > 0 ? (
-                  <select
-                    id="vehicle_id"
-                    name="vehicle_id"
-                    value={formData.vehicle_id}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`w-full px-3 py-2 border ${
-                      errors.vehicle_id && touched.vehicle_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } rounded-md shadow-sm text-sm`}
-                    required
-                  >
-                    <option value="">Select Vehicle</option>
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle} value={vehicle}>{vehicle}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    id="vehicle_id"
-                    name="vehicle_id"
-                    placeholder="E.g., Truck-101"
-                    value={formData.vehicle_id}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`w-full px-3 py-2 border ${
-                      errors.vehicle_id && touched.vehicle_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } rounded-md shadow-sm text-sm`}
-                    required
-                  />
-                )}
+                <VehicleSelector
+                  selectedVehicleId={formData.vehicle_id}
+                  onChange={handleChange}
+                  required={true}
+                  disabled={isSubmitting}
+                  className="w-full"
+                />
                 {errors.vehicle_id && touched.vehicle_id && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
                     <AlertCircle size={12} className="mr-1" />

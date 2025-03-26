@@ -1,4 +1,4 @@
-// src/hooks/useFuel.js - Fixed version with proper error handling
+// src/hooks/useFuel.js
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
@@ -28,7 +28,7 @@ export default function useFuel(userId) {
   // Track entries that are already synced to expenses
   const [syncedEntries, setSyncedEntries] = useState({});
 
-  // Fetch all fuel entries
+  // Fetch all fuel entries with enhanced vehicle info
   const loadFuelEntries = useCallback(async (filters = {}) => {
     try {
       setLoading(true);
@@ -42,6 +42,50 @@ export default function useFuel(userId) {
         }
       });
       setSyncedEntries(synced);
+      
+      // Attempt to enhance data with vehicle info
+      if (data && data.length > 0) {
+        const vehicleIds = data.map(entry => entry.vehicle_id).filter(Boolean);
+        
+        if (vehicleIds.length > 0) {
+          // First try vehicles table
+          const { data: vehicles } = await supabase
+            .from('vehicles')
+            .select('id, name, license_plate')
+            .in('id', vehicleIds);
+            
+          // Then try trucks table
+          const { data: trucks } = await supabase
+            .from('trucks')
+            .select('id, name, license_plate')
+            .in('id', vehicleIds);
+          
+          // Combine results
+          const vehicleMap = {};
+          
+          if (vehicles && vehicles.length > 0) {
+            vehicles.forEach(vehicle => {
+              vehicleMap[vehicle.id] = vehicle;
+            });
+          }
+          
+          if (trucks && trucks.length > 0) {
+            trucks.forEach(truck => {
+              if (!vehicleMap[truck.id]) {
+                vehicleMap[truck.id] = truck;
+              }
+            });
+          }
+          
+          // Attach vehicle info to entries
+          data.forEach(entry => {
+            if (entry.vehicle_id && vehicleMap[entry.vehicle_id]) {
+              entry.vehicle_name = vehicleMap[entry.vehicle_id].name;
+              entry.vehicle_license_plate = vehicleMap[entry.vehicle_id].license_plate;
+            }
+          });
+        }
+      }
       
       setFuelEntries(data);
       return data;

@@ -511,19 +511,18 @@ export default function FuelTrackerPage() {
         </div>
       </main>
 
-      {/* Modals */}
-      <FuelEntryForm 
-        isOpen={formModalOpen}
-        onClose={() => {
-          setFormModalOpen(false);
-          setCurrentFuelEntry(null);
-        }}
-        fuelEntry={currentFuelEntry}
-        onSave={handleSaveFuelEntry}
-        isSubmitting={loading}
-        // Pass vehicles array as-is - our new VehicleSelector component will handle this 
-        vehicles={vehicles}
-      />
+{/* Modals */}
+<FuelEntryForm 
+  isOpen={formModalOpen}
+  onClose={() => {
+    setFormModalOpen(false);
+    setCurrentFuelEntry(null);
+  }}
+  fuelEntry={currentFuelEntry}
+  onSave={handleSaveFuelEntry}
+  isSubmitting={loading}
+  vehicles={vehicles} // This is still needed but only for compatibility
+/>
       
       <ReceiptViewerModal
         isOpen={receiptViewerOpen}

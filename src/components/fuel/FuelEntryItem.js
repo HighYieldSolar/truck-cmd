@@ -1,11 +1,47 @@
-// src/components/fuel/FuelEntryItem.js - with IFTA integration
+// src/components/fuel/FuelEntryItem.js
 import { useState } from "react";
 import { CheckCircle, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink, Calculator } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
+import { useEffect } from "react";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   // Add state for IFTA link status
   const [iftaLinkHovered, setIftaLinkHovered] = useState(false);
+  const [vehicleInfo, setVehicleInfo] = useState(null);
+  
+  // Fetch vehicle info if we only have the ID
+  useEffect(() => {
+    async function fetchVehicleInfo() {
+      if (!fuelEntry.vehicle_id) return;
+      
+      // First check vehicles table
+      let { data: vehicle, error } = await supabase
+        .from('vehicles')
+        .select('id, name, license_plate')
+        .eq('id', fuelEntry.vehicle_id)
+        .single();
+        
+      // If not found, check trucks table
+      if (error || !vehicle) {
+        const { data: truck, error: truckError } = await supabase
+          .from('trucks')
+          .select('id, name, license_plate')
+          .eq('id', fuelEntry.vehicle_id)
+          .single();
+          
+        if (!truckError && truck) {
+          vehicle = truck;
+        }
+      }
+      
+      if (vehicle) {
+        setVehicleInfo(vehicle);
+      }
+    }
+    
+    fetchVehicleInfo();
+  }, [fuelEntry.vehicle_id]);
   
   // Format price to 3 decimal places
   const formatPrice = (price) => {
@@ -37,6 +73,33 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
   
   // Create IFTA quarter parameter for linking to IFTA page
   const iftaQuarter = getQuarterString(fuelEntry.date);
+
+  // Helper function to format vehicle display
+  const formatVehicleDisplay = () => {
+    if (vehicleInfo) {
+      if (vehicleInfo.name && vehicleInfo.license_plate) {
+        return (
+          <>
+            <div className="text-sm font-medium text-gray-900">{vehicleInfo.name}</div>
+            <div className="text-xs text-gray-500">{vehicleInfo.license_plate}</div>
+          </>
+        );
+      } else if (vehicleInfo.name) {
+        return <div className="text-sm font-medium text-gray-900">{vehicleInfo.name}</div>;
+      } else if (vehicleInfo.license_plate) {
+        return <div className="text-sm font-medium text-gray-900">{vehicleInfo.license_plate}</div>;
+      }
+    }
+    
+    // Fallback to just showing the ID (shortened)
+    const shortId = fuelEntry.vehicle_id ? 
+      (fuelEntry.vehicle_id.length > 8 ? 
+        `${fuelEntry.vehicle_id.substring(0, 8)}...` : 
+        fuelEntry.vehicle_id) : 
+      'N/A';
+      
+    return <div className="text-sm font-medium text-gray-500">{shortId}</div>;
+  };
   
   return (
     <tr className="hover:bg-gray-50">
@@ -90,12 +153,14 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
       </td>
       
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900 flex items-center">
-          <Truck size={14} className="text-gray-400 mr-1" />
-          {fuelEntry.vehicle_id}
+        <div className="flex items-center">
+          <Truck size={14} className="text-gray-400 mr-2 flex-shrink-0" />
+          <div>
+            {formatVehicleDisplay()}
+          </div>
         </div>
         {fuelEntry.odometer && (
-          <div className="text-sm text-gray-500">{fuelEntry.odometer.toLocaleString()} mi</div>
+          <div className="text-sm text-gray-500 ml-6">{fuelEntry.odometer.toLocaleString()} mi</div>
         )}
       </td>
       
