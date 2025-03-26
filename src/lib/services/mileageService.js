@@ -119,11 +119,13 @@ export async function deleteStateCrossing(crossingId) {
 
 /**
  * Complete a trip
+ * FIX: Removed auto-import to IFTA to make it a manual process
  * @param {string} tripId - Trip ID
  * @returns {Promise<boolean>} - Success status
  */
 export async function completeTrip(tripId) {
   try {
+    // Just mark the trip as completed, don't auto-import to IFTA
     const { error } = await supabase
       .from('driver_mileage_trips')
       .update({
@@ -134,6 +136,9 @@ export async function completeTrip(tripId) {
       .eq('id', tripId);
       
     if (error) throw error;
+    
+    // FIX: No longer auto-importing to IFTA when completing a trip
+    // Remove or comment out any code that would trigger IFTA import
     
     return true;
   } catch (error) {

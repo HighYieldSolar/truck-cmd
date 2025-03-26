@@ -41,32 +41,38 @@ import EnhancedExportModal from "@/components/ifta/EnhancedExportModal";
 import dynamic from 'next/dynamic';
 
 // Dynamically import the DashboardLayout component to ensure it's fully loaded
-const DashboardLayout = dynamic(() => import('@/components/layout/DashboardLayout'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  )
-});
+const DashboardLayout = dynamic(
+  () => import('@/components/layout/DashboardLayout').then(mod => mod.default), 
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+);
 
 // Dynamically import the StateMileageImporter component
-const StateMileageImporter = dynamic(() => import('@/components/ifta/StateMileageImporter'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-4 bg-white shadow rounded-lg mb-6">
-      <div className="animate-pulse flex space-x-4">
-        <div className="flex-1 space-y-4 py-1">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+const StateMileageImporter = dynamic(
+  () => import('@/components/ifta/StateMileageImporter').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 bg-white shadow rounded-lg mb-6">
+        <div className="animate-pulse flex space-x-4">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
 
 // Dynamically import the LoadToIFTAImporter component
 const LoadToIFTAImporter = dynamic(() => import('@/components/ifta/LoadToIFTAImporter'), {

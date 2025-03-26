@@ -1,4 +1,4 @@
-// src/lib/services/iftaMileageService.js
+// src/lib/services/iftaMileageService.js - Compatible version
 import { supabase } from "../supabaseClient";
 
 /**
@@ -128,6 +128,7 @@ export async function getStateMileageForTrip(tripId) {
 
 /**
  * Import state mileage trip into IFTA records
+ * Modified to work with existing schema (no auto_imported column)
  * @param {string} userId - User ID
  * @param {string} quarter - Quarter string (e.g., "2023-Q1")
  * @param {string} tripId - Mileage trip ID to import
@@ -226,6 +227,7 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       updated_at: new Date().toISOString(),
       is_imported: true,
       source: 'mileage_tracker'
+      // Removed the auto_imported field that was causing issues
     }));
     
     console.log(`Prepared ${tripRecords.length} IFTA records for insertion`);

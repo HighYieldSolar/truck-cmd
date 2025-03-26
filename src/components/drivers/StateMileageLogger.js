@@ -788,7 +788,7 @@ const handleDeleteCrossing = async (index) => {
   }
 };
 
-// End a trip
+// Handle ending a trip - the fixed version
 const handleEndTrip = async () => {
   if (!selectedTrip) return;
   
@@ -824,8 +824,8 @@ const handleEndTrip = async () => {
       loading: false
     });
     
-    setSuccess('Trip completed successfully!');
-    setTimeout(() => setSuccess(null), 3000);
+    setSuccess('Trip completed successfully! You can now manually import it to your IFTA calculator.');
+    setTimeout(() => setSuccess(null), 5000);
     
   } catch (error) {
     console.error('Error ending trip:', error);
