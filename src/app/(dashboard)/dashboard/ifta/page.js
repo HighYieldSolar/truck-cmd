@@ -31,7 +31,6 @@ import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
 // Import components directly without dynamic loading
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import StateMileageImporter from "@/components/ifta/StateMileageImporter";
-import LoadToIFTAImporter from "@/components/ifta/LoadToIFTAImporter";
 import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
 import EnhancedIFTASummary from "@/components/ifta/EnhancedIFTASummary";
 import EnhancedTripEntryForm from "@/components/ifta/EnhancedTripEntryForm";
@@ -45,7 +44,6 @@ import EnhancedExportModal from "@/components/ifta/EnhancedExportModal";
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
 import { saveIFTAReport } from "@/lib/services/iftaService";
-import { getLoadToIftaStats } from "@/lib/services/loadIftaService";
 import { getMileageToIftaStats } from "@/lib/services/iftaMileageService";
 
 // Loading placeholder component for conditional rendering
@@ -100,10 +98,6 @@ export default function IFTACalculatorPage() {
   
   // Consolidated data loading state
   const [dataLoaded, setDataLoaded] = useState(false);
-  
-  // State for load integration
-  const [loadImportStats, setLoadImportStats] = useState(null);
-  const [showLoadImporter, setShowLoadImporter] = useState(false);
   
   // State for mileage integration
   const [mileageImportStats, setMileageImportStats] = useState(null);
@@ -242,18 +236,6 @@ export default function IFTACalculatorPage() {
       
       // Calculate summary statistics
       calculateStats(data || [], currentFuelData || []);
-      
-      // Get load import statistics
-      try {
-        const loadStats = await getLoadToIftaStats(user.id, activeQuarter);
-        setLoadImportStats(loadStats);
-        
-        // Only show load importer if there are available loads
-        setShowLoadImporter(loadStats.available > 0);
-      } catch (err) {
-        console.error("Error getting load import stats:", err);
-        // Don't block the main functionality if this fails
-      }
       
       // Get mileage import statistics
       try {
@@ -617,20 +599,6 @@ export default function IFTACalculatorPage() {
               </div>
             )}
 
-            {/* Load to IFTA Importer - Show only if we have available loads */}
-            {!databaseError && showLoadImporter && (
-              <div className="mb-6">
-                {loading ? <LoadingPlaceholder /> : (
-                  <LoadToIFTAImporter 
-                    userId={user?.id} 
-                    quarter={activeQuarter} 
-                    onImportComplete={handleImportComplete}
-                    existingTrips={trips}
-                  />
-                )}
-              </div>
-            )}
-
             {/* IFTA-Fuel Sync */}
             {!databaseError && (
               <div className="mb-6">
@@ -677,13 +645,13 @@ export default function IFTACalculatorPage() {
             </div>
 
             {/* Trips List */}
-            <div className="mb-6">
-              <TripsList 
-                trips={trips} 
-                onRemoveTrip={handleDeleteTrip} 
-                isLoading={loading}
-                showSourceBadges={true}
-              />
+            <div className="mb-6 max-h-[800px] overflow-auto">
+             <TripsList 
+             trips={trips} 
+             onRemoveTrip={handleDeleteTrip} 
+             isLoading={loading}
+             showSourceBadges={true}
+             />
             </div>
           </div>
         </main>

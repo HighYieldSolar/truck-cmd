@@ -27,7 +27,7 @@ export default function StateMileageImporter({
   quarter,
   onImportComplete,
   isCollapsible = true,
-  showImportedTrips = true
+  showImportedTrips: initialShowImportedTrips = true
 }) {
   // Component state
   const [mileageTrips, setMileageTrips] = useState([]);
@@ -41,6 +41,8 @@ export default function StateMileageImporter({
   const [collapsed, setCollapsed] = useState(false);
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
   const [vehicleDetails, setVehicleDetails] = useState({});
+  // Create an internal state for showImportedTrips
+  const [showImportedTrips, setShowImportedTrips] = useState(initialShowImportedTrips);
 
   // Get mileage trips that can be imported to IFTA
   const getImportableMileageTrips = useCallback(async (userId, quarter) => {
@@ -909,4 +911,4 @@ export default function StateMileageImporter({
       )}
     </div>
   );
-}
+};
