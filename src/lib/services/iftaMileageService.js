@@ -183,22 +183,26 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
     }
     
     // IMPORTANT: First check if this trip has already been imported
-    // This will help us catch any potential duplicates before we try to insert
-    const { data: existingImports, error: checkError } = await supabase
+    // Changed to use count instead of returning array to avoid timing issues
+    const { count, error: checkError } = await supabase
       .from('ifta_trip_records')
-      .select('id, start_jurisdiction')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('quarter', quarter)
       .eq('mileage_trip_id', tripId);
       
     if (checkError) {
       console.error("Error checking existing imports:", checkError);
+      // Handle table doesn't exist case
+      if (checkError.code === '42P01') {
+        throw new Error("IFTA trip records table not found. Please contact support.");
+      }
       throw checkError;
     }
     
     // If we found existing imports, return early with "already imported" status
-    if (existingImports && existingImports.length > 0) {
-      console.log(`Trip ${tripId} already has ${existingImports.length} imported records`);
+    if (count > 0) {
+      console.log(`Trip ${tripId} already has ${count} imported records`);
       return {
         success: true,
         importedCount: 0,
@@ -227,7 +231,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       updated_at: new Date().toISOString(),
       is_imported: true,
       source: 'mileage_tracker'
-      // Removed the auto_imported field that was causing issues
     }));
     
     console.log(`Prepared ${tripRecords.length} IFTA records for insertion`);
