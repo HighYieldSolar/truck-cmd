@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import { 
   Trash2, 
   Download, 
@@ -63,54 +62,6 @@ export default function TripsList({
   const uniqueJurisdictions = getUniqueValues('jurisdiction');
   const uniqueVehicles = getUniqueValues('vehicle');
 
-  // Load vehicle details on component mount
-  useEffect(() => {
-    const loadVehicleDetails = async () => {
-      if (!trips || trips.length === 0) return;
-      
-      try {
-        // Get unique vehicle IDs from trips
-        const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
-        
-        if (vehicleIds.length === 0) return;
-        
-        // Try to get vehicle details from the vehicles table
-        let { data: vehiclesData, error: vehiclesError } = await supabase
-          .from('vehicles')
-          .select('id, name, license_plate')
-          .in('id', vehicleIds);
-        
-        // If no results or error, try the trucks table
-        if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
-          const { data: trucksData, error: trucksError } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .in('id', vehicleIds);
-            
-          if (!trucksError && trucksData && trucksData.length > 0) {
-            vehiclesData = trucksData;
-          }
-        }
-        
-        // Store vehicle details in state
-        if (vehiclesData && vehiclesData.length > 0) {
-          const vehicleMap = {};
-          vehiclesData.forEach(vehicle => {
-            vehicleMap[vehicle.id] = {
-              name: vehicle.name || vehicle.id,
-              licensePlate: vehicle.license_plate || ''
-            };
-          });
-          setVehicleDetails(vehicleMap);
-        }
-      } catch (error) {
-        console.error("Error loading vehicle details:", error);
-      }
-    };
-    
-    loadVehicleDetails();
-  }, [trips]);
-
   // Format vehicle display with name and plate if available
   const formatVehicleDisplay = (vehicleId) => {
     if (!vehicleId) return 'Unknown';
@@ -134,67 +85,113 @@ export default function TripsList({
 
   // Sort and filter trips
   const getSortedAndFilteredTrips = () => {
-    // Apply filters first
-    let filteredTrips = trips.filter(trip => {
-      // Search filter
-      if (filters.search && !Object.values(trip).some(value => 
-        String(value).toLowerCase().includes(filters.search.toLowerCase())
-      )) {
-        return false;
-      }
-      
-      // Jurisdiction filter
-      if (filters.jurisdiction && 
-        !(trip.start_jurisdiction === filters.jurisdiction || 
-          trip.end_jurisdiction === filters.jurisdiction)) {
-        return false;
-      }
-      
-      // Vehicle filter
-      if (filters.vehicle && trip.vehicle_id !== filters.vehicle) {
-        return false;
-      }
-      
-      // Source filter
-      if (filters.source === 'mileage' && !trip.mileage_trip_id) {
-        return false;
-      } else if (filters.source === 'load' && !trip.load_id) {
-        return false;
-      } else if (filters.source === 'manual' && (trip.load_id || trip.mileage_trip_id)) {
-        return false;
-      }
-      
-      return true;
-    });
+    // Defensive check to ensure trips is an array
+    if (!Array.isArray(trips)) {
+      console.error("Trips is not an array:", trips);
+      return [];
+    }
     
-    // Then sort
-    return filteredTrips.sort((a, b) => {
-      // Special case for numeric values
-      if (['total_miles', 'gallons', 'fuel_cost'].includes(sortConfig.key)) {
-        if (sortConfig.direction === 'asc') {
-          return parseFloat(a[sortConfig.key] || 0) - parseFloat(b[sortConfig.key] || 0);
-        } else {
-          return parseFloat(b[sortConfig.key] || 0) - parseFloat(a[sortConfig.key] || 0);
+    try {
+      // Apply filters first
+      let filteredTrips = trips.filter(trip => {
+        // Handle null/undefined trip values
+        if (!trip) return false;
+        
+        // Search filter - safely access properties
+        if (filters.search && !Object.entries(trip).some(([key, value]) => 
+          value !== null && 
+          value !== undefined && 
+          String(value).toLowerCase().includes(filters.search.toLowerCase())
+        )) {
+          return false;
         }
-      }
-      
-      // Default string sort
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
+        
+        // Jurisdiction filter - account for null values
+        if (filters.jurisdiction && 
+          !((trip.start_jurisdiction && trip.start_jurisdiction === filters.jurisdiction) || 
+            (trip.end_jurisdiction && trip.end_jurisdiction === filters.jurisdiction))) {
+          return false;
+        }
+        
+        // Vehicle filter - account for null values
+        if (filters.vehicle && trip.vehicle_id !== filters.vehicle) {
+          return false;
+        }
+        
+        // Source filter
+        if (filters.source === 'mileage' && !trip.mileage_trip_id) {
+          return false;
+        } else if (filters.source === 'load' && !trip.load_id) {
+          return false;
+        } else if (filters.source === 'manual' && (trip.load_id || trip.mileage_trip_id)) {
+          return false;
+        }
+        
+        return true;
+      });
+
+      // Then sort - handle potential null/undefined values safely
+      return filteredTrips.sort((a, b) => {
+        // Default values if null/undefined
+        const aValue = a[sortConfig.key] !== undefined && a[sortConfig.key] !== null 
+          ? a[sortConfig.key] 
+          : '';
+        const bValue = b[sortConfig.key] !== undefined && b[sortConfig.key] !== null 
+          ? b[sortConfig.key] 
+          : '';
+        
+        // Special case for numeric values
+        if (['total_miles', 'gallons', 'fuel_cost'].includes(sortConfig.key)) {
+          const aNum = parseFloat(aValue) || 0;
+          const bNum = parseFloat(bValue) || 0;
+          
+          return sortConfig.direction === 'asc'
+            ? aNum - bNum
+            : bNum - aNum;
+        }
+        
+        // Default string sort with nullish handling
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    } catch (error) {
+      console.error("Error in sorting/filtering trips:", error);
+      return [];
+    }
   };
 
-  const sortedAndFilteredTrips = getSortedAndFilteredTrips();
+  // Safely get the sorted and filtered trips - error handling wrapper
+  const safeGetSortedAndFilteredTrips = () => {
+    try {
+      return getSortedAndFilteredTrips();
+    } catch (error) {
+      console.error("Error getting sorted and filtered trips:", error);
+      return [];
+    }
+  };
+
+  const sortedAndFilteredTrips = safeGetSortedAndFilteredTrips();
   
-  // Calculate totals
-  const totalMiles = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0);
-  const totalGallons = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0);
-  const totalFuelCost = sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.fuel_cost || 0), 0);
+  // Calculate totals with error handling
+  const calculateTotals = () => {
+    try {
+      return {
+        totalMiles: sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0),
+        totalGallons: sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0),
+        totalFuelCost: sortedAndFilteredTrips.reduce((sum, trip) => sum + parseFloat(trip.fuel_cost || 0), 0)
+      };
+    } catch (error) {
+      console.error("Error calculating totals:", error);
+      return { totalMiles: 0, totalGallons: 0, totalFuelCost: 0 };
+    }
+  };
+
+  const { totalMiles, totalGallons, totalFuelCost } = calculateTotals();
 
   // Get sort icon
   const getSortIcon = (key) => {
@@ -211,6 +208,8 @@ export default function TripsList({
 
   // Get source badge component
   const SourceBadge = ({ trip }) => {
+    if (!trip) return null;
+    
     if (trip.mileage_trip_id) {
       return (
         <Link 
@@ -312,12 +311,12 @@ export default function TripsList({
           <Truck size={20} className="text-blue-600 mr-2" />
           IFTA Trip Records
         </h3>
-        {trips.length > 0 && (
+        {trips && trips.length > 0 && (
           <span className="text-sm text-gray-500">{trips.length} trip{trips.length !== 1 ? 's' : ''} recorded</span>
         )}
       </div>
       
-      {trips.length > 0 && (
+      {trips && trips.length > 0 && (
         <div className="p-4 border-b border-gray-200 bg-gray-50">
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
@@ -440,7 +439,7 @@ export default function TripsList({
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-500">Loading trip records...</p>
         </div>
-      ) : trips.length === 0 ? (
+      ) : !trips || trips.length === 0 ? (
         <EmptyState filtered={false} />
       ) : sortedAndFilteredTrips.length === 0 ? (
         <EmptyState filtered={true} />
@@ -518,67 +517,72 @@ export default function TripsList({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedAndFilteredTrips.map((trip) => (
-                <tr key={trip.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {trip.start_date}
-                    {trip.end_date && trip.end_date !== trip.start_date && 
-                      <span className="text-xs text-gray-500 ml-1">to {trip.end_date}</span>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                    {formatVehicleDisplay(trip.vehicle_id)}
-                    {trip.driver_id && <div className="text-xs text-gray-400">Driver: {trip.driver_id}</div>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        {formatJurisdiction(trip.start_jurisdiction)}
-                      </span>
-                      <span className="mx-2">→</span>
-                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        {formatJurisdiction(trip.end_jurisdiction)}
-                      </span>
-                    </div>
-                    {/* Show load reference if it exists */}
-                    {trip.load_id && trip.notes && trip.notes.includes('Load #') && (
-                      <div className="text-xs text-gray-400 mt-1">{trip.notes.split(':')[0]}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseFloat(trip.total_miles || 0).toLocaleString()} mi
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseFloat(trip.gallons || 0).toLocaleString()} gal
-                    {trip.gallons === 0 && (
-                      <div className="text-xs text-amber-500 flex items-center mt-1">
-                        <AlertTriangle size={10} className="mr-1" />
-                        Needs update
+              {sortedAndFilteredTrips.map((trip) => {
+                // Skip rendering if trip is null or undefined
+                if (!trip) return null;
+                
+                return (
+                  <tr key={trip.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {trip.start_date}
+                      {trip.end_date && trip.end_date !== trip.start_date && 
+                        <span className="text-xs text-gray-500 ml-1">to {trip.end_date}</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                      {formatVehicleDisplay(trip.vehicle_id)}
+                      {trip.driver_id && <div className="text-xs text-gray-400">Driver: {trip.driver_id}</div>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                          {formatJurisdiction(trip.start_jurisdiction)}
+                        </span>
+                        <span className="mx-2">→</span>
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                          {formatJurisdiction(trip.end_jurisdiction)}
+                        </span>
                       </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    {trip.fuel_cost === 0 && (
-                      <div className="text-xs text-amber-500 flex items-center mt-1">
-                        <AlertTriangle size={10} className="mr-1" />
-                        Needs update
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {showSourceBadges && <SourceBadge trip={trip} />}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => onRemoveTrip(trip)}
-                      className="text-red-600 hover:text-red-900 focus:outline-none"
-                      title="Delete Trip"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {/* Show load reference if it exists */}
+                      {trip.load_id && trip.notes && trip.notes.includes('Load #') && (
+                        <div className="text-xs text-gray-400 mt-1">{trip.notes.split(':')[0]}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {parseFloat(trip.total_miles || 0).toLocaleString()} mi
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {parseFloat(trip.gallons || 0).toLocaleString()} gal
+                      {trip.gallons === 0 && (
+                        <div className="text-xs text-amber-500 flex items-center mt-1">
+                          <AlertTriangle size={10} className="mr-1" />
+                          Needs update
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {trip.fuel_cost === 0 && (
+                        <div className="text-xs text-amber-500 flex items-center mt-1">
+                          <AlertTriangle size={10} className="mr-1" />
+                          Needs update
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {showSourceBadges && <SourceBadge trip={trip} />}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => trip && onRemoveTrip && onRemoveTrip(trip)}
+                        className="text-red-600 hover:text-red-900 focus:outline-none"
+                        title="Delete Trip"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
@@ -595,20 +599,20 @@ export default function TripsList({
                   ${totalFuelCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 <td colSpan="2" className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {/* Display source counts */}
-                  {showSourceBadges && (
+                  {/* Display source counts - with safety checks */}
+                  {showSourceBadges && trips && Array.isArray(trips) && (
                     <div className="flex flex-wrap gap-2">
                       <div className="text-xs inline-flex items-center">
                         <MapPin size={10} className="mr-1 text-blue-600" />
-                        {trips.filter(t => t.mileage_trip_id).length} from mileage
+                        {trips.filter(t => t && t.mileage_trip_id).length} from mileage
                       </div>
                       <div className="text-xs inline-flex items-center">
                         <Truck size={10} className="mr-1 text-green-600" />
-                        {trips.filter(t => t.load_id).length} from loads
+                        {trips.filter(t => t && t.load_id).length} from loads
                       </div>
                       <div className="text-xs inline-flex items-center">
                         <Plus size={10} className="mr-1 text-purple-600" />
-                        {trips.filter(t => !t.load_id && !t.mileage_trip_id).length} manual
+                        {trips.filter(t => t && !t.load_id && !t.mileage_trip_id).length} manual
                       </div>
                     </div>
                   )}
@@ -619,13 +623,13 @@ export default function TripsList({
         </div>
       )}
       
-      {trips.length > 0 && (
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+      {trips && trips.length > 0 && (
+        <div className="px-6 py-3 bg-gray-50 text-gray-500 text-xs border-t border-gray-200">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-gray-500 flex items-center">
-              <Info size={12} className="mr-1 text-blue-500" />
+            <span>
+              <Info size={12} className="mr-1 text-blue-500 inline" />
               Trip records are used to calculate your IFTA tax liability by jurisdiction
-            </div>
+            </span>
           </div>
         </div>
       )}

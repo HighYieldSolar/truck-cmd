@@ -1,7 +1,6 @@
-// src/components/ifta/StateMileageImporter.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
   MapPin,
@@ -18,9 +17,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// Import the mileage service
-import { getImportableMileageTrips, getStateMileageForTrip, importMileageTripToIFTA } from "@/lib/services/iftaMileageService";
-
+/**
+ * Enhanced State Mileage Importer Component
+ * Handles importing trip data from state mileage tracker to IFTA
+ * Includes comprehensive error handling and better state management
+ */
 export default function StateMileageImporter({ 
   userId, 
   quarter,
@@ -28,6 +29,7 @@ export default function StateMileageImporter({
   isCollapsible = true,
   showImportedTrips = true
 }) {
+  // Component state
   const [mileageTrips, setMileageTrips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -38,8 +40,240 @@ export default function StateMileageImporter({
   const [message, setMessage] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
-  // New state for vehicle details
   const [vehicleDetails, setVehicleDetails] = useState({});
+
+  // Get mileage trips that can be imported to IFTA
+  const getImportableMileageTrips = useCallback(async (userId, quarter) => {
+    try {
+      if (!userId || !quarter) {
+        throw new Error("User ID and quarter are required");
+      }
+      
+      // Parse quarter to get date range
+      const [year, q] = quarter.split('-Q');
+      const quarterNum = parseInt(q);
+      
+      if (isNaN(quarterNum) || quarterNum < 1 || quarterNum > 4) {
+        throw new Error("Invalid quarter format. Use YYYY-QN (e.g., 2023-Q1)");
+      }
+      
+      // Calculate quarter date range
+      const startMonth = (quarterNum - 1) * 3;
+      const startDate = new Date(parseInt(year), startMonth, 1);
+      const endDate = new Date(parseInt(year), startMonth + 3, 0);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      console.log(`Looking for trips from ${startDateStr} to ${endDateStr}`);
+      
+      // Get completed trips within the quarter dates
+      const { data: trips, error: tripsError } = await supabase
+        .from('driver_mileage_trips')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'completed')
+        .gte('start_date', startDateStr)
+        .lte('end_date', endDateStr)
+        .order('end_date', { ascending: false });
+        
+      if (tripsError) throw tripsError;
+      
+      if (!trips || trips.length === 0) {
+        return [];
+      }
+      
+      // Get trip IDs to check which ones are already imported
+      const tripIds = trips.map(trip => trip.id);
+      
+      // Get already imported trip IDs
+      let alreadyImportedTrips = [];
+      if (tripIds.length > 0) {
+        const { data: imports, error: importsError } = await supabase
+          .from('ifta_trip_records')
+          .select('mileage_trip_id')
+          .in('mileage_trip_id', tripIds)
+          .eq('user_id', userId)
+          .eq('quarter', quarter);
+          
+        if (importsError) {
+          console.error("Error checking imported trips:", importsError);
+          // Continue with empty array rather than failing
+        } else {
+          alreadyImportedTrips = (imports || []).map(trip => trip.mileage_trip_id);
+        }
+      }
+      
+      // Mark trips that are already imported
+      const markedTrips = (trips || []).map(trip => ({
+        ...trip,
+        alreadyImported: alreadyImportedTrips.includes(trip.id)
+      }));
+      
+      return markedTrips;
+    } catch (error) {
+      console.error('Error getting importable mileage trips:', error);
+      throw new Error(`Failed to get importable trips: ${error.message}`);
+    }
+  }, []);
+
+  // Get state mileage data for a specific trip
+  const getStateMileageForTrip = useCallback(async (tripId) => {
+    try {
+      if (!tripId) {
+        throw new Error("Trip ID is required");
+      }
+      
+      // Get crossings for this trip
+      const { data: crossings, error: crossingsError } = await supabase
+        .from('driver_mileage_crossings')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('timestamp', { ascending: true });
+        
+      if (crossingsError) throw crossingsError;
+      
+      if (!crossings || crossings.length < 2) {
+        return [];
+      }
+      
+      // Calculate miles driven in each state
+      const stateMileage = [];
+      
+      // Process crossings to calculate miles per state
+      for (let i = 0; i < crossings.length - 1; i++) {
+        const currentState = crossings[i].state;
+        const currentOdometer = parseFloat(crossings[i].odometer) || 0;
+        const nextOdometer = parseFloat(crossings[i + 1].odometer) || 0;
+        
+        // Skip invalid odometer readings
+        if (nextOdometer <= currentOdometer) continue;
+        
+        const milesDriven = nextOdometer - currentOdometer;
+        
+        // Add or update state mileage
+        const existingEntry = stateMileage.find(entry => entry.state === currentState);
+        if (existingEntry) {
+          existingEntry.miles += milesDriven;
+        } else {
+          stateMileage.push({
+            state: currentState,
+            state_name: crossings[i].state_name || crossings[i].state,
+            miles: milesDriven
+          });
+        }
+      }
+      
+      // Sort by miles (highest first)
+      return stateMileage.sort((a, b) => b.miles - a.miles);
+    } catch (error) {
+      console.error('Error getting state mileage for trip:', error);
+      throw new Error(`Failed to get state mileage: ${error.message}`);
+    }
+  }, []);
+
+  // Import a mileage trip to IFTA
+  const importMileageTripToIFTA = useCallback(async (userId, quarter, tripId) => {
+    try {
+      if (!userId || !quarter || !tripId) {
+        throw new Error("User ID, quarter, and trip ID are required");
+      }
+      
+      // Check if this trip has already been imported
+      const { data: existingImports, error: checkError } = await supabase
+        .from('ifta_trip_records')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('quarter', quarter)
+        .eq('mileage_trip_id', tripId);
+        
+      if (checkError) {
+        // Don't fail on check error, just log and continue
+        console.error("Error checking for existing imports:", checkError);
+      } else if (existingImports && existingImports.length > 0) {
+        return {
+          success: true,
+          importedCount: 0,
+          totalMiles: 0,
+          alreadyImported: true
+        };
+      }
+      
+      // Get the trip details
+      const { data: trip, error: tripError } = await supabase
+        .from('driver_mileage_trips')
+        .select('*')
+        .eq('id', tripId)
+        .eq('user_id', userId)
+        .single();
+        
+      if (tripError) throw tripError;
+      
+      // Get state mileage data
+      const mileageData = await getStateMileageForTrip(tripId);
+      
+      if (mileageData.length === 0) {
+        return {
+          success: true,
+          importedCount: 0,
+          totalMiles: 0,
+        };
+      }
+      
+      // Create IFTA trip records for each state
+      const tripRecords = mileageData.map(state => ({
+        user_id: userId,
+        quarter: quarter,
+        start_date: trip.start_date,
+        end_date: trip.end_date || trip.start_date,
+        vehicle_id: trip.vehicle_id,
+        mileage_trip_id: trip.id,
+        start_jurisdiction: state.state,
+        end_jurisdiction: state.state,
+        total_miles: state.miles,
+        gallons: 0, // User will need to fill these in later
+        fuel_cost: 0, // User will need to fill these in later
+        notes: `Imported from State Mileage Tracker: ${state.state_name} (${state.miles.toFixed(1)} miles)`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_imported: true,
+        source: 'mileage_tracker'
+      }));
+
+      // Insert the records
+      const { data, error: insertError } = await supabase
+        .from('ifta_trip_records')
+        .insert(tripRecords);
+        
+      if (insertError) {
+        // Check for unique constraint violation (already imported)
+        if (insertError.code === '23505') {
+          return {
+            success: true,
+            importedCount: 0,
+            totalMiles: 0,
+            alreadyImported: true
+          };
+        }
+        throw insertError;
+      }
+      
+      // Calculate total miles
+      const totalMiles = mileageData.reduce((sum, state) => sum + state.miles, 0);
+      
+      return {
+        success: true,
+        importedCount: tripRecords.length,
+        totalMiles: totalMiles
+      };
+    } catch (error) {
+      console.error('Error importing mileage trip to IFTA:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }, [getStateMileageForTrip]);
 
   // Load mileage trips
   useEffect(() => {
@@ -73,7 +307,7 @@ export default function StateMileageImporter({
     };
     
     loadMileageTrips();
-  }, [userId, quarter, isCollapsible, showImportedTrips]);
+  }, [userId, quarter, isCollapsible, showImportedTrips, getImportableMileageTrips]);
 
   // Fetch vehicle details from the database
   const fetchVehicleDetails = async (vehicleIds) => {
@@ -153,7 +387,7 @@ export default function StateMileageImporter({
       const result = await importMileageTripToIFTA(userId, quarter, selectedTrip.id);
       
       if (!result.success) {
-        console.error("Import failure details:", result);  // Add detailed logging
+        console.error("Import failure details:", result);
         throw new Error(result.error || "Failed to import trip");
       }
       
@@ -161,35 +395,65 @@ export default function StateMileageImporter({
       setMileageModalOpen(false);
       
       if (result.alreadyImported) {
-        // Check if we can actually find the imported trip in the IFTA data
-        // This is a secondary validation to avoid false "already imported" messages
-        const { data: existingTrips, error: verifyError } = await supabase
-          .from('ifta_trip_records')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('quarter', quarter)
-          .eq('mileage_trip_id', selectedTrip.id);
-  
-        if (verifyError || !existingTrips || existingTrips.length === 0) {
-          // If we can't find the trip, it's probably a false positive
-          console.log("No actual trip records found despite 'already imported' flag");
-          
-          // Try again but skipping the preliminary check
-          const forceImportResult = await forceTripImport(userId, quarter, selectedTrip.id, mileageData);
-          
-          if (forceImportResult.success && forceImportResult.importedCount > 0) {
-            setMessage({
-              type: "success",
-              text: `Successfully imported trip with ${forceImportResult.importedCount} state entries and ${forceImportResult.totalMiles.toFixed(1)} miles.`
-            });
+        // Try verification even if already imported flag is set
+        try {
+          const { data: existingTrips, error: verifyError } = await supabase
+            .from('ifta_trip_records')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('quarter', quarter)
+            .eq('mileage_trip_id', selectedTrip.id);
+    
+          if (verifyError || !existingTrips || existingTrips.length === 0) {
+            // If we can't find the trip, try a different approach
+            console.log("No records found despite already imported flag - trying alternative import");
+            
+            // Direct insert approach
+            const records = mileageData.map(state => ({
+              user_id: userId,
+              quarter: quarter,
+              start_date: selectedTrip.start_date,
+              end_date: selectedTrip.end_date || selectedTrip.start_date,
+              vehicle_id: selectedTrip.vehicle_id,
+              mileage_trip_id: selectedTrip.id,
+              start_jurisdiction: state.state,
+              end_jurisdiction: state.state,
+              total_miles: state.miles,
+              gallons: 0,
+              fuel_cost: 0,
+              notes: `Imported from Mileage: ${state.state_name} (${state.miles.toFixed(1)} miles)`,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_imported: true
+            }));
+            
+            const { data: insertedData, error: insertError } = await supabase
+              .from('ifta_trip_records')
+              .insert(records)
+              .select('id');
+              
+            if (insertError) {
+              // If this also fails, report the already imported message
+              setMessage({
+                type: "warning",
+                text: "This trip has already been imported."
+              });
+            } else {
+              // Success with alternative approach
+              setMessage({
+                type: "success",
+                text: `Successfully imported trip with ${insertedData.length} state entries.`
+              });
+            }
           } else {
+            // It's genuinely already imported
             setMessage({
               type: "warning",
-              text: "Could not import trip. There might be a database issue."
+              text: "This trip has already been imported."
             });
           }
-        } else {
-          // It's genuinely already imported
+        } catch (verifyErr) {
+          console.error("Error during verification:", verifyErr);
           setMessage({
             type: "warning",
             text: "This trip has already been imported."
@@ -223,84 +487,6 @@ export default function StateMileageImporter({
       setError("Failed to import mileage trip: " + (err.message || "Unknown error"));
     } finally {
       setImportLoading(false);
-    }
-  };
-  
-  // Force import by directly inserting records without the preliminary check
-  const forceTripImport = async (userId, quarter, tripId, mileageData) => {
-    try {
-      // Get the trip details
-      const { data: trip, error: tripError } = await supabase
-        .from('driver_mileage_trips')
-        .select('*')
-        .eq('id', tripId)
-        .eq('user_id', userId)
-        .single();
-        
-      if (tripError) throw tripError;
-      if (!trip) throw new Error("Trip not found");
-      
-      // Use the mileage data we already have
-      if (!mileageData || mileageData.length === 0) {
-        return {
-          success: true,
-          importedCount: 0,
-          totalMiles: 0,
-        };
-      }
-      
-      // Prepare IFTA records for each state with miles
-      const tripRecords = mileageData.map(state => ({
-        user_id: userId,
-        quarter: quarter,
-        start_date: trip.start_date,
-        end_date: trip.end_date || trip.start_date,
-        vehicle_id: trip.vehicle_id,
-        mileage_trip_id: trip.id,
-        start_jurisdiction: state.state,
-        end_jurisdiction: state.state,
-        total_miles: state.miles,
-        gallons: 0,
-        fuel_cost: 0,
-        notes: `Imported from State Mileage Tracker: ${state.state_name} (${state.miles.toFixed(1)} miles)`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_imported: true,
-        source: 'mileage_tracker'
-      }));
-      
-      // Insert the records
-      const { data, error: insertError } = await supabase
-        .from('ifta_trip_records')
-        .insert(tripRecords)
-        .select();
-          
-      if (insertError) {
-        if (insertError.code === '23505') {
-          return {
-            success: true,
-            importedCount: 0,
-            totalMiles: 0,
-            alreadyImported: true
-          };
-        }
-        throw insertError;
-      }
-      
-      // Calculate total miles
-      const totalMiles = mileageData.reduce((sum, state) => sum + state.miles, 0);
-      
-      return {
-        success: true,
-        importedCount: tripRecords.length,
-        totalMiles: totalMiles
-      };
-    } catch (error) {
-      console.error("Error in force import:", error);
-      return {
-        success: false,
-        error: error.message
-      };
     }
   };
 
@@ -588,7 +774,7 @@ export default function StateMileageImporter({
                         </div>
                         <div className="text-sm text-gray-500 mt-1 flex items-center">
                           <Calendar size={14} className="mr-1 text-gray-400" />
-                          {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
+                          {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date || trip.start_date).toLocaleDateString()}
                         </div>
                         {trip.notes && (
                           <div className="text-sm text-gray-500 mt-1 line-clamp-1">
@@ -655,7 +841,7 @@ export default function StateMileageImporter({
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
                         {selectedTrip ? (
-                          <>Vehicle {formatVehicleDisplay(selectedTrip.vehicle_id)}: {new Date(selectedTrip.start_date).toLocaleDateString()} - {new Date(selectedTrip.end_date).toLocaleDateString()}</>
+                          <>Vehicle {formatVehicleDisplay(selectedTrip.vehicle_id)}: {new Date(selectedTrip.start_date).toLocaleDateString()} - {new Date(selectedTrip.end_date || selectedTrip.start_date).toLocaleDateString()}</>
                         ) : (
                           'Select a mileage trip to import'
                         )}

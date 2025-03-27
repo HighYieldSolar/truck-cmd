@@ -28,7 +28,12 @@ import Link from "next/link";
 // Import utilities
 import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
 
-// Import custom components that don't need dynamic imports
+// Import components directly without dynamic loading
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import StateMileageImporter from "@/components/ifta/StateMileageImporter";
+import LoadToIFTAImporter from "@/components/ifta/LoadToIFTAImporter";
+import IFTAFuelSync from "@/components/ifta/IFTAFuelSync";
+import EnhancedIFTASummary from "@/components/ifta/EnhancedIFTASummary";
 import EnhancedTripEntryForm from "@/components/ifta/EnhancedTripEntryForm";
 import TripsList from "@/components/ifta/TripsList";
 import IFTASummary from "@/components/ifta/IFTASummary";
@@ -37,111 +42,28 @@ import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal
 import ReportGenerator from "@/components/ifta/ReportGenerator";
 import EnhancedExportModal from "@/components/ifta/EnhancedExportModal";
 
-// Dynamic imports to fix potential loading issues
-import dynamic from 'next/dynamic';
-
-// Dynamically import the DashboardLayout component to ensure it's fully loaded
-const DashboardLayout = dynamic(
-  () => import('@/components/layout/DashboardLayout').then(mod => mod.default), 
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-);
-
-// Dynamically import the StateMileageImporter component
-const StateMileageImporter = dynamic(
-  () => import('@/components/ifta/StateMileageImporter').then(mod => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-4 bg-white shadow rounded-lg mb-6">
-        <div className="animate-pulse flex space-x-4">
-          <div className="flex-1 space-y-4 py-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
-
-// Dynamically import the LoadToIFTAImporter component
-const LoadToIFTAImporter = dynamic(
-  () => import('@/components/ifta/LoadToIFTAImporter').then(mod => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-4 bg-white shadow rounded-lg mb-6">
-        <div className="animate-pulse flex space-x-4">
-          <div className="flex-1 space-y-4 py-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
-
-// Dynamically import the IFTAFuelSync component
-const IFTAFuelSync = dynamic(
-  () => import('@/components/ifta/IFTAFuelSync').then(mod => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-4 bg-white shadow rounded-lg mb-6">
-        <div className="animate-pulse flex space-x-4">
-          <div className="flex-1 space-y-4 py-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
-
-// Dynamically import the EnhancedIFTASummary component
-const EnhancedIFTASummary = dynamic(
-  () => import('@/components/ifta/EnhancedIFTASummary').then(mod => mod.default),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-4 bg-white shadow rounded-lg mb-6">
-        <div className="animate-pulse flex space-x-4">
-          <div className="flex-1 space-y-4 py-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-);
-
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
 import { saveIFTAReport } from "@/lib/services/iftaService";
 import { getLoadToIftaStats } from "@/lib/services/loadIftaService";
 import { getMileageToIftaStats } from "@/lib/services/iftaMileageService";
+
+// Loading placeholder component for conditional rendering
+function LoadingPlaceholder() {
+  return (
+    <div className="p-4 bg-white shadow rounded-lg mb-6">
+      <div className="animate-pulse flex space-x-4">
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
@@ -287,12 +209,13 @@ export default function IFTACalculatorPage() {
     }
   }, [user?.id, activeQuarter]);
 
-  // Load trips for the selected quarter
+  // Load trips for the selected quarter - IMPROVED VERSION
   const loadTrips = useCallback(async () => {
     if (!user?.id || !activeQuarter || dataLoadingRef.current) return;
     
     try {
       dataLoadingRef.current = true;
+      console.log("Loading trips for user", user.id, "and quarter", activeQuarter); // Debug log
       
       const { data, error: tripsError } = await supabase
         .from('ifta_trip_records')
@@ -311,6 +234,7 @@ export default function IFTACalculatorPage() {
         }
       }
       
+      console.log("Loaded trips:", data?.length || 0); // Debug log
       setTrips(data || []);
       
       // Get the current fuel data or load it if needed
@@ -391,7 +315,7 @@ export default function IFTACalculatorPage() {
     initializeData();
   }, [router]);
 
-  // Load data once when parameters are available
+  // Load data once when parameters are available - IMPROVED VERSION
   useEffect(() => {
     if (user && activeQuarter && !initialLoading && !dataLoaded) {
       const loadAllData = async () => {
@@ -401,6 +325,7 @@ export default function IFTACalculatorPage() {
         try {
           setError(null);
           setDatabaseError(null);
+          setLoading(true); // Show loading state
           
           // Load fuel data first
           const fuelEntries = await loadFuelData();
@@ -415,6 +340,7 @@ export default function IFTACalculatorPage() {
           // Errors are already handled in the individual load functions
         } finally {
           dataLoadingRef.current = false;
+          setLoading(false); // Hide loading state
         }
       };
       
@@ -551,10 +477,19 @@ export default function IFTACalculatorPage() {
     }
   };
   
-  // Handle imported trips
+  // Handle imported trips - IMPROVED VERSION
   const handleImportComplete = async () => {
-    // Refresh the trips list to include the newly imported trips
-    await loadTrips();
+    try {
+      console.log("Import completed, reloading trips..."); // Debug log
+      setLoading(true); // Show loading state
+      await loadTrips();
+      console.log("Trips reloaded successfully after import"); // Debug log
+      setLoading(false); // Hide loading state
+    } catch (err) {
+      console.error("Error reloading trips after import:", err);
+      setError("Failed to refresh trips after import: " + err.message);
+      setLoading(false); // Hide loading state even if there's an error
+    }
   };
 
   // Extract unique vehicles from trips and fuel data for the trip entry form
@@ -671,54 +606,62 @@ export default function IFTACalculatorPage() {
             {/* State Mileage Importer */}
             {!databaseError && showMileageImporter && (
               <div className="mb-6">
-                <StateMileageImporter 
-                  userId={user?.id} 
-                  quarter={activeQuarter} 
-                  onImportComplete={handleImportComplete}
-                  showImportedTrips={showImportedTrips}
-                />
+                {loading ? <LoadingPlaceholder /> : (
+                  <StateMileageImporter 
+                    userId={user?.id} 
+                    quarter={activeQuarter} 
+                    onImportComplete={handleImportComplete}
+                    showImportedTrips={showImportedTrips}
+                  />
+                )}
               </div>
             )}
 
             {/* Load to IFTA Importer - Show only if we have available loads */}
             {!databaseError && showLoadImporter && (
               <div className="mb-6">
-                <LoadToIFTAImporter 
-                  userId={user?.id} 
-                  quarter={activeQuarter} 
-                  onImportComplete={handleImportComplete}
-                  existingTrips={trips}
-                />
+                {loading ? <LoadingPlaceholder /> : (
+                  <LoadToIFTAImporter 
+                    userId={user?.id} 
+                    quarter={activeQuarter} 
+                    onImportComplete={handleImportComplete}
+                    existingTrips={trips}
+                  />
+                )}
               </div>
             )}
 
             {/* IFTA-Fuel Sync */}
             {!databaseError && (
               <div className="mb-6">
-                <IFTAFuelSync 
-                  userId={user?.id} 
-                  quarter={activeQuarter} 
-                  onSyncComplete={handleSyncComplete}
-                />
+                {loading ? <LoadingPlaceholder /> : (
+                  <IFTAFuelSync 
+                    userId={user?.id} 
+                    quarter={activeQuarter} 
+                    onSyncComplete={handleSyncComplete}
+                  />
+                )}
               </div>
             )}
 
             {/* IFTA Summary */}
             {!databaseError && (
               <div className="mb-6">
-                {useEnhancedSummary ? (
-                  <EnhancedIFTASummary
-                    userId={user?.id}
-                    quarter={activeQuarter}
-                    syncResult={syncResult}
-                    isLoading={loading}
-                  />
-                ) : (
-                  <IFTASummary 
-                    trips={trips} 
-                    stats={stats}
-                    isLoading={loading} 
-                  />
+                {loading ? <LoadingPlaceholder /> : (
+                  useEnhancedSummary ? (
+                    <EnhancedIFTASummary
+                      userId={user?.id}
+                      quarter={activeQuarter}
+                      syncResult={syncResult}
+                      isLoading={loading}
+                    />
+                  ) : (
+                    <IFTASummary 
+                      trips={trips} 
+                      stats={stats}
+                      isLoading={loading} 
+                    />
+                  )
                 )}
               </div>
             )}
