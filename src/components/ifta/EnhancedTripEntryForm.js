@@ -1,6 +1,7 @@
+// src/components/ifta/EnhancedTripEntryForm.js
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Plus, 
   Truck, 
@@ -11,11 +12,12 @@ import {
   AlertCircle,
   RefreshCw,
   Info,
-  FileText
+  FileText,
+  ChevronDown
 } from "lucide-react";
 
-// Helper function to get US states
-const getUSStates = () => {
+// Helper function to get US states and Canadian provinces
+const getJurisdictions = () => {
   return [
     { code: "AL", name: "Alabama" },
     { code: "AK", name: "Alaska" },
@@ -67,6 +69,7 @@ const getUSStates = () => {
     { code: "WV", name: "West Virginia" },
     { code: "WI", name: "Wisconsin" },
     { code: "WY", name: "Wyoming" },
+    // Canadian provinces
     { code: "AB", name: "Alberta" },
     { code: "BC", name: "British Columbia" },
     { code: "MB", name: "Manitoba" },
@@ -81,6 +84,7 @@ const getUSStates = () => {
 };
 
 export default function EnhancedTripEntryForm({ onAddTrip, isLoading = false, fuelData = [], vehicles = [] }) {
+  const [activeTab, setActiveTab] = useState("basic"); // "basic" or "advanced"
   const [tripForm, setTripForm] = useState({
     vehicleId: "",
     date: new Date().toISOString().split('T')[0],
@@ -99,9 +103,10 @@ export default function EnhancedTripEntryForm({ onAddTrip, isLoading = false, fu
   const [touched, setTouched] = useState({});
   const [calculationMode, setCalculationMode] = useState('manual'); // 'manual', 'odometer' or 'mpg'
   const [showTips, setShowTips] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(false);
 
   // Get all states for dropdowns
-  const states = getUSStates();
+  const jurisdictions = getJurisdictions();
   
   // Get unique vehicles from passed vehicles or fuel data
   const getUniqueVehicles = () => {
@@ -309,9 +314,14 @@ export default function EnhancedTripEntryForm({ onAddTrip, isLoading = false, fu
     setTouched({});
   };
 
+  // Toggle form expanded state
+  const toggleFormExpanded = () => {
+    setFormExpanded(!formExpanded);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-white">
         <div className="flex items-center">
           <Plus size={20} className="text-blue-600 mr-2" />
           <h3 className="text-lg font-medium text-gray-900">Add New Trip</h3>
@@ -326,46 +336,44 @@ export default function EnhancedTripEntryForm({ onAddTrip, isLoading = false, fu
             <Info size={14} className="mr-1" />
             {showTips ? 'Hide Tips' : 'Show Tips'}
           </button>
+          
+          <button
+            type="button"
+            onClick={toggleFormExpanded}
+            className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
+          >
+            <ChevronDown 
+              size={16} 
+              className={`transform transition-transform ${formExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
         </div>
       </div>
       
-      {/* Calculation mode selector */}
-      <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-        <div className="text-sm font-medium text-gray-700 mb-2">Trip Recording Method:</div>
-        <div className="flex space-x-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="calculationMode"
-              checked={calculationMode === 'manual'}
-              onChange={() => handleModeChange('manual')}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span className="ml-2 text-sm text-gray-700">Manual Miles</span>
-          </label>
-          
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="calculationMode"
-              checked={calculationMode === 'odometer'}
-              onChange={() => handleModeChange('odometer')}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span className="ml-2 text-sm text-gray-700">Odometer Readings</span>
-          </label>
-          
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="calculationMode"
-              checked={calculationMode === 'mpg'}
-              onChange={() => handleModeChange('mpg')}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span className="ml-2 text-sm text-gray-700">Auto-calculate Gallons (6.5 MPG)</span>
-          </label>
-        </div>
+      {/* Navigation tabs */}
+      <div className="border-b border-gray-200 bg-gray-50">
+        <nav className="-mb-px flex">
+          <button
+            className={`py-4 px-6 text-sm font-medium border-b-2 ${
+              activeTab === 'basic'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab('basic')}
+          >
+            Basic Information
+          </button>
+          <button
+            className={`py-4 px-6 text-sm font-medium border-b-2 ${
+              activeTab === 'advanced'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab('advanced')}
+          >
+            Advanced Options
+          </button>
+        </nav>
       </div>
       
       {/* Tips section */}
@@ -386,460 +394,587 @@ export default function EnhancedTripEntryForm({ onAddTrip, isLoading = false, fu
         </div>
       )}
       
-      <div className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Trip basics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label htmlFor="vehicleId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <Truck size={16} className="text-gray-400 mr-1" /> Vehicle *
-              </label>
-              {uniqueVehicles.length > 0 ? (
-                <select
-                  id="vehicleId"
-                  name="vehicleId"
-                  value={tripForm.vehicleId}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.vehicleId && touched.vehicleId
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
+      {(formExpanded || !showTips) && (
+        <div className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {activeTab === 'basic' && (
+              <>
+                {/* Calculation mode selector */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Trip Recording Method:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <label className="relative flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="calculationMode"
+                        checked={calculationMode === 'manual'}
+                        onChange={() => handleModeChange('manual')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-sm font-medium text-gray-700">Manual Miles</span>
+                        <p className="text-xs text-gray-500">Enter miles directly</p>
+                      </div>
+                    </label>
+                    
+                    <label className="relative flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="calculationMode"
+                        checked={calculationMode === 'odometer'}
+                        onChange={() => handleModeChange('odometer')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-sm font-medium text-gray-700">Odometer Readings</span>
+                        <p className="text-xs text-gray-500">Calculate from readings</p>
+                      </div>
+                    </label>
+                    
+                    <label className="relative flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="calculationMode"
+                        checked={calculationMode === 'mpg'}
+                        onChange={() => handleModeChange('mpg')}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3">
+                        <span className="text-sm font-medium text-gray-700">Auto-calculate</span>
+                        <p className="text-xs text-gray-500">6.5 MPG standard</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              
+                {/* Trip basics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label htmlFor="vehicleId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <Truck size={16} className="text-gray-400 mr-1" /> Vehicle *
+                    </label>
+                    {uniqueVehicles.length > 0 ? (
+                      <select
+                        id="vehicleId"
+                        name="vehicleId"
+                        value={tripForm.vehicleId}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={`mt-1 block w-full rounded-md ${
+                          errors.vehicleId && touched.vehicleId
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } shadow-sm text-sm`}
+                        required
+                      >
+                        <option value="">Select Vehicle</option>
+                        {uniqueVehicles.map((vehicle) => (
+                          <option key={vehicle} value={vehicle}>{vehicle}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        id="vehicleId"
+                        name="vehicleId"
+                        placeholder="Enter vehicle ID"
+                        value={tripForm.vehicleId}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={`mt-1 block w-full rounded-md ${
+                          errors.vehicleId && touched.vehicleId
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } shadow-sm text-sm`}
+                        required
+                      />
+                    )}
+                    {errors.vehicleId && touched.vehicleId && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={12} className="mr-1" />
+                        {errors.vehicleId}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="date" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <Calendar size={16} className="text-gray-400 mr-1" /> Trip Date *
+                    </label>
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      value={tripForm.date}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`mt-1 block w-full rounded-md ${
+                        errors.date && touched.date
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } shadow-sm text-sm`}
+                      required
+                    />
+                    {errors.date && touched.date && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={12} className="mr-1" />
+                        {errors.date}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="loadId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <FileText size={16} className="text-gray-400 mr-1" /> Load Reference (optional)
+                    </label>
+                    <input
+                      type="text"
+                      id="loadId"
+                      name="loadId"
+                      placeholder="Enter load ID or reference"
+                      value={tripForm.loadId}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                    />
+                  </div>
+                </div>
+                
+                {/* Jurisdictions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="startJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <MapPin size={16} className="text-gray-400 mr-1" /> Starting Jurisdiction *
+                    </label>
+                    <select
+                      id="startJurisdiction"
+                      name="startJurisdiction"
+                      value={tripForm.startJurisdiction}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`mt-1 block w-full rounded-md ${
+                        errors.startJurisdiction && touched.startJurisdiction
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } shadow-sm text-sm`}
+                      required
+                    >
+                      <option value="">Select Starting State</option>
+                      {jurisdictions.map((state) => (
+                        <option key={`start-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
+                      ))}
+                    </select>
+                    {errors.startJurisdiction && touched.startJurisdiction && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={12} className="mr-1" />
+                        {errors.startJurisdiction}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="endJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <MapPin size={16} className="text-gray-400 mr-1" /> Ending Jurisdiction *
+                    </label>
+                    <select
+                      id="endJurisdiction"
+                      name="endJurisdiction"
+                      value={tripForm.endJurisdiction}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`mt-1 block w-full rounded-md ${
+                        errors.endJurisdiction && touched.endJurisdiction
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } shadow-sm text-sm`}
+                      required
+                    >
+                      <option value="">Select Ending State</option>
+                      {jurisdictions.map((state) => (
+                        <option key={`end-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
+                      ))}
+                    </select>
+                    {errors.endJurisdiction && touched.endJurisdiction && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={12} className="mr-1" />
+                        {errors.endJurisdiction}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Distance section */}
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="mr-2 p-1 rounded-full bg-blue-50">
+                      <Truck size={18} className="text-blue-600" />
+                    </div>
+                    <h4 className="text-md font-medium text-gray-700">Distance & Fuel Information</h4>
+                  </div>
+                  
+                  {calculationMode === 'manual' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label htmlFor="miles" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Truck size={16} className="text-gray-400 mr-1" /> Miles Driven *
+                        </label>
+                        <input
+                          type="number"
+                          id="miles"
+                          name="miles"
+                          placeholder="0.0"
+                          min="0"
+                          step="0.1"
+                          value={tripForm.miles}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.miles && touched.miles
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                          required
+                        />
+                        {errors.miles && touched.miles && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.miles}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
+                        </label>
+                        <input
+                          type="number"
+                          id="gallons"
+                          name="gallons"
+                          placeholder="0.0"
+                          min="0"
+                          step="0.1"
+                          value={tripForm.gallons}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.gallons && touched.gallons
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                        />
+                        {errors.gallons && touched.gallons && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.gallons}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="fuelCost" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <DollarSign size={16} className="text-gray-400 mr-1" /> Fuel Cost ($)
+                        </label>
+                        <input
+                          type="number"
+                          id="fuelCost"
+                          name="fuelCost"
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          value={tripForm.fuelCost}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.fuelCost && touched.fuelCost
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                        />
+                        {errors.fuelCost && touched.fuelCost && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.fuelCost}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {calculationMode === 'odometer' && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div>
+                        <label htmlFor="startOdometer" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
+                          <Truck size={16} className="text-gray-400 mr-1" /> Start Odometer *
+                        </label>
+                        <input
+                          type="number"
+                          id="startOdometer"
+                          name="startOdometer"
+                          placeholder="0"
+                          min="0"
+                          step="1"
+                          value={tripForm.startOdometer}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.startOdometer && touched.startOdometer
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                          required
+                        />
+                        {errors.startOdometer && touched.startOdometer && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.startOdometer}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="endOdometer" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
+                          <Truck size={16} className="text-gray-400 mr-1" /> End Odometer *
+                        </label>
+                        <input
+                          type="number"
+                          id="endOdometer"
+                          name="endOdometer"
+                          placeholder="0"
+                          min="0"
+                          step="1"
+                          value={tripForm.endOdometer}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.endOdometer && touched.endOdometer
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                          required
+                        />
+                        {errors.endOdometer && touched.endOdometer && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.endOdometer}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="miles" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
+                          <Truck size={16} className="text-gray-400 mr-1" /> Total Miles
+                        </label>
+                        <input
+                          type="number"
+                          id="miles"
+                          name="miles"
+                          placeholder="0.0"
+                          value={tripForm.miles}
+                          readOnly
+                          className="mt-1 block w-full rounded-md bg-gray-50 border-gray-300 shadow-sm text-sm"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Calculated from odometer readings
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
+                        </label>
+                        <input
+                          type="number"
+                          id="gallons"
+                          name="gallons"
+                          placeholder="0.0"
+                          min="0"
+                          step="0.1"
+                          value={tripForm.gallons}
+                          onChange={handleChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {calculationMode === 'mpg' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label htmlFor="miles" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Truck size={16} className="text-gray-400 mr-1" /> Miles Driven *
+                        </label>
+                        <input
+                          type="number"
+                          id="miles"
+                          name="miles"
+                          placeholder="0.0"
+                          min="0"
+                          step="0.1"
+                          value={tripForm.miles}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className={`mt-1 block w-full rounded-md ${
+                            errors.miles && touched.miles
+                              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } shadow-sm text-sm`}
+                          required
+                        />
+                        {errors.miles && touched.miles && (
+                          <p className="mt-1 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.miles}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
+                        </label>
+                        <input
+                          type="number"
+                          id="gallons"
+                          name="gallons"
+                          placeholder="0.0"
+                          value={tripForm.gallons}
+                          readOnly
+                          className="mt-1 block w-full rounded-md bg-gray-50 border-gray-300 shadow-sm text-sm"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Calculated at 6.5 MPG
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="fuelCost" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <DollarSign size={16} className="text-gray-400 mr-1" /> Fuel Cost ($)
+                        </label>
+                        <input
+                          type="number"
+                          id="fuelCost"
+                          name="fuelCost"
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                          value={tripForm.fuelCost}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            
+            {/* Advanced tab content */}
+            {activeTab === 'advanced' && (
+              <>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="mr-2 p-1 rounded-full bg-purple-50">
+                      <FileText size={18} className="text-purple-600" />
+                    </div>
+                    <h4 className="text-md font-medium text-gray-700">Advanced Trip Details</h4>
+                  </div>
+                  
+                  {/* Load details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="loadId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <FileText size={16} className="text-gray-400 mr-1" /> Load Reference ID
+                      </label>
+                      <input
+                        type="text"
+                        id="loadId"
+                        name="loadId"
+                        placeholder="Enter load number or reference"
+                        value={tripForm.loadId}
+                        onChange={handleChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Link this trip to a specific load</p>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="driverId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <Truck size={16} className="text-gray-400 mr-1" /> Driver ID
+                      </label>
+                      <input
+                        type="text"
+                        id="driverId"
+                        name="driverId"
+                        placeholder="Enter driver name or ID"
+                        value={tripForm.driverId || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Optional driver identification</p>
+                    </div>
+                  </div>
+                  
+                  {/* End date (if different) */}
+                  <div>
+                    <label htmlFor="endDate" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <Calendar size={16} className="text-gray-400 mr-1" /> End Date (if different from start)
+                    </label>
+                    <input
+                      type="date"
+                      id="endDate"
+                      name="endDate"
+                      value={tripForm.endDate || ""}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Only needed for multi-day trips</p>
+                  </div>
+                  
+                  {/* Notes */}
+                  <div>
+                    <label htmlFor="notes" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                      <FileText size={16} className="text-gray-400 mr-1" /> Notes
+                    </label>
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      rows="3"
+                      placeholder="Enter any additional notes about this trip"
+                      value={tripForm.notes}
+                      onChange={handleChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
+                    ></textarea>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {/* Submit button */}
+            <div className="pt-5 border-t border-gray-200">
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading}
                 >
-                  <option value="">Select Vehicle</option>
-                  {uniqueVehicles.map((vehicle) => (
-                    <option key={vehicle} value={vehicle}>{vehicle}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  id="vehicleId"
-                  name="vehicleId"
-                  placeholder="Enter vehicle ID"
-                  value={tripForm.vehicleId}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.vehicleId && touched.vehicleId
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
-                />
-              )}
-              {errors.vehicleId && touched.vehicleId && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {errors.vehicleId}
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="date" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <Calendar size={16} className="text-gray-400 mr-1" /> Trip Date *
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={tripForm.date}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className={`mt-1 block w-full rounded-md ${
-                  errors.date && touched.date
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } shadow-sm text-sm`}
-                required
-              />
-              {errors.date && touched.date && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {errors.date}
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="loadId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <FileText size={16} className="text-gray-400 mr-1" /> Load Reference (optional)
-              </label>
-              <input
-                type="text"
-                id="loadId"
-                name="loadId"
-                placeholder="Enter load ID or reference"
-                value={tripForm.loadId}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
-              />
-            </div>
-          </div>
-          
-          {/* Jurisdictions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="startJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <MapPin size={16} className="text-gray-400 mr-1" /> Starting Jurisdiction *
-              </label>
-              <select
-                id="startJurisdiction"
-                name="startJurisdiction"
-                value={tripForm.startJurisdiction}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className={`mt-1 block w-full rounded-md ${
-                  errors.startJurisdiction && touched.startJurisdiction
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } shadow-sm text-sm`}
-                required
-              >
-                <option value="">Select Starting State</option>
-                {states.map((state) => (
-                  <option key={`start-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
-                ))}
-              </select>
-              {errors.startJurisdiction && touched.startJurisdiction && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {errors.startJurisdiction}
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="endJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                <MapPin size={16} className="text-gray-400 mr-1" /> Ending Jurisdiction *
-              </label>
-              <select
-                id="endJurisdiction"
-                name="endJurisdiction"
-                value={tripForm.endJurisdiction}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className={`mt-1 block w-full rounded-md ${
-                  errors.endJurisdiction && touched.endJurisdiction
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } shadow-sm text-sm`}
-                required
-              >
-                <option value="">Select Ending State</option>
-                {states.map((state) => (
-                  <option key={`end-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
-                ))}
-              </select>
-              {errors.endJurisdiction && touched.endJurisdiction && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {errors.endJurisdiction}
-                </p>
-              )}
-            </div>
-          </div>
-          
-          {/* Distance section */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-700 border-b pb-2">Distance & Fuel Information</h4>
-            
-            {calculationMode === 'manual' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="miles" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Truck size={16} className="text-gray-400 mr-1" /> Miles Driven *
-                  </label>
-                  <input
-                    type="number"
-                    id="miles"
-                    name="miles"
-                    placeholder="0.0"
-                    min="0"
-                    step="0.1"
-                    value={tripForm.miles}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.miles && touched.miles
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  />
-                  {errors.miles && touched.miles && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.miles}
-                    </p>
+                  {isLoading ? (
+                    <>
+                      <RefreshCw size={16} className="mr-2 animate-spin" />
+                      Adding Trip...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} className="mr-2" />
+                      Add Trip
+                    </>
                   )}
-                </div>
-                
-                <div>
-                  <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
-                  </label>
-                  <input
-                    type="number"
-                    id="gallons"
-                    name="gallons"
-                    placeholder="0.0"
-                    min="0"
-                    step="0.1"
-                    value={tripForm.gallons}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.gallons && touched.gallons
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                  />
-                  {errors.gallons && touched.gallons && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.gallons}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="fuelCost" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <DollarSign size={16} className="text-gray-400 mr-1" /> Fuel Cost ($)
-                  </label>
-                  <input
-                    type="number"
-                    id="fuelCost"
-                    name="fuelCost"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    value={tripForm.fuelCost}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.fuelCost && touched.fuelCost
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                  />
-                  {errors.fuelCost && touched.fuelCost && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.fuelCost}
-                    </p>
-                  )}
-                </div>
+                </button>
               </div>
-            )}
-            
-            {calculationMode === 'odometer' && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div>
-                  <label htmlFor="startOdometer" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
-                    <Truck size={16} className="text-gray-400 mr-1" /> Start Odometer *
-                  </label>
-                  <input
-                    type="number"
-                    id="startOdometer"
-                    name="startOdometer"
-                    placeholder="0"
-                    min="0"
-                    step="1"
-                    value={tripForm.startOdometer}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.startOdometer && touched.startOdometer
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  />
-                  {errors.startOdometer && touched.startOdometer && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.startOdometer}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="endOdometer" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
-                    <Truck size={16} className="text-gray-400 mr-1" /> End Odometer *
-                  </label>
-                  <input
-                    type="number"
-                    id="endOdometer"
-                    name="endOdometer"
-                    placeholder="0"
-                    min="0"
-                    step="1"
-                    value={tripForm.endOdometer}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.endOdometer && touched.endOdometer
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  />
-                  {errors.endOdometer && touched.endOdometer && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.endOdometer}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="miles" className="flex text-sm font-medium text-gray-700 mb-1 items-center">
-                    <Truck size={16} className="text-gray-400 mr-1" /> Total Miles
-                  </label>
-                  <input
-                    type="number"
-                    id="miles"
-                    name="miles"
-                    placeholder="0.0"
-                    value={tripForm.miles}
-                    readOnly
-                    className="mt-1 block w-full rounded-md bg-gray-50 border-gray-300 shadow-sm text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Calculated from odometer readings
-                  </p>
-                </div>
-                
-                <div>
-                  <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
-                  </label>
-                  <input
-                    type="number"
-                    id="gallons"
-                    name="gallons"
-                    placeholder="0.0"
-                    min="0"
-                    step="0.1"
-                    value={tripForm.gallons}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
-                  />
-                </div>
-              </div>
-            )}
-            
-            {calculationMode === 'mpg' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="miles" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Truck size={16} className="text-gray-400 mr-1" /> Miles Driven *
-                  </label>
-                  <input
-                    type="number"
-                    id="miles"
-                    name="miles"
-                    placeholder="0.0"
-                    min="0"
-                    step="0.1"
-                    value={tripForm.miles}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.miles && touched.miles
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  />
-                  {errors.miles && touched.miles && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.miles}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
-                  </label>
-                  <input
-                    type="number"
-                    id="gallons"
-                    name="gallons"
-                    placeholder="0.0"
-                    value={tripForm.gallons}
-                    readOnly
-                    className="mt-1 block w-full rounded-md bg-gray-50 border-gray-300 shadow-sm text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Calculated at 6.5 MPG
-                  </p>
-                </div>
-                
-                <div>
-                  <label htmlFor="fuelCost" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <DollarSign size={16} className="text-gray-400 mr-1" /> Fuel Cost ($)
-                  </label>
-                  <input
-                    type="number"
-                    id="fuelCost"
-                    name="fuelCost"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    value={tripForm.fuelCost}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              rows="2"
-              placeholder="Enter any additional information about this trip"
-              value={tripForm.notes}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
-            ></textarea>
-          </div>
-          
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw size={16} className="mr-2 animate-spin" />
-                  Adding Trip...
-                </>
-              ) : (
-                <>
-                  <Plus size={16} className="mr-2" />
-                  Add Trip
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
