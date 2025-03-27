@@ -435,16 +435,16 @@ export default function TripsList({
       )}
       
       {isLoading ? (
-        <div className="px-6 py-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading trip records...</p>
-        </div>
-      ) : !trips || trips.length === 0 ? (
-        <EmptyState filtered={false} />
-      ) : sortedAndFilteredTrips.length === 0 ? (
-        <EmptyState filtered={true} />
-      ) : (
-        <div className="overflow-x-auto">
+  <div className="px-6 py-12 text-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+    <p className="text-gray-500">Loading trip records...</p>
+  </div>
+) : !trips || !Array.isArray(trips) || trips.length === 0 ? (
+  <EmptyState filtered={false} />
+) : sortedAndFilteredTrips.length === 0 ? (
+  <EmptyState filtered={true} />
+) : (
+  <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
