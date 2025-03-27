@@ -28,7 +28,7 @@ import Link from "next/link";
 // Import utilities
 import { runDatabaseDiagnostics } from "@/lib/utils/databaseCheck";
 
-// Import custom components - add dynamic imports if needed
+// Import custom components that don't need dynamic imports
 import EnhancedTripEntryForm from "@/components/ifta/EnhancedTripEntryForm";
 import TripsList from "@/components/ifta/TripsList";
 import IFTASummary from "@/components/ifta/IFTASummary";
@@ -75,58 +75,67 @@ const StateMileageImporter = dynamic(
 );
 
 // Dynamically import the LoadToIFTAImporter component
-const LoadToIFTAImporter = dynamic(() => import('@/components/ifta/LoadToIFTAImporter'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-4 bg-white shadow rounded-lg mb-6">
-      <div className="animate-pulse flex space-x-4">
-        <div className="flex-1 space-y-4 py-1">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+const LoadToIFTAImporter = dynamic(
+  () => import('@/components/ifta/LoadToIFTAImporter').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 bg-white shadow rounded-lg mb-6">
+        <div className="animate-pulse flex space-x-4">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
 
 // Dynamically import the IFTAFuelSync component
-const IFTAFuelSync = dynamic(() => import('@/components/ifta/IFTAFuelSync'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-4 bg-white shadow rounded-lg mb-6">
-      <div className="animate-pulse flex space-x-4">
-        <div className="flex-1 space-y-4 py-1">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+const IFTAFuelSync = dynamic(
+  () => import('@/components/ifta/IFTAFuelSync').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 bg-white shadow rounded-lg mb-6">
+        <div className="animate-pulse flex space-x-4">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
 
 // Dynamically import the EnhancedIFTASummary component
-const EnhancedIFTASummary = dynamic(() => import('@/components/ifta/EnhancedIFTASummary'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-4 bg-white shadow rounded-lg mb-6">
-      <div className="animate-pulse flex space-x-4">
-        <div className="flex-1 space-y-4 py-1">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+const EnhancedIFTASummary = dynamic(
+  () => import('@/components/ifta/EnhancedIFTASummary').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 bg-white shadow rounded-lg mb-6">
+        <div className="animate-pulse flex space-x-4">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
