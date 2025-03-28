@@ -31,6 +31,7 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import IFTAFuelToggle from "@/components/ifta/IFTAFuelToggle";
 import StateMileageImporter from "@/components/ifta/StateMileageImporter";
+import EnhancedIFTAFuelSync from "@/components/ifta/EnhancedIFTAFuelSync";
 
 // Import simplified components for IFTA
 import SimplifiedIFTASummary from "@/components/ifta/SimplifiedIFTASummary";
@@ -77,13 +78,106 @@ export default function IFTACalculatorPage() {
   const [error, setError] = useState(null);
   const [databaseError, setDatabaseError] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
+  const [debugMode, setDebugMode] = useState(false);
   
   // Data loading state
   const [dataLoaded, setDataLoaded] = useState(false);
   
   // State for mileage import
   const [showMileageImporter, setShowMileageImporter] = useState(true);
-  
+
+  // Load fuel data from fuel tracker
+  const loadFuelData = useCallback(async () => {
+    if (!user?.id || !activeQuarter || dataLoadingRef.current) return [];
+    
+    try {
+      console.log("Loading fuel data for quarter:", activeQuarter);
+      
+      // Parse the quarter into dateRange filter
+      const [year, quarter] = activeQuarter.split('-Q');
+      const quarterStartMonth = (parseInt(quarter) - 1) * 3;
+      const startDate = new Date(parseInt(year), quarterStartMonth, 1);
+      const endDate = new Date(parseInt(year), quarterStartMonth + 3, 0);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      console.log(`Fuel date range: ${startDateStr} to ${endDateStr}`);
+      
+      const filters = {
+        dateRange: 'Custom',
+        startDate: startDateStr,
+        endDate: endDateStr
+      };
+      
+      // Use the fetchFuelEntries service function
+      const fuelEntries = await fetchFuelEntries(user.id, filters);
+      
+      if (fuelEntries && Array.isArray(fuelEntries)) {
+        console.log("Loaded fuel entries:", fuelEntries.length);
+        // Process fuel entries into the format expected by IFTA calculations
+        const processedEntries = fuelEntries.map(entry => ({
+          ...entry,
+          state: entry.state || 'Unknown',
+          gallons: parseFloat(entry.gallons) || 0
+        }));
+        
+        setFuelData(processedEntries);
+        return processedEntries;
+      } else {
+        console.warn("No fuel entries returned or invalid format");
+        setFuelData([]);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error loading fuel data:', error);
+      setError('Failed to load fuel data. Your calculations may be incomplete.');
+      setFuelData([]);
+      return [];
+    }
+  }, [user?.id, activeQuarter]);
+
+  // Load trips for the selected quarter
+  const loadTrips = useCallback(async () => {
+    if (!user?.id || !activeQuarter || dataLoadingRef.current) return [];
+    
+    try {
+      dataLoadingRef.current = true;
+      console.log("Loading trips for user", user.id, "and quarter", activeQuarter);
+      
+      const { data, error: tripsError } = await supabase
+        .from('ifta_trip_records')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('quarter', activeQuarter)
+        .order('start_date', { ascending: false });
+        
+      if (tripsError) {
+        if (tripsError.code === '42P01') { // PostgreSQL code for relation does not exist
+          console.error("ifta_trip_records table doesn't exist:", tripsError);
+          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support to set up your database.");
+          throw new Error("Database table 'ifta_trip_records' doesn't exist");
+        } else {
+          throw tripsError;
+        }
+      }
+      
+      console.log("Loaded trips:", data?.length || 0);
+      setTrips(data || []);
+      
+      // Get the current fuel data or load it if needed
+      const currentFuelData = fuelData.length > 0 ? fuelData : await loadFuelData();
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error loading trips:', error);
+      setError('Failed to load trip records. ' + error.message);
+      return [];
+    } finally {
+      dataLoadingRef.current = false;
+    }
+  }, [user?.id, activeQuarter, fuelData, loadFuelData]);
+
   // Calculate stats based on trips and fuel data
   const calculateStats = useCallback((tripsData, fuelEntries) => {
     // This is a simplified stats calculation that just focuses on
@@ -131,77 +225,6 @@ export default function IFTACalculatorPage() {
     };
   }, [user?.id]);
 
-  // Load fuel data from fuel tracker
-  const loadFuelData = useCallback(async () => {
-    if (!user?.id || !activeQuarter || dataLoadingRef.current) return null;
-    
-    try {
-      // Parse the quarter into dateRange filter
-      const [year, quarter] = activeQuarter.split('-Q');
-      const quarterStartMonth = (parseInt(quarter) - 1) * 3;
-      const startDate = new Date(parseInt(year), quarterStartMonth, 1);
-      const endDate = new Date(parseInt(year), quarterStartMonth + 3, 0);
-      
-      const filters = {
-        dateRange: 'Custom',
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      };
-      
-      const fuelEntries = await fetchFuelEntries(user.id, filters);
-      if (fuelEntries) {
-        setFuelData(fuelEntries);
-        return fuelEntries;
-      }
-      return [];
-    } catch (error) {
-      console.error('Error loading fuel data:', error);
-      setError('Failed to load fuel data. Your calculations may be incomplete.');
-      return [];
-    }
-  }, [user?.id, activeQuarter]);
-
-  // Load trips for the selected quarter
-  const loadTrips = useCallback(async () => {
-    if (!user?.id || !activeQuarter || dataLoadingRef.current) return;
-    
-    try {
-      dataLoadingRef.current = true;
-      console.log("Loading trips for user", user.id, "and quarter", activeQuarter);
-      
-      const { data, error: tripsError } = await supabase
-        .from('ifta_trip_records')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('quarter', activeQuarter)
-        .order('start_date', { ascending: false });
-        
-      if (tripsError) {
-        if (tripsError.code === '42P01') { // PostgreSQL code for relation does not exist
-          console.error("ifta_trip_records table doesn't exist:", tripsError);
-          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support to set up your database.");
-          throw new Error("Database table 'ifta_trip_records' doesn't exist");
-        } else {
-          throw tripsError;
-        }
-      }
-      
-      console.log("Loaded trips:", data?.length || 0);
-      setTrips(data || []);
-      
-      // Get the current fuel data or load it if needed
-      const currentFuelData = fuelData.length > 0 ? fuelData : await loadFuelData();
-      
-      return data;
-    } catch (error) {
-      console.error('Error loading trips:', error);
-      setError('Failed to load trip records. ' + error.message);
-      return null;
-    } finally {
-      dataLoadingRef.current = false;
-    }
-  }, [user?.id, activeQuarter, fuelData, loadFuelData]);
-
   // Initialize data and check authentication
   useEffect(() => {
     async function initializeData() {
@@ -210,6 +233,9 @@ export default function IFTACalculatorPage() {
       
       try {
         setInitialLoading(true);
+        
+        // Try to load last selected quarter from local storage
+        const savedQuarter = localStorage.getItem('ifta-selected-quarter');
         
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -224,10 +250,15 @@ export default function IFTACalculatorPage() {
         
         setUser(session.user);
         
-        // Set default active quarter
-        const now = new Date();
-        const quarter = Math.ceil((now.getMonth() + 1) / 3);
-        setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
+        // Set quarter (from saved or default)
+        if (savedQuarter) {
+          setActiveQuarter(savedQuarter);
+        } else {
+          // Set default active quarter
+          const now = new Date();
+          const quarter = Math.ceil((now.getMonth() + 1) / 3);
+          setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
+        }
         
         setInitialLoading(false);
       } catch (err) {
@@ -239,6 +270,13 @@ export default function IFTACalculatorPage() {
     
     initializeData();
   }, [router]);
+
+  // Save active quarter to local storage when it changes
+  useEffect(() => {
+    if (activeQuarter) {
+      localStorage.setItem('ifta-selected-quarter', activeQuarter);
+    }
+  }, [activeQuarter]);
 
   // Load data once when parameters are available
   useEffect(() => {
@@ -252,11 +290,20 @@ export default function IFTACalculatorPage() {
           setDatabaseError(null);
           setLoading(true);
           
+          console.log("Loading data for quarter:", activeQuarter);
+          
           // Load fuel data first
           const fuelEntries = await loadFuelData();
+          console.log("Loaded fuel entries:", fuelEntries?.length || 0);
           
-          // Then load trips
-          await loadTrips();
+          // Then load trips - explicitly passing activeQuarter to ensure latest value is used
+          const tripsData = await loadTrips();
+          console.log("Loaded trips:", tripsData?.length || 0);
+          
+          // Update trips state directly here as backup
+          if (tripsData) {
+            setTrips(tripsData);
+          }
           
           // Mark data as loaded after successful fetch
           setDataLoaded(true);
@@ -277,6 +324,46 @@ export default function IFTACalculatorPage() {
   useEffect(() => {
     setDataLoaded(false);
   }, [activeQuarter]);
+
+  // Force sync fuel data with IFTA
+  const forceFuelSync = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Load fresh fuel data
+      const freshFuelData = await loadFuelData();
+      // Load fresh trips
+      await loadTrips();
+      // Update stats with fresh data
+      setStatusMessage({
+        type: 'success',
+        text: 'Fuel data synced successfully!'
+      });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (error) {
+      console.error("Error syncing fuel data:", error);
+      setError("Failed to sync fuel data: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadFuelData, loadTrips]);
+
+  // Handle sync completion from IFTA Fuel Sync component
+  const handleSyncComplete = (results) => {
+    console.log("Sync completed successfully:", results);
+    // Update UI based on results
+    if (!results.isBalanced) {
+      setStatusMessage({
+        type: 'warning',
+        text: `Found ${results.discrepancies.length} discrepancies between fuel and IFTA data`
+      });
+    } else {
+      setStatusMessage({
+        type: 'success',
+        text: 'Fuel and IFTA data are in sync!'
+      });
+    }
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
 
   // Handle adding a new trip
   const handleAddTrip = async (tripData) => {
@@ -459,6 +546,14 @@ export default function IFTACalculatorPage() {
               </div>
               <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
                 <button
+                  onClick={forceFuelSync}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  disabled={loading}
+                >
+                  <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Sync Fuel Data
+                </button>
+                <button
                   onClick={handleExportData}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={trips.length === 0}
@@ -548,10 +643,26 @@ export default function IFTACalculatorPage() {
               />
             </div>
 
+            {/* Enhanced IFTA Fuel Sync */}
+            {!databaseError && (
+              <div className="mb-6">
+                {loading && !dataLoaded ? <LoadingPlaceholder /> : (
+                  <EnhancedIFTAFuelSync
+                    userId={user?.id}
+                    quarter={activeQuarter}
+                    fuelData={fuelData}
+                    trips={trips}
+                    onSyncComplete={handleSyncComplete}
+                    onError={(error) => setError(error.message)}
+                  />
+                )}
+              </div>
+            )}
+
             {/* State Mileage Importer */}
             {!databaseError && showMileageImporter && (
               <div className="mb-6">
-                {loading ? <LoadingPlaceholder /> : (
+                {loading && !dataLoaded ? <LoadingPlaceholder /> : (
                   <StateMileageImporter 
                     userId={user?.id} 
                     quarter={activeQuarter} 
@@ -565,7 +676,7 @@ export default function IFTACalculatorPage() {
             {/* Simplified IFTA Summary */}
             {!databaseError && (
               <div className="mb-6">
-                {loading ? <LoadingPlaceholder /> : (
+                {loading && !dataLoaded ? <LoadingPlaceholder /> : (
                   <SimplifiedIFTASummary
                     userId={user?.id}
                     quarter={activeQuarter}
@@ -593,6 +704,34 @@ export default function IFTACalculatorPage() {
                 onDeleteTrip={handleDeleteTrip} 
                 isLoading={loading}
               />
+            </div>
+
+            {/* Debug Mode */}
+            {debugMode && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border text-xs">
+                <h3 className="font-medium text-gray-700 mb-2">Debug Information</h3>
+                <div className="space-y-1 text-gray-600">
+                  <div>Active Quarter: {activeQuarter}</div>
+                  <div>Trips: {trips.length}</div>
+                  <div>Fuel Entries: {fuelData.length}</div>
+                  <div>Data Loaded: {dataLoaded ? 'Yes' : 'No'}</div>
+                  <div>Loading State: {loading ? 'Loading' : 'Not Loading'}</div>
+                  <div>Data Loading Ref: {dataLoadingRef.current ? 'True' : 'False'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Debug Mode Toggle */}
+            <div className="mt-4 text-xs text-gray-500">
+              <label className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  checked={debugMode}
+                  onChange={(e) => setDebugMode(e.target.checked)}
+                  className="mr-2 h-3 w-3"
+                />
+                Debug Mode
+              </label>
             </div>
           </div>
         </main>
