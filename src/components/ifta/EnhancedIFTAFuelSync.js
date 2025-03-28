@@ -35,8 +35,17 @@ export default function EnhancedIFTAFuelSync({
   // Track props changes
   const propsRef = useRef({ userId, quarter, fuelDataLength: fuelData.length, tripsLength: trips.length });
 
+  // Manual sync handler - define this first so we can use it in the useEffect
+  const handleManualSync = () => {
+    // Only run if we have data
+    if (userId && quarter) {
+      console.log("Running manual fuel sync analysis...");
+      runAnalysis();
+    }
+  };
+
   // Key function to analyze data without causing infinite loops
-  const analyzeFuelSync = () => {
+  const runAnalysis = () => {
     // Guard against running in an infinite loop
     if (!userId || !quarter) return;
     
@@ -199,15 +208,12 @@ export default function EnhancedIFTAFuelSync({
       
       // Only run analysis if we have data
       if (userId && quarter && (fuelData.length > 0 || trips.length > 0)) {
-        analyzeFuelSync();
+        runAnalysis();
       }
     }
-  }, [userId, quarter, fuelData.length, trips.length, onSyncComplete, onError]);
-
-  // Manual sync handler
-  const handleManualSync = () => {
-    analyzeFuelSync();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, quarter, fuelData.length, trips.length]);
+  // Intentionally omitting runAnalysis from dependencies and using
 
   if (syncStatus === 'error') {
     return (
