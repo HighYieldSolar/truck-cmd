@@ -1,5 +1,5 @@
 // src/components/ifta/SimplifiedTripsList.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Truck, 
   Calendar, 
@@ -7,12 +7,14 @@ import {
   Filter, 
   RefreshCw,
   MapPin,
-  Fuel,
   ArrowRight,
   Search,
   ChevronDown,
-  X
+  ChevronRight,
+  X,
+  Clock
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoading = false }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,8 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     direction: 'desc' // desc = newest first
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [vehicleDetails, setVehicleDetails] = useState({});
 
   // Get unique states from trips
   const getUniqueStates = () => {
@@ -44,6 +48,73 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     });
     return Array.from(vehicles).sort();
   };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+  
+  // Format vehicle name with license plate if available
+  const formatVehicleName = (vehicleId) => {
+    if (!vehicleId) return 'Unknown Vehicle';
+    
+    if (vehicleDetails[vehicleId]) {
+      const vehicle = vehicleDetails[vehicleId];
+      return vehicle.licensePlate 
+        ? `${vehicle.name} (${vehicle.licensePlate})` 
+        : vehicle.name;
+    }
+    
+    return vehicleId;
+  };
+
+  // Fetch vehicle details on component mount
+  useEffect(() => {
+    const fetchVehicleDetails = async () => {
+      try {
+        // Get unique vehicle IDs from trips
+        const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
+        
+        if (vehicleIds.length === 0) return;
+        
+        // Try to get vehicles from both possible tables
+        let { data: vehiclesData, error: vehiclesError } = await supabase
+          .from('vehicles')
+          .select('id, name, license_plate')
+          .in('id', vehicleIds);
+        
+        // If we couldn't find vehicles, try the trucks table
+        if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
+          const { data: trucksData, error: trucksError } = await supabase
+            .from('trucks')
+            .select('id, name, license_plate')
+            .in('id', vehicleIds);
+            
+          if (!trucksError && trucksData && trucksData.length > 0) {
+            vehiclesData = trucksData;
+          }
+        }
+        
+        // Build a lookup object for vehicle details
+        if (vehiclesData && vehiclesData.length > 0) {
+          const detailsMap = {};
+          vehiclesData.forEach(vehicle => {
+            detailsMap[vehicle.id] = {
+              name: vehicle.name || vehicle.id,
+              licensePlate: vehicle.license_plate || ''
+            };
+          });
+          setVehicleDetails(detailsMap);
+        }
+      } catch (err) {
+        console.error("Error fetching vehicle details:", err);
+      }
+    };
+    
+    fetchVehicleDetails();
+  }, [trips]);
 
   const uniqueStates = getUniqueStates();
   const uniqueVehicles = getUniqueVehicles();
@@ -110,11 +181,13 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     });
   };
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  // Toggle trip selection
+  const handleSelectTrip = (trip) => {
+    if (selectedTrip && selectedTrip.id === trip.id) {
+      setSelectedTrip(null);
+    } else {
+      setSelectedTrip(trip);
+    }
   };
 
   return (
@@ -216,7 +289,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
       )}
       
       {/* Trips list or loading state */}
-      <div className="overflow-x-auto">
+      <div className="overflow-y-auto max-h-96">
         {isLoading ? (
           <div className="p-12 text-center">
             <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-blue-500" />
@@ -245,141 +318,141 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
             </button>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('date')}
+          <div className="space-y-2 p-4">
+            {sortedTrips.map((trip) => (
+              <div key={trip.id}>
+                <div 
+                  className={`p-4 rounded-lg border mb-2 transition-all ${
+                    selectedTrip && selectedTrip.id === trip.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                  } cursor-pointer`}
+                  onClick={() => handleSelectTrip(trip)}
                 >
-                  <div className="flex items-center">
-                    Date
-                    {sorting.field === 'date' ? (
-                      <ChevronDown
-                        size={16}
-                        className={`ml-1 ${sorting.direction === 'desc' ? '' : 'transform rotate-180'}`}
-                      />
-                    ) : null}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('vehicle')}
-                >
-                  <div className="flex items-center">
-                    Vehicle
-                    {sorting.field === 'vehicle' ? (
-                      <ChevronDown
-                        size={16}
-                        className={`ml-1 ${sorting.direction === 'desc' ? '' : 'transform rotate-180'}`}
-                      />
-                    ) : null}
-                  </div>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  States
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort('miles')}
-                >
-                  <div className="flex items-center">
-                    Miles
-                    {sorting.field === 'miles' ? (
-                      <ChevronDown
-                        size={16}
-                        className={`ml-1 ${sorting.direction === 'desc' ? '' : 'transform rotate-180'}`}
-                      />
-                    ) : null}
-                  </div>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gallons
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedTrips.map((trip) => (
-                <tr key={trip.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">{formatDate(trip.start_date)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{trip.vehicle_id || 'Unknown'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex items-center">
-                        <MapPin size={16} className="text-gray-400 mr-1" />
-                        <span className="text-sm text-gray-900">{trip.start_jurisdiction}</span>
+                  <div className="flex justify-between items-center">
+                    <div className="flex-grow">
+                      <h3 className="font-medium text-gray-900 flex items-center">
+                        <Truck size={16} className="mr-2 text-gray-500" />
+                        {formatVehicleName(trip.vehicle_id)}
+                      </h3>
+                      <div className="flex items-center text-sm text-gray-700 mt-1">
+                        <Calendar size={14} className="mr-1 text-gray-400" /> 
+                        <span>{formatDate(trip.start_date)}</span>
                       </div>
-                      {trip.start_jurisdiction !== trip.end_jurisdiction && (
-                        <>
-                          <ArrowRight size={16} className="mx-2 text-gray-400" />
-                          <div className="flex items-center">
-                            <MapPin size={16} className="text-gray-400 mr-1" />
-                            <span className="text-sm text-gray-900">{trip.end_jurisdiction}</span>
-                          </div>
-                        </>
+                      <div className="flex items-center text-sm text-gray-700 mt-1">
+                        <MapPin size={14} className="mr-1 text-gray-400" />
+                        <span>{trip.start_jurisdiction}</span>
+                        {trip.start_jurisdiction !== trip.end_jurisdiction && (
+                          <>
+                            <ArrowRight size={14} className="mx-1 text-gray-400" />
+                            <span>{trip.end_jurisdiction}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <div className="font-medium text-gray-900">
+                        {parseFloat(trip.total_miles).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} mi
+                      </div>
+                      <div className="flex items-center mt-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteTrip(trip);
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Delete trip"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <ChevronRight 
+                          className={`h-5 w-5 text-gray-500 transition-transform ${selectedTrip && selectedTrip.id === trip.id ? 'rotate-90' : ''}`} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Expanded details */}
+                {selectedTrip && selectedTrip.id === trip.id && (
+                  <div className="ml-6 mb-4 pl-4 border-l-2 border-blue-300 space-y-3">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Trip Details</h4>
+                          <p className="text-sm">
+                            <span className="font-medium">Vehicle:</span> {formatVehicleName(trip.vehicle_id)}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">Date:</span> {formatDate(trip.start_date)}
+                          </p>
+                          {trip.driver_id && (
+                            <p className="text-sm">
+                              <span className="font-medium">Driver:</span> {trip.driver_id}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Jurisdiction</h4>
+                          <p className="text-sm">
+                            <span className="font-medium">From:</span> {trip.start_jurisdiction}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">To:</span> {trip.end_jurisdiction}
+                          </p>
+                          {trip.notes && (
+                            <p className="text-sm">
+                              <span className="font-medium">Notes:</span> {trip.notes}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Measurements</h4>
+                          <p className="text-sm">
+                            <span className="font-medium">Miles:</span> {parseFloat(trip.total_miles || 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}
+                          </p>
+                          <p className="text-sm">
+                            <span className="font-medium">Gallons:</span> {parseFloat(trip.gallons || 0).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})}
+                          </p>
+                          {trip.fuel_cost > 0 && (
+                            <p className="text-sm">
+                              <span className="font-medium">Fuel Cost:</span> ${parseFloat(trip.fuel_cost || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Record created date */}
+                      {trip.created_at && (
+                        <div className="mt-4 pt-2 border-t border-gray-100 text-xs text-gray-500 flex items-center">
+                          <Clock size={12} className="mr-1" />
+                          Record created: {new Date(trip.created_at).toLocaleDateString()} 
+                          {trip.created_at !== trip.updated_at && ` (updated: ${new Date(trip.updated_at).toLocaleDateString()})`}
+                        </div>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{parseFloat(trip.total_miles).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Fuel size={16} className="text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">
-                        {parseFloat(trip.gallons || 0).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => onDeleteTrip(trip)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete trip"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
       
       {/* Summary footer */}
       {filteredTrips.length > 0 && (
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Trips</p>
-              <p className="text-black text-lg font-medium">{filteredTrips.length}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Miles</p>
-              <p className="text-black text-lg font-medium">
-                {filteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Gallons</p>
-              <p className="text-black text-lg font-medium">
-                {filteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})}
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Total Trips</p>
+                <p className="text-black text-lg font-medium">{filteredTrips.length}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Total Miles</p>
+                <p className="text-black text-lg font-medium">
+                  {filteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}
+                </p>
+              </div>
           </div>
         </div>
       )}
