@@ -250,15 +250,15 @@ export default function SimplifiedIFTASummary({
       <div className="p-6 bg-gray-50 print:bg-white grid grid-cols-3 gap-4 border-b border-gray-200">
         <div>
           <p className="text-sm text-gray-500 font-medium">Total Miles</p>
-          <p className="text-2xl font-bold">{formatNumber(totals.totalMiles)}</p>
+          <p className="text-black text-2xl font-bold">{formatNumber(totals.totalMiles)}</p>
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Total Gallons</p>
-          <p className="text-2xl font-bold">{formatNumber(totals.totalGallons, 3)}</p>
+          <p className="text-black text-2xl font-bold">{formatNumber(totals.totalGallons, 3)}</p>
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Average MPG</p>
-          <p className="text-2xl font-bold">{totals.avgMpg}</p>
+          <p className="text-black text-2xl font-bold">{totals.avgMpg}</p>
         </div>
       </div>
       
@@ -294,10 +294,10 @@ export default function SimplifiedIFTASummary({
                         <span className="text-sm font-medium text-gray-900">{state.state}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="text-black px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {formatNumber(state.miles)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="text-black px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {formatNumber(state.gallons, 3)}
                     </td>
                   </tr>

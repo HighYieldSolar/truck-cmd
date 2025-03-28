@@ -366,17 +366,17 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-500">Total Trips</p>
-              <p className="text-lg font-medium">{filteredTrips.length}</p>
+              <p className="text-black text-lg font-medium">{filteredTrips.length}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Miles</p>
-              <p className="text-lg font-medium">
+              <p className="text-black text-lg font-medium">
                 {filteredTrips.reduce((sum, trip) => sum + parseFloat(trip.total_miles || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Gallons</p>
-              <p className="text-lg font-medium">
+              <p className="text-black text-lg font-medium">
                 {filteredTrips.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})}
               </p>
             </div>

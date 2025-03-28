@@ -694,7 +694,7 @@ export default function StateMileageImporter({
           </div>
         ) : (
           <>
-            <h3 className="text-md font-medium mb-3">
+            <h3 className="text-black text-md font-medium mb-3">
               {showImportedTrips ? 'Available Mileage Trips' : 'Trips Ready for Import'}
             </h3>
             
