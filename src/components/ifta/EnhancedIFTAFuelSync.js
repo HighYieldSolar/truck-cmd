@@ -212,14 +212,14 @@ export default function EnhancedIFTAFuelSync({
       
       return null;
     }
-  }, [userId, quarter, fuelData, trips, fetchFuelDataForQuarter, onSyncComplete, onError]);
+  }, [fuelData, trips, fetchFuelDataForQuarter, onSyncComplete, onError]);
 
   // Run analysis on initial mount
   useEffect(() => {
     if (userId && quarter) {
       analyzeFuelSync();
     }
-  }, [analyzeFuelSync]);
+  }, [userId, quarter, analyzeFuelSync]);
 
   // Handle manual sync request
   const handleSync = () => {
