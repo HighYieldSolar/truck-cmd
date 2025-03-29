@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 
+
 // Star Rating Component with modern styling
 const StarRating = ({ rating, setRating, disabled = false }) => {
   const [hoverRating, setHoverRating] = useState(0);
@@ -479,36 +480,36 @@ export default function CompleteLoadForm({ loadId }) {
         podUrls.push({ name: file.name, url: publicUrl });
       }
       
-      // Format the completion data to store in the database
-      const completionData = {
-        deliveryDate: formData.deliveryDate,
-        deliveryTime: formData.deliveryTime,
-        receivedBy: formData.receivedBy,
-        notes: formData.notes,
-        rating: formData.deliveryRating,
-        additionalMileage: parseFloat(formData.additionalMileage || 0),
-        additionalCharges: parseFloat(formData.additionalCharges || 0),
-        additionalChargesDescription: formData.additionalChargesDescription,
-        podDocuments: podUrls
-      };
-      
-      // Prepare load update data
+      // Prepare load update data - exactly matching the database schema
       const loadUpdateData = {
-        driver: loadDetails.driver,
-        driver_id: loadDetails.driverId,
-        vehicle_id: loadDetails.truckId,  // Use vehicle_id, not truck_id
-        truck_info: load.truckInfo,
+        // Status and completion info
         status: 'Completed',
+        completed_at: new Date().toISOString(),
+        completed_by: user?.id || null, // Use the user's UUID instead of email
+        
+        // Delivery details
         actual_delivery_date: formData.deliveryDate,
+        actual_delivery_time: formData.deliveryTime,
         received_by: formData.receivedBy,
         completion_notes: formData.notes,
+        
+        // POD and ratings
+        pod_documents: podUrls,
+        delivery_rating: formData.deliveryRating,
+        
+        // Additional charges
         additional_mileage: parseFloat(formData.additionalMileage || 0),
         additional_charges: parseFloat(formData.additionalCharges || 0),
-        additional_charges_description: formData.additionalChargesDescription,
-        delivery_rating: formData.deliveryRating,
-        pod_documents: podUrls,
-        completed_at: new Date().toISOString(),
-        final_rate: totalRate
+        additional_charges_description: formData.additionalChargesDescription || '',
+        
+        // Rate information
+        final_rate: totalRate,
+        
+        // Preserve driver & truck info
+        driver: loadDetails.driver,
+        driver_id: loadDetails.driverId,
+        vehicle_id: loadDetails.truckId,  // Using vehicle_id per schema
+        truck_info: loadDetails.truckInfo  // Not load.truckInfo
       };
       
       // Add factoring information if applicable
@@ -757,22 +758,22 @@ export default function CompleteLoadForm({ loadId }) {
                   </div>
                 </div>
               </div>
-              {load.driver && (
+              {loadDetails.driver && (
   <div className="flex">
     <Users size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
     <div>
       <p className="text-sm font-medium text-gray-900">Driver</p>
-      <p className="text-sm text-gray-700">{load.driver}</p>
+      <p className="text-sm text-gray-700">{loadDetails.driver}</p>
     </div>
   </div>
 )}
 
-{load.truckInfo && (
+{loadDetails.truckInfo && (
   <div className="flex">
     <Truck size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
     <div>
       <p className="text-sm font-medium text-gray-900">Vehicle</p>
-      <p className="text-sm text-gray-700">{load.truckInfo}</p>
+      <p className="text-sm text-gray-700">{loadDetails.truckInfo}</p>
     </div>
   </div>
 )}
