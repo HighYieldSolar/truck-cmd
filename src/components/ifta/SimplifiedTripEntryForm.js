@@ -1,5 +1,5 @@
-// src/components/ifta/SimplifiedTripEntryForm.js
-import { useState } from "react";
+// src/components/ifta/SimplifiedTripEntryForm.js - Fixed version
+import { useState, useEffect } from "react";
 import { 
   Plus, 
   Truck, 
@@ -96,6 +96,40 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
   const [touched, setTouched] = useState({});
   const [showTips, setShowTips] = useState(false);
   const [formExpanded, setFormExpanded] = useState(true);
+  // Add a processed vehicles state to avoid processing on each render
+  const [processedVehicles, setProcessedVehicles] = useState([]);
+
+  // Process vehicles array once when it changes
+  useEffect(() => {
+    if (!vehicles || vehicles.length === 0) {
+      setProcessedVehicles([]);
+      return;
+    }
+
+    try {
+      const processed = vehicles.map(vehicle => {
+        // Process vehicle to ensure we have string keys and values
+        const vehicleId = typeof vehicle === 'object' ? 
+          (vehicle.id ? String(vehicle.id) : JSON.stringify(vehicle)) : 
+          String(vehicle);
+        
+        const vehicleLabel = typeof vehicle === 'object' ? 
+          (vehicle.name || vehicle.label || vehicleId) : 
+          vehicle;
+          
+        return {
+          id: vehicleId,
+          label: vehicleLabel,
+          license_plate: vehicle.license_plate || vehicle.licensePlate || ''
+        };
+      });
+      
+      setProcessedVehicles(processed);
+    } catch (error) {
+      console.error("Error processing vehicles:", error);
+      // Keep existing vehicles on error
+    }
+  }, [vehicles]);
 
   // Define the toggle function after the state declaration
   const toggleFormExpanded = () => {
@@ -308,7 +342,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                 <label htmlFor="vehicleId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
                   <Truck size={16} className="text-gray-400 mr-1" /> Vehicle *
                 </label>
-                {vehicles.length > 0 ? (
+                {processedVehicles.length > 0 ? (
                   <select
                     id="vehicleId"
                     name="vehicleId"
@@ -323,8 +357,11 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                     required
                   >
                     <option value="">Select Vehicle</option>
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle} value={vehicle}>{vehicle}</option>
+                    {processedVehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.label}
+                        {vehicle.license_plate && ` (${vehicle.license_plate})`}
+                      </option>
                     ))}
                   </select>
                 ) : (

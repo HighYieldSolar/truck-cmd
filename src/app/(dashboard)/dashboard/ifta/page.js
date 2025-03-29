@@ -32,6 +32,7 @@ import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal
 import IFTAFuelToggle from "@/components/ifta/IFTAFuelToggle";
 import StateMileageImporter from "@/components/ifta/StateMileageImporter";
 import EnhancedIFTAFuelSync from "@/components/ifta/EnhancedIFTAFuelSync";
+import VehicleSelector from "@/components/ifta/VehicleSelector";
 
 // Import simplified components for IFTA
 import SimplifiedIFTASummary from "@/components/ifta/SimplifiedIFTASummary";
@@ -70,6 +71,9 @@ export default function IFTACalculatorPage() {
   const [activeQuarter, setActiveQuarter] = useState("");
   const [trips, setTrips] = useState([]);
   const [fuelData, setFuelData] = useState([]);
+  
+  // Add selected vehicle state
+  const [selectedVehicle, setSelectedVehicle] = useState("all");
   
   // UI state
   const [loading, setLoading] = useState(false);
@@ -171,21 +175,33 @@ export default function IFTACalculatorPage() {
     }
   }, [user?.id, activeQuarter]);
 
-  // Extract unique vehicles from trips and fuel data
+  // Extract unique vehicles from trips and fuel data - enhanced version with memoization
   const getUniqueVehicles = useCallback(() => {
-    const uniqueVehicles = new Set();
+    const vehicleMap = new Map();
     
-    // Add vehicles from trips
+    // Add vehicles from trips with more metadata if available
     trips.forEach(trip => {
-      if (trip.vehicle_id) uniqueVehicles.add(trip.vehicle_id);
+      if (trip.vehicle_id && !vehicleMap.has(trip.vehicle_id)) {
+        vehicleMap.set(trip.vehicle_id, {
+          id: String(trip.vehicle_id),
+          name: trip.vehicle_name || String(trip.vehicle_id),
+          license_plate: trip.license_plate
+        });
+      }
     });
     
     // Add vehicles from fuel data
     fuelData.forEach(entry => {
-      if (entry.vehicle_id) uniqueVehicles.add(entry.vehicle_id);
+      if (entry.vehicle_id && !vehicleMap.has(entry.vehicle_id)) {
+        vehicleMap.set(entry.vehicle_id, {
+          id: String(entry.vehicle_id),
+          name: entry.vehicle_name || String(entry.vehicle_id),
+          license_plate: entry.license_plate
+        });
+      }
     });
     
-    return Array.from(uniqueVehicles);
+    return Array.from(vehicleMap.values());
   }, [trips, fuelData]);
 
   // Initialize data and check authentication
@@ -422,16 +438,25 @@ export default function IFTACalculatorPage() {
     }
   };
 
-  // Handler for exporting data
+  // Handle exporting data - modified to include vehicle
   const handleExportData = useCallback(() => {
     if (!trips || trips.length === 0) {
       setError("No trip data available to export. Please add trips first.");
       return;
     }
     
+    // If specific vehicle is selected but has no data, show error
+    if (selectedVehicle !== "all") {
+      const hasVehicleData = trips.some(trip => trip.vehicle_id === selectedVehicle);
+      if (!hasVehicleData) {
+        setError(`No trip data available for vehicle ${selectedVehicle}. Please select a different vehicle or add trips for this vehicle.`);
+        return;
+      }
+    }
+    
     // Open the export modal
     setExportModalOpen(true);
-  }, [trips]);
+  }, [trips, selectedVehicle]);
 
   // Handle trips import completion
   const handleImportComplete = useCallback(() => {
@@ -468,7 +493,8 @@ export default function IFTACalculatorPage() {
       fuelData: fuelData.length,
       isDataLoaded,
       loading,
-      dataFetchKey
+      dataFetchKey,
+      selectedVehicle
     });
   }
   
@@ -574,6 +600,16 @@ export default function IFTACalculatorPage() {
               />
             </div>
 
+            {/* Vehicle Selector - NEW */}
+            <div className="mb-6">
+              <VehicleSelector
+                selectedVehicle={selectedVehicle}
+                setSelectedVehicle={setSelectedVehicle}
+                vehicles={uniqueVehicles}
+                isLoading={loading && !isDataLoaded}
+              />
+            </div>
+
             {/* IFTA/Fuel Toggle */}
             <div className="mb-6">
               <IFTAFuelToggle
@@ -593,6 +629,7 @@ export default function IFTACalculatorPage() {
                     quarter={activeQuarter}
                     fuelData={fuelData}
                     trips={trips}
+                    selectedVehicle={selectedVehicle} // Pass selected vehicle
                     onSyncComplete={handleSyncComplete}
                     onError={(error) => setError(error.message)}
                   />
@@ -624,6 +661,7 @@ export default function IFTACalculatorPage() {
                   quarter={activeQuarter}
                   trips={trips}
                   fuelData={fuelData}
+                  selectedVehicle={selectedVehicle} // Pass selected vehicle
                   isLoading={loading && !isDataLoaded}
                 />
               </div>
@@ -638,10 +676,10 @@ export default function IFTACalculatorPage() {
               />
             </div>
 
-            {/* Simplified Trips List - Always show this with loading state */}
+            {/* Simplified Trips List - Also filter by selected vehicle */}
             <div className="mb-6">
               <SimplifiedTripsList
-                trips={trips} 
+                trips={selectedVehicle === "all" ? trips : trips.filter(trip => trip.vehicle_id === selectedVehicle)}
                 onDeleteTrip={handleDeleteTrip} 
                 isLoading={loading && !isDataLoaded}
               />
@@ -653,6 +691,7 @@ export default function IFTACalculatorPage() {
                 <h3 className="font-medium text-gray-700 mb-2">Debug Information</h3>
                 <div className="space-y-1 text-gray-600">
                   <div>Active Quarter: {activeQuarter}</div>
+                  <div>Selected Vehicle: {selectedVehicle}</div>
                   <div>Trips: {trips.length}</div>
                   <div>Fuel Entries: {fuelData.length}</div>
                   <div>Data Loaded: {isDataLoaded ? 'Yes' : 'No'}</div>
@@ -700,6 +739,7 @@ export default function IFTACalculatorPage() {
           trips={trips}
           quarter={activeQuarter}
           fuelData={fuelData}
+          selectedVehicle={selectedVehicle} // Pass selected vehicle
         />
       )}
     </DashboardLayout>

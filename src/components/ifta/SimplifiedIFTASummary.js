@@ -1,7 +1,7 @@
-// src/components/ifta/SimplifiedIFTASummary.js
+// src/components/ifta/SimplifiedIFTASummary.js - Updated with vehicle filtering
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   Download, 
   Flag, 
@@ -11,7 +11,7 @@ import {
   AlertTriangle,
   Fuel,
   Truck,
-  FileSpreadsheet,  // Using FileSpreadsheet instead of FileCsv
+  FileSpreadsheet
 } from "lucide-react";
 
 export default function SimplifiedIFTASummary({ 
@@ -19,7 +19,8 @@ export default function SimplifiedIFTASummary({
   quarter,
   trips = [], 
   fuelData = [],
-  isLoading = false 
+  isLoading = false,
+  selectedVehicle = "all" // Add selectedVehicle prop
 }) {
   const [summaryData, setSummaryData] = useState([]);
   const [totals, setTotals] = useState({
@@ -29,13 +30,27 @@ export default function SimplifiedIFTASummary({
   });
   const [showInfo, setShowInfo] = useState(false);
 
-  // Calculate the state-by-state summary data - using useCallback
+  // Filter trips by selected vehicle if needed - using useMemo to prevent recalculation on every render
+  const filteredTrips = useMemo(() => {
+    return selectedVehicle === "all" 
+      ? trips 
+      : trips.filter(trip => trip.vehicle_id === selectedVehicle);
+  }, [trips, selectedVehicle]);
+
+  // Filter fuel data by selected vehicle if needed - using useMemo
+  const filteredFuelData = useMemo(() => {
+    return selectedVehicle === "all"
+      ? fuelData
+      : fuelData.filter(entry => entry.vehicle_id === selectedVehicle);
+  }, [fuelData, selectedVehicle]);
+
+  // Calculate the state-by-state summary data based on filtered data
   const calculateSummaryData = useCallback(() => {
     // Step 1: Calculate miles by jurisdiction
     const milesByJurisdiction = {};
     
-    // Process miles from trips
-    trips.forEach(trip => {
+    // Process miles from filtered trips
+    filteredTrips.forEach(trip => {
       // If trip has start and end in same jurisdiction
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         if (!milesByJurisdiction[trip.start_jurisdiction]) {
@@ -71,8 +86,8 @@ export default function SimplifiedIFTASummary({
       }
     });
     
-    // Step 2: Calculate fuel by jurisdiction from fuel purchase data
-    fuelData.forEach(entry => {
+    // Step 2: Calculate fuel by jurisdiction from filtered fuel purchase data
+    filteredFuelData.forEach(entry => {
       const state = entry.state;
       if (state && entry.gallons) {
         if (!milesByJurisdiction[state]) {
@@ -105,14 +120,14 @@ export default function SimplifiedIFTASummary({
       totalGallons,
       avgMpg
     });
-  }, [trips, fuelData]); // Added proper dependencies here
+  }, [filteredTrips, filteredFuelData]); // Dependencies changed to filtered data
 
-  // Calculate summary when trips or fuel data changes
+  // Calculate summary when filtered trips or fuel data changes
   useEffect(() => {
-    if (trips.length === 0) return;
+    if (filteredTrips.length === 0) return;
     
     calculateSummaryData();
-  }, [trips, fuelData, calculateSummaryData]); // Added calculateSummaryData to the dependency array
+  }, [filteredTrips, filteredFuelData, calculateSummaryData]); // Dependencies changed
 
   // Format numbers for display
   const formatNumber = (value, decimals = 1) => {
@@ -150,7 +165,11 @@ export default function SimplifiedIFTASummary({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}.csv`);
+    
+    // Include vehicle info in filename if filtering by vehicle
+    const filenameVehiclePart = selectedVehicle === "all" ? "" : `_vehicle_${selectedVehicle}`;
+    link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}${filenameVehiclePart}.csv`);
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -174,13 +193,17 @@ export default function SimplifiedIFTASummary({
     );
   }
 
-  if (trips.length === 0) {
+  if (filteredTrips.length === 0) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
         <div className="text-center">
           <Truck size={40} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No IFTA Data Available</h3>
-          <p className="mt-2 text-gray-500">Add trips to see your IFTA summary by state.</p>
+          <p className="mt-2 text-gray-500">
+            {selectedVehicle === "all" 
+              ? "Add trips to see your IFTA summary by state." 
+              : `No data available for vehicle ${selectedVehicle}. Select a different vehicle or add trips for this vehicle.`}
+          </p>
         </div>
       </div>
     );
@@ -188,10 +211,17 @@ export default function SimplifiedIFTASummary({
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden print:shadow-none">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 print:hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center print:hidden">
         <div className="flex items-center">
           <Table size={20} className="text-blue-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">IFTA Miles & Gallons by Jurisdiction</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            IFTA Miles & Gallons by Jurisdiction
+            {selectedVehicle !== "all" && (
+              <span className="ml-2 text-sm text-blue-600">
+                - Vehicle: {selectedVehicle}
+              </span>
+            )}
+          </h3>
         </div>
         
         <div className="flex space-x-3">
@@ -322,13 +352,22 @@ export default function SimplifiedIFTASummary({
       </div>
       
       <div className="px-6 py-4 bg-gray-50 print:bg-white print:hidden text-xs text-gray-500 border-t border-gray-200">
-        For {quarter} • Based on {trips.length} trip records • Generated on {new Date().toLocaleDateString()}
+        For {quarter} • 
+        {selectedVehicle === "all" 
+          ? `Based on ${trips.length} trip records` 
+          : `Vehicle: ${selectedVehicle} • Based on ${filteredTrips.length} trip records`
+        } • Generated on {new Date().toLocaleDateString()}
       </div>
       
       {/* Print-only footer */}
       <div className="hidden print:block p-6 text-sm text-gray-500">
         <p>Quarter: {quarter} | Date Generated: {new Date().toLocaleDateString()}</p>
-        <p>Based on {trips.length} trip records and {fuelData.length} fuel purchase records</p>
+        <p>
+          {selectedVehicle === "all" 
+            ? `Based on ${trips.length} trip records and ${fuelData.length} fuel purchase records`
+            : `Vehicle: ${selectedVehicle} | Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchase records`
+          }
+        </p>
       </div>
     </div>
   );

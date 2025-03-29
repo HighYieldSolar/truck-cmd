@@ -1,4 +1,4 @@
-// src/components/ifta/SimplifiedExportModal.js
+// src/components/ifta/SimplifiedExportModal.js - Updated with vehicle filtering
 import { useState } from "react";
 import { 
   Download, 
@@ -7,8 +7,9 @@ import {
   Printer,
   FileText,
   Check,
-  FileSpreadsheet,  // Using FileSpreadsheet instead of FileCsv
-  File
+  FileSpreadsheet,
+  File,
+  Truck
 } from "lucide-react";
 
 export default function SimplifiedExportModal({ 
@@ -16,7 +17,8 @@ export default function SimplifiedExportModal({
   onClose, 
   trips = [], 
   quarter, 
-  fuelData = []
+  fuelData = [],
+  selectedVehicle = "all" // Add selectedVehicle prop
 }) {
   const [exportFormat, setExportFormat] = useState('csv');
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
@@ -29,13 +31,23 @@ export default function SimplifiedExportModal({
     return parseFloat(value || 0).toFixed(decimals);
   };
 
-  // Prepare jurisdiction data
+  // Filter trips by selected vehicle if needed
+  const filteredTrips = selectedVehicle === "all" 
+    ? trips 
+    : trips.filter(trip => trip.vehicle_id === selectedVehicle);
+
+  // Filter fuel data by selected vehicle if needed
+  const filteredFuelData = selectedVehicle === "all"
+    ? fuelData
+    : fuelData.filter(entry => entry.vehicle_id === selectedVehicle);
+
+  // Prepare jurisdiction data from filtered data
   const prepareJurisdictionData = () => {
     // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
     
-    // Process miles from trips
-    trips.forEach(trip => {
+    // Process miles from filtered trips
+    filteredTrips.forEach(trip => {
       // If trip has start and end in same jurisdiction
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         if (!milesByJurisdiction[trip.start_jurisdiction]) {
@@ -71,8 +83,8 @@ export default function SimplifiedExportModal({
       }
     });
     
-    // Calculate fuel by jurisdiction from fuel purchase data
-    fuelData.forEach(entry => {
+    // Calculate fuel by jurisdiction from filtered fuel purchase data
+    filteredFuelData.forEach(entry => {
       const state = entry.state;
       if (state && entry.gallons) {
         if (!milesByJurisdiction[state]) {
@@ -104,9 +116,19 @@ export default function SimplifiedExportModal({
       const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
       const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
       
+      // Get vehicle information for filename and header
+      const vehicleInfo = selectedVehicle === "all" 
+        ? "all_vehicles" 
+        : `vehicle_${selectedVehicle}`;
+      
       // Create CSV rows
       const rows = [
+        // Header info
+        `IFTA Summary for ${quarter} - ${selectedVehicle === "all" ? "All Vehicles" : `Vehicle: ${selectedVehicle}`}`,
+        `Generated on ${new Date().toLocaleDateString()}`,
+        '',
         ['Jurisdiction', 'Miles', 'Gallons'].join(','),
+        // Data rows
         ...jurisdictionData.map(state => [
           state.state,
           formatNumber(state.miles, 1),
@@ -127,7 +149,7 @@ export default function SimplifiedExportModal({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}.csv`);
+      link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}_${vehicleInfo}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -155,8 +177,13 @@ export default function SimplifiedExportModal({
       const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
       const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
       
+      // Get vehicle information for filename and header
+      const vehicleInfo = selectedVehicle === "all" 
+        ? "All Vehicles" 
+        : `Vehicle: ${selectedVehicle}`;
+      
       // Create text content
-      let textContent = `IFTA SUMMARY FOR ${quarter}\n`;
+      let textContent = `IFTA SUMMARY FOR ${quarter} - ${vehicleInfo}\n`;
       textContent += `Generated on ${new Date().toLocaleDateString()}\n\n`;
       textContent += `JURISDICTION  |  MILES  |  GALLONS\n`;
       textContent += `------------------------------------\n`;
@@ -169,7 +196,7 @@ export default function SimplifiedExportModal({
       textContent += `TOTAL         | ${formatNumber(totalMiles, 1).padStart(7)} | ${formatNumber(totalGallons, 3).padStart(9)}\n\n`;
       
       // Add some additional info
-      textContent += `Based on ${trips.length} trip records and ${fuelData.length} fuel purchases.\n`;
+      textContent += `Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchases.\n`;
       textContent += `Average MPG: ${totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : 'N/A'}\n`;
       
       // Create and download the file
@@ -177,7 +204,7 @@ export default function SimplifiedExportModal({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}.txt`);
+      link.setAttribute('download', `ifta_summary_${quarter.replace('-', '_')}_${selectedVehicle === "all" ? "all_vehicles" : `vehicle_${selectedVehicle}`}.txt`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -250,8 +277,32 @@ export default function SimplifiedExportModal({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 mb-4">
-            Export your IFTA summary to share with your accountant or paperwork handler. This will include miles and gallons by jurisdiction for {quarter}.
+            Export your IFTA summary to share with your accountant or paperwork handler. 
+            This will include miles and gallons by jurisdiction for {quarter}
+            {selectedVehicle !== "all" ? ` for vehicle ${selectedVehicle}` : " for all vehicles"}.
           </p>
+          
+          {/* Summary info */}
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <div className="flex items-start">
+              <Truck size={20} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-blue-800">Export Details</h4>
+                <p className="text-sm text-blue-700">
+                  <strong>Quarter:</strong> {quarter}
+                </p>
+                <p className="text-sm text-blue-700">
+                  <strong>Vehicle:</strong> {selectedVehicle === "all" ? "All Vehicles" : selectedVehicle}
+                </p>
+                <p className="text-sm text-blue-700">
+                  <strong>Trip Records:</strong> {filteredTrips.length}
+                </p>
+                <p className="text-sm text-blue-700">
+                  <strong>Fuel Records:</strong> {filteredFuelData.length}
+                </p>
+              </div>
+            </div>
+          </div>
           
           <div className="space-y-4">
             <div>
@@ -338,7 +389,7 @@ export default function SimplifiedExportModal({
             type="button"
             onClick={handleExport}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
-            disabled={exportState === 'loading' || exportState === 'success'}
+            disabled={exportState === 'loading' || exportState === 'success' || filteredTrips.length === 0}
           >
             {exportState === 'loading' ? (
               <>

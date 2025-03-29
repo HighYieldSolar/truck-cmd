@@ -1,7 +1,7 @@
-// src/components/ifta/EnhancedIFTAFuelSync.js
+// src/components/ifta/EnhancedIFTAFuelSync.js - Fixed version
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { 
   AlertTriangle, 
   Truck, 
@@ -22,6 +22,7 @@ export default function EnhancedIFTAFuelSync({
   quarter, 
   fuelData = [],
   trips = [],
+  selectedVehicle = "all", // Add support for vehicle filtering
   onSyncComplete,
   onError
 }) {
@@ -36,7 +37,14 @@ export default function EnhancedIFTAFuelSync({
   // Use a ref to track if analysis has been run
   const hasRun = useRef(false);
   // Track props changes
-  const propsRef = useRef({ userId, quarter, fuelDataLength: fuelData.length });
+  const propsRef = useRef({ userId, quarter, fuelDataLength: fuelData.length, selectedVehicle });
+
+  // Filter fuel data by selected vehicle
+  const filteredFuelData = useMemo(() => {
+    return selectedVehicle === "all" 
+      ? fuelData 
+      : fuelData.filter(entry => entry.vehicle_id === selectedVehicle);
+  }, [fuelData, selectedVehicle]);
 
   // Manual sync handler
   const handleManualSync = () => {
@@ -53,13 +61,13 @@ export default function EnhancedIFTAFuelSync({
     if (!userId || !quarter) return;
     
     try {
-      console.log("Running fuel data analysis...");
+      console.log("Running fuel data analysis for vehicle:", selectedVehicle);
       
       // Group fuel entries by state - only concerned with actual fuel purchases
       const fuelStateMap = {};
       let totalGallons = 0;
       
-      fuelData.forEach(entry => {
+      filteredFuelData.forEach(entry => {
         if (!entry.state) return;
         
         const state = entry.state;
@@ -94,7 +102,8 @@ export default function EnhancedIFTAFuelSync({
         onSyncComplete({
           fuelByState: fuelStateMap,
           totalFuelGallons,
-          uniqueStates: Object.keys(fuelStateMap)
+          uniqueStates: Object.keys(fuelStateMap),
+          selectedVehicle
         });
       }
       
@@ -122,26 +131,29 @@ export default function EnhancedIFTAFuelSync({
     const currentProps = {
       userId,
       quarter,
-      fuelDataLength: fuelData.length
+      fuelDataLength: fuelData.length,
+      selectedVehicle
     };
     
     const propsChanged = 
       currentProps.userId !== propsRef.current.userId ||
       currentProps.quarter !== propsRef.current.quarter ||
-      currentProps.fuelDataLength !== propsRef.current.fuelDataLength;
+      currentProps.fuelDataLength !== propsRef.current.fuelDataLength ||
+      currentProps.selectedVehicle !== propsRef.current.selectedVehicle;
+    
+    // Update props ref
+    if (propsChanged) {
+      propsRef.current = currentProps;
+      // Reset has run flag
+      hasRun.current = false;
+    }
     
     // Only run if not run before or if props changed
-    if (!hasRun.current || propsChanged) {
-      // Update props ref
-      propsRef.current = currentProps;
-      
-      // Only run analysis if we have data
-      if (userId && quarter && (fuelData.length > 0)) {
-        runAnalysis();
-      }
+    if (!hasRun.current && userId && quarter && (filteredFuelData.length > 0)) {
+      runAnalysis();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, quarter, fuelData.length]);
+  }, [userId, quarter, filteredFuelData.length, selectedVehicle]);  // Note: do NOT add runAnalysis to deps
 
   if (syncStatus === 'error') {
     return (
@@ -174,9 +186,15 @@ export default function EnhancedIFTAFuelSync({
         <div className="flex">
           <Fuel className="h-6 w-6 text-yellow-500 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-yellow-800">No Fuel Purchase Data</h3>
+            <h3 className="text-lg font-medium text-yellow-800">
+              {selectedVehicle === "all" 
+                ? "No Fuel Purchase Data" 
+                : `No Fuel Data for Vehicle ${selectedVehicle}`}
+            </h3>
             <p className="text-yellow-700">
-              No fuel purchase data was found for this quarter. IFTA requires fuel purchase records by state.
+              {selectedVehicle === "all"
+                ? "No fuel purchase data was found for this quarter. IFTA requires fuel purchase records by state."
+                : `No fuel purchase records found for vehicle ${selectedVehicle} in this quarter.`}
             </p>
             
             <div className="mt-4">
@@ -200,9 +218,15 @@ export default function EnhancedIFTAFuelSync({
           <div className="flex items-start">
             <Fuel className="h-6 w-6 text-blue-500 mr-3 mt-0.5" />
             <div>
-              <h3 className="text-lg font-medium text-blue-800">Fuel Purchase Data by State</h3>
+              <h3 className="text-lg font-medium text-blue-800">
+                {selectedVehicle === "all" 
+                  ? "Fuel Purchase Data by State" 
+                  : `Fuel Data for Vehicle ${selectedVehicle}`}
+              </h3>
               <p className="text-blue-700">
-                You have recorded {totalFuelGallons.toFixed(3)} gallons of fuel in {uniqueStates.length} states for this quarter.
+                {selectedVehicle === "all"
+                  ? `You have recorded ${totalFuelGallons.toFixed(3)} gallons of fuel in ${uniqueStates.length} states for this quarter.`
+                  : `Vehicle ${selectedVehicle} has ${totalFuelGallons.toFixed(3)} gallons of fuel recorded in ${uniqueStates.length} states.`}
                 {lastSyncTime && ` Last updated: ${lastSyncTime.toLocaleTimeString()}`}
               </p>
             </div>
@@ -258,7 +282,7 @@ export default function EnhancedIFTAFuelSync({
                     {totalFuelGallons.toFixed(3)}
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-gray-500">
-                    {fuelData.length} entries
+                    {filteredFuelData.length} entries
                   </td>
                 </tr>
               </tfoot>
@@ -304,7 +328,7 @@ export default function EnhancedIFTAFuelSync({
           <p className="text-gray-600 mt-1">
             {!userId || !quarter 
               ? "Waiting for quarter selection..." 
-              : fuelData.length === 0 
+              : filteredFuelData.length === 0 
                 ? "No fuel data available for this quarter." 
                 : "Analyzing fuel data..."}
           </p>
