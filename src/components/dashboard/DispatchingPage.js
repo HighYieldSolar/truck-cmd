@@ -25,7 +25,7 @@ import {
   DollarSign,
 } from "lucide-react";
 
-// Import your existing components
+// Import your components
 import StatusBadge from "@/components/dispatching/StatusBadge";
 import LoadCard from "@/components/dispatching/LoadCard";
 import FilterBar from "@/components/dispatching/FilterBar";
@@ -37,25 +37,7 @@ import StatCard from "@/components/common/StatCard";
 // Fetch drivers from the database
 const fetchDrivers = async (userId) => {
   try {
-    // Check if the drivers table exists
-    const { data: tablesData, error: tablesError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_name', 'drivers');
-    
-    // If there's an error or the table doesn't exist, return sample data
-    if (tablesError || !tablesData || tablesData.length === 0) {
-      console.log('Using sample driver data because table might not exist');
-      return [
-        { id: 1, user_id: userId, name: "John Smith", phone: "555-123-4567", license: "CDL12345" },
-        { id: 2, user_id: userId, name: "Maria Garcia", phone: "555-987-6543", license: "CDL67890" },
-        { id: 3, user_id: userId, name: "Robert Johnson", phone: "555-456-7890", license: "CDL24680" },
-        { id: 4, user_id: userId, name: "Li Wei", phone: "555-222-3333", license: "CDL13579" },
-        { id: 5, user_id: userId, name: "James Wilson", phone: "555-444-5555", license: "CDL97531" }
-      ];
-    }
-    
-    // Try to fetch from the drivers table
+    // Try to get drivers data
     const { data, error } = await supabase
       .from('drivers')
       .select('*')
@@ -63,28 +45,38 @@ const fetchDrivers = async (userId) => {
       
     if (error) throw error;
     
-    // If there are no drivers yet, return sample data
-    if (!data || data.length === 0) {
-      return [
-        { id: 1, user_id: userId, name: "John Smith", phone: "555-123-4567", license: "CDL12345" },
-        { id: 2, user_id: userId, name: "Maria Garcia", phone: "555-987-6543", license: "CDL67890" },
-        { id: 3, user_id: userId, name: "Robert Johnson", phone: "555-456-7890", license: "CDL24680" },
-        { id: 4, user_id: userId, name: "Li Wei", phone: "555-222-3333", license: "CDL13579" },
-        { id: 5, user_id: userId, name: "James Wilson", phone: "555-444-5555", license: "CDL97531" }
-      ];
+    // Return the data, or an empty array if no data
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching drivers:', error);
+    return [];
+  }
+};
+
+// Fetch trucks from the database
+const fetchTrucks = async (userId) => {
+  try {
+    // Try vehicles table first
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('user_id', userId);
+      
+    // If that fails, try trucks table
+    if (error || !data || data.length === 0) {
+      const { data: trucksData, error: trucksError } = await supabase
+        .from('trucks')
+        .select('*')
+        .eq('user_id', userId);
+        
+      if (trucksError) throw trucksError;
+      return trucksData || [];
     }
     
     return data;
   } catch (error) {
-    console.error("Error fetching drivers:", error);
-    // Return sample data on error
-    return [
-      { id: 1, user_id: userId, name: "John Smith", phone: "555-123-4567", license: "CDL12345" },
-      { id: 2, user_id: userId, name: "Maria Garcia", phone: "555-987-6543", license: "CDL67890" },
-      { id: 3, user_id: userId, name: "Robert Johnson", phone: "555-456-7890", license: "CDL24680" },
-      { id: 4, user_id: userId, name: "Li Wei", phone: "555-222-3333", license: "CDL13579" },
-      { id: 5, user_id: userId, name: "James Wilson", phone: "555-444-5555", license: "CDL97531" }
-    ];
+    console.error('Error fetching trucks:', error);
+    return [];
   }
 };
 
@@ -170,7 +162,7 @@ const fetchLoads = async (userId, filters = {}) => {
     
     if (error) throw error;
     
-    // If no loads found yet, don't return sample data - let the UI handle the empty state
+    // If no loads found yet, return empty array
     if (!data || data.length === 0) {
       return [];
     }
@@ -186,6 +178,9 @@ const fetchLoads = async (userId, filters = {}) => {
       deliveryDate: load.delivery_date,
       status: load.status,
       driver: load.driver || '',
+      driverId: load.driver_id || null,
+      truckId: load.truck_id || null,
+      truckInfo: load.truck_info || null,
       rate: load.rate || 0,
       distance: load.distance || 0,
       description: load.description || '',
@@ -228,9 +223,10 @@ export default function DispatchingPage() {
     completedLoads: 0
   });
   
-  // State for customers and drivers
+  // State for customers, drivers, and trucks
   const [customers, setCustomers] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [trucks, setTrucks] = useState([]);
   
   // State for filtering and selection
   const [filters, setFilters] = useState({
@@ -286,13 +282,15 @@ export default function DispatchingPage() {
         setUser(user);
         
         // Fetch all required data in parallel
-        const [cusData, drvData] = await Promise.all([
+        const [cusData, drvData, trkData] = await Promise.all([
           fetchCustomers(user.id),
-          fetchDrivers(user.id)
+          fetchDrivers(user.id),
+          fetchTrucks(user.id)
         ]);
         
         setCustomers(cusData);
         setDrivers(drvData);
+        setTrucks(trkData);
         
         // Now fetch loads (this might take longer so do it separately)
         await loadLoadsData(user.id);
@@ -346,7 +344,7 @@ export default function DispatchingPage() {
   };
 
   // Handle assigning a driver to a load
-  const handleAssignDriver = async (loadId, driverName) => {
+  const handleAssignDriver = async (loadId, driverName, driverId) => {
     try {
       // Update the load in the local state
       const updatedLoads = loads.map(load => {
@@ -354,6 +352,7 @@ export default function DispatchingPage() {
           return {
             ...load,
             driver: driverName,
+            driverId: driverId,
             status: load.status === "Pending" ? "Assigned" : load.status
           };
         }
@@ -368,12 +367,44 @@ export default function DispatchingPage() {
         setSelectedLoad({
           ...selectedLoad,
           driver: driverName,
+          driverId: driverId,
           status: selectedLoad.status === "Pending" ? "Assigned" : selectedLoad.status
         });
       }
     } catch (error) {
       console.error('Error assigning driver:', error);
       alert('Failed to assign driver. Please try again.');
+    }
+  };
+
+  // Handle assigning a truck to a load
+  const handleAssignTruck = async (loadId, truckInfo, truckId) => {
+    try {
+      // Update the load in the local state
+      const updatedLoads = loads.map(load => {
+        if (load.id === loadId) {
+          return {
+            ...load,
+            truckInfo: truckInfo,
+            truckId: truckId
+          };
+        }
+        return load;
+      });
+      
+      setLoads(updatedLoads);
+      
+      // Update the selected load if it's open
+      if (selectedLoad && selectedLoad.id === loadId) {
+        setSelectedLoad({
+          ...selectedLoad,
+          truckInfo: truckInfo,
+          truckId: truckId
+        });
+      }
+    } catch (error) {
+      console.error('Error assigning truck:', error);
+      alert('Failed to assign truck. Please try again.');
     }
   };
 
@@ -559,7 +590,9 @@ export default function DispatchingPage() {
           onClose={handleCloseModal}
           onStatusChange={handleStatusChange}
           drivers={drivers}
+          trucks={trucks}
           onAssignDriver={handleAssignDriver}
+          onAssignTruck={handleAssignTruck}
         />
       )}
 

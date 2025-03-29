@@ -1,9 +1,9 @@
 // src/components/dispatching/NewLoadModal.js
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, Users, Truck as TruckIcon } from "lucide-react";
 
 export default function NewLoadModal({ onClose, onSave, customers }) {
   const [formData, setFormData] = useState({
@@ -13,9 +13,78 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
     pickupDate: "",
     deliveryDate: "",
     rate: "",
-    description: ""
+    description: "",
+    driverId: "",
+    truckId: ""
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [drivers, setDrivers] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [loadingFleet, setLoadingFleet] = useState(true);
+  const [fleetError, setFleetError] = useState(null);
+
+  // Fetch drivers and trucks when modal opens
+  useEffect(() => {
+    async function fetchFleetData() {
+      try {
+        setLoadingFleet(true);
+        setFleetError(null);
+        
+        // Get user ID from session
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+        
+        // Fetch drivers and trucks in parallel
+        const [driversResult, trucksResult] = await Promise.all([
+          // Try to fetch from drivers table first
+          supabase
+            .from('drivers')
+            .select('id, name, status')
+            .eq('user_id', user.id)
+            .eq('status', 'Active'),
+            
+          // Try to fetch from vehicles/trucks table
+          supabase
+            .from('vehicles')
+            .select('id, name, status, make, model')
+            .eq('user_id', user.id)
+            .eq('status', 'Active')
+        ]);
+        
+        // Handle any errors
+        if (driversResult.error) {
+          console.error("Error fetching drivers:", driversResult.error);
+        } else {
+          setDrivers(driversResult.data || []);
+        }
+        
+        if (trucksResult.error) {
+          // If vehicles table doesn't exist, try trucks table as fallback
+          const fallbackResult = await supabase
+            .from('trucks')
+            .select('id, name, status, make, model')
+            .eq('user_id', user.id)
+            .eq('status', 'Active');
+            
+          if (fallbackResult.error) {
+            console.error("Error fetching trucks:", fallbackResult.error);
+          } else {
+            setTrucks(fallbackResult.data || []);
+          }
+        } else {
+          setTrucks(trucksResult.data || []);
+        }
+      } catch (error) {
+        console.error("Error loading fleet data:", error);
+        setFleetError("Failed to load drivers and trucks. Please try again.");
+      } finally {
+        setLoadingFleet(false);
+      }
+    }
+    
+    fetchFleetData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +106,13 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       
+      // Find the selected driver name
+      const selectedDriver = drivers.find(d => d.id === formData.driverId);
+      const driverName = selectedDriver ? selectedDriver.name : "";
+      
+      // Find the selected truck
+      const selectedTruck = trucks.find(t => t.id === formData.truckId);
+      
       // Format data for the database
       const dbData = {
         user_id: user.id,
@@ -49,6 +125,10 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
         rate: parseFloat(formData.rate) || 0,
         status: "Pending",
         description: formData.description,
+        driver: driverName,
+        driver_id: formData.driverId || null,
+        truck_id: formData.truckId || null,
+        truck_info: selectedTruck ? `${selectedTruck.make} ${selectedTruck.model} (${selectedTruck.name})` : null,
         created_at: new Date()
       };
       
@@ -82,8 +162,25 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
         status: data[0].status,
         distance: data[0].distance,
         description: data[0].description,
-        driver: ""
+        driver: data[0].driver,
+        driverId: data[0].driver_id,
+        truckId: data[0].truck_id,
+        truckInfo: data[0].truck_info
       };
+      
+      // If a driver is assigned, update the load status to "Assigned"
+      if (formData.driverId) {
+        const { error: updateError } = await supabase
+          .from('loads')
+          .update({ status: 'Assigned' })
+          .eq('id', data[0].id);
+          
+        if (updateError) {
+          console.error("Warning: Failed to update load status to Assigned:", updateError);
+        } else {
+          newLoad.status = "Assigned";
+        }
+      }
       
       onSave(newLoad);
       onClose();
@@ -194,6 +291,66 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
               />
             </div>
             
+            {/* Driver Selection */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <Users size={16} className="mr-1" /> Driver Assignment
+              </label>
+              <select
+                name="driverId"
+                value={formData.driverId}
+                onChange={handleChange}
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={loadingFleet}
+              >
+                <option value="">Unassigned</option>
+                {drivers.map(driver => (
+                  <option key={driver.id} value={driver.id}>{driver.name}</option>
+                ))}
+              </select>
+              {loadingFleet && (
+                <p className="mt-1 text-xs text-gray-500 flex items-center">
+                  <RefreshCw size={12} className="animate-spin mr-1" />
+                  Loading drivers...
+                </p>
+              )}
+              {drivers.length === 0 && !loadingFleet && (
+                <p className="mt-1 text-xs text-gray-500">
+                  No active drivers found. <a href="/dashboard/fleet/drivers" className="text-blue-600 hover:underline">Add drivers</a> in fleet management.
+                </p>
+              )}
+            </div>
+            
+            {/* Truck Selection */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <TruckIcon size={16} className="mr-1" /> Truck Assignment
+              </label>
+              <select
+                name="truckId"
+                value={formData.truckId}
+                onChange={handleChange}
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={loadingFleet}
+              >
+                <option value="">No truck assigned</option>
+                {trucks.map(truck => (
+                  <option key={truck.id} value={truck.id}>{truck.name} - {truck.make} {truck.model}</option>
+                ))}
+              </select>
+              {loadingFleet && (
+                <p className="mt-1 text-xs text-gray-500 flex items-center">
+                  <RefreshCw size={12} className="animate-spin mr-1" />
+                  Loading trucks...
+                </p>
+              )}
+              {trucks.length === 0 && !loadingFleet && (
+                <p className="mt-1 text-xs text-gray-500">
+                  No active trucks found. <a href="/dashboard/fleet/trucks" className="text-blue-600 hover:underline">Add trucks</a> in fleet management.
+                </p>
+              )}
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
               <textarea
@@ -206,6 +363,12 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
               ></textarea>
             </div>
           </div>
+          
+          {fleetError && (
+            <div className="mt-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-200">
+              {fleetError}
+            </div>
+          )}
           
           <div className="mt-8 flex justify-end space-x-3">
             <button

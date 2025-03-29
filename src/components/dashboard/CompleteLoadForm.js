@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock, 
   User, FileText, Upload, Download, Camera, Eye, Trash2, RefreshCw, 
-  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package
+  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package, Users
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
@@ -288,9 +288,12 @@ export default function CompleteLoadForm({ loadId }) {
           deliveryDate: data.delivery_date,
           status: data.status,
           driver: data.driver || '',
+          driverId: data.driver_id || null,
           rate: data.rate || 0,
           distance: data.distance || 0,
-          description: data.description || ''
+          description: data.description || '',
+          truckId: data.truck_id || null,
+          truckInfo: data.truck_info || ''
         };
         
         setLoadDetails(formattedLoad);
@@ -491,6 +494,10 @@ export default function CompleteLoadForm({ loadId }) {
       
       // Prepare load update data
       const loadUpdateData = {
+        driver: load.driver,
+        driver_id: load.driverId,
+        truck_id: load.truckId,
+        truck_info: load.truckInfo,
         status: 'Completed',
         actual_delivery_date: formData.deliveryDate,
         received_by: formData.receivedBy,
@@ -750,6 +757,25 @@ export default function CompleteLoadForm({ loadId }) {
                   </div>
                 </div>
               </div>
+              {load.driver && (
+  <div className="flex">
+    <Users size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
+    <div>
+      <p className="text-sm font-medium text-gray-900">Driver</p>
+      <p className="text-sm text-gray-700">{load.driver}</p>
+    </div>
+  </div>
+)}
+
+{load.truckInfo && (
+  <div className="flex">
+    <Truck size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
+    <div>
+      <p className="text-sm font-medium text-gray-900">Vehicle</p>
+      <p className="text-sm text-gray-700">{load.truckInfo}</p>
+    </div>
+  </div>
+)}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-3">Route Details</h3>
                 <div className="space-y-3">

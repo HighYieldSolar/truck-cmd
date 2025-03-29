@@ -10,7 +10,8 @@ import {
   Truck, 
   DollarSign,
   CheckCircle as CheckCircleIcon,
-  Trash2
+  Trash2,
+  Users
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
 
@@ -44,7 +45,7 @@ export default function LoadCard({ load, onSelect, onDelete }) {
             <span className="text-gray-900">{load.deliveryDate}</span>
           </div>
           <div className="flex items-center">
-            <Truck size={14} className="text-gray-400 mr-1" />
+            <Users size={14} className="text-gray-400 mr-1" />
             <span className="text-gray-900">{load.driver || "Unassigned"}</span>
           </div>
           <div className="flex items-center">
@@ -52,6 +53,16 @@ export default function LoadCard({ load, onSelect, onDelete }) {
             <span className="text-gray-900">${load.rate.toLocaleString()}</span>
           </div>
         </div>
+        
+        {/* Show truck info if available */}
+        {load.truckInfo && (
+          <div className="mt-2 text-xs text-gray-500">
+            <div className="flex items-center">
+              <Truck size={12} className="text-gray-400 mr-1" /> 
+              {load.truckInfo}
+            </div>
+          </div>
+        )}
         
         {/* Show completion date for completed loads */}
         {load.status === "Completed" && load.completedAt && (
