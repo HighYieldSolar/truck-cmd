@@ -83,11 +83,11 @@ const TruckCard = ({ truck, onSelect }) => {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <p className="text-gray-500">VIN</p>
-          <p className="font-medium">{truck.vin ? truck.vin.slice(-6) : 'N/A'}</p>
+          <p className="text-black font-medium">{truck.vin ? truck.vin.slice(-6) : 'N/A'}</p>
         </div>
         <div>
           <p className="text-gray-500">License</p>
-          <p className="font-medium">{truck.license_plate || 'N/A'}</p>
+          <p className="text-black font-medium">{truck.license_plate || 'N/A'}</p>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@ const DriverCard = ({ driver, onSelect }) => {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <p className="text-gray-500">License #</p>
-          <p className="font-medium">{driver.license_number || 'N/A'}</p>
+          <p className="text-black font-medium">{driver.license_number || 'N/A'}</p>
         </div>
         <div>
           <p className="text-gray-500">License Status</p>

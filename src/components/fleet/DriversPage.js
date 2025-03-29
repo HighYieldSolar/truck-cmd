@@ -64,7 +64,7 @@ const DriverCard = ({ driver, onEdit, onDelete }) => {
       <div className="grid grid-cols-2 gap-3 text-sm mb-3">
         <div>
           <p className="text-gray-500">Phone</p>
-          <p className="font-medium">{driver.phone || 'N/A'}</p>
+          <p className="text-black font-medium">{driver.phone || 'N/A'}</p>
         </div>
         <div>
           <p className="text-gray-500">Status</p>
@@ -78,7 +78,7 @@ const DriverCard = ({ driver, onEdit, onDelete }) => {
         <div>
           <p className="text-gray-500">License</p>
           <div className="flex items-center">
-            <span className="mr-1">{driver.license_number ? driver.license_number.slice(-4) : 'N/A'}</span>
+            <span className="text-black mr-1">{driver.license_number ? driver.license_number.slice(-4) : 'N/A'}</span>
             {documentStatus.licenseStatus !== 'valid' && (
               <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
                 documentStatus.licenseStatus === 'expired' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
@@ -90,7 +90,7 @@ const DriverCard = ({ driver, onEdit, onDelete }) => {
         </div>
         <div>
           <p className="text-gray-500">Medical Card</p>
-          <div className="flex items-center">
+          <div className="text-black flex items-center">
             <span>{driver.medical_card_expiry ? 'Valid' : 'N/A'}</span>
             {documentStatus.medicalCardStatus !== 'valid' && (
               <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
@@ -169,7 +169,7 @@ const DocumentExpiryAlerts = ({ drivers }) => {
               const status = checkDriverDocumentStatus(driver);
               return (
                 <li key={driver.id}>
-                  <span className="font-medium">{driver.name}:</span> 
+                  <span className="text-black font-medium">{driver.name}:</span> 
                   {status.licenseStatus !== 'valid' && (
                     <span className="ml-1">
                       License {status.licenseStatus === 'expired' ? 'expired' : `expires in ${status.licenseExpiryDays} days`}
@@ -399,7 +399,7 @@ export default function DriversPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="text-black block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   >
                     <option value="All">All Statuses</option>
                     <option value="Active">Active</option>

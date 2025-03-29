@@ -1271,7 +1271,7 @@ export default function ComplianceDashboard() {
                       return (
                         <div 
                           key={key}
-                          className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                          className="text-black flex items-center justify-between p-2 hover:bg-gray-50 rounded-md cursor-pointer"
                           onClick={() => {
                             const newFilters = { ...filters, type: key };
                             setFilters(newFilters);
@@ -1303,7 +1303,7 @@ export default function ComplianceDashboard() {
                       name="status"
                       value={filters.status}
                       onChange={handleFilterChange}
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="text-black block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
                       <option value="all">All Statuses</option>
                       <option value="active">Active</option>
@@ -1318,7 +1318,7 @@ export default function ComplianceDashboard() {
                       name="type"
                       value={filters.type}
                       onChange={handleFilterChange}
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="text-black block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
                       <option value="all">All Types</option>
                       {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
@@ -1334,7 +1334,7 @@ export default function ComplianceDashboard() {
                       name="entity"
                       value={filters.entity}
                       onChange={handleFilterChange}
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="text-black block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
                       <option value="all">All Entities</option>
                       <option value="Vehicle">Vehicles</option>

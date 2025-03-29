@@ -68,7 +68,7 @@ export default function FuelStats({ stats, isLoading = false, period = "This Qua
             </div>
           </div>
           <div className="flex items-baseline mb-2">
-            <h2 className="text-2xl font-bold">{item.value}</h2>
+            <h2 className="text-2xl font-bold text-black">{item.value}</h2>
           </div>
           <div className="text-sm text-gray-500">{period}</div>
         </div>

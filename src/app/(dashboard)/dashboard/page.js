@@ -182,19 +182,19 @@ const FuelSummary = ({ stats = {} }) => {
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <div className="text-sm text-gray-500 mb-1">Total Gallons</div>
-            <div className="text-2xl font-semibold">{totalGallons.toFixed(1)}</div>
+            <div className="text-black text-2xl font-semibold">{totalGallons.toFixed(1)}</div>
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Total Spent</div>
-            <div className="text-2xl font-semibold">${totalAmount.toFixed(2)}</div>
+            <div className="text-black text-2xl font-semibold">${totalAmount.toFixed(2)}</div>
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Avg Price/Gal</div>
-            <div className="text-2xl font-semibold">${avgPricePerGallon.toFixed(3)}</div>
+            <div className="text-black text-2xl font-semibold">${avgPricePerGallon.toFixed(3)}</div>
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">States</div>
-            <div className="text-2xl font-semibold">{uniqueStates}</div>
+            <div className="text-black text-2xl font-semibold">{uniqueStates}</div>
           </div>
         </div>
         <Link

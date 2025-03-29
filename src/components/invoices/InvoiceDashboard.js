@@ -112,7 +112,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
   ];
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
+    <div className="bg-white p-4 rounded-lg shadow mb-6 text-black">
       <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
         <div className="relative inline-block w-full md:w-auto">
           <select

@@ -58,11 +58,11 @@ const TruckCard = ({ truck, onEdit, onDelete }) => {
       <div className="grid grid-cols-3 gap-3 text-sm mb-3">
         <div>
           <p className="text-gray-500">VIN</p>
-          <p className="font-medium truncate">{truck.vin ? truck.vin.slice(-6) : 'N/A'}</p>
+          <p className="text-black font-medium truncate">{truck.vin ? truck.vin.slice(-6) : 'N/A'}</p>
         </div>
         <div>
           <p className="text-gray-500">License</p>
-          <p className="font-medium">{truck.license_plate || 'N/A'}</p>
+          <p className="text-black font-medium">{truck.license_plate || 'N/A'}</p>
         </div>
         <div>
           <p className="text-gray-500">Status</p>
@@ -309,7 +309,7 @@ export default function TrucksPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="text-black block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   >
                     <option value="All">All Statuses</option>
                     <option value="Active">Active</option>
