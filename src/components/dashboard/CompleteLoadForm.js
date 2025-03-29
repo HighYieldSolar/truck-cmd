@@ -494,9 +494,9 @@ export default function CompleteLoadForm({ loadId }) {
       
       // Prepare load update data
       const loadUpdateData = {
-        driver: load.driver,
-        driver_id: load.driverId,
-        truck_id: load.truckId,
+        driver: loadDetails.driver,
+        driver_id: loadDetails.driverId,
+        vehicle_id: loadDetails.truckId,  // Use vehicle_id, not truck_id
         truck_info: load.truckInfo,
         status: 'Completed',
         actual_delivery_date: formData.deliveryDate,

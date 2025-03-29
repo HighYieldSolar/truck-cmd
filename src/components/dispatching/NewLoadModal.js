@@ -127,15 +127,19 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
         description: formData.description,
         driver: driverName,
         driver_id: formData.driverId || null,
-        truck_id: formData.truckId || null,
-        truck_info: selectedTruck ? `${selectedTruck.make} ${selectedTruck.model} (${selectedTruck.name})` : null,
-        created_at: new Date()
+        vehicle_id: formData.truckId || null,  // Use vehicle_id, not truck_id
+        // Keep the truck_info field as is
+        truck_info: selectedTruck ? `${selectedTruck.make || ''} ${selectedTruck.model || ''} (${selectedTruck.name})`.trim() : null,
+        created_at: new Date().toISOString(),
+        
+        // Include other necessary fields
+        factored: false,
+        notes: formData.description || "",
+        final_rate: parseFloat(formData.rate) || 0,
+        distance: Math.floor(Math.random() * 500) + 100 // Placeholder
       };
       
-      // Calculate distance using Google Maps API or estimate 
-      // For now, use a simple estimation based on origin/destination
-      const distance = Math.floor(Math.random() * 500) + 100; // Placeholder
-      dbData.distance = distance;
+      console.log("Attempting to insert load with data:", dbData);
       
       // Insert into database
       const { data, error } = await supabase
@@ -164,7 +168,7 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
         description: data[0].description,
         driver: data[0].driver,
         driverId: data[0].driver_id,
-        truckId: data[0].truck_id,
+        truckId: data[0].vehicle_id,  // Map database vehicle_id to UI truckId
         truckInfo: data[0].truck_info
       };
       
@@ -186,7 +190,14 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
       onClose();
     } catch (error) {
       console.error("Error creating load:", error);
-      alert("Failed to create load. Please try again.");
+      // More detailed error message for debugging
+      if (error.message) {
+        console.error("Error message:", error.message);
+      }
+      if (error.details) {
+        console.error("Error details:", error.details);
+      }
+      alert(`Failed to create load: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
