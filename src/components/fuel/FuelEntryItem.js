@@ -1,9 +1,8 @@
 // src/components/fuel/FuelEntryItem.js
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, FileImage, Edit, Trash2, MapPin, Truck, DollarSign, Calendar, Fuel, ExternalLink, Calculator } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect } from "react";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   // Add state for IFTA link status
@@ -101,6 +100,11 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
     return <div className="text-sm font-medium text-gray-500">{shortId}</div>;
   };
   
+  // Update to pass vehicle info to receipt viewer
+  const handleViewReceipt = () => {
+    onViewReceipt(fuelEntry, vehicleInfo);
+  };
+  
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -167,7 +171,7 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
       <td className="px-6 py-4 whitespace-nowrap">
         {fuelEntry.receipt_image ? (
           <button 
-            onClick={() => onViewReceipt(fuelEntry)} 
+            onClick={handleViewReceipt} 
             className="flex items-center text-blue-600 hover:text-blue-900"
           >
             <FileImage size={16} className="mr-1" />

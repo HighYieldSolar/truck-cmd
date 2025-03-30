@@ -50,6 +50,7 @@ export default function FuelTrackerPage() {
   const [currentFuelEntry, setCurrentFuelEntry] = useState(null);
   const [receiptViewerOpen, setReceiptViewerOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState(null);
   
@@ -243,10 +244,18 @@ export default function FuelTrackerPage() {
   };
   
   // Open the receipt viewer modal
-  const handleViewReceipt = (fuelEntry) => {
+  const handleViewReceipt = (fuelEntry, vehicleInfo) => {
+    console.log("Opening receipt viewer with:", { fuelEntry, vehicleInfo });
+    // Add additional logging to verify receipt image URL
+    if (fuelEntry?.receipt_image) {
+      console.log("Receipt image URL:", fuelEntry.receipt_image);
+    }
+    
     setSelectedReceipt(fuelEntry);
+    setSelectedVehicleInfo(vehicleInfo);
     setReceiptViewerOpen(true);
   };
+
   
   // Reset all filters
   const handleResetFilters = () => {
@@ -523,15 +532,18 @@ export default function FuelTrackerPage() {
   isSubmitting={loading}
   vehicles={vehicles} // This is still needed but only for compatibility
 />
-      
-      <ReceiptViewerModal
-        isOpen={receiptViewerOpen}
-        onClose={() => {
-          setReceiptViewerOpen(false);
-          setSelectedReceipt(null);
-        }}
-        receipt={selectedReceipt}
-      />
+
+  {/* ReceiptViewerModal */}
+  <ReceiptViewerModal
+    isOpen={receiptViewerOpen}
+    onClose={() => {
+      setReceiptViewerOpen(false);
+      setSelectedReceipt(null);
+      setSelectedVehicleInfo(null);
+    }}
+    receipt={selectedReceipt}
+    vehicleInfo={selectedVehicleInfo}
+  />
       
       {/* Custom Fuel Deletion Modal */}
       <FuelDeletionModal 
