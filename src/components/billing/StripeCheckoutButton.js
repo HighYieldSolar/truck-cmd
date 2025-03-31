@@ -28,39 +28,47 @@ export default function StripeCheckoutButton({
   const handleCheckout = async () => {
     if (disabled || loading || !planId || !userId) return;
     
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Create a checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          plan: planId,
-          billingCycle,
-          returnUrl: window.location.origin + '/dashboard/billing'
-        }),
-      });
-      
-      const { url, error: responseError } = await response.json();
-      
-      if (responseError) {
-        throw new Error(responseError);
-      }
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-      
-    } catch (err) {
-      console.error('Error initiating checkout:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+// In handleCheckout function
+try {
+  setLoading(true);
+  setError(null);
+  
+  console.log('Submitting checkout with:', { userId, planId, billingCycle });
+  
+  // Create a checkout session
+  const response = await fetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId,
+      plan: planId,
+      billingCycle,
+      returnUrl: window.location.origin + '/dashboard/billing'
+    }),
+  });
+  
+  // Log the full response for debugging
+  console.log('Response status:', response.status);
+  
+  const data = await response.json();
+  console.log('Response data:', data);
+  
+  if (!response.ok) {
+    throw new Error(data.error || `Server error: ${response.status}`);
+  }
+  
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  
+  // Redirect to Stripe Checkout
+  window.location.href = data.url;
+} catch (err) {
+  console.error('Error initiating checkout:', err);
+  setError(err.message || 'An unknown error occurred');
+}
   };
 
   return (

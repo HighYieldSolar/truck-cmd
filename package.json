@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^6.1.0",
     "@supabase/supabase-js": "^2.48.1",
     "daisyui": "^4.12.23",
     "framer-motion": "^12.4.7",
@@ -18,7 +19,7 @@
     "next": "^15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "stripe": "^17.6.0"
+    "stripe": "^17.7.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
