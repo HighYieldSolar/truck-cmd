@@ -25,6 +25,7 @@ export function SubscriptionProvider({ children }) {
     trialEndsAt: null,
     currentPeriodEndsAt: null
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Load user and subscription data
   useEffect(() => {
@@ -63,14 +64,21 @@ export function SubscriptionProvider({ children }) {
         }
         
         if (subscriptionData) {
+          console.log("Found subscription data:", subscriptionData);
+          
           // Subscription exists - set data
           setSubscription({
             status: subscriptionData.status,
             plan: subscriptionData.plan,
             trialEndsAt: subscriptionData.trial_ends_at,
-            currentPeriodEndsAt: subscriptionData.current_period_ends_at
+            currentPeriodEndsAt: subscriptionData.current_period_ends_at,
+            stripeCustomerId: subscriptionData.stripe_customer_id,
+            stripeSubscriptionId: subscriptionData.stripe_subscription_id,
+            billingCycle: subscriptionData.billing_cycle
           });
         } else {
+          console.log("No subscription found, creating trial subscription");
+          
           // No subscription record found - create a trial subscription
           const createdAt = new Date(user.created_at || Date.now());
           const trialEndDate = new Date(createdAt);
@@ -138,25 +146,33 @@ export function SubscriptionProvider({ children }) {
       }
     );
     
-    // Set up subscription to database changes
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
+  }, [refreshTrigger]);
+  
+  // Set up realtime subscription to database changes
+  useEffect(() => {
+    if (!user) return;
+    
     const subscriptionsChannel = supabase
       .channel('subscriptions-changes')
       .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'subscriptions', filter: user ? `user_id=eq.${user.id}` : undefined },
+          { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${user.id}` },
           (payload) => {
+            console.log("Subscription data changed:", payload);
             // Refresh subscription data when changes occur
-            checkUserAndSubscription();
+            setRefreshTrigger(prev => prev + 1);
           })
       .subscribe();
     
     // Clean up subscriptions
     return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
       supabase.removeChannel(subscriptionsChannel);
     };
-  }, []);
+  }, [user]);
   
   // Check if trial is active and valid
   const isTrialActive = () => {
@@ -199,6 +215,9 @@ export function SubscriptionProvider({ children }) {
         ...newData
       }));
       
+      // Trigger a refresh
+      setRefreshTrigger(prev => prev + 1);
+      
       return { success: true };
     } catch (error) {
       console.error('Error updating subscription:', error);
@@ -217,6 +236,11 @@ export function SubscriptionProvider({ children }) {
     
     return Math.max(0, diffDays);
   };
+  
+  // Manually refresh subscription data
+  const refreshSubscription = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Provide the context value
   const value = {
@@ -226,7 +250,8 @@ export function SubscriptionProvider({ children }) {
     isTrialActive,
     isSubscriptionActive,
     getDaysLeftInTrial,
-    updateSubscription
+    updateSubscription,
+    refreshSubscription
   };
 
   return (

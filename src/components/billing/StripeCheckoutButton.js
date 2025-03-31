@@ -28,47 +28,62 @@ export default function StripeCheckoutButton({
   const handleCheckout = async () => {
     if (disabled || loading || !planId || !userId) return;
     
-// In handleCheckout function
-try {
-  setLoading(true);
-  setError(null);
-  
-  console.log('Submitting checkout with:', { userId, planId, billingCycle });
-  
-  // Create a checkout session
-  const response = await fetch('/api/create-checkout-session', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      userId,
-      plan: planId,
-      billingCycle,
-      returnUrl: window.location.origin + '/dashboard/billing'
-    }),
-  });
-  
-  // Log the full response for debugging
-  console.log('Response status:', response.status);
-  
-  const data = await response.json();
-  console.log('Response data:', data);
-  
-  if (!response.ok) {
-    throw new Error(data.error || `Server error: ${response.status}`);
-  }
-  
-  if (data.error) {
-    throw new Error(data.error);
-  }
-  
-  // Redirect to Stripe Checkout
-  window.location.href = data.url;
-} catch (err) {
-  console.error('Error initiating checkout:', err);
-  setError(err.message || 'An unknown error occurred');
-}
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Initiating checkout with:', { planId, billingCycle, userId });
+      
+      // Create a checkout session
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          plan: planId,
+          billingCycle,
+          returnUrl: window.location.origin
+        }),
+      });
+      
+      // Log response status for debugging
+      console.log('Response status:', response.status);
+      
+      // Parse the response
+      const data = await response.json();
+      console.log('Checkout response:', data);
+      
+      // Check for errors
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.url) {
+        throw new Error('No checkout URL returned from server');
+      }
+      
+      // Redirect to Stripe Checkout
+      console.log('Redirecting to:', data.url);
+      window.location.href = data.url;
+      
+    } catch (err) {
+      console.error('Error initiating checkout:', err);
+      
+      // Detailed error logging
+      if (err.response) {
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+      }
+      
+      setError(err.message || 'An unknown error occurred during checkout');
+      setLoading(false);
+    }
   };
 
   return (

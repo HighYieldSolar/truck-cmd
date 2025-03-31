@@ -1,12 +1,13 @@
 // app/api/create-checkout-session/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(request) {
   try {
     // Log incoming request data
     const body = await request.json();
-    console.log('Request body:', body);
+    console.log('Create checkout session request:', body);
     
     // Check for required fields
     if (!body.userId || !body.plan || !body.billingCycle) {
@@ -18,45 +19,80 @@ export async function POST(request) {
     
     // Initialize Stripe
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    console.log('Stripe initialized with key ending in:', process.env.STRIPE_SECRET_KEY.slice(-4));
+    console.log('Stripe initialized with key ending in:', process.env.STRIPE_SECRET_KEY?.slice(-4));
     
-    // Create pricing data based on plan and billing cycle
-    const { userId, plan, billingCycle } = body;
+    // Get user email for checkout
+    let userEmail;
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', body.userId)
+        .single();
+        
+      if (!userError && userData?.email) {
+        userEmail = userData.email;
+      } else {
+        // Fallback - get email from auth.users 
+        const { data: authUser } = await supabase.auth.admin.getUserById(body.userId);
+        if (authUser?.user?.email) {
+          userEmail = authUser.user.email;
+        }
+      }
+    } catch (err) {
+      console.log('Error fetching user email:', err);
+      // Continue without email
+    }
     
     // Map plan and billing cycle to price IDs
-    // You'll need to replace these with your actual Stripe price IDs
+    // Replace these with your actual Stripe price IDs
     const priceIds = {
       basic: {
-        monthly: 'prod_S2ao3TQzEFN4J2', // Replace with your price ID
-        yearly: 'prod_S2ao9Baw2RXAqp'   // Replace with your price ID
+        monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID
       },
       premium: {
-        monthly: 'prod_S2ap0sT94fhgjW', // Replace with your price ID
-        yearly: 'prod_S2aqXfxxVSxJUd'   // Replace with your price ID
+        monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID
       },
       fleet: {
-        monthly: 'prod_S2aqBXiqXkCbfZ', // Replace with your price ID
-        yearly: 'prod_S2aqnrpoWbXu08'   // Replace with your price ID
+        monthly: process.env.STRIPE_FLEET_MONTHLY_PRICE_ID,
+        yearly: process.env.STRIPE_FLEET_YEARLY_PRICE_ID
       }
     };
     
-    // If price IDs aren't configured yet, use test mode
-    const testMode = true; // Set to false once you have real price IDs
+    const { userId, plan, billingCycle } = body;
+    
+    // Determine if we should use test price data or real price IDs
+    const useTestPriceData = !priceIds[plan]?.[billingCycle];
+    
+    // Set up success and cancel URLs
+    const successUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/billing?canceled=true`;
+    
+    console.log('Success URL:', successUrl);
+    console.log('Cancel URL:', cancelUrl);
     
     // Create the checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: body.email, // Add this if available
+      customer_email: userEmail, // Add this if available
       client_reference_id: userId,
       payment_method_types: ['card'],
       line_items: [
-        testMode ? 
+        useTestPriceData ? 
         {
           price_data: {
             currency: 'usd',
             product_data: {
               name: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${billingCycle})`,
+              description: `Subscription to the ${plan} plan, billed ${billingCycle}`,
             },
-            unit_amount: plan === 'basic' ? 1900 : plan === 'premium' ? 3900 : 6900, // Amount in cents
+            unit_amount: 
+              plan === 'basic' 
+                ? (billingCycle === 'yearly' ? 1600 : 1900) // $16/mo yearly, $19/mo monthly
+                : plan === 'premium' 
+                  ? (billingCycle === 'yearly' ? 3300 : 3900) // $33/mo yearly, $39/mo monthly 
+                  : (billingCycle === 'yearly' ? 5500 : 6900), // $55/mo yearly, $69/mo monthly
             recurring: {
               interval: billingCycle === 'yearly' ? 'year' : 'month',
             },
@@ -69,8 +105,8 @@ export async function POST(request) {
         }
       ],
       mode: 'subscription',
-      success_url: `${body.returnUrl || process.env.NEXT_PUBLIC_URL + '/dashboard/billing'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${body.returnUrl || process.env.NEXT_PUBLIC_URL + '/dashboard/billing'}/cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         userId,
         plan,
@@ -80,6 +116,23 @@ export async function POST(request) {
 
     console.log('Session created:', session.id);
     
+    // Update the subscription record to indicate checkout was initiated
+    try {
+      await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id: userId,
+          plan: plan,
+          billing_cycle: billingCycle,
+          checkout_session_id: session.id,
+          checkout_initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+    } catch (err) {
+      console.log('Error updating subscription record:', err);
+      // Continue despite error
+    }
+    
     // Return success with URL
     return NextResponse.json({ url: session.url });
   } catch (error) {
@@ -87,7 +140,7 @@ export async function POST(request) {
     return NextResponse.json({ 
       error: error.message,
       stack: error.stack,
-      details: JSON.stringify(error)
+      details: JSON.stringify(error, Object.getOwnPropertyNames(error))
     }, { status: 500 });
   }
 }
