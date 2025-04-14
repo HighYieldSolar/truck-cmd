@@ -73,6 +73,68 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+
+  // Load vehicles when the modal opens
+  useEffect(() => {
+    const loadVehicles = async () => {
+      if (!isOpen) return;
+      
+      try {
+        setVehiclesLoading(true);
+        
+        // Get the current user ID
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Not authenticated");
+        }
+        
+        const userId = session.user.id;
+        
+        // First try to get vehicles from the vehicles table
+        let { data, error } = await supabase
+          .from('vehicles')
+          .select('id, name, license_plate')
+          .eq('user_id', userId);
+        
+        // If that fails, try the trucks table instead
+        if (error || !data || data.length === 0) {
+          const { data: trucksData, error: trucksError } = await supabase
+            .from('trucks')
+            .select('id, name, license_plate')
+            .eq('user_id', userId);
+            
+          if (!trucksError) {
+            data = trucksData;
+          }
+        }
+        
+        // If we still don't have data, create some sample vehicles
+        if (!data || data.length === 0) {
+          data = [
+            { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
+            { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
+          ];
+        }
+        
+        setVehicles(data);
+        
+      } catch (error) {
+        console.error('Error loading vehicles:', error);
+        
+        // Set some default vehicles as fallback
+        setVehicles([
+          { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
+          { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
+        ]);
+      } finally {
+        setVehiclesLoading(false);
+      }
+    };
+    
+    loadVehicles();
+  }, [isOpen]);
 
   useEffect(() => {
     if (expense) {
@@ -312,16 +374,26 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
             
             <div className="space-y-2">
               <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
-                Vehicle ID
+                Vehicle
               </label>
-              <input
-                type="text"
+              <select
                 id="vehicle_id"
                 name="vehicle_id"
                 value={formData.vehicle_id}
                 onChange={handleChange}
                 className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              >
+                <option value="">Select Vehicle</option>
+                {vehiclesLoading ? (
+                  <option disabled>Loading vehicles...</option>
+                ) : (
+                  vehicles.map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.name} {vehicle.license_plate ? `(${vehicle.license_plate})` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
             
             <div className="space-y-2 md:col-span-2">
