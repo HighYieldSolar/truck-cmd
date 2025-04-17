@@ -14,6 +14,7 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
     deliveryDate: "",
     rate: "",
     description: "",
+    loadNumber: "", // Added load number field
     driverId: "",
     truckId: ""
   });
@@ -99,12 +100,11 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
     setIsSubmitting(true);
     
     try {
-      // Generate a load number for new loads
-      const loadNumber = `L${Math.floor(10000 + Math.random() * 90000)}`;
       
       // Get user ID from session
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
       
       // Find the selected driver name
       const selectedDriver = drivers.find(d => d.id === formData.driverId);
@@ -116,7 +116,7 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
       // Format data for the database
       const dbData = {
         user_id: user.id,
-        load_number: loadNumber,
+        load_number: formData.loadNumber, // Use user-provided load number
         customer: formData.customer,
         origin: formData.origin,
         destination: formData.destination,
@@ -220,6 +220,19 @@ export default function NewLoadModal({ onClose, onSave, customers }) {
         
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Load Number Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Load Number *</label>
+            <input
+              type="text"
+              name="loadNumber"
+              value={formData.loadNumber}
+              onChange={handleChange}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+              required
+            />
+          </div>
+          
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
