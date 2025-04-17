@@ -248,21 +248,13 @@ export default function Navigation({ activePage = "dashboard" }) {
         </div>
       </div>
 
-      {/* Mobile menu backdrop */}
-      {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        ></div>
-      )}
-
       {/* Mobile Sidebar */}
-      <div 
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      <aside
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:hidden h-screen ${
+              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4">
           <Link href="/dashboard" className="flex items-center">
             <Image
               src="/images/tc-name-tp-bg.png"
@@ -289,7 +281,7 @@ export default function Navigation({ activePage = "dashboard" }) {
                 className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
                   item.active
                     ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 border border-red-500 text-red-500 z-100" // Temporary styles
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -309,7 +301,7 @@ export default function Navigation({ activePage = "dashboard" }) {
               className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
                 activePage === 'settings'
                   ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 border border-red-500 text-red-500 z-100" // Temporary styles
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -329,7 +321,7 @@ export default function Navigation({ activePage = "dashboard" }) {
             </button>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Top Navigation Bar */}
       <header className="z-10 bg-white shadow-sm sticky top-0 md:ml-64">

@@ -11,7 +11,6 @@ import {
   RefreshCw,
   AlertCircle,
   Users,
-  Building,
   Mail,
   Phone,
   MapPin,
@@ -26,71 +25,77 @@ import { fetchCustomers, deleteCustomer } from "@/lib/services/customerService";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import EmptyState from "@/components/common/EmptyState";
 import CustomerFormModal from "@/lib/services/CustomerFormModal";
+import { Badge } from "@/components/ui";
 
 // Customer Item Component
 const CustomerItem = ({ customer, onEdit, onDelete, isExpanded, onToggleExpand }) => {
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
+    <div className="bg-white rounded-lg shadow-sm p-4 mb-4 border border-gray-200">
+      <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <Building size={18} className="text-blue-600" />
+          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+            <Users size={20} className="text-blue-600" />
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{customer.company_name}</div>
+          <div>
+            <div className="font-medium text-gray-900">{customer.company_name}</div>
             <div className="text-sm text-gray-500">{customer.customer_type || "Business"}</div>
           </div>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center text-sm text-gray-900">
-          <Mail size={16} className="text-gray-400 mr-2" />
-          {customer.email || "—"}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onEdit(customer)}
+            className="text-blue-600 hover:text-blue-900"
+            aria-label="Edit customer"
+          >
+            <Edit size={18} />
+          </button>
+          <button
+            onClick={() => onDelete(customer)}
+            className="text-red-600 hover:text-red-900"
+            aria-label="Delete customer"
+          >
+            <Trash2 size={18} />
+          </button>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center text-sm text-gray-900">
-          <Phone size={16} className="text-gray-400 mr-2" />
-          {customer.phone || "—"}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="flex items-center text-sm text-gray-900">
+            <Mail size={16} className="text-gray-400 mr-2" />
+            <span className="truncate">{customer.email || "—"}</span>
+          </div>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center text-sm text-gray-900">
-          <MapPin size={16} className="text-gray-400 mr-2" />
-          {customer.city ? (
-            <>
-              {customer.city}
-              {customer.state ? `, ${customer.state}` : ""}
-            </>
-          ) : (
-            "—"
+        <div>
+          <div className="flex items-center text-sm text-gray-900">
+            <Phone size={16} className="text-gray-400 mr-2" />
+            {customer.phone || "—"}
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-4">
+          <h4 className="font-medium mb-2 text-gray-700">Additional Information</h4>
+          <p className="text-sm text-gray-600">
+            <MapPin size={16} className="inline-block text-gray-400 mr-1" />
+            {customer.city ? `${customer.city}, ${customer.state}` : "No location data"}
+          </p>
+          {customer.notes && (
+            <p className="text-sm text-gray-600 mt-2">
+              <span className="font-medium">Notes:</span> {customer.notes}
+            </p>
           )}
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button
-          onClick={() => onToggleExpand()}
-          className="text-blue-600 hover:text-blue-900 mr-3"
-          aria-label={isExpanded ? "Collapse details" : "View details"}
-        >
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
-        <button
-          onClick={() => onEdit(customer)}
-          className="text-blue-600 hover:text-blue-900 mr-3"
-          aria-label="Edit customer"
-        >
-          <Edit size={16} />
-        </button>
-        <button
-          onClick={() => onDelete(customer)}
-          className="text-red-600 hover:text-red-900"
-          aria-label="Delete customer"
-        >
-          <Trash2 size={16} />
-        </button>
-      </td>
-    </tr>
+      )}
+      <button
+        onClick={() => onToggleExpand()}
+        className="text-blue-600 hover:text-blue-900 mt-2"
+        aria-label={isExpanded ? "Collapse details" : "Expand details"}
+      >
+        {isExpanded ? <><ChevronUp size={16} className="inline mr-1" /> Hide Details</> : <><ChevronDown size={16} className="inline mr-1" /> Show Details</>}
+      </button>
+    </div>
   );
 };
 
@@ -99,46 +104,7 @@ const CustomerDetailRow = ({ customer, isExpanded }) => {
   if (!isExpanded) return null;
 
   return (
-    <tr>
-      <td colSpan="5" className="px-6 py-4 bg-gray-50 border-t border-b border-gray-200">
-        <div className="text-sm text-gray-900">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium mb-2">Contact Information</h4>
-              <div className="space-y-2">
-                <p>
-                  <span className="font-medium">Contact Person:</span>{" "}
-                  {customer.contact_name || "—"}
-                </p>
-                <p>
-                  <span className="font-medium">Email:</span> {customer.email || "—"}
-                </p>
-                <p>
-                  <span className="font-medium">Phone:</span> {customer.phone || "—"}
-                </p>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Address</h4>
-              <div className="space-y-2">
-                <p>{customer.address || "—"}</p>
-                <p>
-                  {customer.city}
-                  {customer.state ? `, ${customer.state}` : ""}
-                  {customer.zip ? ` ${customer.zip}` : ""}
-                </p>
-              </div>
-            </div>
-            {customer.notes && (
-              <div className="md:col-span-2">
-                <h4 className="font-medium mb-2">Notes</h4>
-                <p className="text-gray-700">{customer.notes}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </td>
-    </tr>
+    <></>
   );
 };
 
@@ -361,7 +327,7 @@ export default function CustomersPage() {
     <DashboardLayout activePage="customers">
       {/* Main Content */}
       <div className="p-4 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto">
           {/* Page Header */}
           <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
@@ -501,7 +467,7 @@ export default function CustomersPage() {
           </div>
               
           {/* Customers Table */}
-          <div className="bg-white shadow overflow-hidden rounded-md">
+          <div className="bg-white shadow rounded-md overflow-hidden">
             <div className="overflow-x-auto">
               {customersLoading ? (
                 <div className="p-8 text-center">
@@ -518,53 +484,32 @@ export default function CustomersPage() {
                   onAction={() => {
                     setCurrentCustomer(null);
                     setFormModalOpen(true);
-                  }}
-                />
+                  }}                />
               ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCustomers.map(customer => (
-                      <React.Fragment key={customer.id}>
-                        <CustomerItem 
-                          customer={customer} 
-                          onEdit={handleEditCustomer}
-                          onDelete={handleDeleteCustomer}
-                          isExpanded={expandedCustomerId === customer.id}
-                          onToggleExpand={() => handleToggleExpand(customer.id)}
-                        />
-                        <CustomerDetailRow
-                          customer={customer}
-                          isExpanded={expandedCustomerId === customer.id}
-                        />
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
+                <div>
+                  {filteredCustomers.map(customer => (
+                    <CustomerItem
+                      key={customer.id}
+                      customer={customer}
+                      onEdit={handleEditCustomer}
+                      onDelete={handleDeleteCustomer}
+                      isExpanded={expandedCustomerId === customer.id}
+                      onToggleExpand={() => handleToggleExpand(customer.id)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
-
+      <style jsx>{`
+        @media (max-width: 767px) {
+          .md\:table-header-group {
+            display: none;
+          }
+        }
+      `}</style>
       {/* Modals */}
       {formModalOpen && (
         <CustomerFormModal 

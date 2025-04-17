@@ -247,14 +247,14 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 overflow-y-auto max-h-[90vh]">
+        <div className="flex justify-between items-center pb-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <Fuel size={20} className="text-blue-600 mr-2" />
             {fuelEntry ? "Edit Fuel Purchase" : "Add New Fuel Purchase"}
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100"
             disabled={isSubmitting}
@@ -263,12 +263,12 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="mt-4">
           {errors.form && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="rounded-md bg-red-50 p-4 mb-4">
               <div className="flex">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm text-red-700">{errors.form}</p>
+                <div className="flex-shrink-0"><AlertCircle className="h-5 w-5 text-red-400"/></div>
+                <div className="ml-3"><p className="text-sm font-medium text-red-800">{errors.form}</p></div>
               </div>
             </div>
           )}
@@ -289,11 +289,11 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   onBlur={handleBlur}
                   className={`w-full px-3 py-2 border ${
                     errors.date && touched.date ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } rounded-md shadow-sm text-sm`}
+                  } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 />
                 {errors.date && touched.date && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
                     <AlertCircle size={12} className="mr-1" />
                     {errors.date}
                   </p>
@@ -321,15 +321,14 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   onBlur={handleBlur}
                   className={`w-full px-3 py-2 border ${
                     errors.state && touched.state ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } rounded-md shadow-sm text-sm`}
+                  } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 >
-                  <option value="">Select State</option>
-                  {states.map((state) => (
-                    <option key={state.code} value={state.code}>
-                      {state.name} ({state.code})
-                    </option>
-                  ))}
+                  <option value="" disabled selected>Select State</option>
+                  {states.map((state) =>
+                    <option key={state.code} value={state.code}>{state.name} ({state.code})</option>
+                  )}
+                  
                 </select>
                 {errors.state && touched.state && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -353,7 +352,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   onBlur={handleBlur}
                   className={`w-full px-3 py-2 border ${
                     errors.location && touched.location ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } rounded-md shadow-sm text-sm`}
+                  } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 />
                 {errors.location && touched.location && (
@@ -380,7 +379,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   onBlur={handleBlur}
                   className={`w-full px-3 py-2 border ${
                     errors.gallons && touched.gallons ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } rounded-md shadow-sm text-sm`}
+                  } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 />
                 {errors.gallons && touched.gallons && (
@@ -412,7 +411,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                       onBlur={handleBlur}
                       className={`w-full pl-7 pr-3 py-2 border ${
                         errors.price_per_gallon && touched.price_per_gallon ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-md shadow-sm text-sm`}
+                      } rounded-md shadow-sm text-sm focus:outline-none`}
                       required={calculationMode === 'total'}
                       disabled={calculationMode === 'price'}
                     />
@@ -445,7 +444,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                       onBlur={handleBlur}
                       className={`w-full pl-7 pr-3 py-2 border ${
                         errors.total_amount && touched.total_amount ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-md shadow-sm text-sm`}
+                      } rounded-md shadow-sm text-sm focus:outline-none`}
                       required={calculationMode === 'price'}
                       disabled={calculationMode === 'total'}
                     />
@@ -476,7 +475,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   onChange={handleChange}
                   required={true}
                   disabled={isSubmitting}
-                  className="w-full"
+                  className="w-full focus:outline-none"
                 />
                 {errors.vehicle_id && touched.vehicle_id && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -497,7 +496,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   placeholder="Current mileage"
                   min="0"
                   value={formData.odometer}
-                  onChange={handleChange}
+                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
@@ -597,17 +596,17 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                     <button
                       type="button"
                       className="text-blue-600 hover:text-blue-800"
-                    >
+                   >
                       <Maximize2 size={16} />
                     </button>
                   </div>
                   <div className="relative aspect-[3/4] max-h-96 overflow-hidden bg-gray-100 rounded-md flex items-center justify-center">
                     <img
-                      src={formData.receipt_preview}
-                      alt="Receipt preview"
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
+                         src={formData.receipt_preview}
+                         alt="Receipt preview"
+                         className="max-w-full max-h-full object-contain"
+                       />
+                     </div>
                 </div>
               )}
               
@@ -622,7 +621,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   rows="3"
                   value={formData.notes || ''}
                   onChange={handleChange}
-                  placeholder="Additional information about this purchase..."
+                  placeholder="Additional information about this purchase"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                 ></textarea>
               </div>
@@ -644,15 +643,15 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
           
           <div className="mt-8 flex justify-end space-x-3">
             <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
+                 type="button"
+                 onClick={onClose}
+                 className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                 disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
-              type="submit"
+                 type="submit"
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
               disabled={isSubmitting}
             >

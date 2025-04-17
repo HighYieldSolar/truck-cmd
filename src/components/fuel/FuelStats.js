@@ -2,10 +2,10 @@
 
 import { Fuel, DollarSign, Flag, RefreshCw } from "lucide-react";
 
-export default function FuelStats({ stats, isLoading = false, period = "This Quarter" }) {
+export default function FuelStats({ stats, isLoading = false, period = "This Quarter", className="" }) {
   // Helper function to format numbers
   const formatNumber = (value, decimals = 0) => {
-    if (value === undefined || value === null) return '0';
+    if (value === undefined || value === null || isNaN(value)) return '0';
     return parseFloat(value).toLocaleString(undefined, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
@@ -58,7 +58,7 @@ export default function FuelStats({ stats, isLoading = false, period = "This Qua
   }
   
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 ${className}`}>
       {statsItems.map((item, index) => (
         <div key={index} className="bg-white p-5 rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-3">

@@ -351,7 +351,7 @@ export default function ExpensesPage() {
 
     return (
       <div className="bg-white shadow rounded-lg p-4 mb-6">
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+        <div className="flex flex-col md:flex-row flex-wrap space-y-4 md:space-y-0 md:space-x-4">
           <div className="flex-1">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
               Search
@@ -364,7 +364,7 @@ export default function ExpensesPage() {
                 type="text"
                 id="search"
                 name="search"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 flex-1"
                 placeholder="Search expenses..."
                 value={filters.search}
                 onChange={handleChange}
@@ -372,13 +372,13 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          <div className="w-full md:w-48">
+          <div className="w-full">
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
               Category
             </label>
             <select
               id="category"
-              name="category"
+              name="category"              
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={filters.category}
               onChange={handleChange}
@@ -395,13 +395,13 @@ export default function ExpensesPage() {
             </select>
           </div>
 
-          <div className="w-full md:w-48">
+          <div className="w-full">
             <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 mb-1">
               Date Range
             </label>
             <select
               id="dateRange"
-              name="dateRange"
+              name="dateRange"              
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={filters.dateRange}
               onChange={handleChange}
@@ -417,7 +417,7 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {filters.dateRange === 'Custom' && (
+        {filters.dateRange === "Custom" && (
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-4">
             <div className="flex-1">
               <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -480,102 +480,80 @@ export default function ExpensesPage() {
       );
     }
 
-    return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Payment Method
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {expenses.map((expense) => (
-              <tr key={expense.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{expense.description}</div>
-                  {expense.vehicle_id && (
-                    <div className="text-xs text-gray-500">Vehicle: {expense.vehicle_id}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDateForDisplay(expense.date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryColor(expense.category)}`}>
-                    {expense.category}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  ${parseFloat(expense.amount).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {expense.payment_method}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  {expense.receipt_image && (
-                    <button
-                      onClick={() => handleViewReceipt(expense)}
-                      className="text-gray-600 hover:text-gray-900 mr-3"
-                      title="View Receipt"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 22h16a2 2 0 0 0 2-2V7c0-0.28-0.12-0.55-0.32-0.72L16.8 1.6c-0.18-0.17-0.41-0.28-0.65-0.3H4c-1.1 0-2 0.9-2 2v16.59c0 1.1 0.9 2 2 2Z"></path>
-                        <path d="M8 11h8"></path>
-                        <path d="M8 15h5"></path>
-                        <path d="M14 7V1.6"></path>
-                      </svg>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleEditExpense(expense)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                    title="Edit Expense"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteExpense(expense)}
-                    className="text-red-600 hover:text-red-900"
-                    title="Delete Expense"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-gray-50">
-            <tr>
-              <td colSpan="3" className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                Total
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ${expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0).toFixed(2)}
-              </td>
-              <td colSpan="2"></td>
-            </tr>
-          </tfoot>
-        </table>
+    return (      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {expenses.map((expense) => (
+          <div key={expense.id} className="bg-white rounded-lg shadow p-4 flex flex-col">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="text-lg font-semibold text-gray-800">{expense.description}</p>
+                {expense.vehicle_id && (
+                  <p className="text-sm text-gray-500">Vehicle: {expense.vehicle_id}</p>
+                )}
+              </div>
+              {expense.receipt_image && (
+                <button
+                  onClick={() => handleViewReceipt(expense)}
+                  className="text-gray-600 hover:text-gray-900"
+                  title="View Receipt"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 22h16a2 2 0 0 0 2-2V7c0-0.28-0.12-0.55-0.32-0.72L16.8 1.6c-0.18-0.17-0.41-0.28-0.65-0.3H4c-1.1 0-2 0.9-2 2v16.59c0 1.1 0.9 2 2 2Z"></path>
+                    <path d="M8 11h8"></path>
+                    <path d="M8 15h5"></path>
+                    <path d="M14 7V1.6"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between text-sm text-gray-600 mb-2">
+              <span className="mr-2">Date: {formatDateForDisplay(expense.date)}</span>
+              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryColor(expense.category)}`}>
+                {expense.category}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-medium text-gray-900">
+                ${parseFloat(expense.amount).toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500">
+                {expense.payment_method}
+              </p>
+            </div>
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <button
+                onClick={() => handleEditExpense(expense)}
+                className="text-blue-600 hover:text-blue-900"
+                title="Edit Expense"
+              >
+                <Edit size={18} />
+              </button>
+              <button
+                onClick={() => handleDeleteExpense(expense)}
+                className="text-red-600 hover:text-red-900"
+                title="Delete Expense"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="md:col-span-2 lg:col-span-3">
+          <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center w-full">
+            <p className="text-sm font-medium text-gray-900">
+              Total
+            </p>
+            <p className="text-sm font-medium text-gray-900">
+              ${expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0).toFixed(2)}
+            </p>
+          </div>
+        </div>
       </div>
-    );
-  };
+    )
+  }
 
   // Expense stats component
   const ExpenseStats = () => {

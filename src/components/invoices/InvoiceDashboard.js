@@ -113,8 +113,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6 text-black">
-      <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
-        <div className="relative inline-block w-full md:w-auto">
+      <div className="flex flex-col md:flex-row flex-wrap md:items-center gap-3">
+        <div className="relative w-full md:w-auto">
           <select
             value={localFilters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -127,8 +127,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             ))}
           </select>
         </div>
-        
-        <div className="relative inline-block w-full md:w-auto">
+
+        <div className="relative w-full md:w-auto">
           <select
             value={localFilters.dateRange}
             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
@@ -141,8 +141,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             ))}
           </select>
         </div>
-        
-        <div className="relative inline-block w-full md:w-auto">
+
+        <div className="relative w-full md:w-auto">
           <select
             value={localFilters.sortBy}
             onChange={(e) => handleFilterChange('sortBy', e.target.value)}
@@ -155,8 +155,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             ))}
           </select>
         </div>
-        
-        <div className="relative inline-block w-full md:w-auto">
+
+        <div className="relative w-full md:w-auto">
           <select
             value={localFilters.sortDirection}
             onChange={(e) => handleFilterChange('sortDirection', e.target.value)}
@@ -166,8 +166,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             <option value="asc">Ascending</option>
           </select>
         </div>
-        
-        <div className="relative flex-grow">
+
+        <div className="relative w-full md:w-auto md:flex-grow">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={16} className="text-gray-400" />
           </div>
@@ -179,8 +179,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             placeholder="Search invoices..."
           />
         </div>
-        
-        <div className="flex space-x-2">
+
+        <div className="flex w-full md:w-auto justify-end space-x-2">
           <button
             onClick={handleApplyFilters}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
@@ -259,58 +259,40 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
   };
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Invoice #
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Customer
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Due Date
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Amount
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {invoices.map((invoice) => (
-            <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => onViewInvoice(invoice.id)}>
-                  {invoice.invoice_number}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{invoice.customer}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{formatDate(invoice.invoice_date)}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{formatDate(invoice.due_date)}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">${invoice.total?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <InvoiceStatusBadge status={invoice.status} />
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex items-center justify-end space-x-2">
+    <div className="bg-white rounded-lg shadow">
+      {invoices.length === 0 ? (
+        <div className="p-6 text-center text-gray-500">
+          No invoices found.
+        </div>
+      ) : (
+        <div className="flow-root">
+          <ul className="-mb-8">
+            {invoices.map((invoice, index) => (
+              <li key={invoice.id}>
+                <div className="relative pb-8">
+                  {index < invoices.length - 1 && (
+                    <span className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true" />
+                  )}
+                  <div className="relative flex items-start space-x-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <p className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => onViewInvoice(invoice.id)}>
+                              Invoice #{invoice.invoice_number}
+                            </p>
+                            <span className="text-xs text-gray-500">
+                              Amount: ${invoice.total?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            <p>Customer: {invoice.customer}</p>
+                            <p>Date: {formatDate(invoice.invoice_date)}</p>
+                            <p>Due Date: {formatDate(invoice.due_date)}</p>
+                            <p>Status: <InvoiceStatusBadge status={invoice.status} /></p>
+                          </div>
+                        </div>
+                        <div className="mt-2 sm:mt-0 flex items-center space-x-2">
                   <button 
                     onClick={() => onViewInvoice(invoice.id)}
                     className="text-blue-600 hover:text-blue-900"
@@ -327,28 +309,23 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                       <DollarSign size={18} />
                     </button>
                   )}
-                  <button 
-                    className="text-gray-600 hover:text-gray-900"
-                    title="Download PDF"
-                  >
-                    <Download size={18} />
-                  </button>
-                  <button 
-                    onClick={() => onDelete(invoice)}
-                    className="text-red-600 hover:text-red-900"
-                    title="Delete"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-                    </svg>
-                  </button>
+                          <button
+                            onClick={() => onDelete(invoice)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
