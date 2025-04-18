@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,7 +28,7 @@ import {
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, activePage = "dashboard" }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -58,7 +58,85 @@ export default function DashboardLayout({ children }) {
     return "dashboard";
   };
 
-  const activePage = getActivePage();
+  const currentActivePage = activePage || getActivePage();
+  const mobileMenuRef = useRef(null);
+  const userDropdownRef = useRef(null);
+
+  // Menu items definition
+  const menuItems = [
+    { 
+      name: 'Dashboard', 
+      href: '/dashboard', 
+      icon: <LayoutDashboard size={20} />,
+      active: currentActivePage === 'dashboard'
+    },
+    { 
+      name: 'Load Management', 
+      href: '/dashboard/dispatching', 
+      icon: <Truck size={20} />,
+      active: currentActivePage === 'dispatching'
+    },
+    {
+      name: 'State Mileage', 
+      href: '/dashboard/mileage', 
+      icon: <MapPin size={18} />,
+      active: currentActivePage === 'mileage'
+    },
+    { 
+      name: 'Invoices', 
+      href: '/dashboard/invoices', 
+      icon: <FileText size={20} />,
+      active: currentActivePage === 'invoices'
+    },
+    { 
+      name: 'Expenses', 
+      href: '/dashboard/expenses', 
+      icon: <Wallet size={20} />,
+      active: currentActivePage === 'expenses'
+    },
+    { 
+      name: 'Customers', 
+      href: '/dashboard/customers', 
+      icon: <Users size={20} />,
+      active: currentActivePage === 'customers'
+    },
+    { 
+      name: 'Fleet', 
+      href: '/dashboard/fleet', 
+      icon: <Package size={20} />,
+      active: currentActivePage === 'fleet'
+    },
+    { 
+      name: 'Compliance', 
+      href: '/dashboard/compliance', 
+      icon: <CheckCircle size={20} />,
+      active: currentActivePage === 'compliance'
+    },
+    { 
+      name: 'IFTA Calculator', 
+      href: '/dashboard/ifta', 
+      icon: <Calculator size={20} />,
+      active: currentActivePage === 'ifta'
+    },
+    { 
+      name: 'Fuel Tracker', 
+      href: '/dashboard/fuel', 
+      icon: <Fuel size={20} />,
+      active: currentActivePage === 'fuel'
+    },
+    { 
+      name: 'Settings', 
+      href: '/dashboard/settings', 
+      icon: <Settings size={20} />,
+      active: currentActivePage === 'settings'
+    },
+    { 
+      name: 'Billing', 
+      href: '/dashboard/billing', 
+      icon: <Wallet size={20} />,
+      active: currentActivePage === 'billing'
+    },
+  ];
 
   // Check if user is authenticated
   useEffect(() => {
@@ -107,8 +185,17 @@ export default function DashboardLayout({ children }) {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userDropdownOpen && !event.target.closest('.user-dropdown')) {
+      // Close user dropdown when clicking outside
+      if (userDropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
         setUserDropdownOpen(false);
+      }
+      
+      // Close mobile menu when clicking outside
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        const menuButton = document.querySelector('.mobile-menu-button');
+        if (menuButton && !menuButton.contains(event.target)) {
+          setMobileMenuOpen(false);
+        }
       }
     };
     
@@ -116,83 +203,7 @@ export default function DashboardLayout({ children }) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [userDropdownOpen]);
-
-  // Menu items definition with Settings added to the main navigation
-  const menuItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
-      icon: <LayoutDashboard size={20} />,
-      active: activePage === 'dashboard'
-    },
-    { 
-      name: 'Load Management', 
-      href: '/dashboard/dispatching', 
-      icon: <Truck size={20} />,
-      active: activePage === 'dispatching'
-    },
-    {
-      name: 'State Mileage', 
-      href: '/dashboard/mileage', 
-      icon: <MapPin size={18} />,
-      active: activePage === 'mileage'
-    },
-    { 
-      name: 'Invoices', 
-      href: '/dashboard/invoices', 
-      icon: <FileText size={20} />,
-      active: activePage === 'invoices'
-    },
-    { 
-      name: 'Expenses', 
-      href: '/dashboard/expenses', 
-      icon: <Wallet size={20} />,
-      active: activePage === 'expenses'
-    },
-    { 
-      name: 'Customers', 
-      href: '/dashboard/customers', 
-      icon: <Users size={20} />,
-      active: activePage === 'customers'
-    },
-    { 
-      name: 'Fleet', 
-      href: '/dashboard/fleet', 
-      icon: <Package size={20} />,
-      active: activePage === 'fleet'
-    },
-    { 
-      name: 'Compliance', 
-      href: '/dashboard/compliance', 
-      icon: <CheckCircle size={20} />,
-      active: activePage === 'compliance'
-    },
-    { 
-      name: 'IFTA Calculator', 
-      href: '/dashboard/ifta', 
-      icon: <Calculator size={20} />,
-      active: activePage === 'ifta'
-    },
-    { 
-      name: 'Fuel Tracker', 
-      href: '/dashboard/fuel', 
-      icon: <Fuel size={20} />,
-      active: activePage === 'fuel'
-    },
-    { 
-      name: 'Settings', 
-      href: '/dashboard/settings', 
-      icon: <Settings size={20} />,
-      active: activePage === 'settings'
-    },
-    { 
-      name: 'Billing', 
-      href: '/dashboard/billing', 
-      icon: <Wallet size={20} />,
-      active: activePage === 'billing'
-    },
-  ];
+  }, [userDropdownOpen, mobileMenuOpen]);
 
   if (loading || subscriptionLoading) {
     return (
@@ -216,7 +227,7 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-white">
       {/* Trial Banner */}
       {bannerVisible && subscriptionStatus !== 'active' && (
         <TrialBanner 
@@ -243,7 +254,7 @@ export default function DashboardLayout({ children }) {
           
           <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
             <nav className="mt-2 px-2 space-y-1">
-              {menuItems.map((item) => (
+              {menuItems.slice(0, -1).map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -277,25 +288,22 @@ export default function DashboardLayout({ children }) {
 
         {/* Mobile menu backdrop */}
         {mobileMenuOpen && (
-            <div
-                className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden transition-opacity duration-300 ease-in-out"
-                style={{ opacity: mobileMenuOpen ? 1 : 0 }} // Apply opacity directly here
-                onClick={(e) => {
-                    // Only close if the backdrop itself is clicked, not the menu
-                    if (e.target === e.currentTarget) setMobileMenuOpen(false);
-                }}
-            >
-            </div>
+          <div
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          ></div>
         )}
 
         {/* Mobile Sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-30 w-64 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
+          ref={mobileMenuRef}
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-300 ease-in-out md:hidden ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
+          style={{ height: '100%', overflowY: 'auto' }}
         >
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            <Link href="/dashboard" className="flex items-center">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+            <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
               <Image
                 src="/images/tc-name-tp-bg.png"
                 alt="Truck Command Logo"
@@ -312,13 +320,13 @@ export default function DashboardLayout({ children }) {
             </button>
           </div>
           
-          <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
-            <nav className="mt-2 px-2 space-y-1">
+          <div className="flex-1 pb-6">
+            <nav className="px-2 py-2">
               {menuItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
+                  className={`flex items-center px-3 py-2.5 text-base font-medium rounded-md transition-all my-1 ${
                     item.active
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
@@ -326,7 +334,7 @@ export default function DashboardLayout({ children }) {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className={`mr-3 flex-shrink-0 ${
-                    item.active ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"
+                    item.active ? "text-blue-600" : "text-gray-500"
                   }`}>
                     {item.icon}
                   </div>
@@ -335,10 +343,10 @@ export default function DashboardLayout({ children }) {
               ))}
             </nav>
             
-            <div className="mt-auto px-3 py-4 border-t border-gray-200">
+            <div className="mt-4 px-2 pt-4 border-t border-gray-200">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center px-3 py-3 mt-1 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
+                className="w-full flex items-center px-3 py-2.5 text-base font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
               >
                 <LogOut size={20} className="mr-3 text-gray-500" />
                 Logout
@@ -348,15 +356,16 @@ export default function DashboardLayout({ children }) {
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 flex flex-col md:ml-64 ${mobileMenuOpen ? 'hidden' : ''}`}>
+        <div className={`flex-1 flex flex-col md:ml-64 ${mobileMenuOpen ? 'hidden md:flex' : ''}`}>
           {/* Top Navigation Bar */}
           <header className="z-10 bg-white shadow-sm sticky top-0">
             <div className="px-4 h-16 flex items-center justify-between">
               {/* Left side: Mobile menu button and brand on mobile */}
               <div className="flex items-center">
                 <button
-                  className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
+                  className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none mobile-menu-button"
                   onClick={() => setMobileMenuOpen(true)}
+                  aria-label="Open menu"
                 >
                   <Menu size={24} />
                 </button>
@@ -388,7 +397,7 @@ export default function DashboardLayout({ children }) {
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
                 
-                <div className="relative user-dropdown">
+                <div className="relative user-dropdown" ref={userDropdownRef}>
                   <button 
                     className="flex items-center space-x-2 rounded-full focus:outline-none"
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -462,7 +471,7 @@ export default function DashboardLayout({ children }) {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto bg-white">
             {children}
           </main>
         </div>

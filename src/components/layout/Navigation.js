@@ -1,4 +1,3 @@
-// src/components/layout/Navigation.js
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -24,14 +23,13 @@ import {
   X,
   ChevronDown,
   User,
-  Home
+  Home,
+  MapPin
 } from "lucide-react";
 
 export default function Navigation({ activePage = "dashboard" }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [featuresOpen, setFeaturesOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -52,6 +50,12 @@ export default function Navigation({ activePage = "dashboard" }) {
       href: '/dashboard/dispatching', 
       icon: <Truck size={20} />,
       active: activePage === 'dispatching'
+    },
+    {
+      name: 'State Mileage', 
+      href: '/dashboard/mileage', 
+      icon: <MapPin size={20} />,
+      active: activePage === 'mileage'
     },
     { 
       name: 'Invoices', 
@@ -99,6 +103,7 @@ export default function Navigation({ activePage = "dashboard" }) {
 
   // Reference for clicking outside
   const userDropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   useEffect(() => {
     async function checkUser() {
@@ -165,13 +170,20 @@ export default function Navigation({ activePage = "dashboard" }) {
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
         setUserDropdownOpen(false);
       }
+      
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        const menuButton = document.querySelector('.mobile-menu-button');
+        if (menuButton && !menuButton.contains(event.target)) {
+          setMobileMenuOpen(false);
+        }
+      }
     };
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [mobileMenuOpen]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -248,14 +260,24 @@ export default function Navigation({ activePage = "dashboard" }) {
         </div>
       </div>
 
+      {/* Mobile Menu Background Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Mobile Sidebar */}
       <aside
-          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:hidden h-screen ${
-              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        ref={mobileMenuRef}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:hidden ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ height: '100%', overflowY: 'auto' }}
       >
-        <div className="flex items-center justify-between h-16 px-4">
-          <Link href="/dashboard" className="flex items-center">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
             <Image
               src="/images/tc-name-tp-bg.png"
               alt="Truck Command Logo"
@@ -265,61 +287,63 @@ export default function Navigation({ activePage = "dashboard" }) {
             />
           </Link>
           <button
-            className="text-gray-500 hover:text-gray-600"
+            className="text-gray-500 hover:text-gray-600 focus:outline-none"
             onClick={() => setMobileMenuOpen(false)}
           >
             <X size={24} />
           </button>
         </div>
         
-        <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
-          <nav className="mt-2 px-2 space-y-1">
-            {menuItems.map((item) => (
+        <div className="flex-1 pb-4 pt-2 overflow-y-auto">
+          <nav className="px-2 py-2">
+            <div className="space-y-1">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center px-3 py-2.5 text-base font-medium rounded-md transition-all ${
+                    item.active
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className={`mr-3 flex-shrink-0 ${
+                    item.active ? "text-blue-600" : "text-gray-500"
+                  }`}>
+                    {item.icon}
+                  </div>
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
-                  item.active
+                href="/dashboard/settings"
+                className={`flex items-center px-3 py-2.5 text-base font-medium rounded-md transition-all ${
+                  activePage === 'settings'
                     ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 border border-red-500 text-red-500 z-100" // Temporary styles
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className={`mr-3 flex-shrink-0 ${
-                  item.active ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"
-                }`}>
-                  {item.icon}
-                </div>
-                {item.name}
+                <Settings 
+                  size={20} 
+                  className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500'}`} 
+                />
+                Settings
               </Link>
-            ))}
+              
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center px-3 py-2.5 text-base font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
+              >
+                <LogOut size={20} className="mr-3 text-gray-500" />
+                Logout
+              </button>
+            </div>
           </nav>
-          
-          <div className="mt-auto px-3 py-4 border-t border-gray-200">
-            <Link
-              href="/dashboard/settings"
-              className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md transition-all ${
-                activePage === 'settings'
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 border border-red-500 text-red-500 z-100" // Temporary styles
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Settings 
-                size={20} 
-                className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} 
-              />
-              Settings
-            </Link>
-            
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center px-3 py-3 mt-1 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
-            >
-              <LogOut size={20} className="mr-3 text-gray-500" />
-              Logout
-            </button>
-          </div>
         </div>
       </aside>
 
@@ -329,8 +353,9 @@ export default function Navigation({ activePage = "dashboard" }) {
           {/* Left side: Mobile menu button and brand on mobile */}
           <div className="flex items-center">
             <button
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
+              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none mobile-menu-button"
               onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
             >
               <Menu size={24} />
             </button>
