@@ -13,14 +13,15 @@ export default function PlanCard({
   highlighted = false,
   freeTrial = true,
   ctaText = "Start Free Trial",
-  ctaLink = "/signup"
+  ctaLink = "/signup",
+  textColor = "text-gray-900" // Add this default parameter
 }) {
   const isYearly = billingCycle === 'yearly';
   const displayPrice = isYearly ? yearlyPrice : price;
   const yearlyDiscount = Math.round(((price * 12) - (yearlyPrice * 12)) / (price * 12) * 100);
   
   return (
-    <div className={`bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${highlighted ? 'relative' : ''}`}>
+    <div className={`bg-white rounded-xl shadow-lg overflow-hidden transition-all text-black duration-300 hover:shadow-xl hover:-translate-y-1 ${highlighted ? 'relative' : ''}`}>
       {highlighted && (
         <div className="absolute top-0 right-0">
           <div className="bg-orange-500 text-white transform rotate-45 text-center text-sm py-1 px-8 translate-x-8 translate-y-4">
@@ -36,7 +37,7 @@ export default function PlanCard({
           <p className="text-5xl font-bold">
             ${displayPrice}
           </p>
-          <span className="text-xl ml-1">/mo</span>
+          <span className="text-black text-xl ml-1">/mo</span>
         </div>
         <p className="text-gray-600 mt-2">
           {isYearly 

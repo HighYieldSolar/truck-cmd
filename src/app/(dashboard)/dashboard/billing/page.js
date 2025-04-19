@@ -215,7 +215,7 @@ export default function BillingDashboardPage() {
   // Loading state
   if (loading) {
     return (
-      <DashboardLayout activePage="settings">
+      <DashboardLayout activePage="billing">
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="flex flex-col items-center">
             <RefreshCw size={40} className="animate-spin text-blue-500 mb-4" />
@@ -227,22 +227,22 @@ export default function BillingDashboardPage() {
   }
 
   return (
-    <DashboardLayout activePage="settings">
+    <DashboardLayout activePage="billing">
       <div className="bg-gray-100 min-h-[calc(100vh-64px)] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header section */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
             {subscriptionStatus === 'active' ? (
-              <p className="mt-4 text-lg text-gray-600">
+              <p className="mt-4 text-lg text-black">
                 You&apos;re currently on the {selectedPlan ? plans[selectedPlan].name : 'Premium'} plan.
               </p>
             ) : subscriptionStatus === 'trial' ? (
-              <p className="mt-4 text-lg text-gray-600">
+              <p className="mt-4 text-lg text-black">
                 Your free trial ends on {new Date(trialEndsAt).toLocaleDateString()}. Choose a plan to continue using Truck Command.
               </p>
             ) : (
-              <p className="mt-4 text-lg text-gray-600">
+              <p className="mt-4 text-lg text-black">
                 Choose a plan to get started with Truck Command.
               </p>
             )}
