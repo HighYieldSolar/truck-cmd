@@ -150,8 +150,8 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
                         : "text-gray-500"
                   }`}
                 >
-                  {step === 1 && "Delivery Details"}
-                  {step === 2 && "Documentation"}
+                  {step === 1 && "Documentation"}
+                  {step === 2 && "Delivery Details"}
                   {step === 3 && "Completion"}
                 </span>
               </div>
@@ -271,7 +271,7 @@ export default function CompleteLoadForm({ loadId }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [loadDetails, setLoadDetails] = useState(null);
+  const [loadDetails, setLoadDetails] = useState(null); 
   const [error, setError] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   
@@ -392,7 +392,7 @@ export default function CompleteLoadForm({ loadId }) {
         }
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange); 
     
     // Cleanup
     return () => {
@@ -591,7 +591,14 @@ export default function CompleteLoadForm({ loadId }) {
     let isValid = true;
     
     switch (currentStep) {
-      case 1: // Delivery Details
+      case 1: // Documentation
+        if (formData.podFiles.length === 0) {
+          newErrors.podFiles = "At least one proof of delivery document is required";
+          isValid = false;
+        }
+        break;
+        
+      case 2: // Delivery Details
         if (!formData.deliveryDate) {
           newErrors.deliveryDate = "Delivery date is required";
           isValid = false;
@@ -608,20 +615,13 @@ export default function CompleteLoadForm({ loadId }) {
         }
         break;
         
-      case 2: // Documentation
-        if (formData.podFiles.length === 0) {
-          newErrors.podFiles = "At least one proof of delivery document is required";
-          isValid = false;
-        }
-        break;
-        
-      case 3: // Billing & Completion
+      case 3: // Billing & Completion 
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
           newErrors.additionalChargesDescription = "Description is required for additional charges";
           isValid = false;
         }
         
-        if (formData.useFactoring && !formData.factoringCompany.trim()) {
+        if (formData.useFactoring && !formData.factoringCompany.trim()) { 
           newErrors.factoringCompany = "Factoring company name is required";
           isValid = false;
         }
@@ -632,13 +632,13 @@ export default function CompleteLoadForm({ loadId }) {
     return isValid;
   };
   
-  // Navigate to next step
+  // Navigate to next step 
   const handleNextStep = () => {
     if (validateStep()) {
       setCurrentStep(prev => Math.min(prev + 1, 3));
       window.scrollTo(0, 0);
     }
-  };
+  }; 
   
   // Navigate to previous step
   const handlePrevStep = () => {
@@ -1016,7 +1016,7 @@ export default function CompleteLoadForm({ loadId }) {
         
         {/* Form Content */}
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200">
+          <div className="px-6 py-6 border-b border-gray-200"> 
             <h2 className="text-xl font-medium text-gray-900">
               {currentStep === 1 && "Delivery Details"}
               {currentStep === 2 && "Proof of Delivery Documentation"}
