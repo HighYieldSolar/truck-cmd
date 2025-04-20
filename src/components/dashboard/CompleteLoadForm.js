@@ -333,6 +333,13 @@ export default function CompleteLoadForm({ loadId }) {
         
         // Keep existing podFiles if any and update other fields
         setFormData(prev => ({
+          ...prev,
+          ...savedForm,
+        }));
+      } else {
+        console.log("No saved form data found in localStorage for loadId:", loadId);
+        // Ensure initial form data includes the loadId
+        setFormData(prev => ({
           ...savedForm,
           podFiles: prev.podFiles // Keep the current podFiles array
         }));
@@ -342,7 +349,10 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Save form data when it changes
   useEffect(() => {
-    if (loadId) {
+    if (loadId && formData) {
+      console.log("Saving form data to localStorage:", { loadId, formData });
+      // You might want to exclude files from the saved data, as they're not serializable
+      // const { podFiles, ...dataToSave } = formData;
       saveFormToStorage(formData, loadId);
     }
   }, [formData, loadId]);
@@ -360,10 +370,12 @@ export default function CompleteLoadForm({ loadId }) {
           if (savedForm) {
             setFormData(prev => ({
               ...savedForm,
-              podFiles: prev.podFiles // Keep the existing files array
+              podFiles: prev.podFiles // Keep the existing files array to prevent overwrite
             }));
+            console.log("Restored form data on visibility change:", savedForm);
           }
         }
+        console.log("App became visible again, restored form state if needed");
       } else {
         console.log("App visibility changed to hidden, saving current state");
         if (loadId) {
@@ -379,33 +391,6 @@ export default function CompleteLoadForm({ loadId }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAndroid, loadId, formData]);
-  
-  // Handle back button on Android
-  useEffect(() => {
-    if (!isAndroid) return;
-    
-    const handleBackButton = (e) => {
-      // If we're in file picking mode, prevent default behavior and restore focus
-      if (isFilePickerActive) {
-        console.log("Back button pressed during file picking, handling gracefully");
-        e.preventDefault();
-        setIsFilePickerActive(false);
-        
-        // Focus back on main form container
-        const container = document.getElementById('form-container');
-        if (container) container.focus();
-        
-        // No need to load from localStorage here as the form state is still in memory
-        return;
-      }
-    };
-    
-    window.addEventListener('popstate', handleBackButton);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBackButton);
-    };
-  }, [isAndroid, isFilePickerActive]);
   
   // Load data on mount
   useEffect(() => {
@@ -476,6 +461,7 @@ export default function CompleteLoadForm({ loadId }) {
         if (savedForm) {
           // Restore form state from localStorage
           setFormData(prev => ({
+            // We'll keep any files that were already attached.
             ...savedForm,
             podFiles: prev.podFiles // Keep any existing files
           }));
