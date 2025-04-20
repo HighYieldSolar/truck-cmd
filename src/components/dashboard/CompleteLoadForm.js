@@ -364,34 +364,34 @@ export default function CompleteLoadForm({ loadId }) {
       saveFormToStorage(formData, loadId);
     }
   }, [formData, loadId]);
-  
+
   // Handle app focus/visibility changes (for Android platform switching)
   useEffect(() => {
     if (!isAndroid) return;
-    
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log("App became visible again, restoring form state if needed");
-        
-        if (loadId) {
-          const savedForm = loadFormFromStorage(loadId);
-          if (savedForm) {
-            setFormData(prev => ({
-              ...savedForm,
-              podFiles: prev.podFiles // Keep the existing files array to prevent overwrite
-            }));
-            console.log("Restored form data on visibility change:", savedForm);
+      if (!isFilePickerActive) {
+        if (document.visibilityState === 'visible') {
+          console.log("App became visible again, restoring form state if needed");
+          if (loadId) {
+            const savedForm = loadFormFromStorage(loadId);
+            if (savedForm) {
+              setFormData(prev => ({
+                ...savedForm,
+                podFiles: prev.podFiles // Keep the existing files array to prevent overwrite
+              }));
+              console.log("Restored form data on visibility change:", savedForm);
+            }
           }
-        }
-        console.log("App became visible again, restored form state if needed");
-      } else {
-        console.log("App visibility changed to hidden, saving current state");
-        if (loadId) {
-          saveFormToStorage(formData, loadId);
+          console.log("App became visible again, restored form state if needed");
+        } else {
+          console.log("App visibility changed to hidden, saving current state");
+          if (loadId) {
+            saveFormToStorage(formData, loadId);
+          }
         }
       }
     };
-    
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Cleanup
