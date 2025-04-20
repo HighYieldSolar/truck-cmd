@@ -330,6 +330,9 @@ export default function CompleteLoadForm({ loadId }) {
           // and will display that files were previously selected
           console.log("Restored form had file metadata:", savedForm.podFileNames);
         }
+        if (savedForm.podFileNames && savedForm.podFileNames.length > 0) {
+          savedForm.podFiles = savedForm.podFileNames.map(name => ({ name, previouslyUploaded: true }));
+        }
         
         // Keep existing podFiles if any and update other fields
         setFormData(prev => ({
@@ -520,6 +523,7 @@ export default function CompleteLoadForm({ loadId }) {
         // Reset file input
         e.target.value = "";
       }
+      e.target.value = null; // Ensure input is fully reset
     } else if (type === 'checkbox') {
       // Handle checkboxes
       setFormData(prev => ({
@@ -1223,7 +1227,14 @@ export default function CompleteLoadForm({ loadId }) {
                                 {typeof file === 'string' ? file.split('/').pop() : file.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
+                                {file.previouslyUploaded
+                                  ? <span className="text-yellow-600">Previously uploaded</span>
+                                  : (typeof file !== 'string'
+                                    ? `${(file.size / 1024).toFixed(1)} KB`
+                                    : ''
+                                  )
+                                }
+                                
                               </p>
                             </div>
                           </div>
