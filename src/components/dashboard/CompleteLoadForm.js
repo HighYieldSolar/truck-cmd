@@ -319,7 +319,13 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Load saved form data on initialization and when returning to the app
   useEffect(() => {
-    if (loadId) {
+      // Load form data from storage immediately
+      if (loadId) {
+        const savedForm = loadFormFromStorage(loadId);
+        if (savedForm) {
+          setFormData(prev => ({...prev, ...savedForm}));
+        }
+      }
       const savedForm = loadFormFromStorage(loadId);
       if (savedForm) {
         console.log("Restored form data from localStorage");
@@ -336,7 +342,7 @@ export default function CompleteLoadForm({ loadId }) {
         
         // Keep existing podFiles if any and update other fields
         setFormData(prev => ({
-          ...prev,
+          //...prev,
           ...savedForm,
         }));
       } else {
@@ -347,7 +353,6 @@ export default function CompleteLoadForm({ loadId }) {
           podFiles: prev.podFiles // Keep the current podFiles array
         }));
       }
-    }
   }, [loadId]);
   
   // Save form data when it changes
@@ -486,9 +491,9 @@ export default function CompleteLoadForm({ loadId }) {
     setIsFilePickerActive(true);
     
     // Save current form data before navigating
-    saveFormToStorage(formData, loadId);
-    
     console.log("Android file upload initiated, saving form state");
+    saveFormToStorage(formData, loadId);
+
     
     // After handling file picker focus, trigger the file input click
     if (fileInputRef.current) {
@@ -521,7 +526,6 @@ export default function CompleteLoadForm({ loadId }) {
         console.log(`Added ${fileNames.length} new files:`, fileNames);
         
         // Reset file input
-        e.target.value = "";
       }
       e.target.value = null; // Ensure input is fully reset
     } else if (type === 'checkbox') {
