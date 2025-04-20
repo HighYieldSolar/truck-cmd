@@ -1215,10 +1215,10 @@ export default function CompleteLoadForm({ loadId }) {
                   )}
                 </div>
                 
-                {/* Display uploaded files */}
-                {formData.podFiles.length > 0 && (
+                {/* Display uploaded files. added formData.podFiles check to avoid length of undefined */}
+                {formData.podFiles && formData.podFiles.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles.length})</h3>
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles ? formData.podFiles.length : 0})</h3>
                     <ul className="border rounded-md divide-y divide-gray-200">
                       {formData.podFiles.map((file, index) => (
                         <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
