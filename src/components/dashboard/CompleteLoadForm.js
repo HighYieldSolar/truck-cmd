@@ -1,5 +1,5 @@
 // src/components/dashboard/CompleteLoadForm.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock, 
@@ -9,6 +9,62 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 
+// Helper to persist form data to localStorage
+const saveFormToStorage = (formData, loadId) => {
+  if (typeof window !== 'undefined') {
+    // Clone the form data without the file objects (which can't be serialized)
+    const { podFiles, ...serializableData } = formData;
+    
+    // Save file metadata if available
+    const serializedData = {
+      ...serializableData,
+      podFileNames: podFiles ? podFiles.map(file => 
+        typeof file === 'string' ? file : file.name
+      ) : []
+    };
+    
+    localStorage.setItem(`load_form_${loadId}`, JSON.stringify(serializedData));
+  }
+};
+
+// Helper to load form data from localStorage
+const loadFormFromStorage = (loadId) => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem(`load_form_${loadId}`);
+    return saved ? JSON.parse(saved) : null;
+  }
+  return null;
+};
+
+// Helper to record factored earnings
+const recordFactoredEarnings = async (userId, loadId, amount, options = {}) => {
+  try {
+    // Format data for the earnings table
+    const earningData = {
+      user_id: userId,
+      load_id: loadId,
+      amount: amount,
+      source: 'Factoring',
+      date: options.date || new Date().toISOString().split('T')[0],
+      description: options.description || 'Factored load earnings',
+      factoring_company: options.factoringCompany || null,
+      created_at: new Date().toISOString()
+    };
+    
+    // Insert into earnings table
+    const { data, error } = await supabase
+      .from('earnings')
+      .insert([earningData])
+      .select();
+      
+    if (error) throw error;
+    
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
+    console.error('Error recording factored earnings:', error);
+    throw error;
+  }
+};
 
 // Star Rating Component with modern styling
 const StarRating = ({ rating, setRating, disabled = false }) => {
@@ -208,6 +264,7 @@ const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFacto
 // Main component
 export default function CompleteLoadForm({ loadId }) {
   const router = useRouter();
+  const fileInputRef = useRef(null);
   
   // State management
   const [user, setUser] = useState(null);
@@ -221,6 +278,9 @@ export default function CompleteLoadForm({ loadId }) {
   // Document preview state
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  
+  // Keep track of form focus state to prevent losing data on blur
+  const [isFilePickerActive, setIsFilePickerActive] = useState(false);
   
   // Form state with validation
   const [formData, setFormData] = useState({
@@ -242,6 +302,110 @@ export default function CompleteLoadForm({ loadId }) {
   // Form validation
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  
+  // Detect platform
+  const [isAndroid, setIsAndroid] = useState(false);
+  
+  // Detect platform - run this only on client
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if using Android
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      setIsAndroid(/android/.test(userAgent));
+      
+      console.log("Platform detection:", { isAndroid: /android/.test(userAgent) });
+    }
+  }, []);
+  
+  // Load saved form data on initialization and when returning to the app
+  useEffect(() => {
+    if (loadId) {
+      const savedForm = loadFormFromStorage(loadId);
+      if (savedForm) {
+        console.log("Restored form data from localStorage");
+        // Check if we need to convert the podFiles from serialized to File objects
+        // since File objects can't be serialized to localStorage
+        if (savedForm.podFileNames && savedForm.podFileNames.length > 0) {
+          // We can't restore the actual files, but can restore metadata
+          // and will display that files were previously selected
+          console.log("Restored form had file metadata:", savedForm.podFileNames);
+        }
+        
+        // Keep existing podFiles if any and update other fields
+        setFormData(prev => ({
+          ...savedForm,
+          podFiles: prev.podFiles // Keep the current podFiles array
+        }));
+      }
+    }
+  }, [loadId]);
+  
+  // Save form data when it changes
+  useEffect(() => {
+    if (loadId) {
+      saveFormToStorage(formData, loadId);
+    }
+  }, [formData, loadId]);
+  
+  // Handle app focus/visibility changes (for Android platform switching)
+  useEffect(() => {
+    if (!isAndroid) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("App became visible again, restoring form state if needed");
+        
+        if (loadId) {
+          const savedForm = loadFormFromStorage(loadId);
+          if (savedForm) {
+            setFormData(prev => ({
+              ...savedForm,
+              podFiles: prev.podFiles // Keep the existing files array
+            }));
+          }
+        }
+      } else {
+        console.log("App visibility changed to hidden, saving current state");
+        if (loadId) {
+          saveFormToStorage(formData, loadId);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAndroid, loadId, formData]);
+  
+  // Handle back button on Android
+  useEffect(() => {
+    if (!isAndroid) return;
+    
+    const handleBackButton = (e) => {
+      // If we're in file picking mode, prevent default behavior and restore focus
+      if (isFilePickerActive) {
+        console.log("Back button pressed during file picking, handling gracefully");
+        e.preventDefault();
+        setIsFilePickerActive(false);
+        
+        // Focus back on main form container
+        const container = document.getElementById('form-container');
+        if (container) container.focus();
+        
+        // No need to load from localStorage here as the form state is still in memory
+        return;
+      }
+    };
+    
+    window.addEventListener('popstate', handleBackButton);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, [isAndroid, isFilePickerActive]);
   
   // Load data on mount
   useEffect(() => {
@@ -306,6 +470,16 @@ export default function CompleteLoadForm({ loadId }) {
             deliveryDate: data.delivery_date
           }));
         }
+        
+        // Check if we have saved form data for this load
+        const savedForm = loadFormFromStorage(loadId);
+        if (savedForm) {
+          // Restore form state from localStorage
+          setFormData(prev => ({
+            ...savedForm,
+            podFiles: prev.podFiles // Keep any existing files
+          }));
+        }
       } catch (err) {
         console.error('Error fetching load details:', err);
         setError(err.message || 'Failed to load data');
@@ -317,17 +491,48 @@ export default function CompleteLoadForm({ loadId }) {
     fetchData();
   }, [loadId, router]);
   
+  // Specialized file upload handler for Android
+  const handleAndroidFileUpload = () => {
+    // Set file picker active flag to true before opening the file picker
+    setIsFilePickerActive(true);
+    
+    // Save current form data before navigating
+    saveFormToStorage(formData, loadId);
+    
+    console.log("Android file upload initiated, saving form state");
+    
+    // After handling file picker focus, trigger the file input click
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     
     if (type === 'file') {
+      // Set file picker to inactive as we're now handling the files
+      setIsFilePickerActive(false);
+      
       // Handle file uploads
       if (files && files.length > 0) {
+        // Create a copy of the files array since it's readonly
+        const fileArray = Array.from(files);
+        
+        // Update with the new files
         setFormData(prev => ({
           ...prev,
-          podFiles: [...prev.podFiles, ...Array.from(files)]
+          podFiles: [...prev.podFiles, ...fileArray]
         }));
+        
+        // Immediately persist form data to localStorage (without files)
+        // Saving filenames to help restore state
+        const fileNames = fileArray.map(f => f.name);
+        console.log(`Added ${fileNames.length} new files:`, fileNames);
+        
+        // Reset file input
+        e.target.value = "";
       }
     } else if (type === 'checkbox') {
       // Handle checkboxes
@@ -464,6 +669,12 @@ export default function CompleteLoadForm({ loadId }) {
       // Upload proof of delivery documents
       const podUrls = [];
       for (const file of formData.podFiles) {
+        // Skip files that are already URLs
+        if (typeof file === 'string') {
+          podUrls.push({ name: file.split('/').pop(), url: file });
+          continue;
+        }
+        
         const fileName = `${user.id}/loads/${loadDetails.loadNumber}/pod/${Date.now()}-${file.name}`;
         
         const { data: fileData, error: fileError } = await supabase.storage
@@ -632,6 +843,11 @@ export default function CompleteLoadForm({ loadId }) {
         sessionStorage.setItem('dashboard-refresh-needed', 'true');
       }
       
+      // Clear locally stored form data since we're done
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`load_form_${loadId}`);
+      }
+      
       // Show success modal
       setSuccessModalOpen(true);
       
@@ -678,7 +894,7 @@ export default function CompleteLoadForm({ loadId }) {
   }
   
   return (
-    <div className="bg-gray-50 pb-12">
+    <div className="bg-gray-50 pb-12" id="form-container" tabIndex="-1">
       {/* Header with load overview */}
       <div className="bg-white border-b shadow-sm p-4 mb-6 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between">
@@ -758,25 +974,17 @@ export default function CompleteLoadForm({ loadId }) {
                   </div>
                 </div>
               </div>
-              {loadDetails.driver && (
-  <div className="flex">
-    <Users size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
-    <div>
-      <p className="text-sm font-medium text-gray-900">Driver</p>
-      <p className="text-sm text-gray-700">{loadDetails.driver}</p>
-    </div>
-  </div>
-)}
-
-{loadDetails.truckInfo && (
-  <div className="flex">
-    <Truck size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
-    <div>
-      <p className="text-sm font-medium text-gray-900">Vehicle</p>
-      <p className="text-sm text-gray-700">{loadDetails.truckInfo}</p>
-    </div>
-  </div>
-)}
+              
+              {loadDetails.truckInfo && (
+                <div className="flex">
+                  <Truck size={18} className="text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Vehicle</p>
+                    <p className="text-sm text-gray-700">{loadDetails.truckInfo}</p>
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-3">Route Details</h3>
                 <div className="space-y-3">
@@ -786,7 +994,7 @@ export default function CompleteLoadForm({ loadId }) {
                       <p className="text-sm font-medium text-gray-900">Route</p>
                       <p className="text-sm text-gray-700">
                         {loadDetails.origin} → {loadDetails.destination}
-                        </p>
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
@@ -936,39 +1144,78 @@ export default function CompleteLoadForm({ loadId }) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Upload Proof of Delivery Documents*
                   </label>
-                  <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
-                    errors.podFiles 
-                      ? 'border-red-300 border-dashed' 
-                      : 'border-gray-300 border-dashed'
-                  } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
-                    <div className="space-y-1 text-center">
-                      <Upload 
-                        className="mx-auto h-12 w-12 text-gray-400"
-                        strokeWidth={1}
-                      />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="podFiles"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                        >
-                          <span>Upload files</span>
-                          <input
-                            id="podFiles"
-                            name="podFiles"
-                            type="file"
-                            multiple
-                            accept="image/*,.pdf,.doc,.docx"
-                            className="sr-only"
-                            onChange={handleInputChange}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
+                  {/* Special handling for Android devices */}
+                  {isAndroid ? (
+                    <button
+                      type="button"
+                      onClick={handleAndroidFileUpload}
+                      className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                        errors.podFiles 
+                          ? 'border-red-300 border-dashed' 
+                          : 'border-gray-300 border-dashed'
+                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
+                    >
+                      <div className="space-y-1 text-center">
+                        <Upload 
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          strokeWidth={1}
+                        />
+                        <div className="flex text-sm text-gray-600">
+                          <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                            Upload files
+                          </span>
+                          <p className="pl-1">or take a photo</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, PDF, DOC up to 10MB
+                        </p>
+                        <input
+                          ref={fileInputRef}
+                          id="podFiles"
+                          name="podFiles"
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx"
+                          className="sr-only"
+                          onChange={handleInputChange}
+                        />
                       </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, PDF, DOC up to 10MB
-                      </p>
+                    </button>
+                  ) : (
+                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                      errors.podFiles 
+                        ? 'border-red-300 border-dashed' 
+                        : 'border-gray-300 border-dashed'
+                    } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
+                      <div className="space-y-1 text-center">
+                        <Upload 
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          strokeWidth={1}
+                        />
+                        <div className="flex text-sm text-gray-600">
+                          <label
+                            htmlFor="podFiles"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                          >
+                            <span>Upload files</span>
+                            <input
+                              id="podFiles"
+                              name="podFiles"
+                              type="file"
+                              multiple
+                              accept="image/*,.pdf,.doc,.docx"
+                              className="sr-only"
+                              onChange={handleInputChange}
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, PDF, DOC up to 10MB
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {errors.podFiles && (
                     <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
                   )}
@@ -987,10 +1234,10 @@ export default function CompleteLoadForm({ loadId }) {
                             </div>
                             <div className="ml-3">
                               <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                                {file.name}
+                                {typeof file === 'string' ? file.split('/').pop() : file.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {(file.size / 1024).toFixed(1)} KB
+                                {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
                               </p>
                             </div>
                           </div>
