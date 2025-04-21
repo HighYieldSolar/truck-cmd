@@ -97,24 +97,16 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
   );
 };
 
-// Steps progress bar with modern design
-const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
+// Steps progress bar with modern design - updated for 2 steps
+const StepsProgress = ({ currentStep, totalSteps = 2 }) => {
   return (
     <div className="mb-8 px-4">
       <div className="relative flex items-center justify-between w-full">
-        {/* Step connector container - positions lines to align with circle centers */}
-        <div className="absolute top-6 left-0 right-0 flex justify-between items-center">
-          {/* First segment line (steps 1-2) */}
-          <div className="h-1 flex-1 mx-10" 
+        {/* Step connector - we only need one line now */}
+        <div className="absolute top-6 left-0 right-0 flex justify-center items-center">
+          <div className="h-1 w-1/2" 
             style={{ 
               backgroundColor: currentStep > 1 ? '#10B981' : '#E5E7EB',
-            }} 
-          />
-          
-          {/* Second segment line (steps 2-3) */}
-          <div className="h-1 flex-1 mx-10" 
-            style={{ 
-              backgroundColor: currentStep > 2 ? '#10B981' : '#E5E7EB',
             }} 
           />
         </div>
@@ -150,9 +142,8 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
                         : "text-gray-500"
                   }`}
                 >
-                  {step === 1 && "Documentation"}
-                  {step === 2 && "Delivery Details"}
-                  {step === 3 && "Completion"}
+                  {step === 1 && "Delivery & Documentation"}
+                  {step === 2 && "Billing & Completion"}
                 </span>
               </div>
             </div>
@@ -271,7 +262,7 @@ export default function CompleteLoadForm({ loadId }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [loadDetails, setLoadDetails] = useState(null); 
+  const [loadDetails, setLoadDetails] = useState(null);
   const [error, setError] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   
@@ -319,13 +310,7 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Load saved form data on initialization and when returning to the app
   useEffect(() => {
-      // Load form data from storage immediately
-      if (loadId) {
-        const savedForm = loadFormFromStorage(loadId);
-        if (savedForm) {
-          setFormData(prev => ({...prev, ...savedForm}));
-        }
-      }
+    if (loadId) {
       const savedForm = loadFormFromStorage(loadId);
       if (savedForm) {
         console.log("Restored form data from localStorage");
@@ -336,69 +321,82 @@ export default function CompleteLoadForm({ loadId }) {
           // and will display that files were previously selected
           console.log("Restored form had file metadata:", savedForm.podFileNames);
         }
-        if (savedForm.podFileNames && savedForm.podFileNames.length > 0) {
-          savedForm.podFiles = savedForm.podFileNames.map(name => ({ name, previouslyUploaded: true }));
-        }
         
         // Keep existing podFiles if any and update other fields
-        setFormData(prev => ({
-          //...prev,
-          ...savedForm,
-        }));
-      } else {
-        console.log("No saved form data found in localStorage for loadId:", loadId);
-        // Ensure initial form data includes the loadId
         setFormData(prev => ({
           ...savedForm,
           podFiles: prev.podFiles // Keep the current podFiles array
         }));
       }
+    }
   }, [loadId]);
   
   // Save form data when it changes
   useEffect(() => {
-    if (loadId && formData) {
-      console.log("Saving form data to localStorage:", { loadId, formData });
-      // You might want to exclude files from the saved data, as they're not serializable
-      // const { podFiles, ...dataToSave } = formData;
+    if (loadId) {
       saveFormToStorage(formData, loadId);
     }
   }, [formData, loadId]);
-
+  
   // Handle app focus/visibility changes (for Android platform switching)
   useEffect(() => {
     if (!isAndroid) return;
-
+    
     const handleVisibilityChange = () => {
-      if (!isFilePickerActive) {
-        if (document.visibilityState === 'visible') {
-          console.log("App became visible again, restoring form state if needed");
-          if (loadId) {
-            const savedForm = loadFormFromStorage(loadId);
-            if (savedForm) {
-              setFormData(prev => ({
-                ...savedForm,
-                podFiles: prev.podFiles // Keep the existing files array to prevent overwrite
-              }));
-              console.log("Restored form data on visibility change:", savedForm);
-            }
+      if (document.visibilityState === 'visible') {
+        console.log("App became visible again, restoring form state if needed");
+        
+        if (loadId) {
+          const savedForm = loadFormFromStorage(loadId);
+          if (savedForm) {
+            setFormData(prev => ({
+              ...savedForm,
+              podFiles: prev.podFiles // Keep the existing files array
+            }));
           }
-          console.log("App became visible again, restored form state if needed");
-        } else {
-          console.log("App visibility changed to hidden, saving current state");
-          if (loadId) {
-            saveFormToStorage(formData, loadId);
-          }
+        }
+      } else {
+        console.log("App visibility changed to hidden, saving current state");
+        if (loadId) {
+          saveFormToStorage(formData, loadId);
         }
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange); 
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAndroid, loadId, formData]);
+  
+  // Handle back button on Android
+  useEffect(() => {
+    if (!isAndroid) return;
+    
+    const handleBackButton = (e) => {
+      // If we're in file picking mode, prevent default behavior and restore focus
+      if (isFilePickerActive) {
+        console.log("Back button pressed during file picking, handling gracefully");
+        e.preventDefault();
+        setIsFilePickerActive(false);
+        
+        // Focus back on main form container
+        const container = document.getElementById('form-container');
+        if (container) container.focus();
+        
+        // No need to load from localStorage here as the form state is still in memory
+        return;
+      }
+    };
+    
+    window.addEventListener('popstate', handleBackButton);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, [isAndroid, isFilePickerActive]);
   
   // Load data on mount
   useEffect(() => {
@@ -469,7 +467,6 @@ export default function CompleteLoadForm({ loadId }) {
         if (savedForm) {
           // Restore form state from localStorage
           setFormData(prev => ({
-            // We'll keep any files that were already attached.
             ...savedForm,
             podFiles: prev.podFiles // Keep any existing files
           }));
@@ -491,9 +488,9 @@ export default function CompleteLoadForm({ loadId }) {
     setIsFilePickerActive(true);
     
     // Save current form data before navigating
-    console.log("Android file upload initiated, saving form state");
     saveFormToStorage(formData, loadId);
-
+    
+    console.log("Android file upload initiated, saving form state");
     
     // After handling file picker focus, trigger the file input click
     if (fileInputRef.current) {
@@ -526,8 +523,8 @@ export default function CompleteLoadForm({ loadId }) {
         console.log(`Added ${fileNames.length} new files:`, fileNames);
         
         // Reset file input
+        e.target.value = "";
       }
-      e.target.value = null; // Ensure input is fully reset
     } else if (type === 'checkbox') {
       // Handle checkboxes
       setFormData(prev => ({
@@ -591,14 +588,7 @@ export default function CompleteLoadForm({ loadId }) {
     let isValid = true;
     
     switch (currentStep) {
-      case 1: // Documentation
-        if (formData.podFiles.length === 0) {
-          newErrors.podFiles = "At least one proof of delivery document is required";
-          isValid = false;
-        }
-        break;
-        
-      case 2: // Delivery Details
+      case 1: // Delivery Details & Documentation (merged)
         if (!formData.deliveryDate) {
           newErrors.deliveryDate = "Delivery date is required";
           isValid = false;
@@ -613,15 +603,20 @@ export default function CompleteLoadForm({ loadId }) {
           newErrors.receivedBy = "Receiver name is required";
           isValid = false;
         }
+        
+        if (formData.podFiles.length === 0) {
+          newErrors.podFiles = "At least one proof of delivery document is required";
+          isValid = false;
+        }
         break;
         
-      case 3: // Billing & Completion 
+      case 2: // Billing & Completion
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
           newErrors.additionalChargesDescription = "Description is required for additional charges";
           isValid = false;
         }
         
-        if (formData.useFactoring && !formData.factoringCompany.trim()) { 
+        if (formData.useFactoring && !formData.factoringCompany.trim()) {
           newErrors.factoringCompany = "Factoring company name is required";
           isValid = false;
         }
@@ -632,13 +627,13 @@ export default function CompleteLoadForm({ loadId }) {
     return isValid;
   };
   
-  // Navigate to next step 
+  // Navigate to next step
   const handleNextStep = () => {
     if (validateStep()) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+      setCurrentStep(prev => Math.min(prev + 1, 2)); // Now just 2 steps
       window.scrollTo(0, 0);
     }
-  }; 
+  };
   
   // Navigate to previous step
   const handlePrevStep = () => {
@@ -1016,274 +1011,275 @@ export default function CompleteLoadForm({ loadId }) {
         
         {/* Form Content */}
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200"> 
+          <div className="px-6 py-6 border-b border-gray-200">
             <h2 className="text-xl font-medium text-gray-900">
-              {currentStep === 1 && "Delivery Details"}
-              {currentStep === 2 && "Proof of Delivery Documentation"}
-              {currentStep === 3 && "Billing & Completion"}
+              {currentStep === 1 && "Delivery & Documentation"}
+              {currentStep === 2 && "Billing & Completion"}
             </h2>
           </div>
           
           <div className="p-6">
-            {/* Step 1: Delivery Details */}
+            {/* Step 1: Delivery Details & Documentation (merged) */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                      Actual Delivery Date*
+                {/* Delivery Details Section */}
+                <div>
+                  <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    Delivery Details
+                  </h3>
+                
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
+                        Actual Delivery Date*
+                      </label>
+                      <input
+                        type="date"
+                        id="deliveryDate"
+                        name="deliveryDate"
+                        value={formData.deliveryDate}
+                        onChange={handleInputChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.deliveryDate 
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                      />
+                      {errors.deliveryDate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.deliveryDate}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1">
+                        Actual Delivery Time*
+                      </label>
+                      <input
+                        type="time"
+                        id="deliveryTime"
+                        name="deliveryTime"
+                        value={formData.deliveryTime}
+                        onChange={handleInputChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.deliveryTime 
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                      />
+                      {errors.deliveryTime && (
+                        <p className="mt-1 text-sm text-red-600">{errors.deliveryTime}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1">
+                      Received By (Name)*
                     </label>
-                    <input
-                      type="date"
-                      id="deliveryDate"
-                      name="deliveryDate"
-                      value={formData.deliveryDate}
-                      onChange={handleInputChange}
-                      className={`block w-full px-3 py-2 border ${
-                        errors.deliveryDate 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-md shadow-sm text-sm`}
-                    />
-                    {errors.deliveryDate && (
-                      <p className="mt-1 text-sm text-red-600">{errors.deliveryDate}</p>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User size={16} className="text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        id="receivedBy"
+                        name="receivedBy"
+                        value={formData.receivedBy}
+                        onChange={handleInputChange}
+                        placeholder="Enter receiver's name"
+                        className={`block w-full pl-10 pr-3 py-2 border ${
+                          errors.receivedBy 
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                      />
+                    </div>
+                    {errors.receivedBy && (
+                      <p className="mt-1 text-sm text-red-600">{errors.receivedBy}</p>
                     )}
                   </div>
                   
-                  <div>
-                    <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1">
-                      Actual Delivery Time*
+                  <div className="mb-6">
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                      Delivery Notes
                     </label>
-                    <input
-                      type="time"
-                      id="deliveryTime"
-                      name="deliveryTime"
-                      value={formData.deliveryTime}
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      rows="3"
+                      value={formData.notes}
                       onChange={handleInputChange}
-                      className={`block w-full px-3 py-2 border ${
-                        errors.deliveryTime 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-md shadow-sm text-sm`}
-                    />
-                    {errors.deliveryTime && (
-                      <p className="mt-1 text-sm text-red-600">{errors.deliveryTime}</p>
-                    )}
+                      placeholder="Add any notes about the delivery (optional)"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    ></textarea>
                   </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1">
-                    Received By (Name)*
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={16} className="text-gray-400" />
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Delivery Rating
+                    </label>
+                    <div className="mt-1">
+                      <StarRating 
+                        rating={formData.deliveryRating} 
+                        setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
+                      />
                     </div>
-                    <input
-                      type="text"
-                      id="receivedBy"
-                      name="receivedBy"
-                      value={formData.receivedBy}
-                      onChange={handleInputChange}
-                      placeholder="Enter receiver's name"
-                      className={`block w-full pl-10 pr-3 py-2 border ${
-                        errors.receivedBy 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-md shadow-sm text-sm`}
-                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      How would you rate the overall delivery experience?
+                    </p>
                   </div>
-                  {errors.receivedBy && (
-                    <p className="mt-1 text-sm text-red-600">{errors.receivedBy}</p>
-                  )}
                 </div>
                 
+                {/* Documentation Section */}
                 <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Notes
-                  </label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    rows="4"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    placeholder="Add any notes about the delivery (optional)"
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  ></textarea>
-                </div>
+                  <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    Proof of Delivery Documentation
+                  </h3>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Rating
-                  </label>
-                  <div className="mt-1">
-                    <StarRating 
-                      rating={formData.deliveryRating} 
-                      setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
-                    />
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    How would you rate the overall delivery experience?
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {/* Step 2: Documentation */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Proof of Delivery Documents*
-                  </label>
-                  {/* Special handling for Android devices */}
-                  {isAndroid ? (
-                    <button
-                      type="button"
-                      onClick={handleAndroidFileUpload}
-                      className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Upload Proof of Delivery Documents*
+                    </label>
+                    {/* Special handling for Android devices */}
+                    {isAndroid ? (
+                      <button
+                        type="button"
+                        onClick={handleAndroidFileUpload}
+                        className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                          errors.podFiles 
+                            ? 'border-red-300 border-dashed' 
+                            : 'border-gray-300 border-dashed'
+                        } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
+                      >
+                        <div className="space-y-1 text-center">
+                          <Upload 
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            strokeWidth={1}
+                          />
+                          <div className="flex text-sm text-gray-600">
+                            <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                              Upload files
+                            </span>
+                            <p className="pl-1">or take a photo</p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG, PDF, DOC up to 10MB
+                          </p>
+                          <input
+                            ref={fileInputRef}
+                            id="podFiles"
+                            name="podFiles"
+                            type="file"
+                            multiple
+                            accept="image/*,.pdf,.doc,.docx"
+                            className="sr-only"
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </button>
+                    ) : (
+                      <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
                         errors.podFiles 
                           ? 'border-red-300 border-dashed' 
                           : 'border-gray-300 border-dashed'
-                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
-                    >
-                      <div className="space-y-1 text-center">
-                        <Upload 
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          strokeWidth={1}
-                        />
-                        <div className="flex text-sm text-gray-600">
-                          <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                            Upload files
-                          </span>
-                          <p className="pl-1">or take a photo</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, PDF, DOC up to 10MB
-                        </p>
-                        <input
-                          ref={fileInputRef}
-                          id="podFiles"
-                          name="podFiles"
-                          type="file"
-                          multiple
-                          accept="image/*,.pdf,.doc,.docx"
-                          className="sr-only"
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </button>
-                  ) : (
-                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
-                      errors.podFiles 
-                        ? 'border-red-300 border-dashed' 
-                        : 'border-gray-300 border-dashed'
-                    } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
-                      <div className="space-y-1 text-center">
-                        <Upload 
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          strokeWidth={1}
-                        />
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="podFiles"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                          >
-                            <span>Upload files</span>
-                            <input
-                              id="podFiles"
-                              name="podFiles"
-                              type="file"
-                              multiple
-                              accept="image/*,.pdf,.doc,.docx"
-                              className="sr-only"
-                              onChange={handleInputChange}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, PDF, DOC up to 10MB
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {errors.podFiles && (
-                    <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
-                  )}
-                </div>
-                
-                {/* Display uploaded files. added formData.podFiles check to avoid length of undefined */}
-                {formData.podFiles && formData.podFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles ? formData.podFiles.length : 0})</h3>
-                    <ul className="border rounded-md divide-y divide-gray-200">
-                      {formData.podFiles.map((file, index) => (
-                        <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 rounded bg-blue-50 flex items-center justify-center">
-                              <FileText size={20} className="text-blue-600" />
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                                {typeof file === 'string' ? file.split('/').pop() : file.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {file.previouslyUploaded
-                                  ? <span className="text-yellow-600">Previously uploaded</span>
-                                  : (typeof file !== 'string'
-                                    ? `${(file.size / 1024).toFixed(1)} KB`
-                                    : ''
-                                  )
-                                }
-                                
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <button
-                              type="button"
-                              onClick={() => handleFilePreview(file)}
-                              className="text-blue-600 hover:text-blue-800 p-1 rounded"
-                              title="Preview"
+                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
+                        <div className="space-y-1 text-center">
+                          <Upload 
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            strokeWidth={1}
+                          />
+                          <div className="flex text-sm text-gray-600">
+                            <label
+                              htmlFor="podFiles"
+                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
                             >
-                              <Eye size={18} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(index)}
-                              className="text-red-600 hover:text-red-800 p-1 rounded"
-                              title="Remove"
-                            >
-                              <Trash2 size={18} />
-                            </button>
+                              <span>Upload files</span>
+                              <input
+                                id="podFiles"
+                                name="podFiles"
+                                type="file"
+                                multiple
+                                accept="image/*,.pdf,.doc,.docx"
+                                className="sr-only"
+                                onChange={handleInputChange}
+                              />
+                            </label>
+                            <p className="pl-1">or drag and drop</p>
                           </div>
-                        </li>
-                      ))}
-                    </ul>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG, PDF, DOC up to 10MB
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {errors.podFiles && (
+                      <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
+                    )}
                   </div>
-                )}
-                
-                <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mt-6">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Info size={20} className="text-blue-500" />
+                  
+                  {/* Display uploaded files */}
+                  {formData.podFiles.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles.length})</h3>
+                      <ul className="border rounded-md divide-y divide-gray-200">
+                        {formData.podFiles.map((file, index) => (
+                          <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 flex-shrink-0 rounded bg-blue-50 flex items-center justify-center">
+                                <FileText size={20} className="text-blue-600" />
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                                  {typeof file === 'string' ? file.split('/').pop() : file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <button
+                                type="button"
+                                onClick={() => handleFilePreview(file)}
+                                className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                                title="Preview"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFile(index)}
+                                className="text-red-600 hover:text-red-800 p-1 rounded"
+                                title="Remove"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">Important</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>
-                          Proof of delivery documents are essential for invoicing and potential dispute resolution. 
-                          Recommended documents include:
-                        </p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Signed delivery receipt</li>
-                          <li>Bill of lading (BOL)</li>
-                          <li>Photos of cargo at delivery</li>
-                          <li>Receiver signature capture</li>
-                        </ul>
+                  )}
+                  
+                  <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mt-6">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <Info size={20} className="text-blue-500" />
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-blue-800">Important</h3>
+                        <div className="mt-2 text-sm text-blue-700">
+                          <p>
+                            Proof of delivery documents are essential for invoicing and potential dispute resolution. 
+                            Recommended documents include:
+                          </p>
+                          <ul className="list-disc pl-5 mt-1 space-y-1">
+                            <li>Signed delivery receipt</li>
+                            <li>Bill of lading (BOL)</li>
+                            <li>Photos of cargo at delivery</li>
+                            <li>Receiver signature capture</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1291,8 +1287,8 @@ export default function CompleteLoadForm({ loadId }) {
               </div>
             )}
             
-            {/* Step 3: Billing & Completion */}
-            {currentStep === 3 && (
+            {/* Step 2: Billing & Completion */}
+            {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -1489,7 +1485,7 @@ export default function CompleteLoadForm({ loadId }) {
                         </div>
                         <div>
                           <label htmlFor="factoringCompany" className="block text-sm font-medium text-gray-700 mb-1">
-                            Factoring Company (Optional)
+                            Factoring Company*
                           </label>
                           <input
                             type="text"
@@ -1498,8 +1494,15 @@ export default function CompleteLoadForm({ loadId }) {
                             value={formData.factoringCompany}
                             onChange={handleInputChange}
                             placeholder="Enter factoring company name"
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className={`block w-full px-3 py-2 border ${
+                              errors.factoringCompany 
+                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                            } rounded-md shadow-sm text-sm`}
                           />
+                          {errors.factoringCompany && (
+                            <p className="mt-1 text-sm text-red-600">{errors.factoringCompany}</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1545,7 +1548,7 @@ export default function CompleteLoadForm({ loadId }) {
               {currentStep > 1 ? "Previous" : "Cancel"}
             </button>
             
-            {currentStep < 3 ? (
+            {currentStep < 2 ? (
               <button
                 type="button"
                 onClick={handleNextStep}
