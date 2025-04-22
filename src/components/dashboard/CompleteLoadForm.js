@@ -346,20 +346,23 @@ export default function CompleteLoadForm({ loadId }) {
       if (document.visibilityState === 'visible') {
         console.log("App became visible again, restoring form state if needed");
         
-        if (loadId) {
-          const savedForm = loadFormFromStorage(loadId);
-          if (savedForm) {
-            setFormData(prev => ({
-              ...savedForm,
-              podFiles: prev.podFiles // Keep the existing files array
-            }));
-          }
+        // Restore form state from localStorage, including podFiles
+        const savedForm = loadFormFromStorage(loadId);
+        if (savedForm) {
+          setFormData(savedForm);
         }
       } else {
         console.log("App visibility changed to hidden, saving current state");
-        if (loadId) {
-          saveFormToStorage(formData, loadId);
-        }
+        // Save form data to localStorage
+        saveFormToStorage(formData, loadId);
+      }
+
+      if (document.visibilityState === 'visible' && isFilePickerActive) {
+        console.log("App became visible after file picking, resetting flag");
+        
+        // Reset file picker active flag
+        setIsFilePickerActive(false);
+        
       }
     };
     
