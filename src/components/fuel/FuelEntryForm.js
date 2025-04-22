@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard, Image } from "lucide-react";
 import { getUSStates } from "@/lib/services/fuelService";
 
 // Import the VehicleSelector component
@@ -13,7 +13,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     state: '',
-    state_name: '',
+    state_name: "",
     location: '',
     gallons: '',
     price_per_gallon: '',
@@ -23,7 +23,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     fuel_type: 'Diesel',
     notes: '',
     receipt_image: null,
-    receipt_file: null,
+    receipt_file: null, 
     receipt_preview: null
   });
 
@@ -244,22 +244,42 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     return state ? state.name : "";
   };
 
-  if (!isOpen) return null;
+  const uploadReceiptImage = async (userId, file) => {
+    try {
+      const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('receipts')
+        .upload(filePath, file);
+  
+      if (error) throw error;
+  
+      const { publicURL } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(filePath);
+  
+      return publicURL;
+    } catch (error) {
+      console.error('Error uploading receipt:', error);
+      return null;
+    }
+  };
+  
+
+if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center pb-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Fuel size={20} className="text-blue-600 mr-2" />
-            {fuelEntry ? "Edit Fuel Purchase" : "Add New Fuel Purchase"}
+          <Fuel size={20} className="text-blue-600 mr-2" />
+          {fuelEntry ? "Edit Fuel Purchase" : "Add New Fuel Purchase"}
           </h2>
           <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100"
-            disabled={isSubmitting}
-          >
-            <X size={24} />
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100"
+          disabled={isSubmitting}
+          >          <X size={24} />
           </button>
         </div>
         
@@ -267,8 +287,10 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
           {errors.form && (
             <div className="rounded-md bg-red-50 p-4 mb-4">
               <div className="flex">
-                <div className="flex-shrink-0"><AlertCircle className="h-5 w-5 text-red-400"/></div>
-                <div className="ml-3"><p className="text-sm font-medium text-red-800">{errors.form}</p></div>
+              <div className="flex-shrink-0"><AlertCircle className="h-5 w-5 text-red-400"/></div>
+              <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{errors.form}</p>
+              </div>
               </div>
             </div>
           )}
@@ -277,8 +299,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
             {/* Left Column - Form Fields */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="date" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Calendar size={16} className="text-gray-400 mr-1" /> Date *
+              <label htmlFor="date" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+              <Calendar size={16} className="text-gray-400 mr-1" /> Date *
                 </label>
                 <input
                   type="date"
@@ -293,8 +315,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   required
                 />
                 {errors.date && touched.date && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
+                <p className="mt-2 text-sm text-red-600 flex items-center">
+                <AlertCircle size={12} className="mr-1" />
                     {errors.date}
                   </p>
                 )}
@@ -302,8 +324,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
               
               <div>
                 <label htmlFor="state" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <MapPin size={16} className="text-gray-400 mr-1" /> State *
-                </label>
+                <MapPin size={16} className="text-gray-400 mr-1" /> State *
+              </label>
                 <select
                   id="state"
                   name="state"
@@ -324,20 +346,19 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 >
-                  <option value="" disabled selected>Select State</option>
+                  <option value="" disabled>Select State</option>
                   {states.map((state) =>
                     <option key={state.code} value={state.code}>{state.name} ({state.code})</option>
-                  )}
-                  
+                    )}
                 </select>
                 {errors.state && touched.state && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
-                    {errors.state}
-                  </p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <AlertCircle size={12} className="mr-1" />
+                {errors.state}
+                </p>
                 )}
               </div>
-              
+
               <div>
                 <label htmlFor="location" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
                   <MapPin size={16} className="text-gray-400 mr-1" /> Location/Station *
@@ -356,8 +377,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   required
                 />
                 {errors.location && touched.location && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <AlertCircle size={12} className="mr-1" />
                     {errors.location}
                   </p>
                 )}
@@ -383,8 +404,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   required
                 />
                 {errors.gallons && touched.gallons && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <AlertCircle size={12} className="mr-1" />
                     {errors.gallons}
                   </p>
                 )}
@@ -417,8 +438,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                     />
                   </div>
                   {errors.price_per_gallon && touched.price_per_gallon && calculationMode === 'total' && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
                       {errors.price_per_gallon}
                     </p>
                   )}
@@ -450,8 +471,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                     />
                   </div>
                   {errors.total_amount && touched.total_amount && calculationMode === 'price' && (
-                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
                       {errors.total_amount}
                     </p>
                   )}
@@ -477,8 +498,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   disabled={isSubmitting}
                   className="w-full focus:outline-none"
                 />
-                {errors.vehicle_id && touched.vehicle_id && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
+              {errors.vehicle_id && touched.vehicle_id && (
+              <p className="mt-1 text-sm text-red-600 flex items-center">
                     <AlertCircle size={12} className="mr-1" />
                     {errors.vehicle_id}
                   </p>
@@ -496,7 +517,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                   placeholder="Current mileage"
                   min="0"
                   value={formData.odometer}
-                   onChange={handleChange}
+                  onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                 />
               </div>
@@ -596,8 +617,9 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
                     <button
                       type="button"
                       className="text-blue-600 hover:text-blue-800"
-                   >
-                      <Maximize2 size={16} />
+                      onClick={() => window.open(formData.receipt_preview, "_blank", "width=800,height=600")}
+                    >
+                  <Maximize2 size={16} />
                     </button>
                   </div>
                   <div className="relative aspect-[3/4] max-h-96 overflow-hidden bg-gray-100 rounded-md flex items-center justify-center">
@@ -643,25 +665,25 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
           
           <div className="mt-8 flex justify-end space-x-3">
             <button
-                 type="button"
-                 onClick={onClose}
-                 className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                 disabled={isSubmitting}
+              type="button"
+              onClick={onClose}
+              className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
-                 type="submit"
+              type="submit"
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                fuelEntry ? "Update Fuel Entry" : "Save Fuel Entry"
+            {isSubmitting ? (
+              <>
+              <RefreshCw size={16} className="animate-spin mr-2" />
+              Saving...
+              </>
+            ) : (
+              fuelEntry ? "Update Fuel Entry" : "Save Fuel Entry"
               )}
             </button>
           </div>

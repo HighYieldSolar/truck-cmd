@@ -278,18 +278,19 @@ export default function FuelTrackerPage() {
       
       // Create a CSV from the data
       const headers = ['State', 'State Name', 'Gallons', 'Amount', 'Purchases', 'Average Price'];
-      const csvContent = [
-        headers.join(','),
+      const csvRows = [
+        headers.join(','), // Header row
         ...iftaData.map(state => [
           state.state,
-          state.state_name,
+          `"${state.state_name}"`, // Ensure state names with commas are quoted
           state.gallons.toFixed(3),
           state.amount.toFixed(2),
           state.purchases,
           state.average_price.toFixed(3)
-        ].join(','))
-      ].join('\n');
-      
+        ].join(',')) // Join each row data with a comma
+      ];
+      const csvContent = csvRows.join('\n'); // Fixed: Properly escaped newline character
+
       // Create a download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -331,30 +332,29 @@ export default function FuelTrackerPage() {
     <DashboardLayout activePage="fuel" className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0"> 
-          {/* Replace grid layout with flex layout for responsiveness */}
-          <div className="sm:flex sm:items-center sm:justify-between">
-            {/* Page Header */}
-            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-4 md:mb-0">
-                <h1 className="text-2xl font-semibold text-gray-900">Fuel Tracker</h1>
-                <p className="text-gray-600">Track fuel purchases by state for IFTA reporting</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button 
-                  onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Fuel Purchase
-                </button>
-                <button
-                  onClick={handleExportIFTA}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
-                >            
-                  <Download size={16} className="mr-2" /> 
-                  Export IFTA
-                </button>
-              </div>
+          {/* Page Header - Updated Layout */}
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Title/Description Block */}
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Fuel Tracker</h1>
+              <p className="mt-1 text-sm text-gray-600">Track fuel purchases by state for IFTA reporting</p>
+            </div>
+            {/* Button Block */}
+            <div className="flex flex-shrink-0 flex-wrap gap-3">
+              <button 
+                onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              >
+                <Plus size={16} className="mr-2" />
+                Add Fuel Purchase
+              </button>
+              <button
+                onClick={handleExportIFTA}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
+              >            
+                <Download size={16} className="mr-2" /> 
+                Export IFTA
+              </button>
             </div>
           </div>
 

@@ -123,6 +123,7 @@ export async function createFuelEntry(fuelEntryData) {
       throw error;
     }
     
+    console.log("Data from database:", data);
     if (!data || data.length === 0) {
       throw new Error("No data returned from fuel entry creation");
     }
@@ -300,13 +301,14 @@ export async function uploadReceiptImage(userId, file) {
       throw error;
     }
     
-    // Get the public URL
-    const { data: { publicUrl } } = supabase.storage
+     // Get the public URL
+    const { data: publicUrlData } = supabase.storage
       .from('receipts')
       .getPublicUrl(filePath);
+    const publicUrl = data?.publicUrl;
     
     console.log("File uploaded, public URL:", publicUrl);
-    return publicUrl;
+    return publicUrlData.publicUrl;
   } catch (error) {
     console.error('Error uploading receipt:', error);
     return null;

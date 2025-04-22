@@ -15,6 +15,8 @@ export default function SupabaseImage({
   style = {}, 
   onLoad = () => {}, 
   onError = () => {} 
+,
+  timestamp // Add timestamp prop
 }) {
   const [objectUrl, setObjectUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function SupabaseImage({
   const mountedRef = useRef(true);
   const urlCacheRef = useRef(new Map());
 
-  // Helper to extract bucket and path from Supabase URL
+  // Helper to extract bucket and path from Supabase URL (kept in case needed elsewhere)
   const parseSupabaseUrl = (url) => {
     try {
       const urlObj = new URL(url);
@@ -43,7 +45,7 @@ export default function SupabaseImage({
     // Set mounted ref to true when component mounts
     mountedRef.current = true;
     
-    // Store blob URLs for cleanup
+    // Store blob URLs for cleanup (no longer needed for Supabase URLs with this change)
     const blobUrlsToCleanup = [];
     
     async function fetchSupabaseFile() {
@@ -56,12 +58,16 @@ export default function SupabaseImage({
       }
 
       try {
+        // Use timestamp in cache key if available
+        const cacheKey = timestamp ? `${src}?t=${timestamp}` : src;
         // Check cache first to prevent unnecessary fetches
-        if (urlCacheRef.current.has(src)) {
-          const cachedUrl = urlCacheRef.current.get(src);
-          console.log('Using cached blob URL:', cachedUrl);
-          setObjectUrl(cachedUrl);
-          setLoading(false);
+        if (urlCacheRef.current.has(cacheKey)) {
+          const cachedUrl = urlCacheRef.current.get(cacheKey); // Use cacheKey here
+          console.log('Using cached URL:', cachedUrl);
+          if (mountedRef.current) { // Check mountedRef before setting state
+             setObjectUrl(cachedUrl);
+             setLoading(false);
+          }
           return;
         }
 
@@ -73,47 +79,29 @@ export default function SupabaseImage({
 
         // Handle Supabase storage URLs
         if (src.includes('supabase.co/storage/v1/object/public')) {
-          const parsedUrl = parseSupabaseUrl(src);
-          
-          if (!parsedUrl) {
-            throw new Error('Failed to parse Supabase URL');
-          }
-          
-          const { bucket, filePath } = parsedUrl;
-          console.log('Downloading from Supabase storage:', { bucket, filePath });
-          
-          // Use the Supabase client to download the file
-          const { data, error } = await supabase.storage
-            .from(bucket)
-            .download(filePath);
-          
-          if (error) {
-            throw error;
-          }
-          
-          if (!data) {
-            throw new Error('No data received from Supabase');
-          }
-          
-          // Create a blob URL and store it in cache
-          const blobUrl = URL.createObjectURL(data);
-          blobUrlsToCleanup.push(blobUrl);
-          urlCacheRef.current.set(src, blobUrl);
-          
-          if (mountedRef.current) {
-            setObjectUrl(blobUrl);
-            setLoading(false);
-          }
+           // *** MODIFICATION START ***
+           // Directly use the public URL since download button works
+           console.log('Using public Supabase URL directly:', src);
+           const imageUrl = timestamp ? `${src}?t=${timestamp}` : src; // Add timestamp for cache busting
+           urlCacheRef.current.set(cacheKey, imageUrl); // Cache the direct URL
+ 
+           if (mountedRef.current) {
+             setObjectUrl(imageUrl); // Use the direct URL
+             setLoading(false);
+           }
+           // *** MODIFICATION END ***
         } else {
-          // For regular URLs, use as is
-          urlCacheRef.current.set(src, src);
+          // For regular URLs, use as is (existing logic)
+          console.log('Using regular URL:', src);
+          const imageUrl = timestamp ? `${src}?t=${timestamp}` : src; // Add timestamp for cache busting
+          urlCacheRef.current.set(cacheKey, imageUrl); // Cache the URL
           if (mountedRef.current) {
-            setObjectUrl(src);
+            setObjectUrl(imageUrl);
             setLoading(false);
           }
         }
       } catch (err) {
-        console.error('Error fetching image from Supabase:', err);
+        console.error('Error processing image source:', err);
         if (mountedRef.current) {
           setError(true);
           setLoading(false);
@@ -129,7 +117,7 @@ export default function SupabaseImage({
       // Mark component as unmounted
       mountedRef.current = false;
       
-      // Clean up any blob URLs created in this render cycle
+      // Clean up any blob URLs created (though none should be created for Supabase now)
       blobUrlsToCleanup.forEach(url => {
         try {
           URL.revokeObjectURL(url);
@@ -137,17 +125,24 @@ export default function SupabaseImage({
           // Ignore errors when revoking
         }
       });
-    };
-  }, [src, onError]); // Remove objectUrl from dependencies to prevent re-renders
+    }; 
+  }, [src, timestamp, onError]); // Added timestamp to dependencies
 
   // Handle image events
   const handleLoad = (e) => {
-    if (!error) onLoad(e);
+    if (mountedRef.current && !error) {
+       setLoading(false); // Ensure loading is false on successful load
+       onLoad(e);
+    }
   };
 
   const handleError = (e) => {
-    setError(true);
-    onError(e);
+     console.error("Image failed to load:", src, e)
+    if (mountedRef.current) {
+       setError(true);
+       setLoading(false);
+       onError(e);
+    }
   };
 
   // Loading state with stable dimensions
@@ -157,8 +152,8 @@ export default function SupabaseImage({
         className={`flex items-center justify-center bg-gray-100 ${className}`} 
         style={{
           ...style,
-          minHeight: '200px',
-          minWidth: '200px'
+          minHeight: style.height || '200px', // Use provided height or default
+          minWidth: style.width || '200px' // Use provided width or default
         }}
       >
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -172,9 +167,9 @@ export default function SupabaseImage({
       <div 
         className={`flex items-center justify-center bg-gray-100 ${className}`} 
         style={{
-          ...style,
-          minHeight: '200px',
-          minWidth: '200px'
+           ...style,
+           minHeight: style.height || '200px', // Use provided height or default
+           minWidth: style.width || '200px' // Use provided width or default
         }}
       >
         <div className="text-center p-4">
@@ -187,16 +182,16 @@ export default function SupabaseImage({
     );
   }
 
-  // Render image with key to prevent React from reusing the element
+  // Render image using the objectUrl (which is now the direct public URL for Supabase images)
   return (
     <img
-      key={`img-${src.substring(0, 20)}`}
+      key={objectUrl} // Use objectUrl as key to force re-render if URL changes
       src={objectUrl}
       alt={alt}
       className={className}
       style={{
         ...style,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff" // Optional: background for transparency
       }}
       onLoad={handleLoad}
       onError={handleError}

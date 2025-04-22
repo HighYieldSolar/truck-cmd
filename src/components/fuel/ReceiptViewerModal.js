@@ -16,6 +16,7 @@ import {
   Info
 } from "lucide-react";
 import SupabaseImage from "./SupabaseImage";
+import { updated_at, created_at } from "@/lib/supabaseClient";
 
 export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleInfo }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -26,33 +27,37 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
   if (!isOpen || !receipt) return null;
 
   const handleDownload = () => {
-    if (!receipt.receipt_image) return;
-    
-    setIsDownloading(true);
-    
-    try {
-      // Create a temporary anchor element
-      const link = document.createElement('a');
-      link.href = receipt.receipt_image;
-      
-      // Generate filename based on receipt details
-      const date = new Date(receipt.date).toISOString().split('T')[0];
-      const location = receipt.location.replace(/\s+/g, '_');
-      const filename = `receipt_${date}_${location}.jpg`;
-      
-      link.setAttribute('download', filename);
-      link.setAttribute('target', '_blank');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error downloading image:', error);
-    }
-    
-    // Clean up
-    setTimeout(() => {
-      setIsDownloading(false);
-    }, 1000);
+      if (!receipt.receipt_image) return;
+  
+      // Check if receipt.receipt_image is a valid URL
+      try {
+          new URL(receipt.receipt_image);
+      } catch (_) {
+          console.error("Invalid image URL:", receipt.receipt_image);
+          return;
+      }
+  
+      setIsDownloading(true);
+  
+      try {
+          const link = document.createElement('a');
+          link.href = receipt.receipt_image;
+          const date = new Date(receipt.date).toISOString().split('T')[0];
+          const location = receipt.location.replace(/\s+/g, '_');
+          const filename = `receipt_${date}_${location}.jpg`;
+  
+          link.setAttribute('download', filename);
+          link.setAttribute('target', '_blank');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      } catch (error) {
+          console.error('Error downloading image:', error);
+      } finally {
+          setTimeout(() => {
+              setIsDownloading(false);
+          }, 1000);
+      }
   };
   
   const handlePrint = () => {
@@ -224,7 +229,11 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                 alt="Fuel receipt" 
                 className="max-w-full max-h-full object-contain"
                 style={{ maxHeight: '100%', maxWidth: '100%' }}
-                ref={imageRef}
+                timestamp={
+                  receipt.updated_at
+                    ? new Date(receipt.updated_at).getTime()
+                    : new Date(receipt.created_at).getTime()
+                }
               />
             </div>
           ) : (

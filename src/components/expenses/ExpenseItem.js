@@ -11,7 +11,8 @@ import {
   Tag,
   Truck
 } from "lucide-react";
-import ReceiptViewer from "./ReceiptViewer";
+// Correct the import name if necessary, assuming ReceiptViewerModal is the actual component
+import ReceiptViewerModal from "../fuel/ReceiptViewerModal"; // Assuming this is the correct path
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ExpenseItem({ expense, onEdit, onDelete }) {
@@ -211,11 +212,12 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
       </tr>
       
       {/* Receipt Viewer Modal */}
-      <ReceiptViewer
+      {/* Pass the entire expense object as 'receipt' and the fetched vehicleInfo */}
+      <ReceiptViewerModal
         isOpen={receiptViewerOpen}
         onClose={() => setReceiptViewerOpen(false)}
-        receipt={expense.receipt_image}
-        expenseDetails={expense}
+        receipt={expense} // Pass the full expense object
+        vehicleInfo={vehicleInfo} // Pass the fetched vehicle info
       />
     </>
   );
