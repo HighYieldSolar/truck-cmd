@@ -257,6 +257,7 @@ export default function CompleteLoadForm({ loadId }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
   
+  const podFilesRef = useRef([]);
   // State management
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -379,39 +380,33 @@ export default function CompleteLoadForm({ loadId }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAndroid, loadId, formData]);
-  
-  // Handle back button on Android
-  useEffect(() => {
-    if (!isAndroid) return;
-    
-    const handleBackButton = (e) => {
-      // If we're in file picking mode, prevent default behavior and restore focus
-      if (isFilePickerActive) {
-        console.log("Back button pressed during file picking, handling gracefully");
-        e.preventDefault();
-        setIsFilePickerActive(false);
-        
-        // Focus back on main form container
-        const container = document.getElementById('form-container');
-        if (container) container.focus();
-        
-        // No need to load from localStorage here as the form state is still in memory
-        return;
-      }
-    };
-    
-    window.addEventListener('popstate', handleBackButton);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBackButton);
-    };
-  }, [isAndroid, isFilePickerActive]);
-  
+
   // Load data on mount
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
+        
+        // Check if we have saved form data for this load
+        const savedForm = loadFormFromStorage(loadId);
+        if (savedForm) {
+          // Restore form state from localStorage
+          setFormData(prev => ({
+            ...savedForm,
+            podFiles: prev.podFiles // Keep any existing files
+          }));
+        }
+        
+        // We are logging out the form data after loading it.
+        console.log("Form data after loading from storage:", formData);
+
+        // We are logging out the ref to check its data
+        console.log("podFilesRef after loading from storage:", podFilesRef);
+        // Now we need to sync the formData with the ref, so the files are not lost.
+        podFilesRef.current = formData.podFiles
+
+        // We are logging out the ref to check its data
+        console.log("podFilesRef after syncing with formData:", podFilesRef);
         
         // Get authenticated user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -470,16 +465,6 @@ export default function CompleteLoadForm({ loadId }) {
             deliveryDate: data.delivery_date
           }));
         }
-        
-        // Check if we have saved form data for this load
-        const savedForm = loadFormFromStorage(loadId);
-        if (savedForm) {
-          // Restore form state from localStorage
-          setFormData(prev => ({
-            ...savedForm,
-            podFiles: prev.podFiles // Keep any existing files
-          }));
-        }
       } catch (err) {
         console.error('Error fetching load details:', err);
         setError(err.message || 'Failed to load data');
@@ -493,9 +478,6 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Specialized file upload handler for Android
   const handleAndroidFileUpload = () => {
-    // Set file picker active flag to true before opening the file picker
-    setIsFilePickerActive(true);
-    
     // Save current form data before navigating
     saveFormToStorage(formData, loadId);
     
@@ -507,65 +489,52 @@ export default function CompleteLoadForm({ loadId }) {
         fileInputRef.current.click();
       }
     }, 300);
-    setShowPickerOverlay(true);
   };
   
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
+// Handle input changes
+const handleInputChange = (e) => {
+  const { name, value, type, checked, files } = e.target;
 
-    if (showPickerOverlay && type === 'file') {
-      setShowPickerOverlay(false);
-    }
-
-    
-    if (type === 'file') {
-      // Set file picker to inactive as we're now handling the files
-      setIsFilePickerActive(false);
-      
-      // Handle file uploads
-      if (files && files.length > 0) {
-        console.log("Files uploaded:", files);
-        
-        // Create a copy of the files array since it's readonly
-        const fileArray = Array.from(files);
-        
-        // Update with the new files
-        setFormData(prev => ({
-          ...prev,
-          podFiles: [...prev.podFiles, ...fileArray]
-        }));
-        
-        // Immediately persist form data to localStorage (without files)
-        // Saving filenames to help restore state
-        const fileNames = fileArray.map(f => f.name);
-        console.log(`Added ${fileNames.length} new files:`, fileNames);
-        
-        // Reset file input
-        e.target.value = "";
-      }
-    } else if (type === 'checkbox') {
-      // Handle checkboxes
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked
-      }));
-    } else {
-      // Handle regular inputs
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+  if (type === 'file') {
+    if (!files || files.length === 0) {
+      console.warn("No file was selected. Android camera might have failed.");
+      return;
     }
     
-    // Mark field as touched
-    setTouched(prev => ({ ...prev, [name]: true }));
+    const fileArray = Array.from(files);
+    console.log("Files received from input:", fileArray.map(f => f.name));
     
-    // Clear validation error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
-  };
+    // Immediately update the ref and state
+    podFilesRef.current = [...podFilesRef.current, ...fileArray];
+    setFormData(prev => ({
+      ...prev,
+      podFiles: [...prev.podFiles, ...fileArray]
+    }));
+    
+    // Reset the input
+    e.target.value = "";
+  } else if (type === 'checkbox') {
+    // Handle checkboxes
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  } else {
+    // Handle regular inputs
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+  
+  // Mark field as touched
+  setTouched(prev => ({ ...prev, [name]: true }));
+  
+  // Clear validation error for this field
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: null }));
+  }
+};
   
   // Handle file preview
   const handleFilePreview = (file) => {
@@ -1226,7 +1195,7 @@ export default function CompleteLoadForm({ loadId }) {
                                 name="podFiles"
                                 type="file"
                                 multiple
-                                accept="image/*,.pdf,.doc,.docx"
+                                accept="image/*,.pdf"
                                 className="sr-only"
                                 onChange={handleInputChange}
                               />
