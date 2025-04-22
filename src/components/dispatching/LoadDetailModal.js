@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
+import DocumentViewerModal from "./DocumentViewerModal";
 export default function LoadDetailModal({ load, onClose, onStatusChange, drivers = [], trucks = [], onAssignDriver, onAssignTruck }) {
   const [selectedDriver, setSelectedDriver] = useState(load.driverId || "");
   const [selectedTruck, setSelectedTruck] = useState(load.truckId || "");
@@ -35,6 +36,7 @@ export default function LoadDetailModal({ load, onClose, onStatusChange, drivers
   const [availableTrucks, setAvailableTrucks] = useState(trucks || []);
   const [availableDrivers, setAvailableDrivers] = useState(drivers || []);
   const [loadingFleet, setLoadingFleet] = useState(false);
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
 
   // Fetch drivers and trucks if not provided
   useEffect(() => {
@@ -565,10 +567,16 @@ export default function LoadDetailModal({ load, onClose, onStatusChange, drivers
           <Upload size={24} className="text-blue-600 mb-2" />
           <span className="text-sm text-gray-700">Upload Documents</span>
         </button>
-        <button className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-200 transition-colors">
+        <button 
+          className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+          onClick={() => setShowDocumentViewer(true)}
+        >
           <FileText size={24} className="text-blue-600 mb-2" />
-          <span className="text-sm text-gray-700">Create Invoice</span>
+          <span className="text-sm text-gray-700">View Documents</span>
         </button>
+        {showDocumentViewer && (
+          <DocumentViewerModal loadId={load.id} onClose={() => setShowDocumentViewer(false)} />
+        )}
         <button className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors">
           <AlertCircle size={24} className="text-red-600 mb-2" />
           <span className="text-sm text-gray-700">Report Issue</span>

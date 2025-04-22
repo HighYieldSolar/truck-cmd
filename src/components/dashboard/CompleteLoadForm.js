@@ -508,6 +508,8 @@ export default function CompleteLoadForm({ loadId }) {
       
       // Handle file uploads
       if (files && files.length > 0) {
+        console.log("Files uploaded:", files);
+        
         // Create a copy of the files array since it's readonly
         const fileArray = Array.from(files);
         
