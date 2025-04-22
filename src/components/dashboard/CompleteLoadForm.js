@@ -272,7 +272,13 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Keep track of form focus state to prevent losing data on blur
   const [isFilePickerActive, setIsFilePickerActive] = useState(false);
-  
+
+  // Add a state variable for showing a spinner or overlay
+  const [showPickerOverlay, setShowPickerOverlay] = useState(false);
+
+  // For retry mechanism
+  const [retryCount, setRetryCount] = useState(0);
+
   // Form state with validation
   const [formData, setFormData] = useState({
     deliveryDate: new Date().toISOString().split('T')[0],
@@ -342,26 +348,26 @@ export default function CompleteLoadForm({ loadId }) {
   useEffect(() => {
     if (!isAndroid) return;
     
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log("App became visible again, restoring form state if needed");
-        
-        // Restore form state from localStorage, including podFiles
-        const savedForm = loadFormFromStorage(loadId);
-        if (savedForm) {
-          setFormData(savedForm);
-        }
-      } else {
-        console.log("App visibility changed to hidden, saving current state");
-        // Save form data to localStorage
-        saveFormToStorage(formData, loadId);
-      }
-
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && isFilePickerActive) {
-        console.log("App became visible after file picking, resetting flag");
-        
-        // Reset file picker active flag
         setIsFilePickerActive(false);
+    
+        // Check if no files were selected
+        if (fileInputRef.current && !fileInputRef.current.files.length) {
+          console.log("No file selected after picker, re-prompting...");
+    
+          // Retry after a moment
+          setTimeout(() => {
+            if (fileInputRef.current) {
+              fileInputRef.current.click();
+            }
+          }, 500);
+        }
+      } else if (document.visibilityState === 'hidden') {
+        saveFormToStorage(formData, loadId); // Save on hide
+      }
+      if (document.visibilityState === 'visible' && showPickerOverlay) {
+        setShowPickerOverlay(false);
         
       }
     };
@@ -496,14 +502,22 @@ export default function CompleteLoadForm({ loadId }) {
     console.log("Android file upload initiated, saving form state");
     
     // After handling file picker focus, trigger the file input click
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    setTimeout(() => {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    }, 300);
+    setShowPickerOverlay(true);
   };
   
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
+
+    if (showPickerOverlay && type === 'file') {
+      setShowPickerOverlay(false);
+    }
+
     
     if (type === 'file') {
       // Set file picker to inactive as we're now handling the files
@@ -920,6 +934,14 @@ export default function CompleteLoadForm({ loadId }) {
           </div>
         </div>
       </div>
+      
+      {showPickerOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-md shadow text-center">
+            <p className="text-gray-700">Waiting for file selection...</p>
+          </div>
+        </div>
+      )}
       
       <div className="max-w-5xl mx-auto px-4">
         {/* Error alert */}
