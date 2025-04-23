@@ -34,9 +34,12 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
     user, 
     subscription, 
     loading: subscriptionLoading, 
-    getDaysLeftInTrial
+    getDaysLeftInTrial,
+    isTrialActive,
+    isSubscriptionActive
   } = useSubscription();
 
+  // Determine subscription status
   const subscriptionStatus = subscription?.status === 'active' && isSubscriptionActive()
     ? 'active'
     : subscription?.status === 'trial' && isTrialActive()
@@ -45,9 +48,10 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
 
   const daysLeft = getDaysLeftInTrial ? getDaysLeftInTrial() : 0;
   
-  //Check if user is subscribed
-  const isSubscribed = () => subscriptionStatus === 'active';
-
+  // Check if user is subscribed (either active subscription or valid trial)
+  const isSubscribed = () => {
+    return subscriptionStatus === 'active' || subscriptionStatus === 'trial';
+  };
 
   // Get current active page from pathname
   const getActivePage = () => {
@@ -151,55 +155,64 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
       name: 'Load Management', 
       href: '/dashboard/dispatching', 
       icon: <Truck size={20} />,
-      active: currentActivePage === 'dispatching'
+      active: currentActivePage === 'dispatching',
+      protected: true
     },
     {
       name: 'State Mileage', 
       href: '/dashboard/mileage', 
       icon: <MapPin size={20} />,
-      active: currentActivePage === 'mileage'
+      active: currentActivePage === 'mileage',
+      protected: true
     },
     { 
       name: 'Invoices', 
       href: '/dashboard/invoices', 
       icon: <FileText size={20} />,
-      active: currentActivePage === 'invoices'
+      active: currentActivePage === 'invoices',
+      protected: true
     },
     { 
       name: 'Expenses', 
       href: '/dashboard/expenses', 
       icon: <Wallet size={20} />,
-      active: currentActivePage === 'expenses'
+      active: currentActivePage === 'expenses',
+      protected: true
     },
     { 
       name: 'Customers', 
       href: '/dashboard/customers', 
       icon: <Users size={20} />,
-      active: currentActivePage === 'customers'
+      active: currentActivePage === 'customers',
+      protected: true
     },
     { 
       name: 'Fleet', 
       href: '/dashboard/fleet', 
       icon: <Package size={20} />,
-      active: currentActivePage === 'fleet'
+      active: currentActivePage === 'fleet',
+      protected: true
     },
     { 
       name: 'Compliance', 
       href: '/dashboard/compliance', 
       icon: <CheckCircle size={20} />,
-      active: currentActivePage === 'compliance'
+      active: currentActivePage === 'compliance',
+      protected: true
     },
     { 
       name: 'IFTA Calculator', 
       href: '/dashboard/ifta', 
       icon: <Calculator size={20} />,
-      active: currentActivePage === 'ifta'
+      active: currentActivePage === 'ifta',
+      protected: true
     },
     { 
       name: 'Fuel Tracker', 
       href: '/dashboard/fuel', 
       icon: <Fuel size={20} />,
-      active: currentActivePage === 'fuel'
+      active: currentActivePage === 'fuel',
+      protected: true
     },
   ];
 
@@ -279,34 +292,35 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 Main
               </h2>
               <nav className="space-y-1">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
-                      ? "bg-blue-50 text-[#007BFF]"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                      } ${!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
-                        ? "opacity-50 pointer-events-none"
-                        : ""
-                      }`}
-                    aria-disabled={!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"}
-                    style={{
-                      cursor: !isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
-                        ? "default"
-                        : "pointer",
-                    }}
-                  >
-                    <div
-                      className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
-                        }`}
-                      aria-hidden="true" // Add aria-hidden for the icon
+                {menuItems.map((item) => {
+                  // Determine if this menu item should be disabled
+                  const isDisabled = item.protected && !isSubscribed();
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      href={isDisabled ? "/dashboard/billing" : item.href}
+                      className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all 
+                        ${item.active
+                          ? "bg-blue-50 text-[#007BFF]"
+                          : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                        } 
+                        ${isDisabled ? "opacity-50" : ""}`}
                     >
-                      {item.icon}
-                    </div>
-                    {item.name}
-                  </Link>
-                ))}
+                      <div
+                        className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"}`}
+                      >
+                        {item.icon}
+                      </div>
+                      {item.name}
+                      {isDisabled && (
+                        <div className="ml-auto">
+                          <CreditCard size={14} className="text-gray-400" />
+                        </div>
+                      )}
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
             
@@ -458,25 +472,36 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Main
               </h2>
-              {menuItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
-                    item.active
-                      ? "bg-blue-50 text-[#007BFF]"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <div className={`mr-3 flex-shrink-0 ${
-                    item.active ? "text-[#007BFF]" : "text-gray-500"
-                  }`}>
-                    {item.icon}
-                  </div>
-                  {item.name}
-                </Link>
-              ))}
+              {menuItems.map((item) => {
+                // Determine if this menu item should be disabled
+                const isDisabled = item.protected && !isSubscribed();
+                
+                return (
+                  <Link
+                    key={item.name}
+                    href={isDisabled ? "/dashboard/billing" : item.href}
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 
+                      ${item.active
+                        ? "bg-blue-50 text-[#007BFF]"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                      } 
+                      ${isDisabled ? "opacity-50" : ""}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <div className={`mr-3 flex-shrink-0 ${
+                      item.active ? "text-[#007BFF]" : "text-gray-500"
+                    }`}>
+                      {item.icon}
+                    </div>
+                    {item.name}
+                    {isDisabled && (
+                      <div className="ml-auto">
+                        <CreditCard size={14} className="text-gray-400" />
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
             
             {/* System Navigation */}
@@ -487,32 +512,15 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               {systemItems.map((item) => (
                 <Link
                   key={item.name}
-                    href={
-                      !isSubscribed() && item.href !== "/dashboard/billing"
-                        ? "#"
-                        : item.href
-                    }
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
-                      !isSubscribed() && item.href !== "/dashboard/billing"
-                        ? "opacity-50 pointer-events-none"
-                        : ""
-                    } ${item.active
+                  href={item.href}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
+                    item.active
                       ? "bg-blue-50 text-[#007BFF]"
                       : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                      } ${!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
-                        ? "opacity-50 pointer-events-none"
-                        : ""
-                      }`}
+                  }`}
                   onClick={() => setMobileMenuOpen(false)}
-                  aria-disabled={!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"}
-                  style={{
-                    cursor: !isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
-                      ? "default"
-                      : "pointer",
-                  }}
                 >
-                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"
-                    }`} aria-hidden="true">
+                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"}`}>
                     {item.icon}
                   </div>
                   {item.name}
@@ -672,8 +680,8 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                     )}
                   </button>
                   
-{/* Notifications Dropdown */}
-{notificationsOpen && (
+                  {/* Notifications Dropdown */}
+                  {notificationsOpen && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden border border-gray-200 z-20">
                       <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                         <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
@@ -691,7 +699,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                             <p className="text-sm">No notifications yet</p>
                           </div>
                         ) : (
-                          <div>
+<div>
                             {notifications.map((notification) => (
                               <div 
                                 key={notification.id}
@@ -804,7 +812,28 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
           {/* Page Content */}
           <main className="flex-1 overflow-x-hidden">
             <div className="container mx-auto py-4 px-4 lg:px-6">
-              {children}
+              {/* Check if the current page is protected and subscription is expired */}
+              {menuItems.find(item => item.active)?.protected && !isSubscribed() ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <CreditCard size={24} className="text-red-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Feature Unavailable</h2>
+                  <p className="text-gray-600 mb-6 text-center max-w-md">
+                    {subscriptionStatus === 'expired' 
+                      ? 'Your free trial has ended. Please subscribe to access this feature.'
+                      : 'This feature requires an active subscription.'}
+                  </p>
+                  <Link
+                    href="/dashboard/billing"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    View Subscription Plans
+                  </Link>
+                </div>
+              ) : (
+                children
+              )}
             </div>
           </main>
           
