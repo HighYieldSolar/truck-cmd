@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/lib/protectedRoute";
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -45,8 +46,10 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen">
-      {children}
-    </div>
+    <ProtectedRoute>
+      <div className="min-h-screen">
+        {children}
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -1,7 +1,7 @@
 // src/components/layout/DashboardLayout.js
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,9 +11,10 @@ import {
   Calculator, Fuel, Settings, LogOut, Bell, Search, Menu, X, ChevronDown, 
   User, ArrowRight, CreditCard, Clock, MapPin, Home
 } from "lucide-react";
+import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 
-export default function DashboardLayout({ children, activePage = "dashboard" }) {
+export default function DashboardLayout({activePage = "dashboard", children}) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -21,7 +22,6 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [bannerVisible, setBannerVisible] = useState(true);
-  
   const router = useRouter();
   const pathname = usePathname();
   const userDropdownRef = useRef(null);
@@ -34,13 +34,20 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
     user, 
     subscription, 
     loading: subscriptionLoading, 
-    isTrialActive, 
-    isSubscriptionActive,
     getDaysLeftInTrial
   } = useSubscription();
 
-  // Get days left in trial
+  const subscriptionStatus = subscription?.status === 'active' && isSubscriptionActive()
+    ? 'active'
+    : subscription?.status === 'trial' && isTrialActive()
+      ? 'trial'
+      : 'expired';
+
   const daysLeft = getDaysLeftInTrial ? getDaysLeftInTrial() : 0;
+  
+  //Check if user is subscribed
+  const isSubscribed = () => subscriptionStatus === 'active';
+
 
   // Get current active page from pathname
   const getActivePage = () => {
@@ -56,21 +63,6 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
   };
 
   const currentActivePage = activePage || getActivePage();
-
-  // Determine subscription status for the banner
-  const getSubscriptionStatus = () => {
-    if (!subscription) return 'none';
-    
-    if (subscription.status === 'active' && isSubscriptionActive && isSubscriptionActive()) {
-      return 'active';
-    } else if (subscription.status === 'trial' && isTrialActive && isTrialActive()) {
-      return 'trial';
-    } else {
-      return 'expired';
-    }
-  };
-  
-  const subscriptionStatus = getSubscriptionStatus();
 
   // Check if user is authenticated
   useEffect(() => {
@@ -260,64 +252,11 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
     );
   }
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Trial Banner */}
-      {bannerVisible && subscriptionStatus !== 'active' && (
-        <div className={`sticky top-0 left-0 right-0 z-50 px-4 ${
-          subscriptionStatus === 'expired' 
-            ? 'bg-gradient-to-r from-red-600 to-red-500'
-            : daysLeft <= 1 
-              ? 'bg-gradient-to-r from-orange-600 to-orange-500'
-              : 'bg-gradient-to-r from-[#007BFF] to-[#00D9FF]'
-        }`}>
-          <div className="max-w-7xl mx-auto py-2 md:py-3">
-            <div className="flex flex-col sm:flex-row items-center justify-between">
-              {/* Banner content */}
-              <div className="flex items-center justify-center sm:justify-start mb-2 sm:mb-0 w-full sm:w-auto">
-                <div className="mr-3 rounded-full bg-white/20 p-1.5">
-                  <Clock size={18} className="text-white" />
-                </div>
-                
-                <div className="text-white font-medium">
-                  {subscriptionStatus === 'expired' ? (
-                    <span className="text-center sm:text-left">
-                      Your trial has ended. Subscribe now to continue using all features.
-                    </span>
-                  ) : (
-                    <span className="text-center sm:text-left">
-                      <span className="hidden sm:inline">You have </span>
-                      <span className="font-bold">{daysLeft} {daysLeft === 1 ? 'day' : 'days'}</span> 
-                      <span className="hidden sm:inline"> remaining in your free trial</span>
-                      <span className="inline sm:hidden"> left in trial</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="flex items-center space-x-3 w-full sm:w-auto justify-center sm:justify-end">
-                <Link
-                  href="/dashboard/billing"
-                  className="whitespace-nowrap py-1.5 px-4 rounded-md bg-white text-[#007BFF] hover:bg-blue-50 font-medium text-sm transition-colors flex items-center"
-                >
-                  <CreditCard size={16} className="mr-1.5" />
-                  {subscriptionStatus === 'expired' ? 'Subscribe Now' : 'Upgrade Plan'}
-                </Link>
-                
-                <button
-                  onClick={() => setBannerVisible(false)}
-                  className="text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                  aria-label="Close trial notification"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+  return (    
+    <div className="flex flex-col min-h-screen bg-gray-50">      
+      {/* Trial Banner */}      
+      <TrialBanner />
+      
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white shadow-md fixed inset-y-0 z-20 transition-all duration-300">
@@ -332,7 +271,7 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
               />
             </Link>
           </div>
-          
+
           <div className="flex-1 flex flex-col overflow-y-auto py-4">
             {/* Main Navigation */}
             <div className="px-3">
@@ -344,15 +283,25 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                      item.active
-                        ? "bg-blue-50 text-[#007BFF]"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                    }`}
+                    className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
+                      ? "bg-blue-50 text-[#007BFF]"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                      } ${!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                      }`}
+                    aria-disabled={!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"}
+                    style={{
+                      cursor: !isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
+                        ? "default"
+                        : "pointer",
+                    }}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${
-                      item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
-                    }`}>
+                    <div
+                      className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
+                        }`}
+                      aria-hidden="true" // Add aria-hidden for the icon
+                    >
                       {item.icon}
                     </div>
                     {item.name}
@@ -389,7 +338,7 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
             </div>
             
             {/* Trial Status */}
-            {subscriptionStatus !== 'active' && (
+            {['trial', 'expired'].includes(subscriptionStatus) && (
               <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
                 <div className="px-4 py-3 bg-blue-500 text-white">
                   <div className="font-medium">Truck Command Free Trial</div>
@@ -538,17 +487,32 @@ export default function DashboardLayout({ children, activePage = "dashboard" }) 
               {systemItems.map((item) => (
                 <Link
                   key={item.name}
-                  href={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
-                    item.active
+                    href={
+                      !isSubscribed() && item.href !== "/dashboard/billing"
+                        ? "#"
+                        : item.href
+                    }
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
+                      !isSubscribed() && item.href !== "/dashboard/billing"
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                    } ${item.active
                       ? "bg-blue-50 text-[#007BFF]"
                       : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                  }`}
+                      } ${!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                      }`}
                   onClick={() => setMobileMenuOpen(false)}
+                  aria-disabled={!isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"}
+                  style={{
+                    cursor: !isSubscribed() && item.href !== "/dashboard/billing" && item.href !== "/dashboard"
+                      ? "default"
+                      : "pointer",
+                  }}
                 >
-                  <div className={`mr-3 flex-shrink-0 ${
-                    item.active ? "text-[#007BFF]" : "text-gray-500"
-                  }`}>
+                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"
+                    }`} aria-hidden="true">
                     {item.icon}
                   </div>
                   {item.name}
