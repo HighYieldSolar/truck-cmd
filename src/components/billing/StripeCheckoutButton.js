@@ -57,7 +57,7 @@ export default function StripeCheckoutButton({
           plan: planId,
           billingCycle,
           checkoutId,
-          returnUrl: `${window.location.origin}/dashboard/billing/success`
+          returnUrl: `${window.location.origin}/dashboard/billing/success` // This is the line to change
         }),
       });
       

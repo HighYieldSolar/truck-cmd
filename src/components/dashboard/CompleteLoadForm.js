@@ -97,16 +97,24 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
   );
 };
 
-// Steps progress bar with modern design - updated for 2 steps
-const StepsProgress = ({ currentStep, totalSteps = 2 }) => {
+// Steps progress bar with modern design
+const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
   return (
     <div className="mb-8 px-4">
       <div className="relative flex items-center justify-between w-full">
-        {/* Step connector - we only need one line now */}
-        <div className="absolute top-6 left-0 right-0 flex justify-center items-center">
-          <div className="h-1 w-1/2" 
+        {/* Step connector container - positions lines to align with circle centers */}
+        <div className="absolute top-6 left-0 right-0 flex justify-between items-center">
+          {/* First segment line (steps 1-2) */}
+          <div className="h-1 flex-1 mx-10" 
             style={{ 
               backgroundColor: currentStep > 1 ? '#10B981' : '#E5E7EB',
+            }} 
+          />
+          
+          {/* Second segment line (steps 2-3) */}
+          <div className="h-1 flex-1 mx-10" 
+            style={{ 
+              backgroundColor: currentStep > 2 ? '#10B981' : '#E5E7EB',
             }} 
           />
         </div>
@@ -142,8 +150,9 @@ const StepsProgress = ({ currentStep, totalSteps = 2 }) => {
                         : "text-gray-500"
                   }`}
                 >
-                  {step === 1 && "Delivery & Documentation"}
-                  {step === 2 && "Billing & Completion"}
+                  {step === 1 && "Delivery Details"}
+                  {step === 2 && "Documentation"}
+                  {step === 3 && "Completion"}
                 </span>
               </div>
             </div>
@@ -257,7 +266,6 @@ export default function CompleteLoadForm({ loadId }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
   
-  const podFilesRef = useRef([]);
   // State management
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -273,13 +281,7 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Keep track of form focus state to prevent losing data on blur
   const [isFilePickerActive, setIsFilePickerActive] = useState(false);
-
-  // Add a state variable for showing a spinner or overlay
-  const [showPickerOverlay, setShowPickerOverlay] = useState(false);
-
-  // For retry mechanism
-  const [retryCount, setRetryCount] = useState(0);
-
+  
   // Form state with validation
   const [formData, setFormData] = useState({
     deliveryDate: new Date().toISOString().split('T')[0],
@@ -349,27 +351,24 @@ export default function CompleteLoadForm({ loadId }) {
   useEffect(() => {
     if (!isAndroid) return;
     
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && isFilePickerActive) {
-        setIsFilePickerActive(false);
-    
-        // Check if no files were selected
-        if (fileInputRef.current && !fileInputRef.current.files.length) {
-          console.log("No file selected after picker, re-prompting...");
-    
-          // Retry after a moment
-          setTimeout(() => {
-            if (fileInputRef.current) {
-              fileInputRef.current.click();
-            }
-          }, 500);
-        }
-      } else if (document.visibilityState === 'hidden') {
-        saveFormToStorage(formData, loadId); // Save on hide
-      }
-      if (document.visibilityState === 'visible' && showPickerOverlay) {
-        setShowPickerOverlay(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("App became visible again, restoring form state if needed");
         
+        if (loadId) {
+          const savedForm = loadFormFromStorage(loadId);
+          if (savedForm) {
+            setFormData(prev => ({
+              ...savedForm,
+              podFiles: prev.podFiles // Keep the existing files array
+            }));
+          }
+        }
+      } else {
+        console.log("App visibility changed to hidden, saving current state");
+        if (loadId) {
+          saveFormToStorage(formData, loadId);
+        }
       }
     };
     
@@ -380,33 +379,39 @@ export default function CompleteLoadForm({ loadId }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAndroid, loadId, formData]);
-
+  
+  // Handle back button on Android
+  useEffect(() => {
+    if (!isAndroid) return;
+    
+    const handleBackButton = (e) => {
+      // If we're in file picking mode, prevent default behavior and restore focus
+      if (isFilePickerActive) {
+        console.log("Back button pressed during file picking, handling gracefully");
+        e.preventDefault();
+        setIsFilePickerActive(false);
+        
+        // Focus back on main form container
+        const container = document.getElementById('form-container');
+        if (container) container.focus();
+        
+        // No need to load from localStorage here as the form state is still in memory
+        return;
+      }
+    };
+    
+    window.addEventListener('popstate', handleBackButton);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, [isAndroid, isFilePickerActive]);
+  
   // Load data on mount
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        
-        // Check if we have saved form data for this load
-        const savedForm = loadFormFromStorage(loadId);
-        if (savedForm) {
-          // Restore form state from localStorage
-          setFormData(prev => ({
-            ...savedForm,
-            podFiles: prev.podFiles // Keep any existing files
-          }));
-        }
-        
-        // We are logging out the form data after loading it.
-        console.log("Form data after loading from storage:", formData);
-
-        // We are logging out the ref to check its data
-        console.log("podFilesRef after loading from storage:", podFilesRef);
-        // Now we need to sync the formData with the ref, so the files are not lost.
-        podFilesRef.current = formData.podFiles
-
-        // We are logging out the ref to check its data
-        console.log("podFilesRef after syncing with formData:", podFilesRef);
         
         // Get authenticated user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -465,6 +470,16 @@ export default function CompleteLoadForm({ loadId }) {
             deliveryDate: data.delivery_date
           }));
         }
+        
+        // Check if we have saved form data for this load
+        const savedForm = loadFormFromStorage(loadId);
+        if (savedForm) {
+          // Restore form state from localStorage
+          setFormData(prev => ({
+            ...savedForm,
+            podFiles: prev.podFiles // Keep any existing files
+          }));
+        }
       } catch (err) {
         console.error('Error fetching load details:', err);
         setError(err.message || 'Failed to load data');
@@ -478,63 +493,69 @@ export default function CompleteLoadForm({ loadId }) {
   
   // Specialized file upload handler for Android
   const handleAndroidFileUpload = () => {
+    // Set file picker active flag to true before opening the file picker
+    setIsFilePickerActive(true);
+    
     // Save current form data before navigating
     saveFormToStorage(formData, loadId);
     
     console.log("Android file upload initiated, saving form state");
     
     // After handling file picker focus, trigger the file input click
-    setTimeout(() => {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    }, 300);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
   
-// Handle input changes
-const handleInputChange = (e) => {
-  const { name, value, type, checked, files } = e.target;
-
-  if (type === 'file') {
-    if (!files || files.length === 0) {
-      console.warn("No file was selected. Android camera might have failed.");
-      return;
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    
+    if (type === 'file') {
+      // Set file picker to inactive as we're now handling the files
+      setIsFilePickerActive(false);
+      
+      // Handle file uploads
+      if (files && files.length > 0) {
+        // Create a copy of the files array since it's readonly
+        const fileArray = Array.from(files);
+        
+        // Update with the new files
+        setFormData(prev => ({
+          ...prev,
+          podFiles: [...prev.podFiles, ...fileArray]
+        }));
+        
+        // Immediately persist form data to localStorage (without files)
+        // Saving filenames to help restore state
+        const fileNames = fileArray.map(f => f.name);
+        console.log(`Added ${fileNames.length} new files:`, fileNames);
+        
+        // Reset file input
+        e.target.value = "";
+      }
+    } else if (type === 'checkbox') {
+      // Handle checkboxes
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else {
+      // Handle regular inputs
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
     
-    const fileArray = Array.from(files);
-    console.log("Files received from input:", fileArray.map(f => f.name));
+    // Mark field as touched
+    setTouched(prev => ({ ...prev, [name]: true }));
     
-    // Immediately update the ref and state
-    podFilesRef.current = [...podFilesRef.current, ...fileArray];
-    setFormData(prev => ({
-      ...prev,
-      podFiles: [...prev.podFiles, ...fileArray]
-    }));
-    
-    // Reset the input
-    e.target.value = "";
-  } else if (type === 'checkbox') {
-    // Handle checkboxes
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  } else {
-    // Handle regular inputs
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }
-  
-  // Mark field as touched
-  setTouched(prev => ({ ...prev, [name]: true }));
-  
-  // Clear validation error for this field
-  if (errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: null }));
-  }
-};
+    // Clear validation error for this field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
   
   // Handle file preview
   const handleFilePreview = (file) => {
@@ -576,7 +597,7 @@ const handleInputChange = (e) => {
     let isValid = true;
     
     switch (currentStep) {
-      case 1: // Delivery Details & Documentation (merged)
+      case 1: // Delivery Details
         if (!formData.deliveryDate) {
           newErrors.deliveryDate = "Delivery date is required";
           isValid = false;
@@ -591,14 +612,16 @@ const handleInputChange = (e) => {
           newErrors.receivedBy = "Receiver name is required";
           isValid = false;
         }
+        break;
         
+      case 2: // Documentation
         if (formData.podFiles.length === 0) {
           newErrors.podFiles = "At least one proof of delivery document is required";
           isValid = false;
         }
         break;
         
-      case 2: // Billing & Completion
+      case 3: // Billing & Completion
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
           newErrors.additionalChargesDescription = "Description is required for additional charges";
           isValid = false;
@@ -618,7 +641,7 @@ const handleInputChange = (e) => {
   // Navigate to next step
   const handleNextStep = () => {
     if (validateStep()) {
-      setCurrentStep(prev => Math.min(prev + 1, 2)); // Now just 2 steps
+      setCurrentStep(prev => Math.min(prev + 1, 3));
       window.scrollTo(0, 0);
     }
   };
@@ -904,14 +927,6 @@ const handleInputChange = (e) => {
         </div>
       </div>
       
-      {showPickerOverlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-md shadow text-center">
-            <p className="text-gray-700">Waiting for file selection...</p>
-          </div>
-        </div>
-      )}
-      
       <div className="max-w-5xl mx-auto px-4">
         {/* Error alert */}
         {error && (
@@ -1009,273 +1024,265 @@ const handleInputChange = (e) => {
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
           <div className="px-6 py-6 border-b border-gray-200">
             <h2 className="text-xl font-medium text-gray-900">
-              {currentStep === 1 && "Delivery & Documentation"}
-              {currentStep === 2 && "Billing & Completion"}
+              {currentStep === 1 && "Delivery Details"}
+              {currentStep === 2 && "Proof of Delivery Documentation"}
+              {currentStep === 3 && "Billing & Completion"}
             </h2>
           </div>
           
           <div className="p-6">
-            {/* Step 1: Delivery Details & Documentation (merged) */}
+            {/* Step 1: Delivery Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                {/* Delivery Details Section */}
-                <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                    Delivery Details
-                  </h3>
-                
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                        Actual Delivery Date*
-                      </label>
-                      <input
-                        type="date"
-                        id="deliveryDate"
-                        name="deliveryDate"
-                        value={formData.deliveryDate}
-                        onChange={handleInputChange}
-                        className={`block w-full px-3 py-2 border ${
-                          errors.deliveryDate 
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                      />
-                      {errors.deliveryDate && (
-                        <p className="mt-1 text-sm text-red-600">{errors.deliveryDate}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1">
-                        Actual Delivery Time*
-                      </label>
-                      <input
-                        type="time"
-                        id="deliveryTime"
-                        name="deliveryTime"
-                        value={formData.deliveryTime}
-                        onChange={handleInputChange}
-                        className={`block w-full px-3 py-2 border ${
-                          errors.deliveryTime 
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                      />
-                      {errors.deliveryTime && (
-                        <p className="mt-1 text-sm text-red-600">{errors.deliveryTime}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1">
-                      Received By (Name)*
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      Actual Delivery Date*
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User size={16} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        id="receivedBy"
-                        name="receivedBy"
-                        value={formData.receivedBy}
-                        onChange={handleInputChange}
-                        placeholder="Enter receiver's name"
-                        className={`block w-full pl-10 pr-3 py-2 border ${
-                          errors.receivedBy 
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                      />
-                    </div>
-                    {errors.receivedBy && (
-                      <p className="mt-1 text-sm text-red-600">{errors.receivedBy}</p>
-                    )}
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                      Delivery Notes
-                    </label>
-                    <textarea
-                      id="notes"
-                      name="notes"
-                      rows="3"
-                      value={formData.notes}
+                    <input
+                      type="date"
+                      id="deliveryDate"
+                      name="deliveryDate"
+                      value={formData.deliveryDate}
                       onChange={handleInputChange}
-                      placeholder="Add any notes about the delivery (optional)"
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    ></textarea>
+                      className={`block w-full px-3 py-2 border ${
+                        errors.deliveryDate 
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } rounded-md shadow-sm text-sm`}
+                    />
+                    {errors.deliveryDate && (
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryDate}</p>
+                    )}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Delivery Rating
+                    <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1">
+                      Actual Delivery Time*
                     </label>
-                    <div className="mt-1">
-                      <StarRating 
-                        rating={formData.deliveryRating} 
-                        setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
-                      />
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      How would you rate the overall delivery experience?
-                    </p>
+                    <input
+                      type="time"
+                      id="deliveryTime"
+                      name="deliveryTime"
+                      value={formData.deliveryTime}
+                      onChange={handleInputChange}
+                      className={`block w-full px-3 py-2 border ${
+                        errors.deliveryTime 
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } rounded-md shadow-sm text-sm`}
+                    />
+                    {errors.deliveryTime && (
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryTime}</p>
+                    )}
                   </div>
                 </div>
                 
-                {/* Documentation Section */}
                 <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                    Proof of Delivery Documentation
-                  </h3>
+                  <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1">
+                    Received By (Name)*
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User size={16} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      id="receivedBy"
+                      name="receivedBy"
+                      value={formData.receivedBy}
+                      onChange={handleInputChange}
+                      placeholder="Enter receiver's name"
+                      className={`block w-full pl-10 pr-3 py-2 border ${
+                        errors.receivedBy 
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                      } rounded-md shadow-sm text-sm`}
+                    />
+                  </div>
+                  {errors.receivedBy && (
+                    <p className="mt-1 text-sm text-red-600">{errors.receivedBy}</p>
+                  )}
+                </div>
                 
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload Proof of Delivery Documents*
-                    </label>
-                    {/* Special handling for Android devices */}
-                    {isAndroid ? (
-                      <button
-                        type="button"
-                        onClick={handleAndroidFileUpload}
-                        className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
-                          errors.podFiles 
-                            ? 'border-red-300 border-dashed' 
-                            : 'border-gray-300 border-dashed'
-                        } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
-                      >
-                        <div className="space-y-1 text-center">
-                          <Upload 
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            strokeWidth={1}
-                          />
-                          <div className="flex text-sm text-gray-600">
-                            <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                              Upload files
-                            </span>
-                            <p className="pl-1">or take a photo</p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            PNG, JPG, PDF, DOC up to 10MB
-                          </p>
-                          <input
-                            ref={fileInputRef}
-                            id="podFiles"
-                            name="podFiles"
-                            type="file"
-                            multiple
-                            accept="image/*,.pdf,.doc,.docx"
-                            className="sr-only"
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </button>
-                    ) : (
-                      <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows="4"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    placeholder="Add any notes about the delivery (optional)"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  ></textarea>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Rating
+                  </label>
+                  <div className="mt-1">
+                    <StarRating 
+                      rating={formData.deliveryRating} 
+                      setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
+                    />
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    How would you rate the overall delivery experience?
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 2: Documentation */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Proof of Delivery Documents*
+                  </label>
+                  {/* Special handling for Android devices */}
+                  {isAndroid ? (
+                    <button
+                      type="button"
+                      onClick={handleAndroidFileUpload}
+                      className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
                         errors.podFiles 
                           ? 'border-red-300 border-dashed' 
                           : 'border-gray-300 border-dashed'
-                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
-                        <div className="space-y-1 text-center">
-                          <Upload 
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            strokeWidth={1}
-                          />
-                          <div className="flex text-sm text-gray-600">
-                            <label
-                              htmlFor="podFiles"
-                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                            >
-                              <span>Upload files</span>
-                              <input
-                                id="podFiles"
-                                name="podFiles"
-                                type="file"
-                                multiple
-                                accept="image/*,.pdf"
-                                className="sr-only"
-                                onChange={handleInputChange}
-                              />
-                            </label>
-                            <p className="pl-1">or drag and drop</p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            PNG, JPG, PDF, DOC up to 10MB
-                          </p>
+                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
+                    >
+                      <div className="space-y-1 text-center">
+                        <Upload 
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          strokeWidth={1}
+                        />
+                        <div className="flex text-sm text-gray-600">
+                          <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                            Upload files
+                          </span>
+                          <p className="pl-1">or take a photo</p>
                         </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, PDF, DOC up to 10MB
+                        </p>
+                        <input
+                          ref={fileInputRef}
+                          id="podFiles"
+                          name="podFiles"
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx"
+                          className="sr-only"
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    )}
-                    {errors.podFiles && (
-                      <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
-                    )}
-                  </div>
-                  
-                  {/* Display uploaded files */}
-                  {formData.podFiles.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles.length})</h3>
-                      <ul className="border rounded-md divide-y divide-gray-200">
-                        {formData.podFiles.map((file, index) => (
-                          <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0 rounded bg-blue-50 flex items-center justify-center">
-                                <FileText size={20} className="text-blue-600" />
-                              </div>
-                              <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                                  {typeof file === 'string' ? file.split('/').pop() : file.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <button
-                                type="button"
-                                onClick={() => handleFilePreview(file)}
-                                className="text-blue-600 hover:text-blue-800 p-1 rounded"
-                                title="Preview"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveFile(index)}
-                                className="text-red-600 hover:text-red-800 p-1 rounded"
-                                title="Remove"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                    </button>
+                  ) : (
+                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                      errors.podFiles 
+                        ? 'border-red-300 border-dashed' 
+                        : 'border-gray-300 border-dashed'
+                    } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
+                      <div className="space-y-1 text-center">
+                        <Upload 
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          strokeWidth={1}
+                        />
+                        <div className="flex text-sm text-gray-600">
+                          <label
+                            htmlFor="podFiles"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                          >
+                            <span>Upload files</span>
+                            <input
+                              id="podFiles"
+                              name="podFiles"
+                              type="file"
+                              multiple
+                              accept="image/*,.pdf,.doc,.docx"
+                              className="sr-only"
+                              onChange={handleInputChange}
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, PDF, DOC up to 10MB
+                        </p>
+                      </div>
                     </div>
                   )}
-                  
-                  <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mt-6">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <Info size={20} className="text-blue-500" />
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-blue-800">Important</h3>
-                        <div className="mt-2 text-sm text-blue-700">
-                          <p>
-                            Proof of delivery documents are essential for invoicing and potential dispute resolution. 
-                            Recommended documents include:
-                          </p>
-                          <ul className="list-disc pl-5 mt-1 space-y-1">
-                            <li>Signed delivery receipt</li>
-                            <li>Bill of lading (BOL)</li>
-                            <li>Photos of cargo at delivery</li>
-                            <li>Receiver signature capture</li>
-                          </ul>
-                        </div>
+                  {errors.podFiles && (
+                    <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
+                  )}
+                </div>
+                
+                {/* Display uploaded files */}
+                {formData.podFiles.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles.length})</h3>
+                    <ul className="border rounded-md divide-y divide-gray-200">
+                      {formData.podFiles.map((file, index) => (
+                        <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0 rounded bg-blue-50 flex items-center justify-center">
+                              <FileText size={20} className="text-blue-600" />
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                                {typeof file === 'string' ? file.split('/').pop() : file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => handleFilePreview(file)}
+                              className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                              title="Preview"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(index)}
+                              className="text-red-600 hover:text-red-800 p-1 rounded"
+                              title="Remove"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200 mt-6">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <Info size={20} className="text-blue-500" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">Important</h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>
+                          Proof of delivery documents are essential for invoicing and potential dispute resolution. 
+                          Recommended documents include:
+                        </p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Signed delivery receipt</li>
+                          <li>Bill of lading (BOL)</li>
+                          <li>Photos of cargo at delivery</li>
+                          <li>Receiver signature capture</li>
+                        </ul>
                       </div>
                     </div>
                   </div>
@@ -1283,8 +1290,8 @@ const handleInputChange = (e) => {
               </div>
             )}
             
-            {/* Step 2: Billing & Completion */}
-            {currentStep === 2 && (
+            {/* Step 3: Billing & Completion */}
+            {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -1481,7 +1488,7 @@ const handleInputChange = (e) => {
                         </div>
                         <div>
                           <label htmlFor="factoringCompany" className="block text-sm font-medium text-gray-700 mb-1">
-                            Factoring Company*
+                            Factoring Company (Optional)
                           </label>
                           <input
                             type="text"
@@ -1490,15 +1497,8 @@ const handleInputChange = (e) => {
                             value={formData.factoringCompany}
                             onChange={handleInputChange}
                             placeholder="Enter factoring company name"
-                            className={`block w-full px-3 py-2 border ${
-                              errors.factoringCompany 
-                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                            } rounded-md shadow-sm text-sm`}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
                           />
-                          {errors.factoringCompany && (
-                            <p className="mt-1 text-sm text-red-600">{errors.factoringCompany}</p>
-                          )}
                         </div>
                       </div>
                     )}
@@ -1544,7 +1544,7 @@ const handleInputChange = (e) => {
               {currentStep > 1 ? "Previous" : "Cancel"}
             </button>
             
-            {currentStep < 2 ? (
+            {currentStep < 3 ? (
               <button
                 type="button"
                 onClick={handleNextStep}
