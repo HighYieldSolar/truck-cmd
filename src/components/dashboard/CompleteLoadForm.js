@@ -160,7 +160,7 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
         })}
       </div>
     </div>
-  );
+  ); 
 };
 
 // Preview modal for documents
@@ -824,10 +824,12 @@ export default function CompleteLoadForm({ loadId }) {
   }
   
   return (
-    <div className="bg-gray-50 pb-12" id="form-container" tabIndex="-1">
+    <div className="bg-gray-50" id="form-container" tabIndex="-1">
+        
       {/* Header with load overview - INCREASED Z-INDEX from 10 to 30 */}
-      <div className="bg-white border-b shadow-sm p-4 mb-6 sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between">
+      <div className="bg-white border-b shadow-sm p-4 mb-6 static top-0 z-30">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between px-4">
+          
           <div className="flex items-center mb-3 sm:mb-0">
             <Link
               href="/dashboard/dispatching"
@@ -856,8 +858,8 @@ export default function CompleteLoadForm({ loadId }) {
           </div>
         </div>
       </div>
-      
-      <div className="max-w-5xl mx-auto px-4">
+      <div className='pb-12'>
+        <div className="max-w-5xl mx-auto px-4">
         {/* Error alert */}
         {error && (
           <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
@@ -948,7 +950,9 @@ export default function CompleteLoadForm({ loadId }) {
         </div>
         
         {/* Steps Indicator - Wrap in div with lower z-index */}
-        <div className="relative z-10">
+        
+        <div className="relative z-40">
+          
           <StepsProgress currentStep={currentStep} />
         </div>
         
@@ -1465,6 +1469,7 @@ export default function CompleteLoadForm({ loadId }) {
             )}
           </div>
         </div>
+      </div>
       </div>
       
       {/* Document Preview Modal */}
