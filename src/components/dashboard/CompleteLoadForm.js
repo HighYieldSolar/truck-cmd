@@ -825,8 +825,8 @@ export default function CompleteLoadForm({ loadId }) {
   
   return (
     <div className="bg-gray-50 pb-12" id="form-container" tabIndex="-1">
-      {/* Header with load overview */}
-      <div className="bg-white border-b shadow-sm p-4 mb-6 sticky top-0 z-10">
+      {/* Header with load overview - INCREASED Z-INDEX from 10 to 30 */}
+      <div className="bg-white border-b shadow-sm p-4 mb-6 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between">
           <div className="flex items-center mb-3 sm:mb-0">
             <Link
@@ -947,8 +947,10 @@ export default function CompleteLoadForm({ loadId }) {
           </div>
         </div>
         
-        {/* Steps Indicator */}
-        <StepsProgress currentStep={currentStep} />
+        {/* Steps Indicator - Wrap in div with lower z-index */}
+        <div className="relative z-10">
+          <StepsProgress currentStep={currentStep} />
+        </div>
         
         {/* Form Content */}
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
@@ -1070,44 +1072,44 @@ export default function CompleteLoadForm({ loadId }) {
             {/* Step 2: Documentation */}
             {currentStep === 2 && (
               <div className="space-y-6">
-<div className="mb-6">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Upload Proof of Delivery Documents*
-  </label>
-  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-    <div className="space-y-1 text-center">
-      <Upload 
-        className="mx-auto h-12 w-12 text-gray-400"
-        strokeWidth={1}
-      />
-      <div className="flex text-sm text-gray-600">
-        <label
-          htmlFor="podFiles"
-          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-        >
-          <span>Upload photo</span>
-          <input
-            id="podFiles"
-            name="podFiles"
-            type="file"
-            multiple
-            accept="image/jpeg,image/png,image/jpg" 
-            className="sr-only"
-            onChange={handleInputChange}
-            ref={fileInputRef}
-          />
-        </label>
-        <p className="pl-1">from gallery</p>
-      </div>
-      <p className="text-xs text-gray-500">
-        JPEG, PNG images
-      </p>
-    </div>
-  </div>
-  {errors.podFiles && (
-    <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
-  )}
-</div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Proof of Delivery Documents*
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                    <div className="space-y-1 text-center">
+                      <Upload 
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        strokeWidth={1}
+                      />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="podFiles"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                        >
+                          <span>Upload photo</span>
+                          <input
+                            id="podFiles"
+                            name="podFiles"
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/jpg" 
+                            className="sr-only"
+                            onChange={handleInputChange}
+                            ref={fileInputRef}
+                          />
+                        </label>
+                        <p className="pl-1">from gallery</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        JPEG, PNG images
+                      </p>
+                    </div>
+                  </div>
+                  {errors.podFiles && (
+                    <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
+                  )}
+                </div>
                 
                 {/* Display uploaded files */}
                 {formData.podFiles.length > 0 && (
