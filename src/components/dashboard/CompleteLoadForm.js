@@ -279,9 +279,6 @@ export default function CompleteLoadForm({ loadId }) {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   
-  // Keep track of form focus state to prevent losing data on blur
-  const [isFilePickerActive, setIsFilePickerActive] = useState(false);
-  
   // Form state with validation
   const [formData, setFormData] = useState({
     deliveryDate: new Date().toISOString().split('T')[0],
@@ -302,20 +299,6 @@ export default function CompleteLoadForm({ loadId }) {
   // Form validation
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  
-  // Detect platform
-  const [isAndroid, setIsAndroid] = useState(false);
-  
-  // Detect platform - run this only on client
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Check if using Android
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      setIsAndroid(/android/.test(userAgent));
-      
-      console.log("Platform detection:", { isAndroid: /android/.test(userAgent) });
-    }
-  }, []);
   
   // Load saved form data on initialization and when returning to the app
   useEffect(() => {
@@ -347,10 +330,8 @@ export default function CompleteLoadForm({ loadId }) {
     }
   }, [formData, loadId]);
   
-  // Handle app focus/visibility changes (for Android platform switching)
+  // Handle visibility changes
   useEffect(() => {
-    if (!isAndroid) return;
-    
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log("App became visible again, restoring form state if needed");
@@ -378,34 +359,7 @@ export default function CompleteLoadForm({ loadId }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAndroid, loadId, formData]);
-  
-  // Handle back button on Android
-  useEffect(() => {
-    if (!isAndroid) return;
-    
-    const handleBackButton = (e) => {
-      // If we're in file picking mode, prevent default behavior and restore focus
-      if (isFilePickerActive) {
-        console.log("Back button pressed during file picking, handling gracefully");
-        e.preventDefault();
-        setIsFilePickerActive(false);
-        
-        // Focus back on main form container
-        const container = document.getElementById('form-container');
-        if (container) container.focus();
-        
-        // No need to load from localStorage here as the form state is still in memory
-        return;
-      }
-    };
-    
-    window.addEventListener('popstate', handleBackButton);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBackButton);
-    };
-  }, [isAndroid, isFilePickerActive]);
+  }, [loadId, formData]);
   
   // Load data on mount
   useEffect(() => {
@@ -491,30 +445,11 @@ export default function CompleteLoadForm({ loadId }) {
     fetchData();
   }, [loadId, router]);
   
-  // Specialized file upload handler for Android
-  const handleAndroidFileUpload = () => {
-    // Set file picker active flag to true before opening the file picker
-    setIsFilePickerActive(true);
-    
-    // Save current form data before navigating
-    saveFormToStorage(formData, loadId);
-    
-    console.log("Android file upload initiated, saving form state");
-    
-    // After handling file picker focus, trigger the file input click
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     
     if (type === 'file') {
-      // Set file picker to inactive as we're now handling the files
-      setIsFilePickerActive(false);
-      
       // Handle file uploads
       if (files && files.length > 0) {
         // Create a copy of the files array since it's readonly
@@ -525,11 +460,6 @@ export default function CompleteLoadForm({ loadId }) {
           ...prev,
           podFiles: [...prev.podFiles, ...fileArray]
         }));
-        
-        // Immediately persist form data to localStorage (without files)
-        // Saving filenames to help restore state
-        const fileNames = fileArray.map(f => f.name);
-        console.log(`Added ${fileNames.length} new files:`, fileNames);
         
         // Reset file input
         e.target.value = "";
@@ -1144,78 +1074,36 @@ export default function CompleteLoadForm({ loadId }) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Upload Proof of Delivery Documents*
                   </label>
-                  {/* Special handling for Android devices */}
-                  {isAndroid ? (
-                    <button
-                      type="button"
-                      onClick={handleAndroidFileUpload}
-                      className={`w-full mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
-                        errors.podFiles 
-                          ? 'border-red-300 border-dashed' 
-                          : 'border-gray-300 border-dashed'
-                      } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}
-                    >
-                      <div className="space-y-1 text-center">
-                        <Upload 
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          strokeWidth={1}
-                        />
-                        <div className="flex text-sm text-gray-600">
-                          <span className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                            Upload files
-                          </span>
-                          <p className="pl-1">or take a photo</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, PDF, DOC up to 10MB
-                        </p>
-                        <input
-                          ref={fileInputRef}
-                          id="podFiles"
-                          name="podFiles"
-                          type="file"
-                          multiple
-                          accept="image/*,.pdf,.doc,.docx"
-                          className="sr-only"
-                          onChange={handleInputChange}
-                        />
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                    <div className="space-y-1 text-center">
+                      <Upload 
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        strokeWidth={1}
+                      />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="podFiles"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                        >
+                          <span>Upload files</span>
+                          <input
+                            id="podFiles"
+                            name="podFiles"
+                            type="file"
+                            multiple
+                            accept="image/*,.pdf,.doc,.docx"
+                            className="sr-only"
+                            onChange={handleInputChange}
+                            ref={fileInputRef}
+                          />
+                        </label>
+                        <p className="pl-1">or take a photo</p>
                       </div>
-                    </button>
-                  ) : (
-                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
-                      errors.podFiles 
-                        ? 'border-red-300 border-dashed' 
-                        : 'border-gray-300 border-dashed'
-                    } bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200`}>
-                      <div className="space-y-1 text-center">
-                        <Upload 
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          strokeWidth={1}
-                        />
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="podFiles"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                          >
-                            <span>Upload files</span>
-                            <input
-                              id="podFiles"
-                              name="podFiles"
-                              type="file"
-                              multiple
-                              accept="image/*,.pdf,.doc,.docx"
-                              className="sr-only"
-                              onChange={handleInputChange}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          PNG, JPG, PDF, DOC up to 10MB
-                        </p>
-                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, PDF, DOC up to 10MB
+                      </p>
                     </div>
-                  )}
+                  </div>
                   {errors.podFiles && (
                     <p className="mt-1 text-sm text-red-600">{errors.podFiles}</p>
                   )}
