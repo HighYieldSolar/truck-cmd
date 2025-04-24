@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { CreditCard, RefreshCw } from 'lucide-react';
 
 /**
- * A button component that initiates the Stripe checkout flow
+ * An improved button component that initiates the Stripe checkout flow
+ * with added idempotency and error handling
  * 
  * @param {Object} props
  * @param {string} props.planId - ID of the selected plan
@@ -24,15 +25,26 @@ export default function StripeCheckoutButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [checkoutInitiated, setCheckoutInitiated] = useState(false);
 
   const handleCheckout = async () => {
-    if (disabled || loading || !planId || !userId) return;
+    // Prevent multiple clicks or processing when already in progress
+    if (disabled || loading || checkoutInitiated || !planId || !userId) return;
     
     try {
       setLoading(true);
       setError(null);
+      setCheckoutInitiated(true);
       
-      console.log('Initiating checkout with:', { planId, billingCycle, userId });
+      // Store the user ID in localStorage and sessionStorage for the redirect page to use
+      localStorage.setItem('userId', userId);
+      sessionStorage.setItem('userId', userId);
+      
+      // Generate a unique checkout ID to prevent duplicate checkouts
+      const checkoutId = `checkout_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem('lastCheckoutId', checkoutId);
+      
+      console.log('Initiating checkout with:', { planId, billingCycle, userId, checkoutId });
       
       // Create a checkout session
       const response = await fetch('/api/create-checkout-session', {
@@ -44,7 +56,8 @@ export default function StripeCheckoutButton({
           userId,
           plan: planId,
           billingCycle,
-          returnUrl: window.location.origin
+          checkoutId,
+          returnUrl: `${window.location.origin}/dashboard/billing/success`
         }),
       });
       
@@ -68,6 +81,11 @@ export default function StripeCheckoutButton({
         throw new Error('No checkout URL returned from server');
       }
       
+      // Save additional information to help with recovery if needed
+      sessionStorage.setItem('checkout_timestamp', Date.now().toString());
+      sessionStorage.setItem('checkout_plan', planId);
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      
       // Redirect to Stripe Checkout
       console.log('Redirecting to:', data.url);
       window.location.href = data.url;
@@ -83,6 +101,10 @@ export default function StripeCheckoutButton({
       
       setError(err.message || 'An unknown error occurred during checkout');
       setLoading(false);
+      setCheckoutInitiated(false);
+      
+      // Clear any stored checkout data on error
+      localStorage.removeItem('lastCheckoutId');
     }
   };
 
@@ -90,15 +112,15 @@ export default function StripeCheckoutButton({
     <div>
       <button
         onClick={handleCheckout}
-        disabled={disabled || loading || !planId || !userId}
+        disabled={disabled || loading || checkoutInitiated || !planId || !userId}
         className={`w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
+          disabled || loading || checkoutInitiated ? 'opacity-50 cursor-not-allowed' : ''
         } ${className}`}
       >
-        {loading ? (
+        {loading || checkoutInitiated ? (
           <>
             <RefreshCw size={20} className="animate-spin mr-2" />
-            Processing...
+            {checkoutInitiated ? 'Redirecting to Stripe...' : 'Processing...'}
           </>
         ) : (
           <>
@@ -109,7 +131,10 @@ export default function StripeCheckoutButton({
       </button>
       
       {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+          <p className="font-medium">Error:</p>
+          <p>{error}</p>
+        </div>
       )}
     </div>
   );
