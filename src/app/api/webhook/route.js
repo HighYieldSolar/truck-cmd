@@ -42,7 +42,7 @@ export async function POST(req) {
         break;
         
       case "checkout.session.completed":
-        await handleCheckoutCompleted(event);
+        await handleCheckoutCompleted(event, stripe);
         break;
         
       default:
@@ -81,6 +81,7 @@ async function handleSubscriptionUpdate(event) {
     if (priceId) {
       // You might need to map Stripe price IDs to your plan names
       // For demonstration, let's retrieve the product from Stripe
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
       const price = await stripe.prices.retrieve(priceId, {
         expand: ['product']
       });
@@ -227,7 +228,7 @@ async function handleSubscriptionCancellation(event) {
 /**
  * Handle checkout completed event
  */
-async function handleCheckoutCompleted(event) {
+async function handleCheckoutCompleted(event, stripe) {
   console.log("Processing checkout completed...");
   
   const session = event.data.object;
@@ -239,35 +240,76 @@ async function handleCheckoutCompleted(event) {
   }
   
   const stripeCustomerId = session.customer;
-  const userId = session.client_reference_id; // This should be set when creating the checkout session
+  const subscriptionId = session.subscription; // Get the subscription ID directly from the session
+  const userId = session.client_reference_id || session.metadata?.userId;
+  const plan = session.metadata?.plan || 'premium';
+  const billingCycle = session.metadata?.billingCycle || 'monthly';
   
-  console.log(`Checkout completed for user ${userId}, customer ${stripeCustomerId}`);
+  console.log(`Checkout completed for user ${userId}, customer ${stripeCustomerId}, subscription ${subscriptionId}`);
   
-  // If we don't have a userId from client_reference_id, we may need to look it up
+  // If we don't have a userId, we need to handle that case
   if (!userId) {
-    console.log('No client_reference_id found, trying to find user by customer ID');
-    
-    // Try to find the user by metadata if available
-    if (session.metadata?.userId) {
-      console.log(`Found userId in session metadata: ${session.metadata.userId}`);
-      const { error } = await updateUserStripeInfo(session.metadata.userId, stripeCustomerId);
-      
-      if (error) {
-        console.error(`Error updating user: ${error.message}`);
-      }
-      return;
-    }
-    
-    // Otherwise, handle the subscription events separately
-    console.log('Will wait for the customer.subscription events to update the subscription');
+    console.log('No user ID found in session, cannot update subscription');
     return;
   }
   
-  // Update the user's Stripe customer ID if needed
-  const { error } = await updateUserStripeInfo(userId, stripeCustomerId);
+  // Update the user's Stripe customer ID
+  await updateUserStripeInfo(userId, stripeCustomerId);
   
-  if (error) {
-    console.error(`Error updating user: ${error.message}`);
+  // Now retrieve the subscription from Stripe to get its current status
+  try {
+    console.log(`Retrieving subscription ${subscriptionId} from Stripe`);
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const status = subscription.status;
+    const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    
+    console.log(`Subscription status from Stripe: ${status}`);
+    
+    // IMPORTANT: Directly update the subscription to active status
+    const { error: subError } = await supabase
+      .from("subscriptions")
+      .update({
+        status: status, // Use the actual status from Stripe (should be "active")
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: stripeCustomerId,
+        plan: plan,
+        billing_cycle: billingCycle,
+        current_period_ends_at: currentPeriodEnd,
+        trial_ends_at: null, // Clear trial end date when activating subscription
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+      
+    if (subError) {
+      console.error(`Error updating subscription in database: ${subError.message}`);
+      throw subError;
+    }
+    
+    console.log(`✅ Successfully updated subscription status to ${status} for user ${userId}`);
+    
+  } catch (error) {
+    console.error(`Error retrieving subscription from Stripe: ${error.message}`);
+    
+    // If we can't get the subscription from Stripe, still try to update our database
+    // with the information we have from the checkout session
+    const { error: updateError } = await supabase
+      .from("subscriptions")
+      .update({
+        status: "active", // Default to active if we can't get status from Stripe
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: stripeCustomerId,
+        plan: plan,
+        billing_cycle: billingCycle,
+        trial_ends_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+      
+    if (updateError) {
+      console.error(`Error updating subscription in database: ${updateError.message}`);
+    } else {
+      console.log(`✅ Successfully updated subscription status to active for user ${userId} (fallback)`);
+    }
   }
 }
 
