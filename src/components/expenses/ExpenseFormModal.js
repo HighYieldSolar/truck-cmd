@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, RefreshCw, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { createExpense, updateExpense, uploadReceiptImage } from "@/lib/services/expenseService";
@@ -57,86 +57,111 @@ function prepareDateForSubmission(dateString) {
   }
 }
 
+// Helper function to get form data from local storage
+const getFormDataFromLocalStorage = () => {
+  const formDataString = localStorage.getItem('expenseFormData');
+  return formDataString ? JSON.parse(formDataString) : null;
+};
+
+// Helper function to set form data to local storage
+const setFormDataToLocalStorage = (data) => {
+  localStorage.setItem('expenseFormData', JSON.stringify(data));
+};
+
+// Helper function to clear form data from local storage
+const clearFormDataFromLocalStorage = () => {
+  localStorage.removeItem('expenseFormData');
+};
+
 export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
-  const [formData, setFormData] = useState({
-    description: '',
-    amount: '',
-    date: getCurrentDateFormatted(),
-    category: 'Fuel',
-    payment_method: 'Credit Card',
-    notes: '',
-    receipt_image: null,
-    receipt_file: null, // To store the actual file
-    vehicle_id: '',
-    deductible: true
-  });
+  // Check local storage for existing form data
+  const initialFormData = getFormDataFromLocalStorage() || {
+      description: '',
+      amount: '',
+      date: getCurrentDateFormatted(),
+      category: 'Fuel',
+      payment_method: 'Credit Card',
+      notes: '',
+      receipt_image: null,
+      receipt_file: null, // To store the actual file
+      vehicle_id: '',
+      deductible: true
+    };
+  const [formData, setFormData] = useState(initialFormData);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  
+  // Save form data to local storage whenever it changes
+  useEffect(() => {
+    setFormDataToLocalStorage(formData);
+  }, [formData]);
 
   // Load vehicles when the modal opens
-  useEffect(() => {
-    const loadVehicles = async () => {
-      if (!isOpen) return;
+  const loadVehicles = useCallback(async () => {
+    if (!isOpen) return;
+    
+    try {
+      setVehiclesLoading(true);
       
-      try {
-        setVehiclesLoading(true);
-        
-        // Get the current user ID
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error("Not authenticated");
-        }
-        
-        const userId = session.user.id;
-        
-        // First try to get vehicles from the vehicles table
-        let { data, error } = await supabase
-          .from('vehicles')
+      // Get the current user ID
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+      
+      const userId = session.user.id;
+      
+      // First try to get vehicles from the vehicles table
+      let { data, error } = await supabase
+        .from('vehicles')
+        .select('id, name, license_plate')
+        .eq('user_id', userId);
+      
+      // If that fails, try the trucks table instead
+      if (error || !data || data.length === 0) {
+        const { data: trucksData, error: trucksError } = await supabase
+          .from('trucks')
           .select('id, name, license_plate')
           .eq('user_id', userId);
-        
-        // If that fails, try the trucks table instead
-        if (error || !data || data.length === 0) {
-          const { data: trucksData, error: trucksError } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .eq('user_id', userId);
-            
-          if (!trucksError) {
-            data = trucksData;
-          }
+          
+        if (!trucksError) {
+          data = trucksData;
         }
-        
-        // If we still don't have data, create some sample vehicles
-        if (!data || data.length === 0) {
-          data = [
-            { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
-            { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
-          ];
-        }
-        
-        setVehicles(data);
-        
-      } catch (error) {
-        console.error('Error loading vehicles:', error);
-        
-        // Set some default vehicles as fallback
-        setVehicles([
+      }
+      
+      // If we still don't have data, create some sample vehicles
+      if (!data || data.length === 0) {
+        data = [
           { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
           { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
-        ]);
-      } finally {
-        setVehiclesLoading(false);
+        ];
       }
-    };
-    
-    loadVehicles();
+      
+      setVehicles(data);
+      
+    } catch (error) {
+      console.error('Error loading vehicles:', error);
+      
+      // Set some default vehicles as fallback
+      setVehicles([
+        { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
+        { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
+      ]);
+    } finally {
+      setVehiclesLoading(false);
+    }
   }, [isOpen]);
-
+  
   useEffect(() => {
+    loadVehicles();
+  }, [loadVehicles]);
+
+  // Handle reset when modal opens or an expense is provided
+  useEffect(() => {
+    // Reset or load form data based on context
     if (expense) {
       console.log("Original expense date:", expense.date);
       // Format the date properly for an existing expense
@@ -148,7 +173,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
         date: formattedDate,
         amount: expense.amount.toString(),
         receipt_file: null // Reset file input when editing
-      });
+        });
     } else {
       // Reset form for new expense
       setFormData({
@@ -162,11 +187,16 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
         receipt_file: null,
         vehicle_id: '',
         deductible: true
-      });
+        });
     }
     
     // Clear any previous errors
     setError(null);
+    
+    // Clear local storage if modal is closed and no expense is being edited
+    if (!isOpen && !expense) {
+      clearFormDataFromLocalStorage();
+    }
   }, [expense, isOpen]);
 
   const handleChange = (e) => {
@@ -182,7 +212,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       setFormData({
         ...formData,
         [name]: checked
-      });
+        });
     } else {
       setFormData({
         ...formData,
@@ -243,6 +273,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       
       // Call the parent component's onSave callback with the result
       onSave(result);
+      clearFormDataFromLocalStorage();
       onClose();
     } catch (err) {
       console.error('Error saving expense:', err);

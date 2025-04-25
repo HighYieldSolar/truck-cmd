@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
 
@@ -10,6 +11,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
   const [formData, setFormData] = useState({
     name: '',
     make: '',
+
+    
+
     model: '',
     year: '',
     vin: '',
@@ -24,13 +28,19 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     vehicle_id: '' // Add this field to store the vehicle_id
   });
 
+  //generate unique form key
+  const formKey = truck ? `truckForm-${truck.id}` : 'truckForm-new';
+  
+  const [initialStoredFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
 
+  
   // Reset form when truck changes
   useEffect(() => {
+
     if (truck) {
       // Edit mode - populate form with truck data
       setFormData({
@@ -68,11 +78,43 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         vehicle_id: '' // Reset vehicle_id field
       });
     }
-    
+        //check for new truck key and delete if exists
+        if (truck) {
+          const newTruckKey = "truckForm-new";
+          localStorage.removeItem(newTruckKey);
+        }
+
     setErrors({});
     setSubmitError(null);
     setSubmitSuccess(null);
   }, [truck, isOpen]);
+
+    //functions to handle local storage
+  const loadStoredFormData = () => {
+        if (!truck && initialStoredFormData) {
+      setFormData(initialStoredFormData);
+    }
+  };
+  const saveFormData = (data) => {
+        setStoredFormData(data);
+
+  };
+  // load data on mount
+  useEffect(() => {
+    loadStoredFormData();
+  }, [truck,formKey]);
+  useEffect(() => {
+    if (!truck) {
+     saveFormData(formData)
+    }
+  }, [formData,formKey]);
+
+ // Clear local storage when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      clearStoredFormData();
+    }
+  }, [isOpen]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -83,21 +125,21 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         ...formData,
         image_file: files[0],
       });
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          image: reader.result
-        }));
-      };
-      reader.readAsDataURL(files[0]);
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData((prev) => ({
+            ...prev,
+            image: reader.result,
+          }));
+        };
+        reader.readAsDataURL(files[0]);
     } else {
       setFormData({
         ...formData,
         [name]: value
       });
+        saveFormData(formData)
     }
     
     // Clear error when field is changed
@@ -202,7 +244,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
       // Close modal after a short delay to show success message
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 1500)
+     
+      
     } catch (error) {
       console.error('Error saving truck:', error);
       setSubmitError(error.message || 'Failed to save vehicle. Please try again.');
@@ -222,7 +266,12 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
             {truck ? 'Edit Vehicle' : 'Add New Vehicle'}
           </h2>
           <button 
-            onClick={onClose}
+            onClick={() => {
+              onClose()
+              if (!truck){
+                clearStoredFormData();
+              }
+            }}
             className="text-gray-500 hover:text-gray-700"
             disabled={isSubmitting}
           >

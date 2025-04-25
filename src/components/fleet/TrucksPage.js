@@ -209,6 +209,9 @@ export default function TrucksPage() {
       const data = await fetchTrucks(user.id);
       setTrucks(data);
       setFilteredTrucks(data);
+      
+      // Clear local storage for truck form data
+      localStorage.removeItem("truckFormData");
       return true;
     } catch (error) {
       console.error('Error after saving truck:', error);

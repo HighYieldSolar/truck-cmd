@@ -1,20 +1,23 @@
 // src/components/fuel/FuelEntryForm.js
 /* eslint-disable @next/next/no-img-element */
 "use client";
-
 import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard, Image } from "lucide-react";
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from "@/lib/supabaseClient";
 import { getUSStates } from "@/lib/services/fuelService";
 
 // Import the VehicleSelector component
 import VehicleSelector from "@/components/fuel/VehicleSelector";
 
-export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) {
-  const [formData, setFormData] = useState({
+const states = getUSStates();
+
+// Define initial form data
+const defaultFormData = {
     date: new Date().toISOString().split('T')[0],
-    state: '',
+    state: "",
     state_name: "",
-    location: '',
+    location: "",
     gallons: '',
     price_per_gallon: '',
     total_amount: '',
@@ -23,18 +26,45 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     fuel_type: 'Diesel',
     notes: '',
     receipt_image: null,
-    receipt_file: null, 
-    receipt_preview: null
-  });
+    receipt_file: null,
+    receipt_preview: null,
+};
+  
+
+
+export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) { 
+  
+  const formKey = fuelEntry ? `fuelEntry-${fuelEntry.id}` : `fuelEntry-${uuidv4()}`;
+  const storedData = localStorage.getItem(formKey);
+  const initialData = storedData ? JSON.parse(storedData) : defaultFormData;
+
+
+  // State to manage form data, initialized from local storage or defaults
+
+  const [formData, setFormData] = useState(initialData);
+  
+  // Save form data to local storage whenever it changes
+  useEffect(() => {
+    if (formKey) {
+        localStorage.setItem(formKey, JSON.stringify(formData));
+    }
+  }, [formData, formKey]);
 
   const [calculationMode, setCalculationMode] = useState('total');
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Get list of US states for dropdown
-  const states = getUSStates();
-
   useEffect(() => {
+    if (!fuelEntry) {
+        setFormData(storedData ? JSON.parse(storedData) : defaultFormData);
+    } 
+  }, [fuelEntry]);
+
+
+  useEffect(() => { 
+
+    
+    if(!formKey) return;
     if (fuelEntry) {
       // Format existing entry data for the form
       setFormData({
@@ -74,8 +104,18 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
 
     // Reset validation state
     setErrors({});
-    setTouched({});
-  }, [fuelEntry, isOpen]);
+    setTouched({}); 
+  }, [fuelEntry]);
+  
+  
+  // Handle form reset when the modal closes
+  useEffect(() => {
+      if (!isOpen && formKey) {
+          localStorage.removeItem(formKey);
+      }      
+  }, [isOpen, formKey]);
+
+
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -131,6 +171,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     setTouched({ ...touched, [name]: true });
     
     // Validate the field
+
     validateField(name, formData[name]);
   };
 
@@ -244,25 +285,6 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     return state ? state.name : "";
   };
 
-  const uploadReceiptImage = async (userId, file) => {
-    try {
-      const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('receipts')
-        .upload(filePath, file);
-  
-      if (error) throw error;
-  
-      const { publicURL } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(filePath);
-  
-      return publicURL;
-    } catch (error) {
-      console.error('Error uploading receipt:', error);
-      return null;
-    }
-  };
   
 
 if (!isOpen) return null;
@@ -613,7 +635,7 @@ if (!isOpen) return null;
               {formData.receipt_preview && (
                 <div className="border rounded-md p-4">
                   <div className="mb-2 flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-gray-700">Receipt Preview</h3>
+                    <h3 className="text-sm font-medium text-gray-700">Receipt Preview </h3>
                     <button
                       type="button"
                       className="text-blue-600 hover:text-blue-800"
