@@ -8,12 +8,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
 
 export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit }) {
-  const [formData, setFormData] = useState({
+  // Initialize with empty form data
+  const initialFormData = {
     name: '',
     make: '',
-
-    
-
     model: '',
     year: '',
     vin: '',
@@ -26,23 +24,29 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     image_file: null,
     notes: '',
     vehicle_id: '' // Add this field to store the vehicle_id
-  });
+  };
 
-  //generate unique form key
+  // Generate unique form key based on whether we're editing or creating
   const formKey = truck ? `truckForm-${truck.id}` : 'truckForm-new';
   
-  const [initialStoredFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey);
+  // Use the custom useLocalStorage hook
+  const [storedFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey, initialFormData);
+  
+  // Main form state - will be initialized from either truck data (when editing) or stored data (when creating)
+  const [formData, setFormData] = useState(initialFormData);
+  
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
 
-  
-  // Reset form when truck changes
-  useEffect(() => {
+  // Flag to track if initial data was loaded from localStorage
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
+  // Load initial data: either from truck (when editing) or from localStorage (when creating)
+  useEffect(() => {
+    // For editing existing truck
     if (truck) {
-      // Edit mode - populate form with truck data
       setFormData({
         name: truck.name || '',
         make: truck.make || '',
@@ -57,98 +61,89 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         image: truck.image || null,
         image_file: null,
         notes: truck.notes || '',
-        vehicle_id: truck.vehicle_id || '' // Include the vehicle_id
+        vehicle_id: truck.vehicle_id || ''
       });
-    } else {
-      // Add mode - reset form
-      setFormData({
-        name: '',
-        make: '',
-        model: '',
-        year: new Date().getFullYear().toString(),
-        vin: '',
-        license_plate: '',
-        status: 'Active',
-        purchase_date: '',
-        odometer: '',
-        fuel_type: 'Diesel',
-        image: null,
-        image_file: null,
-        notes: '',
-        vehicle_id: '' // Reset vehicle_id field
-      });
+      
+      // Clear any saved data for new trucks to avoid confusion
+      localStorage.removeItem('truckForm-new');
+    } 
+    // For creating new truck
+    else if (isOpen && !initialDataLoaded) {
+      // Check if we have valid stored data
+      const hasValidData = storedFormData && 
+        (storedFormData.name || storedFormData.make || storedFormData.model);
+        
+      if (hasValidData) {
+        setFormData(storedFormData);
+      }
+      
+      // Mark that we've loaded initial data
+      setInitialDataLoaded(true);
     }
-        //check for new truck key and delete if exists
-        if (truck) {
-          const newTruckKey = "truckForm-new";
-          localStorage.removeItem(newTruckKey);
-        }
-
+    
+    // Clear error states on every modal open
     setErrors({});
     setSubmitError(null);
     setSubmitSuccess(null);
-  }, [truck, isOpen]);
+    
+  }, [truck, isOpen, initialDataLoaded, storedFormData]);
 
-    //functions to handle local storage
-  const loadStoredFormData = () => {
-        if (!truck && initialStoredFormData) {
-      setFormData(initialStoredFormData);
+  // Save form data to localStorage when specific fields change (only for new trucks)
+  // This avoids the infinite loop by not running on every formData change
+  const handleSaveToLocalStorage = () => {
+    if (!truck && isOpen) {
+      setStoredFormData(formData);
     }
   };
-  const saveFormData = (data) => {
-        setStoredFormData(data);
 
-  };
-  // load data on mount
-  useEffect(() => {
-    loadStoredFormData();
-  }, [truck,formKey]);
-  useEffect(() => {
-    if (!truck) {
-     saveFormData(formData)
-    }
-  }, [formData,formKey]);
-
- // Clear local storage when modal closes
+  // Reset initialDataLoaded when modal closes
   useEffect(() => {
     if (!isOpen) {
-      clearStoredFormData();
+      setInitialDataLoaded(false);
+      
+      // Only clear storage for new forms, keep edit forms in case user returns
+      if (!truck) {
+        clearStoredFormData();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, truck, clearStoredFormData]);
 
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
     
     if (type === 'file' && files?.length > 0) {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         image_file: files[0],
-      });
-        // Create preview URL
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData((prev) => ({
-            ...prev,
-            image: reader.result,
-          }));
-        };
-        reader.readAsDataURL(files[0]);
+      }));
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          image: reader.result,
+        }));
+      };
+      reader.readAsDataURL(files[0]);
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         [name]: value
-      });
-        saveFormData(formData)
+      }));
     }
     
     // Clear error when field is changed
     if (errors[name]) {
-      setErrors({
-        ...errors,
+      setErrors(prev => ({
+        ...prev,
         [name]: null
-      });
+      }));
     }
+    
+    // Save to localStorage after a short delay to avoid constant updates
+    setTimeout(handleSaveToLocalStorage, 500);
   };
 
   // Validate form
@@ -241,12 +236,13 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         await onSubmit(result);
       }
       
+      // Clear form data in localStorage after successful submission
+      clearStoredFormData();
+      
       // Close modal after a short delay to show success message
       setTimeout(() => {
         onClose();
-      }, 1500)
-     
-      
+      }, 1500);
     } catch (error) {
       console.error('Error saving truck:', error);
       setSubmitError(error.message || 'Failed to save vehicle. Please try again.');
@@ -266,12 +262,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
             {truck ? 'Edit Vehicle' : 'Add New Vehicle'}
           </h2>
           <button 
-            onClick={() => {
-              onClose()
-              if (!truck){
-                clearStoredFormData();
-              }
-            }}
+            onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             disabled={isSubmitting}
           >

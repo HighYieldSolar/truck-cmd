@@ -3,11 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { X, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createDriver, updateDriver, uploadDriverImage } from "@/lib/services/driverService";
 
 export default function DriverFormModal({ isOpen, onClose, driver, userId, onSubmit }) {
-  const [formData, setFormData] = useState({
+  // Initialize with empty form data
+  const initialFormData = {
     name: '',
     position: 'Driver',
     email: '',
@@ -25,17 +27,36 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
     image: null,
     image_file: null,
     notes: ''
-  });
+  };
 
+  // Generate unique form key based on whether we're editing or creating
+  const formKey = driver ? `driverForm-${driver.id}` : 'driverForm-new';
+  
+  // Use the custom useLocalStorage hook
+  const [storedFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey, initialFormData);
+  
+  // Main form state - will be initialized from either driver data (when editing) or stored data (when creating)
+  const [formData, setFormData] = useState(initialFormData);
+  
+  // Flag to track if initial data was loaded from localStorage
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
 
-  // Reset form when driver changes
+  // Save form data to localStorage when specific fields change (only for new drivers)
+  const handleSaveToLocalStorage = () => {
+    if (!driver && isOpen) {
+      setStoredFormData(formData);
+    }
+  };
+
+  // Load initial data: either from driver (when editing) or from localStorage (when creating)
   useEffect(() => {
+    // For editing existing driver
     if (driver) {
-      // Edit mode - populate form with driver data
       setFormData({
         name: driver.name || '',
         position: driver.position || 'Driver',
@@ -55,67 +76,79 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         image_file: null,
         notes: driver.notes || ''
       });
-    } else {
-      // Add mode - reset form
-      setFormData({
-        name: '',
-        position: 'Driver',
-        email: '',
-        phone: '',
-        license_number: '',
-        license_state: '',
-        license_expiry: '',
-        medical_card_expiry: '',
-        status: 'Active',
-        hire_date: '',
-        city: '',
-        state: '',
-        emergency_contact: '',
-        emergency_phone: '',
-        image: null,
-        image_file: null,
-        notes: ''
-      });
+      
+      // Clear any saved data for new drivers to avoid confusion
+      localStorage.removeItem('driverForm-new');
+    } 
+    // For creating new driver
+    else if (isOpen && !initialDataLoaded) {
+      // Check if we have valid stored data
+      const hasValidData = storedFormData && 
+        (storedFormData.name || storedFormData.email || storedFormData.phone);
+        
+      if (hasValidData) {
+        setFormData(storedFormData);
+      }
+      
+      // Mark that we've loaded initial data
+      setInitialDataLoaded(true);
     }
     
+    // Clear error states on every modal open
     setErrors({});
     setSubmitError(null);
     setSubmitSuccess(null);
-  }, [driver, isOpen]);
+    
+  }, [driver, isOpen, initialDataLoaded, storedFormData]);
+
+  // Reset initialDataLoaded when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInitialDataLoaded(false);
+      
+      // Only clear storage for new forms, keep edit forms in case user returns
+      if (!driver) {
+        clearStoredFormData();
+      }
+    }
+  }, [isOpen, driver, clearStoredFormData]);
 
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
     
     if (type === 'file' && files?.length > 0) {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         image_file: files[0],
-      });
+      }));
       
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({
           ...prev,
-          image: reader.result
+          image: reader.result,
         }));
       };
       reader.readAsDataURL(files[0]);
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         [name]: value
-      });
+      }));
     }
     
     // Clear error when field is changed
     if (errors[name]) {
-      setErrors({
-        ...errors,
+      setErrors(prev => ({
+        ...prev,
         [name]: null
-      });
+      }));
     }
+    
+    // Save to localStorage after a short delay to avoid constant updates
+    setTimeout(handleSaveToLocalStorage, 500);
   };
 
   // Validate form
@@ -226,6 +259,9 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
       }
       
       setSubmitSuccess(driver ? 'Driver updated successfully' : 'Driver added successfully');
+      
+      // Clear form data in localStorage after successful submission
+      clearStoredFormData();
       
       // Call the onSubmit callback
       if (onSubmit) {
