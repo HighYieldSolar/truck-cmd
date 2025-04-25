@@ -2,12 +2,17 @@
 
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 const ProtectedRoute = ({ children }) => {
-  const { isSubscriptionActive, loading } = useSubscription();
+  const { isSubscriptionActive, isTrialActive, loading } = useSubscription();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Use useCallback to memoize the function so it won't cause re-renders
+  const hasAccess = useCallback(() => {
+    return isSubscriptionActive() || isTrialActive();
+  }, [isSubscriptionActive, isTrialActive]);
 
   useEffect(() => {
     if (!loading) {
@@ -22,11 +27,11 @@ const ProtectedRoute = ({ children }) => {
         pathname.startsWith("/dashboard/ifta") ||
         pathname.startsWith("/dashboard/fuel");
 
-      if (isProtected && !isSubscriptionActive()) {
+      if (isProtected && !hasAccess()) {
         router.push("/dashboard/billing");
       }
     }
-  }, [isSubscriptionActive, loading, pathname, router]);
+  }, [hasAccess, loading, pathname, router]);
 
   if (loading) {
     return (
