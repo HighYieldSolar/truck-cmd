@@ -4,7 +4,22 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { AlertCircle, Plus, Download } from "lucide-react";
+import { 
+  AlertCircle, 
+  Plus, 
+  Download, 
+  Filter, 
+  Search, 
+  FileText, 
+  Calendar, 
+  Clock, 
+  CheckCircle, 
+  RefreshCw,
+  ArrowRight,
+  Edit,
+  Eye,
+  Trash2
+} from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import { 
   fetchComplianceItems, 
@@ -389,34 +404,37 @@ export default function Page() {
   return (
     <DashboardLayout activePage="compliance">
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
-        <div className="max-w-7xl mx-auto ">
-          {/* Header */}
-          <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Compliance Management</h1>
-              <p className="text-gray-500 mt-1">Track and manage all your regulatory compliance documents</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex gap-4">
-              <button
-                onClick={() => handleOpenFormModal()}
-                className="btn btn-primary">
-                <Plus size={16} className="mr-2" />
-                Add Compliance Record
-              </button>
-              <button 
-                onClick={handleExportData}
-                className="btn btn-secondary"
-                disabled={complianceItems.length === 0}
-              >
-                <Download size={16} className="mr-2" />
-                Export Report
-              </button>
+        <div className="max-w-7xl mx-auto">
+          {/* Header with background */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-3xl font-bold mb-1">Compliance Management</h1>
+                <p className="text-blue-100">Track and manage all your regulatory compliance documents</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => handleOpenFormModal()}
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Add Record
+                </button>
+                <button 
+                  onClick={handleExportData}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                  disabled={complianceItems.length === 0}
+                >
+                  <Download size={18} className="mr-2" />
+                  Export Report
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Error message */}
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md ">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
                 <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
                 <p className="text-sm text-red-700">{error}</p>
@@ -427,41 +445,381 @@ export default function Page() {
           {/* Statistics */}
           <ComplianceSummary stats={stats} />
 
-          {/* Two-column layout: Upcoming Expirations + Filters/Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column: Upcoming Expirations */}
-            <div>
-              <UpcomingExpirations
-                expirations={upcomingExpirations} 
-                onViewItem={handleOpenViewModal} 
-              />
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1">
+              {/* Upcoming Expirations Card */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-orange-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <Clock size={18} className="mr-2" />
+                    Upcoming Expirations
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {upcomingExpirations.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle size={36} className="mx-auto mb-2 text-green-500" />
+                      <p>No documents expiring soon</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingExpirations.map(item => {
+                        const daysLeft = Math.ceil(
+                          (new Date(item.expiration_date) - new Date()) / (1000 * 60 * 60 * 24)
+                        );
+                        
+                        return (
+                          <div 
+                            key={item.id}
+                            className="p-3 bg-gray-50 rounded-lg hover:bg-orange-50 cursor-pointer transition-colors"
+                            onClick={() => handleOpenViewModal(item)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 text-sm truncate">{item.title}</p>
+                                <p className="text-sm text-gray-500">{item.entity_name}</p>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                daysLeft <= 7 ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {daysLeft} days
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    
+                      <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                        <button 
+                          onClick={() => setFilters({...filters, status: 'expiring soon'})}
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                        >
+                          View all expiring items
+                          <ArrowRight size={14} className="ml-1" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              {/* Compliance Type Breakdown */}
-              <ComplianceTypes 
-                types={COMPLIANCE_TYPES} 
-                complianceItems={complianceItems} 
-                onTypeSelect={handleTypeSelect} 
-              />
+              {/* Compliance Types */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-blue-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <FileText size={18} className="mr-2" />
+                    Compliance Categories
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => {
+                    const count = complianceItems.filter(item => item.compliance_type === key).length;
+                    if (count === 0) return null;
+                    
+                    return (
+                      <div
+                        key={key}
+                        className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                          filters.type === key ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                        }`}
+                        onClick={() => handleTypeSelect(key)}
+                      >
+                        <div className="flex items-center">
+                          {type.icon}
+                          <span className="ml-2 text-sm font-medium text-gray-700">{type.name}</span>
+                        </div>
+                        <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  
+                  {Object.entries(COMPLIANCE_TYPES).every(([key]) => 
+                    complianceItems.filter(item => item.compliance_type === key).length === 0
+                  ) && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText size={36} className="mx-auto mb-2 text-gray-400" />
+                      <p>No compliance items found</p>
+                    </div>
+                  )}
+                  
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                    <button 
+                      onClick={() => handleOpenFormModal()}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                    >
+                      Add compliance record
+                      <Plus size={14} className="ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-              {/* Right column: Filters and Table */}
-             
+            
+            {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
-              <ComplianceFilters 
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                onSearch={handleSearch}
-              />
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
+                  <h3 className="font-medium flex items-center text-gray-700">
+                    <Filter size={18} className="mr-2 text-gray-500" />
+                    Filter Compliance Records
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        name="status"
+                        value={filters.status}
+                        onChange={handleFilterChange}
+                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="expiring soon">Expiring Soon</option>
+                        <option value="expired">Expired</option>
+                        <option value="pending">Pending</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                      <select
+                        name="type"
+                        value={filters.type}
+                        onChange={handleFilterChange}
+                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="all">All Types</option>
+                        {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
+                          <option key={key} value={key}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Entity</label>
+                      <select
+                        name="entity"
+                        value={filters.entity}
+                        onChange={handleFilterChange}
+                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="all">All Entities</option>
+                        <option value="Vehicle">Vehicles</option>
+                        <option value="Driver">Drivers</option>
+                        <option value="Company">Company</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <Search size={16} className="text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          value={filters.search}
+                          onChange={handleSearch}
+                          placeholder="Search records..."
+                          className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
+                    <div className="text-sm text-gray-500">
+                      Showing {filteredItems.length} of {complianceItems.length} records
+                    </div>
+                    <button
+                      onClick={() => setFilters({
+                        status: "all",
+                        type: "all",
+                        entity: "all",
+                        search: ""
+                      })}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                      disabled={
+                        filters.status === "all" && 
+                        filters.type === "all" && 
+                        filters.entity === "all" && 
+                        filters.search === ""
+                      }
+                    >
+                      <RefreshCw size={14} className="mr-1" />
+                      Reset filters
+                    </button>
+                  </div>
+                </div>
+              </div>
               
-              {/* Compliance Items Table */}
-              <ComplianceTable 
-                complianceItems={complianceItems}
-                filteredItems={filteredItems}
-                onEdit={handleOpenFormModal}
-                onDelete={handleOpenDeleteModal}
-                onView={handleOpenViewModal}
-                onAddNew={() => handleOpenFormModal()}
-              />
+              {/* Compliance Table */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="font-medium text-gray-700">Compliance Records</h3>
+                  <button
+                    onClick={() => handleOpenFormModal()}
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Add New
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Compliance Item
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Entity
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Issue Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Expiration Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredItems.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-12 text-center">
+                            {complianceItems.length === 0 ? (
+                              <div className="max-w-sm mx-auto">
+                                <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                                <h3 className="text-lg font-medium text-gray-900 mb-1">No compliance records</h3>
+                                <p className="text-gray-500 mb-4">Start tracking your compliance documents and stay on top of expirations.</p>
+                                <button
+                                  onClick={() => handleOpenFormModal()}
+                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Plus size={16} className="mr-2" />
+                                  Add Compliance Record
+                                </button>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-gray-500 mb-2">No records match your current filters</p>
+                                <button
+                                  onClick={() => setFilters({
+                                    status: "all",
+                                    type: "all",
+                                    entity: "all",
+                                    search: ""
+                                  })}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                >
+                                  <RefreshCw size={14} className="mr-1" />
+                                  Reset Filters
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredItems.map(item => {
+                          // Calculate days until expiration
+                          const today = new Date();
+                          const expirationDate = new Date(item.expiration_date);
+                          const daysUntil = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
+                          
+                          // Determine status class
+                          let statusClass = "bg-green-100 text-green-800"; // Default: Active
+                          if (daysUntil < 0) {
+                            statusClass = "bg-red-100 text-red-800"; // Expired
+                          } else if (daysUntil <= 30) {
+                            statusClass = "bg-orange-100 text-orange-800"; // Expiring Soon
+                          } else if (item.status === "Pending") {
+                            statusClass = "bg-blue-100 text-blue-800"; // Pending
+                          }
+                          
+                          return (
+                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <button
+                                  onClick={() => handleOpenViewModal(item)}
+                                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {item.title}
+                                </button>
+                              </td>
+                              <td className="text-black px-6 py-4 whitespace-nowrap">
+                                {item.entity_name}
+                              </td>
+                              <td className="text-black px-6 py-4 whitespace-nowrap">
+                                {item.issue_date ? new Date(item.issue_date).toLocaleDateString() : '-'}
+                              </td>
+                              <td className="text-black px-6 py-4 whitespace-nowrap">
+                                {item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
+                                  {item.status || (daysUntil < 0 ? "Expired" : daysUntil <= 30 ? "Expiring Soon" : "Active")}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <div className="flex justify-center space-x-2">
+                                  <button
+                                    onClick={() => handleOpenViewModal(item)}
+                                    className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
+                                    title="View"
+                                  >
+                                    <Eye size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenFormModal(item)}
+                                    className="p-1.5 bg-green-50 text-green-600 rounded-md hover:bg-green-100"
+                                    title="Edit"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenDeleteModal(item)}
+                                    className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100"
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination placeholder - can be implemented if needed */}
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {filteredItems.length} of {complianceItems.length} records
+                  </div>
+                  <div>
+                    {/* Pagination controls would go here */}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

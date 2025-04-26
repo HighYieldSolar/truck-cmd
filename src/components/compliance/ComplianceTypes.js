@@ -24,7 +24,6 @@ export default function ComplianceTypes({ types, complianceItems, onTypeSelect }
                 </div>
                 <span key={`${key}-count`} className="text-xs text-gray-500">
                   {count} item{count !== 1 && "s"}
-                  
                 </span>
               </div>
             );
@@ -32,7 +31,6 @@ export default function ComplianceTypes({ types, complianceItems, onTypeSelect }
         ) : (
           <p className="text-center text-gray-500">No compliance items found</p>
         )}
-        </div>
       </div>
     </div>
   );
