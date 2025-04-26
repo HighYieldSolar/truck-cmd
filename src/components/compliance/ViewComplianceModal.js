@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { X, FileText, Calendar, Clock, Download, ExternalLink } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import StatusBadge from "./StatusBadge";
@@ -84,11 +84,13 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
   };
 
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? "" : "hidden"}`}>
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? "" : "hidden"}`}>
+        <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] p-6 border border-gray-200">
+      
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
           <h2 className="text-lg font-medium text-gray-900 flex items-center">
-            <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+
+<div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
               {typeInfo.icon}
             </div>
             <span className="truncate max-w-md">{compliance.title || typeInfo.name}</span>
@@ -100,6 +102,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
             <X size={20} />
           </button>
         </div>
+
 
         <div className="p-6">
           {/* Status and days left */}
@@ -132,8 +135,9 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
               <div className="bg-gray-800 px-3 py-2 flex justify-between items-center">
                 <span className="text-white text-sm font-medium">Document Preview</span>
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setImagePreviewExpanded(!imagePreviewExpanded)}
+
+<button
+ onClick={() => setImagePreviewExpanded(!imagePreviewExpanded)}
                     className="text-white hover:text-gray-200 text-xs"
                   >
                     {imagePreviewExpanded ? "Collapse" : "Expand"}
@@ -148,9 +152,9 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                 </div>
               </div>
               <div className="bg-gray-100 flex justify-center">
-                <img 
-                  src={compliance.document_url} 
-                  alt="Document Preview"
+                <img
+                    src={compliance.document_url}
+                    alt="Document Preview"
                   className={`${
                     imagePreviewExpanded 
                       ? "max-h-[500px] w-auto" 
@@ -161,71 +165,71 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Entity Information</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Type:</span> {compliance.entity_type || "N/A"}
-                </p>
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Name:</span> {compliance.entity_name || "N/A"}
-                </p>
-              </div>
-            </div>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+ <div className="block mb-4">
+ <h3 className="text-sm font-medium mb-1">Entity Information</h3>
+ <div className="bg-gray-50 p-3 rounded-md">
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Type:</span> <span className="text-gray-500">{compliance.entity_type || "N/A"}</span>
+ </p>
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Name:</span> <span className="text-gray-500">{compliance.entity_name || "N/A"}</span>
+ </p>
+ </div>
+ </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Document Information</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Document Number:</span> {compliance.document_number || "N/A"}
-                </p>
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Issuing Authority:</span> {compliance.issuing_authority || "N/A"}
-                </p>
-              </div>
-            </div>
+ <div className="block mb-4">
+ <h3 className="text-sm font-medium mb-1">Document Information</h3>
+ <div className="bg-gray-50 p-3 rounded-md">
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Document Number:</span> <span className="text-gray-500">{compliance.document_number || "N/A"}</span>
+ </p>
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Issuing Authority:</span> <span className="text-gray-500">{compliance.issuing_authority || "N/A"}</span>
+ </p>
+ </div>
+ </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Dates</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <div className="flex items-center mb-1">
-                  <Calendar size={14} className="text-gray-400 mr-1" />
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">Issue Date:</span>{" "}
-                    {formatDate(compliance.issue_date)}
-                  </p>
-                </div>
-                <div className="flex items-center">
-                  <Calendar size={14} className="text-gray-400 mr-1" />
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">Expiration Date:</span>{" "}
-                    {formatDate(compliance.expiration_date)}
-                  </p>
-                </div>
-              </div>
-            </div>
+ <div className="block mb-4">
+ <h3 className="text-sm font-medium mb-1">Dates</h3>
+ <div className="bg-gray-50 p-3 rounded-md">
+ <div className="flex items-center mb-1">
+ <Calendar size={14} className="text-gray-400 mr-1" />
+ <p className="text-sm ">
+ <span className="font-medium">Issue Date:</span>{" "}
+ <span className="text-gray-500">{formatDate(compliance.issue_date)}</span>
+ </p>
+ </div>
+ <div className="flex items-center">
+ <Calendar size={14} className="text-gray-400 mr-1" />
+ <p className="text-sm ">
+ <span className="font-medium">Expiration Date:</span>{" "}
+ <span className="text-gray-500">{formatDate(compliance.expiration_date)}</span>
+ </p>
+ </div>
+ </div>
+ </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Compliance Type</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Type:</span> {typeInfo.name}
-                </p>
-                <p className="text-sm text-gray-900 mb-1">
-                  <span className="font-medium">Frequency:</span> {typeInfo.frequency}
-                </p>
-              </div>
-            </div>
+ <div className="block mb-4">
+ <h3 className="text-sm font-medium mb-1">Compliance Type</h3>
+ <div className="bg-gray-50 p-3 rounded-md">
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Type:</span> <span className="text-gray-500">{typeInfo.name}</span>
+ </p>
+ <p className="text-sm  mb-1">
+ <span className="font-medium">Frequency:</span> <span className="text-gray-500">{typeInfo.frequency}</span>
+ </p>
+ </div>
+ </div>
 
-            <div className="md:col-span-2">
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Notes</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                  {compliance.notes || "No notes available."}
-                </p>
-              </div>
-            </div>
+ <div className="md:col-span-2 block mb-4">
+ <h3 className="text-sm font-medium mb-1">Notes</h3>
+ <div className="bg-gray-50 p-3 rounded-md">
+ <p className="text-sm text-gray-500 whitespace-pre-wrap">
+ {compliance.notes || "No notes available."}
+ </p>
+ </div>
+ </div>
 
             {compliance.document_url && !isImageDocument() && (
               <div className="md:col-span-2">
@@ -267,6 +271,6 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
           </div>
         </div>
       </div>
-    </div>
-  );
+</div>
+ );
 }

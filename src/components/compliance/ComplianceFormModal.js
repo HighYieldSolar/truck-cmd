@@ -16,6 +16,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
     issuing_authority: "",
     notes: "",
     status: "Active",
+    error:"",
     document_file: null
   });
 
@@ -33,6 +34,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         issuing_authority: compliance.issuing_authority || "",
         notes: compliance.notes || "",
         status: compliance.status || "Active",
+        error:"",
         document_file: null // Reset file input when editing
       });
     } else {
@@ -48,6 +50,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         issuing_authority: "",
         notes: "",
         status: "Active",
+        error:"",
         document_file: null
       });
     }
@@ -78,15 +81,13 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? "" : "hidden"}`}>
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-medium text-gray-900">
+      <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-200 max-w-2xl w-full">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900 mb-6">
             {compliance ? "Edit Compliance Record" : "Add Compliance Record"}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100"
-          >
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100">
+          
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -103,16 +104,15 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             </svg>
           </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6">
+        {formData.error && <p className="text-red-600 mb-2">{formData.error}</p>}
+        <form onSubmit={handleSubmit} className="flex flex-col">
+        <div className="overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="md:col-span-2 mb-4">
+              <label htmlFor="title" className="text-sm font-medium text-gray-700 block mb-1">
                 Title *
               </label>
-              <input
-                type="text"
-                id="title"
+              <input type="text" id="title"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
@@ -122,12 +122,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div>
-              <label htmlFor="compliance_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Compliance Type *
-              </label>
+            <div className="mb-4">
+              <label htmlFor="compliance_type" className="text-sm font-medium text-gray-700 block mb-1">
+                Compliance Type *</label>
               <select
-                id="compliance_type"
+              id="compliance_type"
                 name="compliance_type"
                 value={formData.compliance_type}
                 onChange={handleChange}
@@ -142,12 +141,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               </select>
             </div>
 
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                Status *
-              </label>
+            <div className="mb-4">
+              <label htmlFor="status" className="text-sm font-medium text-gray-700 block mb-1">
+                Status *</label>
               <select
-                id="status"
+              id="status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -162,12 +160,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             </div>
 
             {/* Rest of the form fields */}
-            <div>
-              <label htmlFor="entity_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Entity Type *
-              </label>
+            <div className="mb-4">
+              <label htmlFor="entity_type" className="text-sm font-medium text-gray-700 block mb-1">
+                Entity Type *</label>
               <select
-                id="entity_type"
+              id="entity_type"
                 name="entity_type"
                 value={formData.entity_type}
                 onChange={handleChange}
@@ -181,12 +178,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               </select>
             </div>
 
-            <div>
-              <label htmlFor="entity_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Entity Name *
-              </label>
+            <div className="mb-4">
+              <label htmlFor="entity_name" className="text-sm font-medium text-gray-700 block mb-1">
+                Entity Name *</label>
               <input
-                type="text"
+              type="text"
                 id="entity_name"
                 name="entity_name"
                 value={formData.entity_name}
@@ -197,12 +193,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div>
-              <label htmlFor="document_number" className="block text-sm font-medium text-gray-700 mb-1">
-                Document Number
-              </label>
+            <div className="mb-4">
+              <label htmlFor="document_number" className="text-sm font-medium text-gray-700 block mb-1">
+                Document Number</label>
               <input
-                type="text"
+              type="text"
                 id="document_number"
                 name="document_number"
                 value={formData.document_number}
@@ -212,12 +207,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div>
-              <label htmlFor="issue_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Issue Date
-              </label>
+            <div className="mb-4">
+              <label htmlFor="issue_date" className="text-sm font-medium text-gray-700 block mb-1">
+                Issue Date</label>
               <input
-                type="date"
+              type="date"
                 id="issue_date"
                 name="issue_date"
                 value={formData.issue_date}
@@ -226,12 +220,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div>
-              <label htmlFor="expiration_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Expiration Date *
-              </label>
+            <div className="mb-4">
+              <label htmlFor="expiration_date" className="text-sm font-medium text-gray-700 block mb-1">
+                Expiration Date *</label>
               <input
-                type="date"
+              type="date"
                 id="expiration_date"
                 name="expiration_date"
                 value={formData.expiration_date}
@@ -241,12 +234,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div>
-              <label htmlFor="issuing_authority" className="block text-sm font-medium text-gray-700 mb-1">
-                Issuing Authority
-              </label>
+            <div className="mb-4">
+              <label htmlFor="issuing_authority" className="text-sm font-medium text-gray-700 block mb-1">
+                Issuing Authority</label>
               <input
-                type="text"
+              type="text"
                 id="issuing_authority"
                 name="issuing_authority"
                 value={formData.issuing_authority}
@@ -256,11 +248,10 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label htmlFor="document_file" className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Document (PDF, JPG, PNG)
-              </label>
-              <input
+            <div className="md:col-span-2 mb-4">
+              <label htmlFor="document_file" className="text-sm font-medium text-gray-700 block mb-1">
+              </label><input
+               
                 type="file"
                 id="document_file"
                 name="document_file"
@@ -281,8 +272,8 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               )}
             </div>
 
-            <div className="md:col-span-2">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="md:col-span-2 mb-4">
+              <label htmlFor="notes" className="text-sm font-medium text-gray-700 block mb-1">
                 Notes
               </label>
               <textarea
@@ -296,22 +287,21 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               ></textarea>
             </div>
           </div>
-
-          <div className="mt-8 flex justify-end space-x-3">
+        </div>
+          <div className="border-t border-gray-200 mt-4 pt-4 flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
+              disabled={isSubmitting}             
+              className="btn btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
+              disabled={isSubmitting}             
+               className="btn btn-primary">{isSubmitting ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
                   Saving...
@@ -325,6 +315,8 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             </button>
           </div>
         </form>
+
+        
       </div>
     </div>
   );

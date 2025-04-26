@@ -1,36 +1,37 @@
 "use client";
 
 export default function ComplianceTypes({ types, complianceItems, onTypeSelect }) {
+  const hasItems = Object.entries(types).some(([key]) =>
+    complianceItems.some(item => item.compliance_type === key)
+  );
   return (
-    <div className="bg-white rounded-lg shadow mt-6 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900">Compliance Types</h2>
-      </div>
-      <div className="p-4">
-        <div className="space-y-2">
-          {Object.entries(types).map(([key, type]) => {
-            const count = complianceItems.filter(
-              item => item.compliance_type === key
-            ).length;
-            
+    <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
+      <h2 className="text-lg font-medium text-gray-900 mb-4">Compliance Types</h2>
+      <div className="md:flex md:flex-wrap">
+        {hasItems ? (
+          Object.entries(types).map(([key, type]) => {
+            const count = complianceItems.filter(item => item.compliance_type === key).length;
             if (count === 0) return null;
-            
             return (
-              <div 
+              <div
                 key={key}
-                className="text-black flex items-center justify-between p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                className="bg-gray-50 rounded-md p-4 flex items-center justify-between w-full mb-4 md:w-1/2 md:mr-4 last:mr-0"
                 onClick={() => onTypeSelect(key)}
               >
                 <div className="flex items-center">
                   {type.icon}
-                  <span className="ml-2 text-sm text-gray-700">{type.name}</span>
+                  <span key={`${key}-name`} className="ml-2 text-sm font-semibold text-gray-700">{type.name}</span>
                 </div>
-                <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                  {count}
+                <span key={`${key}-count`} className="text-xs text-gray-500">
+                  {count} item{count !== 1 && "s"}
+                  
                 </span>
               </div>
             );
-          })}
+          })
+        ) : (
+          <p className="text-center text-gray-500">No compliance items found</p>
+        )}
         </div>
       </div>
     </div>

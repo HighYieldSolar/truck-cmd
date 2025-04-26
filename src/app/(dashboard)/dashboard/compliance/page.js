@@ -26,7 +26,7 @@ import UpcomingExpirations from "@/components/compliance/UpcomingExpirations";
 import ComplianceTypes from "@/components/compliance/ComplianceTypes";
 
 // Main Compliance Dashboard Component
-export default function ComplianceDashboard() {
+export default function Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
@@ -389,24 +389,23 @@ export default function ComplianceDashboard() {
   return (
     <DashboardLayout activePage="compliance">
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto ">
           {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Compliance Management</h1>
-              <p className="text-gray-600 mt-1">Track and manage all your regulatory compliance documents</p>
+              <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Compliance Management</h1>
+              <p className="text-gray-500 mt-1">Track and manage all your regulatory compliance documents</p>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
+            <div className="mt-4 md:mt-0 flex gap-4">
               <button
                 onClick={() => handleOpenFormModal()}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-              >
+                className="btn btn-primary">
                 <Plus size={16} className="mr-2" />
                 Add Compliance Record
               </button>
-              <button
+              <button 
                 onClick={handleExportData}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                className="btn btn-secondary"
                 disabled={complianceItems.length === 0}
               >
                 <Download size={16} className="mr-2" />
@@ -417,7 +416,7 @@ export default function ComplianceDashboard() {
 
           {/* Error message */}
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md ">
               <div className="flex">
                 <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
                 <p className="text-sm text-red-700">{error}</p>
@@ -429,10 +428,10 @@ export default function ComplianceDashboard() {
           <ComplianceSummary stats={stats} />
 
           {/* Two-column layout: Upcoming Expirations + Filters/Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left column: Upcoming Expirations */}
-            <div className="lg:col-span-1">
-              <UpcomingExpirations 
+            <div>
+              <UpcomingExpirations
                 expirations={upcomingExpirations} 
                 onViewItem={handleOpenViewModal} 
               />
@@ -444,8 +443,8 @@ export default function ComplianceDashboard() {
                 onTypeSelect={handleTypeSelect} 
               />
             </div>
-            
-            {/* Right column: Filters and Table */}
+              {/* Right column: Filters and Table */}
+             
             <div className="lg:col-span-3">
               {/* Filters */}
               <ComplianceFilters 
