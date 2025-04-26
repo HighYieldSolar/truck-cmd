@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { X, RefreshCw, CheckCircle, FileText, AlertCircle, Calendar, Info } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
+import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 
 export default function ComplianceFormModal({ isOpen, onClose, compliance, onSave, isSubmitting }) {
-  const [formData, setFormData] = useState({
+  // Initialize with empty form data
+  const initialFormData = {
     title: "",
     compliance_type: "REGISTRATION",
     entity_type: "Vehicle",
@@ -18,10 +20,23 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
     status: "Active",
     error: "",
     document_file: null
-  });
+  };
 
-  // Initialize form when editing existing compliance item
+  // Generate unique form key based on whether we're editing or creating
+  const formKey = compliance ? `complianceForm-${compliance.id}` : 'complianceForm-new';
+  
+  // Use the custom useLocalStorage hook
+  const [storedFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey, initialFormData);
+  
+  // Main form state - will be initialized from either compliance data (when editing) or stored data (when creating)
+  const [formData, setFormData] = useState(initialFormData);
+  
+  // Flag to track if initial data was loaded from localStorage
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+
+  // Load initial data: either from compliance (when editing) or from localStorage (when creating)
   useEffect(() => {
+    // For editing existing compliance
     if (compliance) {
       setFormData({
         title: compliance.title || "",
@@ -37,26 +52,43 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         error: "",
         document_file: null // Reset file input when editing
       });
-    } else {
-      // Reset form for new compliance item
-      setFormData({
-        title: "",
-        compliance_type: "REGISTRATION",
-        entity_type: "Vehicle",
-        entity_name: "",
-        document_number: "",
-        issue_date: "",
-        expiration_date: "",
-        issuing_authority: "",
-        notes: "",
-        status: "Active",
-        error: "",
-        document_file: null
-      });
+      
+      // Clear any saved data for new compliance to avoid confusion
+      localStorage.removeItem('complianceForm-new');
+    } 
+    // For creating new compliance
+    else if (isOpen && !initialDataLoaded) {
+      // Check if we have valid stored data
+      const hasValidData = storedFormData && 
+        (storedFormData.title || storedFormData.entity_name);
+        
+      if (hasValidData) {
+        setFormData(storedFormData);
+      }
+      
+      // Mark that we've loaded initial data
+      setInitialDataLoaded(true);
     }
-  }, [compliance, isOpen]);
+  }, [compliance, isOpen, initialDataLoaded, storedFormData]);
 
-  if (!isOpen) return null;
+  // Save form data to localStorage when form data changes (only for new compliance)
+  useEffect(() => {
+    if (!compliance && isOpen && initialDataLoaded) {
+      setStoredFormData(formData);
+    }
+  }, [formData, compliance, isOpen, initialDataLoaded, setStoredFormData]);
+
+  // Reset initialDataLoaded when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInitialDataLoaded(false);
+      
+      // Only clear storage for new forms, keep edit forms in case user returns
+      if (!compliance) {
+        clearStoredFormData();
+      }
+    }
+  }, [isOpen, compliance, clearStoredFormData]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -76,8 +108,41 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Simple validation (you can add more validation logic here)
+    if (!formData.title) {
+      setFormData({
+        ...formData,
+        error: "Title is required"
+      });
+      return;
+    }
+    
+    if (!formData.entity_name) {
+      setFormData({
+        ...formData,
+        error: "Entity name is required"
+      });
+      return;
+    }
+    
+    if (!formData.expiration_date) {
+      setFormData({
+        ...formData,
+        error: "Expiration date is required"
+      });
+      return;
+    }
+    
+    // Clear any local storage before submitting successfully
+    if (!compliance) {
+      clearStoredFormData();
+    }
+    
     onSave(formData);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${isOpen ? "" : "hidden"}`}>
@@ -103,6 +168,13 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
               <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
               <p className="text-sm text-red-700">{formData.error}</p>
+            </div>
+          )}
+          
+          {initialDataLoaded && !compliance && (storedFormData.title || storedFormData.entity_name) && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md flex items-start">
+              <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-blue-700">Your previous form data has been restored.</p>
             </div>
           )}
           
