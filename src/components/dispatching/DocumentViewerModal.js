@@ -1,8 +1,7 @@
-'use client';
-
-import React from 'react';
-import { Dialog, Transition } from '@headlessui/react';import { XMarkIcon, DocumentIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import SupabaseImage from '../fuel/SupabaseImage'; // Assuming SupabaseImage can handle storage URLs
+// src/components/dispatching/DocumentViewerModal.js
+import React, { useState, useEffect } from 'react';
+import { X, FileText, ExternalLink, Image as ImageIcon, Download } from 'lucide-react';
+import { supabase } from "@/lib/supabaseClient";
 
 // Helper to check if a URL points to an image
 const isImageUrl = (url) => {
@@ -16,123 +15,163 @@ const isPdfUrl = (url) => {
   return /\.pdf$/i.test(url);
 };
 
-export default function DocumentViewerModal({ isOpen, onClose, documents, loadNumber }) {
-  if (!isOpen) return null;
-
-  // Ensure documents is an array, even if null or undefined is passed
-  const docList = Array.isArray(documents) ? documents : [];
+export default function DocumentViewerModal({ loadId, onClose }) {
+  const [documents, setDocuments] = useState([]);
+  const [loadDetails, setLoadDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Fetch documents for the load when the modal opens
+  useEffect(() => {
+    async function fetchDocuments() {
+      if (!loadId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch the load to get pod_documents field
+        const { data: loadData, error: loadError } = await supabase
+          .from('loads')
+          .select('pod_documents, load_number')
+          .eq('id', loadId)
+          .single();
+          
+        if (loadError) throw loadError;
+        
+        // Set documents from the pod_documents field
+        setDocuments(loadData?.pod_documents || []);
+        setLoadDetails(loadData);
+        
+      } catch (err) {
+        console.error('Error fetching documents:', err);
+        setError('Failed to load documents. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchDocuments();
+  }, [loadId]);
 
   return (
-    <Transition show={isOpen} as={React.Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={React.Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <Transition.Child
-              as={React.Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
-                <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                  <button
-                    type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    onClick={onClose}
-                  >
-                    <span className="sr-only">Close</span>
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
-                </div>
-                <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                  Documents for Load {loadNumber || 'N/A'}
-                </Dialog.Title>
-                
-                <div className="mt-2 max-h-[60vh] overflow-y-auto">
-                  {docList.length > 0 ? (
-                    <ul className="space-y-4">
-                      {docList.map((doc, index) => (
-                        <li key={index} className="border p-3 rounded-md">
-                          <p className="text-sm font-medium text-gray-700 mb-2">Document {index + 1}</p>
-                          {isImageUrl(doc.url) ? (
-                            // Use SupabaseImage for potential optimizations if paths are relative
-                            // If doc.url is a full URL, SupabaseImage might need adjustment or use <img>
-                            <SupabaseImage 
-                              src={doc.url} 
-                              alt={`Document ${index + 1}`} 
-                              className="w-full h-auto object-contain max-h-96 rounded" 
-                              isPublicUrl={true} // Assuming the URL is publicly accessible or SupabaseImage handles signed URLs
-                            />
-                          ) : isPdfUrl(doc.url) ? (
-                             <div className="mt-2">
-                               <a 
-                                 href={doc.url} 
-                                 target="_blank" 
-                                 rel="noopener noreferrer"
-                                 className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                               >
-                                 View PDF Document {index + 1}
-                               </a>
-                             </div>
-                          ) : (
-                             <div className="mt-2">
-                               <a 
-                                 href={doc.url} 
-                                 target="_blank" 
-                                 rel="noopener noreferrer"
-                                 className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                               >
-                                 View Document {index + 1} (Unknown Type)
-                               </a>
-                               <p className="text-xs text-gray-500 mt-1">Filename: {doc.name || 'N/A'}</p>
-                             </div>
-                          )}
-                           {/* Display filename if available */}
-                           {doc.name && !isPdfUrl(doc.url) && !isImageUrl(doc.url) && (
-                             <p className="text-xs text-gray-500 mt-1">Filename: {doc.name}</p>
-                           )}
-                           {isImageUrl(doc.url) && (
-                             <p className="text-xs text-gray-500 mt-1 text-center">
-                               <a href={doc.url} target="_blank" rel="noopener noreferrer" className="hover:underline">View full size</a>
-                             </p>
-                           )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-center text-gray-500">No documents found for this load.</p>
-                  )}
-                </div>
-
-                <div className="mt-5 sm:mt-6">
-                  <button
-                    type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    onClick={onClose}
-                  >
-                    Close
-                  </button>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">
+            Documents for Load #{loadDetails?.load_number || 'N/A'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-1 rounded-full"
+          >
+            <X size={20} />
+          </button>
         </div>
-      </Dialog>
-    </Transition>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700">
+              {error}
+            </div>
+          ) : documents.length > 0 ? (
+            <ul className="space-y-4">
+              {documents.map((doc, index) => (
+                <li key={index} className="border border-gray-200 rounded-md overflow-hidden shadow-sm">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                    <span className="font-medium text-gray-700 truncate max-w-xs">
+                      {doc.name || `Document ${index + 1}`}
+                    </span>
+                    <div className="flex space-x-2">
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 rounded-full hover:bg-gray-200 text-gray-600"
+                        title="Open in new tab"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                      <a
+                        href={doc.url}
+                        download
+                        className="p-1 rounded-full hover:bg-gray-200 text-gray-600"
+                        title="Download"
+                      >
+                        <Download size={16} />
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    {isImageUrl(doc.url) ? (
+                      <div className="flex justify-center">
+                        <img
+                          src={doc.url}
+                          alt={doc.name || `Document ${index + 1}`}
+                          className="max-h-96 max-w-full object-contain rounded"
+                        />
+                      </div>
+                    ) : isPdfUrl(doc.url) ? (
+                      <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded">
+                        <FileText size={48} className="text-red-500 mb-4" />
+                        <p className="text-gray-600 mb-4">PDF Document</p>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors inline-flex items-center"
+                        >
+                          <ExternalLink size={16} className="mr-2" />
+                          View PDF
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded">
+                        <FileText size={48} className="text-gray-400 mb-4" />
+                        <p className="text-gray-600 mb-4">Unknown document type</p>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors inline-flex items-center"
+                        >
+                          <ExternalLink size={16} className="mr-2" />
+                          Open Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FileText size={48} className="text-gray-300 mb-4" />
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No Documents Found</h4>
+              <p className="text-gray-500 max-w-md">
+                There are no proof of delivery documents available for this load.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

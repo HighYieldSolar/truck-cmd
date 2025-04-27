@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
-import DocumentViewerModal from "./DocumentViewerModal";
+import DocumentViewerModal from './DocumentViewerModal';
 export default function LoadDetailModal({ load, onClose, onStatusChange, drivers = [], trucks = [], onAssignDriver, onAssignTruck }) {
   const [selectedDriver, setSelectedDriver] = useState(load.driverId || "");
   const [selectedTruck, setSelectedTruck] = useState(load.truckId || "");
@@ -611,7 +611,12 @@ export default function LoadDetailModal({ load, onClose, onStatusChange, drivers
       )}
     </div>
   );
-
+  {showDocumentViewer && (
+    <DocumentViewerModal 
+      loadId={load.id}
+      onClose={() => setShowDocumentViewer(false)}
+    />
+  )}
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
