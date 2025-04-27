@@ -400,7 +400,7 @@ export default function BillingDashboardPage() {
                 </div>
                 
                 <div className="mt-6 text-center text-sm text-gray-500">
-                  <p>You can cancel or change your subscription at any time from your dashboard.</p>
+                  <p>You can cancel or change your subscription YUR at any time from your dashboard.</p>
                   <p className="mt-2">Need help? Contact our support team.</p>
                 </div>
               </div>
