@@ -3,7 +3,7 @@
 import SettingsLayout from "@/components/settings/SettingsLayout";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 
-export default function SettingsPage() {
+export default function ProfileSettingsPage() {
   return (
     <SettingsLayout>
       <ProfileSettings />

@@ -1,12 +1,12 @@
 "use client";
 
 import SettingsLayout from "@/components/settings/SettingsLayout";
-import ProfileSettings from "@/components/settings/ProfileSettings";
+import PrivacySettings from "@/components/settings/PrivacySettings";
 
-export default function SettingsPage() {
+export default function PrivacySettingsPage() {
   return (
     <SettingsLayout>
-      <ProfileSettings />
+      <PrivacySettings />
     </SettingsLayout>
   );
 }

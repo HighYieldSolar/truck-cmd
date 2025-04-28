@@ -1,12 +1,12 @@
 "use client";
 
 import SettingsLayout from "@/components/settings/SettingsLayout";
-import ProfileSettings from "@/components/settings/ProfileSettings";
+import BillingSettings from "@/components/settings/BillingSettings";
 
-export default function SettingsPage() {
+export default function BillingSettingsPage() {
   return (
     <SettingsLayout>
-      <ProfileSettings />
+      <BillingSettings />
     </SettingsLayout>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
 import SettingsLayout from "@/components/settings/SettingsLayout";
-import ProfileSettings from "@/components/settings/ProfileSettings";
+import AccountSettings from "@/components/settings/AccountSettings";
 
-export default function SettingsPage() {
+export default function AccountSettingsPage() {
   return (
     <SettingsLayout>
-      <ProfileSettings />
+      <AccountSettings />
     </SettingsLayout>
   );
 }
