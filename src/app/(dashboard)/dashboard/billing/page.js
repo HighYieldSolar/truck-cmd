@@ -30,10 +30,10 @@ export default function BillingPage() {
       id: "basic",
       name: "Basic Plan",
       description: "Perfect for owner-operators with 1 truck",
-      monthlyPrice: 19,
+      monthlyPrice: 20,
       yearlyPrice: 16,
       yearlyTotal: 192,
-      savings: 36,
+      savings: 48,
       features: [
         "Basic Invoicing & Dispatching",
         "Simple Expense Tracking",
@@ -51,10 +51,10 @@ export default function BillingPage() {
       id: "premium",
       name: "Premium Plan",
       description: "Ideal for owner-operators with 1-2 trucks",
-      monthlyPrice: 39,
-      yearlyPrice: 33,
-      yearlyTotal: 396,
-      savings: 72,
+      monthlyPrice: 35,
+      yearlyPrice: 28,
+      yearlyTotal: 336,
+      savings: 84,
       features: [
         "Advanced Invoicing & Dispatching",
         "Comprehensive Expense Tracking",
@@ -69,10 +69,10 @@ export default function BillingPage() {
       id: "fleet",
       name: "Fleet Plan",
       description: "For small fleets with 3-8 trucks",
-      monthlyPrice: 69,
-      yearlyPrice: 55,
-      yearlyTotal: 660,
-      savings: 168,
+      monthlyPrice: 75,
+      yearlyPrice: 60,
+      yearlyTotal: 720,
+      savings: 180,
       features: [
         "All Premium Features",
         "Fleet Management Tools",
@@ -218,8 +218,8 @@ export default function BillingPage() {
           {/* Plan cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {/* Basic Plan */}
-            <div className={`bg-white rounded-xl shadow-lg overflow-hidden border ${selectedPlan === 'basic' ? 'border-blue-500' : 'border-transparent'} transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1`}>
-              <div className="p-6 border-b">
+            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
+              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.basic.name}</h3>
                 <p className="text-gray-600 mb-4">{plans.basic.description}</p>
                 
@@ -247,7 +247,7 @@ export default function BillingPage() {
               
               <div className="p-6">
                 <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="space-y-3">
+                <ul className="text-black space-y-3">
                   {plans.basic.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -259,7 +259,7 @@ export default function BillingPage() {
                 {plans.basic.notIncluded && (
                   <>
                     <h4 className="font-medium text-gray-900 mt-6 mb-4">Not included:</h4>
-                    <ul className="space-y-3 opacity-60">
+                    <ul className="text-black space-y-3 opacity-60">
                       {plans.basic.notIncluded.map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <span className="mr-2 mt-0.5">✕</span>
@@ -276,8 +276,8 @@ export default function BillingPage() {
             <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
               {plans.premium.recommended && (
                 <div className="absolute top-0 right-0">
-                  <div className="bg-blue-600 text-white transform rotate-45 text-center text-sm py-1 px-10 translate-x-8 translate-y-6">
-                    Recommended
+                  <div className="bg-orange-500 text-white transform rotate-45 text-center text-sm py-1 px-10 translate-x-8 translate-y-6">
+                    Popular
                   </div>
                 </div>
               )}
@@ -310,7 +310,7 @@ export default function BillingPage() {
               
               <div className="p-6">
                 <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="space-y-3">
+                <ul className="text-black space-y-3">
                   {plans.premium.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -322,8 +322,8 @@ export default function BillingPage() {
             </div>
             
             {/* Fleet Plan */}
-            <div className={`bg-white rounded-xl shadow-lg overflow-hidden border ${selectedPlan === 'fleet' ? 'border-blue-500' : 'border-transparent'} transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1`}>
-              <div className="p-6 border-b">
+            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
+              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.fleet.name}</h3>
                 <p className="text-gray-600 mb-4">{plans.fleet.description}</p>
                 
@@ -351,7 +351,7 @@ export default function BillingPage() {
               
               <div className="p-6">
                 <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="space-y-3">
+                <ul className="text-black space-y-3">
                   {plans.fleet.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
