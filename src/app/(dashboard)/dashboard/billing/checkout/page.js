@@ -14,14 +14,17 @@ import {
   Lock,
   ShieldCheck
 } from "lucide-react";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [user, setUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  
+  // Get subscription context for user info
+  const { user } = useSubscription();
   
   // Get plan and billing cycle from URL params
   const [planId, setPlanId] = useState("");
@@ -81,7 +84,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Simulated loading data from URL params and user info
+  // Load data from URL params
   useEffect(() => {
     // Get URL params
     const plan = searchParams.get("plan") || "premium";
@@ -89,17 +92,12 @@ export default function CheckoutPage() {
 
     setPlanId(plan);
     setBillingCycle(cycle);
-
-    // In a real app, you'd fetch user data here
-    setTimeout(() => {
-      setUser({
-        id: "user-123",
-        email: "user@example.com",
-        name: "John Smith"
-      });
+    
+    // Mark loading complete once we have all we need
+    if (user) {
       setLoading(false);
-    }, 1000);
-  }, [searchParams]);
+    }
+  }, [searchParams, user]);
 
   // Handle checkout process
   const handleCheckout = async () => {
@@ -112,42 +110,71 @@ export default function CheckoutPage() {
       // Store user ID in localStorage for the success page
       localStorage.setItem('userId', user.id);
       sessionStorage.setItem('userId', user.id);
+      
+      // Create checkout ID to prevent duplicates
+      const checkoutId = `checkout_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem('lastCheckoutId', checkoutId);
+      
+      console.log('Initiating checkout with:', { planId, billingCycle, userId: user.id, checkoutId });
 
-      // In a real app, this would call your API to create a Stripe checkout session
-      console.log("Starting checkout for:", {
-        userId: user.id,
-        plan: planId,
-        billingCycle
+      // Call API to create Stripe checkout session
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          plan: planId,
+          billingCycle,
+          checkoutId,
+          returnUrl: `${window.location.origin}/dashboard/billing/success`
+        }),
       });
-
-      // Simulate API call and redirect to Stripe
-      try {
-        // Here you would normally make an API call to create a Stripe checkout session
-        // For example:
-        // const response = await fetch('/api/create-checkout-session', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     userId: user.id,
-        //     plan: planId,
-        //     billingCycle
-        //   })
-        // });
-        // const { url } = await response.json();
-        // window.location.href = url;
-
-        // For the demo, we'll redirect to the success page after a delay
-        setTimeout(() => {
-          router.push("/dashboard/billing/success?session_id=demo_session_123");
-        }, 1500);
-      } catch (error) {
-        throw new Error("Failed to create checkout session");
+      
+      // Log response status for debugging
+      console.log('Response status:', response.status);
+      
+      // Parse the response
+      const data = await response.json();
+      console.log('Checkout response:', data);
+      
+      // Check for errors
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
       }
-
-    } catch (error) {
-      console.error("Error during checkout:", error);
-      setErrorMessage("An error occurred during checkout. Please try again.");
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.url) {
+        throw new Error('No checkout URL returned from server');
+      }
+      
+      // Save additional information to help with recovery if needed
+      sessionStorage.setItem('checkout_timestamp', Date.now().toString());
+      sessionStorage.setItem('checkout_plan', planId);
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      
+      // Redirect to Stripe Checkout
+      console.log('Redirecting to:', data.url);
+      window.location.href = data.url;
+      
+    } catch (err) {
+      console.error('Error initiating checkout:', err);
+      
+      // Detailed error logging
+      if (err.response) {
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+      }
+      
+      setErrorMessage(err.message || 'An unknown error occurred during checkout');
       setProcessingPayment(false);
+      
+      // Clear any stored checkout data on error
+      localStorage.removeItem('lastCheckoutId');
     }
   };
 

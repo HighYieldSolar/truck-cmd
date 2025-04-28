@@ -218,149 +218,155 @@ export default function BillingPage() {
           {/* Plan cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {/* Basic Plan */}
-            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
-              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.basic.name}</h3>
-                <p className="text-gray-600 mb-4">{plans.basic.description}</p>
-                
-                <div className="flex items-baseline mb-1">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${billingCycle === 'yearly' ? plans.basic.yearlyPrice : plans.basic.monthlyPrice}
-                  </span>
-                  <span className="text-gray-600 ml-1">/month</span>
-                </div>
-                
-                {billingCycle === 'yearly' && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    Billed annually at ${plans.basic.yearlyTotal}
-                    <span className="ml-2 text-green-600 font-medium">Save ${plans.basic.savings}</span>
-                  </p>
-                )}
-                
-                <button
-                  onClick={() => handleSelectPlan('basic')}
-                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Select Plan
-                </button>
-              </div>
-              
-              <div className="p-6">
-                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="text-black space-y-3">
-                  {plans.basic.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                {plans.basic.notIncluded && (
-                  <>
-                    <h4 className="font-medium text-gray-900 mt-6 mb-4">Not included:</h4>
-                    <ul className="text-black space-y-3 opacity-60">
-                      {plans.basic.notIncluded.map((feature, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="mr-2 mt-0.5">✕</span>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* Premium Plan - highlighted */}
-            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
-              {plans.premium.recommended && (
-                <div className="absolute top-0 right-0">
-                  <div className="bg-orange-500 text-white transform rotate-45 text-center text-sm py-1 px-10 translate-x-8 translate-y-6">
-                    Popular
+            <button
+              onClick={() => handleSelectPlan('basic')}
+              className="text-left w-full cursor-pointer"
+            >
+              <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'basic' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative h-full`}>
+                <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.basic.name}</h3>
+                  <p className="text-gray-600 mb-4">{plans.basic.description}</p>
+                  
+                  <div className="flex items-baseline mb-1">
+                    <span className="text-4xl font-bold text-gray-900">
+                      ${billingCycle === 'yearly' ? plans.basic.yearlyPrice : plans.basic.monthlyPrice}
+                    </span>
+                    <span className="text-gray-600 ml-1">/month</span>
+                  </div>
+                  
+                  {billingCycle === 'yearly' && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      Billed annually at ${plans.basic.yearlyTotal}
+                      <span className="ml-2 text-green-600 font-medium">Save ${plans.basic.savings}</span>
+                    </p>
+                  )}
+                  
+                  <div className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-center">
+                    Select Plan
                   </div>
                 </div>
-              )}
-              
-              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.premium.name}</h3>
-                <p className="text-gray-600 mb-4">{plans.premium.description}</p>
                 
-                <div className="flex items-baseline mb-1">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${billingCycle === 'yearly' ? plans.premium.yearlyPrice : plans.premium.monthlyPrice}
-                  </span>
-                  <span className="text-gray-600 ml-1">/month</span>
+                <div className="p-6">
+                  <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                  <ul className="text-black space-y-3">
+                    {plans.basic.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  {plans.basic.notIncluded && (
+                    <>
+                      <h4 className="font-medium text-gray-900 mt-6 mb-4">Not included:</h4>
+                      <ul className="text-black space-y-3 opacity-60">
+                        {plans.basic.notIncluded.map((feature, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="mr-2 mt-0.5">✕</span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
-                
-                {billingCycle === 'yearly' && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    Billed annually at ${plans.premium.yearlyTotal}
-                    <span className="ml-2 text-green-600 font-medium">Save ${plans.premium.savings}</span>
-                  </p>
+              </div>
+            </button>
+            
+            {/* Premium Plan - highlighted */}
+            <button
+              onClick={() => handleSelectPlan('premium')}
+              className="text-left w-full cursor-pointer"
+            >
+              <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative h-full`}>
+                {plans.premium.recommended && (
+                  <div className="absolute top-0 right-0">
+                    <div className="bg-orange-500 text-white transform rotate-45 text-center text-sm py-1 px-10 translate-x-8 translate-y-6">
+                      Popular
+                    </div>
+                  </div>
                 )}
                 
-                <button
-                  onClick={() => handleSelectPlan('premium')}
-                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Select Plan
-                </button>
+                <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.premium.name}</h3>
+                  <p className="text-gray-600 mb-4">{plans.premium.description}</p>
+                  
+                  <div className="flex items-baseline mb-1">
+                    <span className="text-4xl font-bold text-gray-900">
+                      ${billingCycle === 'yearly' ? plans.premium.yearlyPrice : plans.premium.monthlyPrice}
+                    </span>
+                    <span className="text-gray-600 ml-1">/month</span>
+                  </div>
+                  
+                  {billingCycle === 'yearly' && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      Billed annually at ${plans.premium.yearlyTotal}
+                      <span className="ml-2 text-green-600 font-medium">Save ${plans.premium.savings}</span>
+                    </p>
+                  )}
+                  
+                  <div className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-center">
+                    Select Plan
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                  <ul className="text-black space-y-3">
+                    {plans.premium.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              
-              <div className="p-6">
-                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="text-black space-y-3">
-                  {plans.premium.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            </button>
             
             {/* Fleet Plan */}
-            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
-              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.fleet.name}</h3>
-                <p className="text-gray-600 mb-4">{plans.fleet.description}</p>
-                
-                <div className="flex items-baseline mb-1">
-                  <span className="text-4xl font-bold text-gray-900">
-                    ${billingCycle === 'yearly' ? plans.fleet.yearlyPrice : plans.fleet.monthlyPrice}
-                  </span>
-                  <span className="text-gray-600 ml-1">/month</span>
+            <button
+              onClick={() => handleSelectPlan('fleet')}
+              className="text-left w-full cursor-pointer"
+            >
+              <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'fleet' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative h-full`}>
+                <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.fleet.name}</h3>
+                  <p className="text-gray-600 mb-4">{plans.fleet.description}</p>
+                  
+                  <div className="flex items-baseline mb-1">
+                    <span className="text-4xl font-bold text-gray-900">
+                      ${billingCycle === 'yearly' ? plans.fleet.yearlyPrice : plans.fleet.monthlyPrice}
+                    </span>
+                    <span className="text-gray-600 ml-1">/month</span>
+                  </div>
+                  
+                  {billingCycle === 'yearly' && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      Billed annually at ${plans.fleet.yearlyTotal}
+                      <span className="ml-2 text-green-600 font-medium">Save ${plans.fleet.savings}</span>
+                    </p>
+                  )}
+                  
+                  <div className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-center">
+                    Select Plan
+                  </div>
                 </div>
                 
-                {billingCycle === 'yearly' && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    Billed annually at ${plans.fleet.yearlyTotal}
-                    <span className="ml-2 text-green-600 font-medium">Save ${plans.fleet.savings}</span>
-                  </p>
-                )}
-                
-                <button
-                  onClick={() => handleSelectPlan('fleet')}
-                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Select Plan
-                </button>
+                <div className="p-6">
+                  <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                  <ul className="text-black space-y-3">
+                    {plans.fleet.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              
-              <div className="p-6">
-                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
-                <ul className="text-black space-y-3">
-                  {plans.fleet.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            </button>
           </div>
           
           {/* FAQ Section */}

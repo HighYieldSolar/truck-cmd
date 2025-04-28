@@ -13,6 +13,7 @@ import {
   FileText,
   ArrowRight
 } from "lucide-react";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 export default function SuccessPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function SuccessPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState(null);
+  const { refreshSubscription } = useSubscription();
   
   useEffect(() => {
     async function processPayment() {
@@ -42,31 +44,56 @@ export default function SuccessPage() {
           return;
         }
         
-        // In a real application, you would call your API to verify the payment
-        // and activate the subscription
         console.log(`Processing payment for user ${userId} with session ${sessionId}`);
         
-        // Simulate API call to verify payment and activate subscription
-        // This would typically be a fetch call to your API endpoint
-        // For example:
-        // const response = await fetch('/api/verify-session', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ sessionId, userId }),
-        // });
-        // const result = await response.json();
+        // First, verify the session with Stripe
+        const verifyResponse = await fetch('/api/verify-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, userId }),
+        });
         
-        // Simulate a delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const verifyResult = await verifyResponse.json();
         
-        // Set subscription details - In a real app, this would come from the API response
+        if (!verifyResult.valid) {
+          throw new Error(verifyResult.error || 'Payment verification failed');
+        }
+        
+        console.log('Session verified:', verifyResult);
+        
+        // Next, activate the subscription in our database
+        const activateResponse = await fetch('/api/activate-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, sessionId }),
+        });
+        
+        const activateResult = await activateResponse.json();
+        
+        if (!activateResult.success) {
+          console.warn('Activation warning:', activateResult.error);
+          // Continue since payment was successful, but log the warning
+        }
+        
+        // Set subscription details from the verification response
         setSubscriptionDetails({
-          plan: "Premium Plan",
-          billingCycle: "yearly",
-          nextPaymentDate: "April 27, 2026",
-          amount: "$396",
+          plan: verifyResult.plan || 'Premium Plan',
+          billingCycle: verifyResult.billingCycle || 'yearly',
+          nextPaymentDate: verifyResult.currentPeriodEnd 
+            ? new Date(verifyResult.currentPeriodEnd).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })
+            : "April 27, 2026", // Fallback
+          amount: verifyResult.billingCycle === 'yearly' 
+            ? `$${verifyResult.yearlyTotal || 396}` 
+            : `$${verifyResult.monthlyPrice || 33}/mo`,
           status: "active"
         });
+        
+        // Refresh the subscription context to update UI
+        refreshSubscription();
         
         // Mark that the dashboard should be refreshed when navigating there
         sessionStorage.setItem('dashboard-refresh-needed', 'true');
@@ -80,7 +107,7 @@ export default function SuccessPage() {
     }
     
     processPayment();
-  }, [searchParams]);
+  }, [searchParams, refreshSubscription]);
   
   if (loading) {
     return (
@@ -246,7 +273,7 @@ export default function SuccessPage() {
             </p>
           </div>
         </div>
-      </div>
+        </div>
     </DashboardLayout>
   );
 }
