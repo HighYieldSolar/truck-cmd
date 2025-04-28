@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { CreditCard, RefreshCw } from 'lucide-react';
 
 /**
- * An improved button component that initiates the Stripe checkout flow
- * with added idempotency and error handling
+ * A button component that initiates the Stripe checkout flow
+ * with idempotency and error handling
  * 
  * @param {Object} props
  * @param {string} props.planId - ID of the selected plan
@@ -14,6 +14,7 @@ import { CreditCard, RefreshCw } from 'lucide-react';
  * @param {boolean} props.disabled - Whether the button is disabled
  * @param {string} props.buttonText - Text to display on the button
  * @param {string} props.className - Additional CSS classes
+ * @param {string} props.returnUrl - URL to return to after checkout (optional)
  */
 export default function StripeCheckoutButton({
   planId,
@@ -21,7 +22,8 @@ export default function StripeCheckoutButton({
   userId,
   disabled = false,
   buttonText = "Subscribe Now",
-  className = ""
+  className = "",
+  returnUrl = ""
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -57,7 +59,7 @@ export default function StripeCheckoutButton({
           plan: planId,
           billingCycle,
           checkoutId,
-          returnUrl: `${window.location.origin}/dashboard/billing/success` // This is the line to change
+          returnUrl: returnUrl || `${window.location.origin}/dashboard/billing/success`
         }),
       });
       

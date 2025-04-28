@@ -1,4 +1,4 @@
-// app/api/create-checkout-session/route.js
+// src/app/api/create-checkout-session/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
@@ -67,10 +67,9 @@ export async function POST(request) {
     const useTestPriceData = !priceIds[plan]?.[billingCycle];
     
     // Set up success and cancel URLs
-// Set up success and cancel URLs
-const successUrl = body.returnUrl 
-  ? `${body.returnUrl}?session_id={CHECKOUT_SESSION_ID}` 
-  : `${process.env.NEXT_PUBLIC_URL}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = body.returnUrl 
+      ? `${body.returnUrl}?session_id={CHECKOUT_SESSION_ID}` 
+      : `${process.env.NEXT_PUBLIC_URL}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/billing?canceled=true`;
     
     console.log('Success URL:', successUrl);

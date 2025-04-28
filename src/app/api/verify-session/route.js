@@ -1,4 +1,4 @@
-// app/api/verify-session/route.js
+// src/app/api/verify-session/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
@@ -82,81 +82,35 @@ export async function POST(request) {
         console.log('No subscription ID, using default period end:', currentPeriodEnd);
       }
       
-      // UPDATE THE SUBSCRIPTION IN THE DATABASE - THIS IS CRUCIAL
-      console.log(`Updating subscription for user ${userId} to active status`);
-      
-      // First check if a subscription record already exists
-      const { data: existingSubscription, error: fetchError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-        
-      if (fetchError && fetchError.code !== 'PGRST116') { // Not found
-        console.error('Error checking for existing subscription:', fetchError);
-      }
-      
-      // Prepare update data
-      const subscriptionData = {
-        user_id: userId,
-        status: 'active', // Force to active regardless of what Stripe returns
-        plan: plan,
-        billing_cycle: billingCycle,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        current_period_ends_at: currentPeriodEnd,
-        trial_ends_at: null, // Clear trial end date
-        updated_at: new Date().toISOString()
-      };
-      
-      let updateResult;
-      
-      if (existingSubscription) {
-        // Update existing subscription
-        console.log('Updating existing subscription record');
-        updateResult = await supabase
-          .from('subscriptions')
-          .update(subscriptionData)
-          .eq('user_id', userId);
-      } else {
-        // Insert new subscription
-        console.log('Creating new subscription record');
-        subscriptionData.created_at = new Date().toISOString();
-        updateResult = await supabase
-          .from('subscriptions')
-          .insert([subscriptionData]);
-      }
-      
-      if (updateResult.error) {
-        console.error('Error updating subscription in database:', updateResult.error);
-        // Still return success to the client, as the payment was successful
-        // We can handle database issues separately
-      } else {
-        console.log('✅ Successfully updated subscription in database');
-      }
-      
-      console.log('Session verification successful');
+      // Return the verification result
       return NextResponse.json({
         valid: true,
+        userId,
         customerId,
         subscriptionId,
         plan,
         billingCycle,
-        currentPeriodEnd
+        currentPeriodEnd,
+        // Determine pricing based on plan and cycle
+        monthlyPrice: 
+          plan === 'basic' ? 19 : 
+          plan === 'premium' ? 39 : 
+          plan === 'fleet' ? 69 : 39,
+        yearlyPrice: 
+          plan === 'basic' ? 16 : 
+          plan === 'premium' ? 33 : 
+          plan === 'fleet' ? 55 : 33,
+        yearlyTotal: 
+          plan === 'basic' ? 192 : 
+          plan === 'premium' ? 396 : 
+          plan === 'fleet' ? 660 : 396,
       });
     } catch (stripeError) {
       console.error('Stripe error during session verification:', stripeError);
-      
-      // Even if we can't verify with Stripe, return a valid response with defaults
-      // This ensures the user can continue even if there are Stripe API issues
-      return NextResponse.json({
-        valid: true,
-        customerId: null,
-        subscriptionId: null,
-        plan: 'premium',
-        billingCycle: 'monthly',
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      });
+      return NextResponse.json({ 
+        valid: false, 
+        error: stripeError.message || 'Failed to verify with Stripe'
+      }, { status: 500 });
     }
   } catch (error) {
     console.error('Error verifying session:', error);
