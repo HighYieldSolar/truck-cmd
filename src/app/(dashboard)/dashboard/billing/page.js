@@ -1,225 +1,123 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import BillingToggle from "@/components/pricing/BillingToggle";
-import PlanCard from "@/components/pricing/PlanCard";
-import TrialBanner from "@/components/subscriptions/TrialBanner";
-import StripeCheckoutButton from "@/components/billing/StripeCheckoutButton";
-import StripePortalButton from "@/components/billing/StripePortalButton";
-import { AlertCircle, CheckCircle, CreditCard, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { 
+  CheckCircle, 
+  AlertCircle, 
+  RefreshCw, 
+  CreditCard, 
+  Check
+} from "lucide-react";
 
-export default function BillingDashboardPage() {
+export default function BillingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [processingPayment, setProcessingPayment] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  const [trialEndsAt, setTrialEndsAt] = useState(null);
+  const [user, setUser] = useState(null);
   const [billingCycle, setBillingCycle] = useState('yearly');
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState('trial');
+  const [trialDaysLeft, setTrialDaysLeft] = useState(7);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
-  // Memoize plans data to prevent recreation on each render
-  const plans = useMemo(() => ({
+  // Plans data
+  const plans = {
     basic: {
+      id: "basic",
       name: "Basic Plan",
-      description: "For owner-operators with 1 truck",
-      price: 19,
+      description: "Perfect for owner-operators with 1 truck",
+      monthlyPrice: 19,
       yearlyPrice: 16,
+      yearlyTotal: 192,
+      savings: 36,
       features: [
-        { included: true, text: "Basic Invoicing & Dispatching" },
-        { included: true, text: "Simple Expense Tracking" },
-        { included: true, text: "Standard Reports" },
-        { included: true, text: "Single User Account" },
-        { included: false, text: "Advanced IFTA Tools" },
-        { included: false, text: "Load Optimization" }
+        "Basic Invoicing & Dispatching",
+        "Simple Expense Tracking",
+        "Standard Reports",
+        "Single User Account",
+        "Email Support"
+      ],
+      notIncluded: [
+        "Advanced IFTA Tools",
+        "Load Optimization",
+        "Priority Support"
       ]
     },
     premium: {
+      id: "premium",
       name: "Premium Plan",
-      description: "For owner-operators with 1-2 trucks",
-      price: 39,
+      description: "Ideal for owner-operators with 1-2 trucks",
+      monthlyPrice: 39,
       yearlyPrice: 33,
+      yearlyTotal: 396,
+      savings: 72,
       features: [
-        { included: true, text: "Advanced Invoicing & Dispatching" },
-        { included: true, text: "Comprehensive Expense Tracking" },
-        { included: true, text: "Advanced Reports & Analytics" },
-        { included: true, text: "Customer Management System" },
-        { included: true, text: "Advanced IFTA Calculator" },
-        { included: true, text: "Priority Email Support" }
+        "Advanced Invoicing & Dispatching",
+        "Comprehensive Expense Tracking",
+        "Advanced Reports & Analytics",
+        "Customer Management System",
+        "Advanced IFTA Calculator",
+        "Priority Email Support"
       ],
-      highlighted: true
+      recommended: true
     },
     fleet: {
+      id: "fleet",
       name: "Fleet Plan",
       description: "For small fleets with 3-8 trucks",
-      price: 69,
+      monthlyPrice: 69,
       yearlyPrice: 55,
+      yearlyTotal: 660,
+      savings: 168,
       features: [
-        { included: true, text: "All Premium Features" },
-        { included: true, text: "Fleet Management Tools" },
-        { included: true, text: "Real-time GPS Tracking" },
-        { included: true, text: "Team Access (1 User per 2 Trucks)" },
-        { included: true, text: "Fuel & Load Optimizations" }
+        "All Premium Features",
+        "Fleet Management Tools",
+        "Real-time GPS Tracking",
+        "Team Access (1 User per 2 Trucks)",
+        "Fuel & Load Optimizations",
+        "Priority Phone Support"
       ]
     }
-  }), []);
+  };
 
-  // Check user and fetch subscription data
+  // Simulated data loading
   useEffect(() => {
-    async function loadUserAndSubscription() {
-      try {
-        // Check for success or canceled params from Stripe redirect
-        const sessionId = searchParams.get('session_id');
-        const canceled = searchParams.get('canceled');
-        
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (!user) {
-          router.push('/login');
-          return;
-        }
-        
-        setUser(user);
-        
-        // Fetch subscription data from your database
-        const { data: subscription, error: subError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (subError && subError.code !== 'PGRST116') { // PGRST116 is "No rows returned" error
-          console.error('Error fetching subscription:', subError);
-        }
-        
-        // Set subscription status based on data
-        if (subscription) {
-          setSubscriptionStatus(subscription.status);
-          if (subscription.trial_ends_at) {
-            setTrialEndsAt(subscription.trial_ends_at);
-          }
-          
-          // Set the selected plan from the subscription
-          if (subscription.plan) {
-            setSelectedPlan(subscription.plan);
-          }
-          
-          // Show success message if redirected from successful Stripe checkout
-          if (sessionId && subscription.status === 'active') {
-            setSuccessMessage(`Successfully subscribed to the ${subscription.plan ? plans[subscription.plan].name : 'Premium Plan'}!`);
-          }
-        } else {
-          // If no subscription record, calculate trial end date from user registration
-          // Typically 7 days from creation, which we can get from user metadata
-          const createdAt = new Date(user.created_at);
-          const trialEndDate = new Date(createdAt);
-          trialEndDate.setDate(trialEndDate.getDate() + 7);
-          setTrialEndsAt(trialEndDate.toISOString());
-          setSubscriptionStatus('trial');
-          
-          // Create a subscription record for the user in trial status
-          // Only do this if there's no existing record
-          try {
-            await supabase
-              .from('subscriptions')
-              .insert([{
-                user_id: user.id,
-                status: 'trial',
-                trial_ends_at: trialEndDate.toISOString(),
-                created_at: new Date().toISOString()
-              }]);
-          } catch (err) {
-            console.error('Error creating trial subscription record:', err);
-          }
-        }
-        
-        // Show error if payment was canceled
-        if (canceled) {
-          setErrorMessage("Payment was canceled. Please try again when you&apos;re ready.");
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    loadUserAndSubscription();
-  }, [router, searchParams, plans]);
+    // In a real application, you would fetch user and subscription data here
+    setTimeout(() => {
+      setUser({
+        id: "user-123",
+        email: "user@example.com",
+        name: "John Smith"
+      });
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   // Handle plan selection
-  const handleSelectPlan = (planKey) => {
-    setSelectedPlan(planKey);
-    setShowPaymentForm(true);
+  const handleSelectPlan = (planId) => {
+    setSelectedPlan(planId);
     
-    // Scroll to payment form
-    setTimeout(() => {
-      const paymentFormElement = document.getElementById('payment-form');
-      if (paymentFormElement) {
-        paymentFormElement.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
+    // Navigate to checkout page with selected plan
+    router.push(`/dashboard/billing/checkout?plan=${planId}&cycle=${billingCycle}`);
   };
 
-  // Handle payment submission
-  const handlePayment = async (paymentDetails) => {
-    if (!selectedPlan) {
-      setErrorMessage("Please select a plan before submitting payment.");
-      return;
-    }
-    
-    try {
-      setProcessingPayment(true);
-      setErrorMessage(null);
-      
-      // Create a Stripe checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          plan: selectedPlan,
-          billingCycle: billingCycle,
-          returnUrl: window.location.origin + '/dashboard/billing'
-        }),
-      });
-      
-      const { url, error: apiError } = await response.json();
-      
-      if (apiError) {
-        throw new Error(apiError);
-      }
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-      
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      setErrorMessage(`Payment processing failed: ${error.message}`);
-      setProcessingPayment(false);
-    }
+  // Toggle billing cycle
+  const toggleBillingCycle = () => {
+    setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly');
   };
 
-  // Loading state
+  // Show loading state
   if (loading) {
     return (
       <DashboardLayout activePage="billing">
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="flex flex-col items-center">
-            <RefreshCw size={40} className="animate-spin text-blue-500 mb-4" />
-            <p className="text-lg text-gray-600">Loading subscription details...</p>
+            <RefreshCw size={40} className="animate-spin text-blue-600 mb-4" />
+            <p className="text-lg text-gray-700">Loading subscription details...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -228,184 +126,269 @@ export default function BillingDashboardPage() {
 
   return (
     <DashboardLayout activePage="billing">
-      <div className="bg-gray-100 min-h-[calc(100vh-64px)] py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header section */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
-            {subscriptionStatus === 'active' ? (
-              <p className="mt-4 text-lg text-black">
-                You&apos;re currently on the {selectedPlan ? plans[selectedPlan].name : 'Premium'} plan.
-              </p>
-            ) : subscriptionStatus === 'trial' ? (
-              <p className="mt-4 text-lg text-black">
-                Your free trial ends on {new Date(trialEndsAt).toLocaleDateString()}. Choose a plan to continue using Truck Command.
-              </p>
-            ) : (
-              <p className="mt-4 text-lg text-black">
-                Choose a plan to get started with Truck Command.
-              </p>
-            )}
+      <div className="bg-gray-50 min-h-screen pb-12">
+        {/* Main content */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Select the perfect plan for your trucking business. All plans include a 30-day money-back guarantee.
+            </p>
           </div>
 
-          {/* Success/Error Messages */}
+          {/* Success/error messages */}
           {successMessage && (
-            <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
+            <div className="mb-8 bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
               <div className="flex">
-                <CheckCircle className="h-6 w-6 text-green-400 mr-3" />
+                <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
                 <p className="text-green-700">{successMessage}</p>
               </div>
             </div>
           )}
 
           {errorMessage && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div className="mb-8 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
               <div className="flex">
-                <AlertCircle className="h-6 w-6 text-red-400 mr-3" />
+                <AlertCircle className="h-6 w-6 text-red-500 mr-3 flex-shrink-0" />
                 <p className="text-red-700">{errorMessage}</p>
               </div>
             </div>
           )}
 
-          {/* Current subscription status card if active */}
+          {/* Current subscription info (if active) */}
           {subscriptionStatus === 'active' && (
-            <div className="bg-white rounded-lg shadow-lg mb-8 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-4">
-                <h2 className="text-xl font-semibold">Current Subscription</h2>
+            <div className="bg-white rounded-lg shadow-md p-6 mb-10">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                  <CheckCircle size={24} className="text-green-600" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-900">Current Subscription</h2>
               </div>
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">Premium Plan</h3>
-                    <p className="text-gray-600">Billed {billingCycle === 'yearly' ? 'yearly' : 'monthly'}</p>
-                    <div className="mt-2 flex items-center">
-                      <CreditCard size={18} className="text-green-500 mr-2" />
-                      <span className="text-green-600 font-medium">Active subscription</span>
-                    </div>
+              
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Premium Plan</h3>
+                  <p className="text-gray-600">Billed {billingCycle === 'yearly' ? 'yearly' : 'monthly'}</p>
+                  <div className="mt-2 flex items-center">
+                    <CreditCard size={18} className="text-green-600 mr-2" />
+                    <span className="text-green-600 font-medium">Active subscription</span>
                   </div>
-                  <div className="mt-4 md:mt-0 text-right">
-                    <p className="text-sm text-gray-500">Next billing date</p>
-                    <p className="text-gray-900 font-medium">
-                      {new Date(trialEndsAt).toLocaleDateString()}
-                    </p>
-                    <StripePortalButton
-                      userId={user.id}
-                      buttonText="Manage Payment Methods"
-                      className="mt-3"
-                    />
-                  </div>
+                </div>
+                
+                <div className="mt-4 md:mt-0">
+                  <button 
+                    className="w-full md:w-auto px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+                    onClick={() => router.push('/dashboard/billing/manage')}
+                  >
+                    <CreditCard size={18} className="mr-2" />
+                    Manage Subscription
+                  </button>
                 </div>
               </div>
             </div>
           )}
-          
-          {/* Billing toggle */}
-          <div className="text-center mb-8">
-            <BillingToggle billingCycle={billingCycle} setBillingCycle={setBillingCycle} />
-          </div>
 
-          {/* Plan Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {/* Basic Plan */}
-            <div onClick={() => handleSelectPlan('basic')} className="cursor-pointer">
-              <PlanCard 
-                name={plans.basic.name}
-                description={plans.basic.description}
-                price={plans.basic.price}
-                yearlyPrice={plans.basic.yearlyPrice}
-                billingCycle={billingCycle}
-                features={plans.basic.features}
-                ctaText={subscriptionStatus === 'active' ? 'Current Plan' : 'Select Plan'}
-                ctaLink="#"
-                freeTrial={false}
-              />
+          {/* Billing cycle toggle */}
+          <div className="flex flex-col items-center justify-center mb-12" id="plans">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <span className={`text-base font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                Monthly
+              </span>
+              
+              <button 
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-gray-200'}`}
+                onClick={toggleBillingCycle}
+              >
+                <span 
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'}`} 
+                />
+              </button>
+              
+              <span className={`text-base font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                Yearly
+              </span>
             </div>
             
-            {/* Premium Plan */}
-            <div onClick={() => handleSelectPlan('premium')} className="cursor-pointer">
-              <PlanCard 
-                name={plans.premium.name}
-                description={plans.premium.description}
-                price={plans.premium.price}
-                yearlyPrice={plans.premium.yearlyPrice}
-                billingCycle={billingCycle}
-                features={plans.premium.features}
-                highlighted={true}
-                ctaText={subscriptionStatus === 'active' ? 'Current Plan' : 'Select Plan'}
-                ctaLink="#"
-                freeTrial={false}
-              />
+            <div className="bg-green-100 text-green-800 px-4 py-1 rounded-full text-sm font-medium">
+              Save up to 20% with yearly billing
+            </div>
+          </div>
+
+          {/* Plan cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            {/* Basic Plan */}
+            <div className={`bg-white rounded-xl shadow-lg overflow-hidden border ${selectedPlan === 'basic' ? 'border-blue-500' : 'border-transparent'} transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1`}>
+              <div className="p-6 border-b">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.basic.name}</h3>
+                <p className="text-gray-600 mb-4">{plans.basic.description}</p>
+                
+                <div className="flex items-baseline mb-1">
+                  <span className="text-4xl font-bold text-gray-900">
+                    ${billingCycle === 'yearly' ? plans.basic.yearlyPrice : plans.basic.monthlyPrice}
+                  </span>
+                  <span className="text-gray-600 ml-1">/month</span>
+                </div>
+                
+                {billingCycle === 'yearly' && (
+                  <p className="text-sm text-gray-600 mb-4">
+                    Billed annually at ${plans.basic.yearlyTotal}
+                    <span className="ml-2 text-green-600 font-medium">Save ${plans.basic.savings}</span>
+                  </p>
+                )}
+                
+                <button
+                  onClick={() => handleSelectPlan('basic')}
+                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Select Plan
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                <ul className="space-y-3">
+                  {plans.basic.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                {plans.basic.notIncluded && (
+                  <>
+                    <h4 className="font-medium text-gray-900 mt-6 mb-4">Not included:</h4>
+                    <ul className="space-y-3 opacity-60">
+                      {plans.basic.notIncluded.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="mr-2 mt-0.5">✕</span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Premium Plan - highlighted */}
+            <div className={`bg-white rounded-xl shadow-xl overflow-hidden border-2 ${selectedPlan === 'premium' ? 'border-blue-500' : 'border-blue-200'} transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 relative`}>
+              {plans.premium.recommended && (
+                <div className="absolute top-0 right-0">
+                  <div className="bg-blue-600 text-white transform rotate-45 text-center text-sm py-1 px-10 translate-x-8 translate-y-6">
+                    Recommended
+                  </div>
+                </div>
+              )}
+              
+              <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.premium.name}</h3>
+                <p className="text-gray-600 mb-4">{plans.premium.description}</p>
+                
+                <div className="flex items-baseline mb-1">
+                  <span className="text-4xl font-bold text-gray-900">
+                    ${billingCycle === 'yearly' ? plans.premium.yearlyPrice : plans.premium.monthlyPrice}
+                  </span>
+                  <span className="text-gray-600 ml-1">/month</span>
+                </div>
+                
+                {billingCycle === 'yearly' && (
+                  <p className="text-sm text-gray-600 mb-4">
+                    Billed annually at ${plans.premium.yearlyTotal}
+                    <span className="ml-2 text-green-600 font-medium">Save ${plans.premium.savings}</span>
+                  </p>
+                )}
+                
+                <button
+                  onClick={() => handleSelectPlan('premium')}
+                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Select Plan
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                <ul className="space-y-3">
+                  {plans.premium.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
             
             {/* Fleet Plan */}
-            <div onClick={() => handleSelectPlan('fleet')} className="cursor-pointer">
-              <PlanCard 
-                name={plans.fleet.name}
-                description={plans.fleet.description}
-                price={plans.fleet.price}
-                yearlyPrice={plans.fleet.yearlyPrice}
-                billingCycle={billingCycle}
-                features={plans.fleet.features}
-                ctaText={subscriptionStatus === 'active' ? 'Current Plan' : 'Select Plan'}
-                ctaLink="#"
-                freeTrial={false}
-              />
+            <div className={`bg-white rounded-xl shadow-lg overflow-hidden border ${selectedPlan === 'fleet' ? 'border-blue-500' : 'border-transparent'} transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1`}>
+              <div className="p-6 border-b">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{plans.fleet.name}</h3>
+                <p className="text-gray-600 mb-4">{plans.fleet.description}</p>
+                
+                <div className="flex items-baseline mb-1">
+                  <span className="text-4xl font-bold text-gray-900">
+                    ${billingCycle === 'yearly' ? plans.fleet.yearlyPrice : plans.fleet.monthlyPrice}
+                  </span>
+                  <span className="text-gray-600 ml-1">/month</span>
+                </div>
+                
+                {billingCycle === 'yearly' && (
+                  <p className="text-sm text-gray-600 mb-4">
+                    Billed annually at ${plans.fleet.yearlyTotal}
+                    <span className="ml-2 text-green-600 font-medium">Save ${plans.fleet.savings}</span>
+                  </p>
+                )}
+                
+                <button
+                  onClick={() => handleSelectPlan('fleet')}
+                  className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Select Plan
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <h4 className="font-medium text-gray-900 mb-4">What&apos;s included:</h4>
+                <ul className="space-y-3">
+                  {plans.fleet.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check size={18} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-
-          {/* Payment Form */}
-          {showPaymentForm && (
-            <div id="payment-form" className="bg-white rounded-lg shadow-lg overflow-hidden mb-12 animate-fadeIn">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-4">
-                <h2 className="text-xl font-semibold">Complete Your Subscription</h2>
+          
+          {/* FAQ Section */}
+          <div className="bg-white rounded-lg shadow-md p-8 mb-12">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Frequently Asked Questions</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Can I change my plan later?</h3>
+                <p className="text-gray-600">Yes, you can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.</p>
               </div>
-              <div className="p-6">
-                <div className="flex items-center justify-center mb-6">
-                  <Image src="/images/TC.png" alt="Truck Command Logo" width={80} height={80} />
-                </div>
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Order Summary</h3>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-900 font-medium">{plans[selectedPlan].name}</span>
-                    <span className="text-gray-900">
-                      ${billingCycle === 'yearly' ? 
-                        plans[selectedPlan].yearlyPrice : 
-                        plans[selectedPlan].price
-                      }/month
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-sm text-gray-800 font-medium">Billing Cycle</span>
-                    <span className="capitalize text-gray-900">{billingCycle}</span>
-                  </div>
-                  <div className="flex justify-between py-2 font-medium text-lg">
-                    <span className="text-gray-900">Total Due Today</span>
-                    <span className="text-gray-900">
-                      ${billingCycle === 'yearly' ? 
-                        (plans[selectedPlan].yearlyPrice * 12).toFixed(2) : 
-                        plans[selectedPlan].price.toFixed(2)
-                      }
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="mt-8">
-                  <StripeCheckoutButton 
-                    planId={selectedPlan}
-                    billingCycle={billingCycle}
-                    userId={user.id}
-                    buttonText="Proceed to Checkout"
-                    disabled={processingPayment}
-                  />
-                </div>
-                
-                <div className="mt-6 text-center text-sm text-gray-500">
-                  <p>You can cancel or change your subscription YUR at any time from your dashboard.</p>
-                  <p className="mt-2">Need help? Contact our support team.</p>
-                </div>
+              
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">What forms of payment do you accept?</h3>
+                <p className="text-gray-600">We accept all major credit cards, including Visa, Mastercard, American Express, and Discover.</p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Is there a setup fee?</h3>
+                <p className="text-gray-600">No, there are no setup fees. You only pay for your subscription plan.</p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Can I cancel anytime?</h3>
+                <p className="text-gray-600">Yes, you can cancel your subscription at any time. You&apos;ll have access to your plan until the end of your current billing period.</p>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

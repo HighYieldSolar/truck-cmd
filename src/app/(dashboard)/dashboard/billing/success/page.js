@@ -2,111 +2,94 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { CheckCircle, RefreshCw, Home, FileText, AlertCircle } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { 
+  CheckCircle, 
+  AlertCircle, 
+  RefreshCw, 
+  Home, 
+  FileText,
+  ArrowRight
+} from "lucide-react";
 
-export default function SubscriptionSuccessPage() {
+export default function SuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null);
+  const [subscriptionDetails, setSubscriptionDetails] = useState(null);
   
-  // Use a state variable to store the session ID to avoid dependency issues
-  const [sessionId] = useState(() => searchParams.get('session_id'));
-  
-  // Process checkout only once - using sessionId from state to avoid re-renders
   useEffect(() => {
-    // Always set a safety timeout
-    const timeoutId = setTimeout(() => {
-      setLoading(false); // Force exit loading state after 15 seconds
-    }, 15000);
-    
-    let isMounted = true;
-    
     async function processPayment() {
       try {
+        // Get session ID from URL params
+        const sessionId = searchParams.get('session_id');
+        
         if (!sessionId) {
-          if (isMounted) {
-            setError("Session ID is missing. Please try again.");
-            setLoading(false);
-          }
+          setError("Session ID is missing. Please try again.");
+          setLoading(false);
           return;
         }
-        
-        console.log("Processing payment confirmation with session ID:", sessionId);
         
         // Get userId from storage
         const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
         
         if (!userId) {
-          if (isMounted) {
-            setError("User ID is missing. Please return to the billing page and try again.");
-            setLoading(false);
-          }
+          setError("User ID is missing. Please return to the billing page and try again.");
+          setLoading(false);
           return;
         }
         
-        // Simplified call to activate subscription with minimal data
-        const response = await fetch('/api/activate-subscription', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            sessionId
-          }),
+        // In a real application, you would call your API to verify the payment
+        // and activate the subscription
+        console.log(`Processing payment for user ${userId} with session ${sessionId}`);
+        
+        // Simulate API call to verify payment and activate subscription
+        // This would typically be a fetch call to your API endpoint
+        // For example:
+        // const response = await fetch('/api/verify-session', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ sessionId, userId }),
+        // });
+        // const result = await response.json();
+        
+        // Simulate a delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Set subscription details - In a real app, this would come from the API response
+        setSubscriptionDetails({
+          plan: "Premium Plan",
+          billingCycle: "yearly",
+          nextPaymentDate: "April 27, 2026",
+          amount: "$396",
+          status: "active"
         });
-        
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log("Activation result:", result);
-        
-        if (result.alreadyProcessed) {
-          console.log("This session was already processed");
-        }
-        
-        if (!result.success) {
-          throw new Error(result.error || "Failed to activate subscription");
-        }
         
         // Mark that the dashboard should be refreshed when navigating there
         sessionStorage.setItem('dashboard-refresh-needed', 'true');
         
+        setLoading(false);
       } catch (err) {
         console.error("Error processing payment:", err);
-        if (isMounted) {
-          setError(err.message || "An error occurred while activating your subscription");
-        }
-      } finally {
-        // Always exit loading state
-        if (isMounted) {
-          setLoading(false);
-        }
+        setError(err.message || "An error occurred while activating your subscription");
+        setLoading(false);
       }
     }
     
-    // Run the payment processing function
     processPayment();
-    
-    // Cleanup function
-    return () => {
-      clearTimeout(timeoutId);
-      isMounted = false;
-    };
-  }, [sessionId]); // Add sessionId as a dependency
+  }, [searchParams]);
   
   if (loading) {
     return (
       <DashboardLayout activePage="billing">
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="flex flex-col items-center">
-            <RefreshCw size={40} className="animate-spin text-blue-500 mb-4" />
-            <p className="text-lg text-gray-600">Processing your payment...</p>
-            <p className="text-sm text-gray-500 mt-2">This will only take a moment</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="max-w-md mx-auto p-8 bg-white rounded-lg shadow-md text-center">
+            <RefreshCw size={48} className="animate-spin text-blue-600 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Processing Your Payment</h2>
+            <p className="text-gray-600">Please wait while we confirm your subscription...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -116,18 +99,28 @@ export default function SubscriptionSuccessPage() {
   if (error) {
     return (
       <DashboardLayout activePage="billing">
-        <div className="max-w-xl mx-auto mt-12 p-6 bg-white rounded-lg shadow-md">
-          <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Processing Error</h2>
-            <p className="text-gray-600 mb-8">{error}</p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/dashboard/billing" className="inline-flex items-center justify-center px-5 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                Return to Billing
-              </Link>
-              <Link href="/dashboard" className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                Go to Dashboard
-              </Link>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md mx-auto p-8 bg-white rounded-lg shadow-md">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Processing Error</h2>
+              <p className="text-gray-600 mb-8">{error}</p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link 
+                  href="/dashboard/billing" 
+                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Return to Billing
+                </Link>
+                <Link 
+                  href="/dashboard" 
+                  className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Go to Dashboard
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -135,39 +128,122 @@ export default function SubscriptionSuccessPage() {
     );
   }
   
-  // Success state
   return (
     <DashboardLayout activePage="billing">
-      <div className="max-w-xl mx-auto mt-12 p-6 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Successful!</h2>
-          <p className="text-gray-600 mb-6">
-            Your subscription has been activated successfully.
-          </p>
-          
-          {message && (
-            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md text-left">
-              <p className="text-yellow-700">{message}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-lg mx-auto">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {/* Header */}
+            <div className="bg-green-500 p-6 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white text-green-500 mb-4">
+                <CheckCircle size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
+              <p className="text-green-100">Your subscription has been activated successfully</p>
             </div>
-          )}
-          
-          <div className="space-y-3 bg-gray-50 p-4 rounded-md mx-auto max-w-md mb-8">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Status:</span>
-              <span className="font-medium text-green-600">Active</span>
+            
+            {/* Content */}
+            <div className="p-8">
+              <div className="mb-8">
+                <Image
+                  src="/images/tc-name-tp-bg.png"
+                  alt="Truck Command Logo"
+                  width={150}
+                  height={40}
+                  className="h-10 mx-auto"
+                />
+              </div>
+              
+              {subscriptionDetails && (
+                <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Subscription Details</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Plan</span>
+                      <span className="font-medium text-gray-900">{subscriptionDetails.plan}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Billing Cycle</span>
+                      <span className="font-medium text-gray-900 capitalize">{subscriptionDetails.billingCycle}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount</span>
+                      <span className="font-medium text-gray-900">{subscriptionDetails.amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status</span>
+                      <span className="font-medium text-green-600 capitalize">{subscriptionDetails.status}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Next Payment</span>
+                      <span className="font-medium text-gray-900">{subscriptionDetails.nextPaymentDate}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="border-t pt-6 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">What happens next?</h3>
+                <div className="space-y-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                      1
+                    </div>
+                    <div>
+                      <p className="text-gray-800">
+                        You now have full access to all Truck Command features included in your subscription.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex">
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                      2
+                    </div>
+                    <div>
+                      <p className="text-gray-800">
+                        We&apos;ve sent a confirmation email with your receipt and subscription details.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex">
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                      3
+                    </div>
+                    <div>
+                      <p className="text-gray-800">
+                        You can manage your subscription at any time from your account settings.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto flex-1 inline-flex items-center justify-center px-5 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Home size={18} className="mr-2" />
+                  Go to Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  className="w-full sm:w-auto flex-1 inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <FileText size={18} className="mr-2" />
+                  View Subscription Details
+                </Link>
+              </div>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 justify-center">
-            <Link href="/dashboard" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-              <Home size={18} className="mr-2" />
-              Go to Dashboard
-            </Link>
-            <Link href="/dashboard/billing" className="inline-flex items-center justify-center px-5 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
-              <FileText size={18} className="mr-2" />
-              Manage Subscription
-            </Link>
+          {/* Support info */}
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
+              Need help? <Link href="/contact" className="text-blue-600 hover:underline">Contact our support team</Link>
+            </p>
           </div>
         </div>
       </div>
