@@ -8,23 +8,22 @@ import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { 
   LayoutDashboard, Truck, FileText, Wallet, Users, Package, CheckCircle, 
-  Calculator, Fuel, Settings, LogOut, Bell, Search, Menu, X, ChevronDown, 
-  User, ArrowRight, CreditCard, Clock, MapPin, Home
+  Calculator, Fuel, Settings, LogOut, Bell, Search, Menu, X, 
+  User, MapPin, Home
 } from "lucide-react";
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
+import UserDropdown from "@/components/UserDropdown";
 
 export default function DashboardLayout({activePage = "dashboard", children}) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [bannerVisible, setBannerVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const userDropdownRef = useRef(null);
   const notificationsRef = useRef(null);
   const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
@@ -105,7 +104,6 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
-    setUserDropdownOpen(false);
     setNotificationsOpen(false);
     setSearchOpen(false);
   }, [pathname]);
@@ -113,11 +111,6 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close user dropdown when clicking outside
-      if (userDropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
-        setUserDropdownOpen(false);
-      }
-      
       // Close notifications dropdown when clicking outside
       if (notificationsOpen && notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setNotificationsOpen(false);
@@ -141,7 +134,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [userDropdownOpen, notificationsOpen, searchOpen, mobileMenuOpen]);
+  }, [notificationsOpen, searchOpen, mobileMenuOpen]);
 
   // Menu items definition
   const menuItems = [
@@ -216,20 +209,14 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
     },
   ];
 
-  // System menu items
+  // System menu items - only Settings now
   const systemItems = [
     { 
       name: 'Settings', 
       href: '/dashboard/settings', 
       icon: <Settings size={20} />,
       active: currentActivePage === 'settings'
-    },
-    { 
-      name: 'Billing', 
-      href: '/dashboard/billing', 
-      icon: <CreditCard size={20} />,
-      active: currentActivePage === 'billing'
-    },
+    }
   ];
 
   // Mock notifications data
@@ -313,11 +300,6 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                         {item.icon}
                       </div>
                       {item.name}
-                      {isDisabled && (
-                        <div className="ml-auto">
-                          <CreditCard size={14} className="text-gray-400" />
-                        </div>
-                      )}
                     </Link>
                   );
                 })}
@@ -366,7 +348,6 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
                         Upgrade now 
-                        <ArrowRight size={16} className="ml-1" />
                       </Link>
                     </div>
                   ) : (
@@ -383,24 +364,12 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
                         View plans 
-                        <ArrowRight size={16} className="ml-1" />
                       </Link>
                     </div>
                   )}
                 </div>
               </div>
             )}
-            
-            {/* Logout Button */}
-            <div className="mt-auto px-3 pt-6">
-              <button
-                onClick={handleLogout}
-                className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-red-600 transition-all"
-              >
-                <LogOut size={20} className="mr-3 text-gray-500" />
-                Logout
-              </button>
-            </div>
           </div>
         </div>
 
@@ -494,11 +463,6 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                       {item.icon}
                     </div>
                     {item.name}
-                    {isDisabled && (
-                      <div className="ml-auto">
-                        <CreditCard size={14} className="text-gray-400" />
-                      </div>
-                    )}
                   </Link>
                 );
               })}
@@ -699,7 +663,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                             <p className="text-sm">No notifications yet</p>
                           </div>
                         ) : (
-<div>
+                          <div>
                             {notifications.map((notification) => (
                               <div 
                                 key={notification.id}
@@ -736,87 +700,20 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   )}
                 </div>
                 
-                {/* User Menu */}
-                <div className="relative" ref={userDropdownRef}>
-                  <button
-                    className="flex items-center text-gray-700 hover:text-gray-900 focus:outline-none"
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    aria-expanded={userDropdownOpen}
-                    aria-haspopup="true"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold mr-1">
-                      {user?.email?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                    <div className="hidden md:block">
-                      <ChevronDown size={16} className="text-gray-500" />
-                    </div>
-                  </button>
-                  
-                  {/* User Dropdown */}
-                  {userDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border border-gray-200 overflow-hidden">
-                      <div className="px-4 py-3 border-b border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user?.user_metadata?.full_name || 'User'}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                          {user?.email}
-                        </p>
-                      </div>
-                      
-                      <div className="py-1">
-                        <Link
-                          href="/dashboard/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setUserDropdownOpen(false)}
-                        >
-                          <User size={16} className="mr-3 text-gray-500" />
-                          Your Profile
-                        </Link>
-                        
-                        <Link
-                          href="/dashboard/settings"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setUserDropdownOpen(false)}
-                        >
-                          <Settings size={16} className="mr-3 text-gray-500" />
-                          Settings
-                        </Link>
-                        
-                        <Link
-                          href="/dashboard/billing"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setUserDropdownOpen(false)}
-                        >
-                          <CreditCard size={16} className="mr-3 text-gray-500" />
-                          Billing
-                        </Link>
-                      </div>
-                      
-                      <div className="py-1 border-t border-gray-200">
-                        <button
-                          onClick={handleLogout}
-                          className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                        >
-                          <LogOut size={16} className="mr-3" />
-                          Logout
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* User Menu Dropdown */}
+                <UserDropdown />
               </div>
             </div>
           </header>
 
-          {/* Page Content */}
+{/* Page Content */}
           <main className="flex-1 overflow-x-hidden">
             <div className="container mx-auto py-4 px-4 lg:px-6">
               {/* Check if the current page is protected and subscription is expired */}
               {menuItems.find(item => item.active)?.protected && !isSubscribed() ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                    <CreditCard size={24} className="text-red-600" />
+                    <LogOut size={24} className="text-red-600" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Feature Unavailable</h2>
                   <p className="text-gray-600 mb-6 text-center max-w-md">
