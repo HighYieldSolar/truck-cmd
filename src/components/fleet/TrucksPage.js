@@ -13,104 +13,16 @@ import {
   Edit,
   Trash2,
   AlertCircle,
-  ChevronLeft
+  ChevronLeft,
+  Download,
+  CheckCircle,
+  Eye,
+  FileText
 } from "lucide-react";
 import { fetchTrucks, deleteTruck } from "@/lib/services/truckService";
 import TruckFormModal from "@/components/fleet/TruckFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 
-// TruckCard component
-const TruckCard = ({ truck, onEdit, onDelete }) => {
-  const statusColors = {
-    'Active': 'bg-green-100 text-green-800',
-    'In Maintenance': 'bg-yellow-100 text-yellow-800',
-    'Out of Service': 'bg-red-100 text-red-800',
-    'Idle': 'bg-blue-100 text-blue-800'
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-4">
-      <div className="flex justify-between">
-        <h3 className="text-lg font-medium text-gray-900">{truck.name}</h3>
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => onEdit(truck)} 
-            className="p-1 text-blue-600 hover:text-blue-800"
-            aria-label="Edit truck"
-          >
-            <Edit size={16} />
-          </button>
-          <button 
-            onClick={() => onDelete(truck)} 
-            className="p-1 text-red-600 hover:text-red-800"
-            aria-label="Delete truck"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-      
-      <div className="flex items-center text-gray-500 mt-2 mb-3">
-        <Truck size={16} className="mr-2" />
-        <span>{truck.year} {truck.make} {truck.model}</span>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-3 text-sm mb-3">
-        <div>
-          <p className="text-gray-500">VIN</p>
-          <p className="text-black font-medium truncate">{truck.vin ? truck.vin.slice(-6) : 'N/A'}</p>
-        </div>
-        <div>
-          <p className="text-gray-500">License</p>
-          <p className="text-black font-medium">{truck.license_plate || 'N/A'}</p>
-        </div>
-        <div>
-          <p className="text-gray-500">Status</p>
-          <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[truck.status] || 'bg-gray-100 text-gray-800'}`}>
-            {truck.status}
-          </span>
-        </div>
-      </div>
-      
-      {truck.color && (
-        <div className="flex space-x-2 text-sm mb-2">
-          <span className="text-gray-500">Color:</span>
-          <span className="font-medium">{truck.color}</span>
-        </div>
-      )}
-      
-      <Link 
-        href={`/dashboard/fleet/trucks/${truck.id}`}
-        className="text-sm text-blue-600 hover:text-blue-800"
-      >
-        View Details
-      </Link>
-    </div>
-  );
-};
-
-// EmptyState component
-const EmptyState = ({ onAddNew }) => (
-  <div className="text-center py-12">
-    <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
-      <Truck size={24} className="text-gray-400" />
-    </div>
-    <h3 className="mt-3 text-lg font-medium text-gray-900">No vehicles found</h3>
-    <p className="mt-1 text-gray-500">Get started by adding your first vehicle</p>
-    <div className="mt-6">
-      <button
-        type="button"
-        onClick={onAddNew}
-        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-      >
-        <Plus size={16} className="mr-2" />
-        Add Vehicle
-      </button>
-    </div>
-  </div>
-);
-
-// Main component
 export default function TrucksPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -118,8 +30,11 @@ export default function TrucksPage() {
   const [filteredTrucks, setFilteredTrucks] = useState([]);
   
   // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [filters, setFilters] = useState({
+    status: 'all',
+    year: 'all',
+    search: '',
+  });
   
   // Modals
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -169,8 +84,8 @@ export default function TrucksPage() {
     let results = [...trucks];
     
     // Apply search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (filters.search) {
+      const term = filters.search.toLowerCase();
       results = results.filter(truck => 
         truck.name?.toLowerCase().includes(term) ||
         truck.make?.toLowerCase().includes(term) ||
@@ -181,12 +96,17 @@ export default function TrucksPage() {
     }
     
     // Apply status filter
-    if (statusFilter !== 'All') {
-      results = results.filter(truck => truck.status === statusFilter);
+    if (filters.status !== 'all') {
+      results = results.filter(truck => truck.status === filters.status);
+    }
+    
+    // Apply year filter
+    if (filters.year !== 'all') {
+      results = results.filter(truck => truck.year === filters.year);
     }
     
     setFilteredTrucks(results);
-  }, [trucks, searchTerm, statusFilter]);
+  }, [trucks, filters]);
   
   // Handle adding a new truck
   const handleAddTruck = () => {
@@ -250,8 +170,61 @@ export default function TrucksPage() {
   
   // Reset all filters
   const resetFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('All');
+    setFilters({
+      status: 'all',
+      year: 'all',
+      search: '',
+    });
+  };
+
+  // Get available years for filter
+  const getYears = () => {
+    const years = trucks
+      .map(truck => truck.year)
+      .filter(year => year) // Remove null or undefined
+      .filter((year, index, self) => self.indexOf(year) === index) // Remove duplicates
+      .sort((a, b) => b - a); // Sort descending
+    
+    return years;
+  };
+
+  // Format dates for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return dateString || "N/A";
+    }
+  };
+
+  // Status Badge component
+  const StatusBadge = ({ status }) => {
+    let classes = "inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium";
+    
+    switch (status) {
+      case 'Active':
+        classes += " bg-green-100 text-green-800";
+        break;
+      case 'In Maintenance':
+        classes += " bg-yellow-100 text-yellow-800";
+        break;
+      case 'Out of Service':
+        classes += " bg-red-100 text-red-800";
+        break;
+      case 'Idle':
+        classes += " bg-blue-100 text-blue-800";
+        break;
+      default:
+        classes += " bg-gray-100 text-gray-800";
+    }
+    
+    return <span className={classes}>{status}</span>;
   };
 
   if (loading) {
@@ -268,15 +241,35 @@ export default function TrucksPage() {
     <DashboardLayout activePage="fleet">
       <div className="p-4 sm:p-6 lg:p-8 bg-gray-100">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-6">
-            <div className="flex items-center">
-              <Link href="/dashboard/fleet" className="mr-2 p-2 rounded-full hover:bg-gray-200">
-                <ChevronLeft size={20} className="text-gray-600" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Vehicles</h1>
-                <p className="text-gray-600">Manage your fleet vehicles</p>
+          {/* Header with background */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <div className="flex items-center">
+                  <Link href="/dashboard/fleet" className="mr-2 p-2 rounded-full hover:bg-blue-500/40">
+                    <ChevronLeft size={20} />
+                  </Link>
+                  <div>
+                    <h1 className="text-3xl font-bold mb-1">Vehicle Management</h1>
+                    <p className="text-blue-100">Add, edit and delete vehicles in your fleet</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleAddTruck}
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Add Vehicle
+                </button>
+                <button
+                  onClick={() => alert('Export functionality would be implemented here')}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Download size={18} className="mr-2" />
+                  Export Vehicles
+                </button>
               </div>
             </div>
           </div>
@@ -292,29 +285,24 @@ export default function TrucksPage() {
           )}
 
           {/* Filters */}
-          <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Search vehicles..."
-                />
-              </div>
-              
-              <div className="flex flex-wrap gap-4">
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+            <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
+              <h3 className="font-medium text-gray-800 flex items-center">
+                <Filter size={18} className="mr-2 text-gray-500" />
+                Filter Vehicles
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-black block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    name="status"
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="All">All Statuses</option>
+                    <option value="all">All Statuses</option>
                     <option value="Active">Active</option>
                     <option value="In Maintenance">In Maintenance</option>
                     <option value="Out of Service">Out of Service</option>
@@ -322,53 +310,231 @@ export default function TrucksPage() {
                   </select>
                 </div>
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <select
+                    name="year"
+                    value={filters.year}
+                    onChange={(e) => setFilters(prev => ({ ...prev, year: e.target.value }))}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="all">All Years</option>
+                    {getYears().map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search size={16} className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={filters.search}
+                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                      placeholder="Search by name, make, model, VIN..."
+                      className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {filteredTrucks.length} of {trucks.length} vehicles
+                </div>
                 <button
                   onClick={resetFilters}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                  disabled={
+                    filters.status === "all" && 
+                    filters.year === "all" && 
+                    filters.search === ""
+                  }
                 >
-                  <RefreshCw size={16} className="mr-2" />
-                  Reset
-                </button>
-                
-                <button
-                  onClick={handleAddTruck}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Vehicle
+                  <RefreshCw size={14} className="mr-1" />
+                  Reset filters
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Trucks Grid */}
-          {filteredTrucks.length === 0 ? (
-            trucks.length === 0 ? (
-              <EmptyState onAddNew={handleAddTruck} />
-            ) : (
-              <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-                <p className="text-gray-500">No vehicles match your filters</p>
+          {/* Vehicles Table */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+            <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="font-medium text-gray-800 flex items-center">
+                <Truck size={18} className="mr-2 text-blue-600" />
+                Vehicles List
+              </h3>
+              <div className="flex items-center">
+                <span className="text-sm text-gray-500 mr-3">{filteredTrucks.length} vehicles found</span>
                 <button
-                  onClick={resetFilters}
-                  className="mt-2 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={handleAddTruck}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                 >
-                  <RefreshCw size={16} className="mr-2" />
-                  Reset Filters
+                  <Plus size={16} className="mr-1.5" />
+                  Add Vehicle
                 </button>
               </div>
-            )
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTrucks.map((truck) => (
-                <TruckCard 
-                  key={truck.id} 
-                  truck={truck} 
-                  onEdit={handleEditTruck} 
-                  onDelete={handleDeleteClick} 
-                />
-              ))}
             </div>
-          )}
+            
+            {filteredTrucks.length === 0 ? (
+              <div className="p-8 text-center">
+                {trucks.length === 0 ? (
+                  <div className="max-w-sm mx-auto">
+                    <Truck size={48} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">No vehicles found</h3>
+                    <p className="text-gray-500 mb-4">Get started by adding your first vehicle to your fleet.</p>
+                    <button
+                      onClick={handleAddTruck}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Vehicle
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-500 mb-2">No vehicles match your current filters</p>
+                    <button
+                      onClick={resetFilters}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <RefreshCw size={14} className="mr-1" />
+                      Reset Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vehicle
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Year/Make/Model
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        License Plate
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        VIN
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Added On
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredTrucks.map(truck => (
+                      <tr key={truck.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <a 
+                            className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer" 
+                            onClick={() => window.location.href = `/dashboard/fleet/trucks/${truck.id}`}
+                          >
+                            {truck.name}
+                          </a>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-gray-900">{truck.year} {truck.make} {truck.model}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-gray-900">{truck.license_plate || 'N/A'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-gray-900">{truck.vin ? `...${truck.vin.slice(-6)}` : 'N/A'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <StatusBadge status={truck.status} />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-gray-500">{formatDate(truck.created_at)}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex justify-center space-x-3">
+                            <button
+                              onClick={() => window.location.href = `/dashboard/fleet/trucks/${truck.id}`}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
+                              title="View Details"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleEditTruck(truck)}
+                              className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md"
+                              title="Edit Vehicle"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(truck)}
+                              className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md"
+                              title="Delete Vehicle"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            
+            {/* Table footer with pagination placeholder */}
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing {filteredTrucks.length} of {trucks.length} vehicles
+              </div>
+              <div>
+                {/* Pagination controls would go here */}
+              </div>
+            </div>
+          </div>
+
+          {/* Helpful tips section */}
+          <div className="mt-8 bg-blue-50 rounded-xl border border-blue-200 p-5">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                <FileText size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-blue-900 mb-2">Vehicle Management Tips</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+                  <div className="flex items-start">
+                    <CheckCircle size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Keep your vehicle records updated to ensure accurate reporting and compliance tracking.</span>
+                  </div>
+                  <div className="flex items-start">
+                    <CheckCircle size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Schedule regular maintenance to prevent unexpected breakdowns and costly repairs.</span>
+                  </div>
+                  <div className="flex items-start">
+                    <CheckCircle size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Track service history for each vehicle to identify recurring issues and predict future maintenance needs.</span>
+                  </div>
+                  <div className="flex items-start">
+                    <CheckCircle size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>Export vehicle data regularly to maintain backup records for audit purposes.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
