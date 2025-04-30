@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { X, RefreshCw, AlertCircle, CheckCircle, Upload, Calendar, Truck, Tag, Hash, FileText, Wrench, Fuel, MapPin } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
@@ -35,13 +35,16 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
   // Main form state - will be initialized from either truck data (when editing) or stored data (when creating)
   const [formData, setFormData] = useState(initialFormData);
   
+  // Flag to track if initial data was loaded from localStorage
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
-
-  // Flag to track if initial data was loaded from localStorage
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState('basic');
 
   // Load initial data: either from truck (when editing) or from localStorage (when creating)
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
   useEffect(() => {
     if (!isOpen) {
       setInitialDataLoaded(false);
+      setActiveTab('basic');
       
       // Only clear storage for new forms, keep edit forms in case user returns
       if (!truck) {
@@ -253,17 +257,33 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
   if (!isOpen) return null;
 
+  // Tabs for form sections
+  const tabs = [
+    { id: 'basic', label: 'Basic Info', icon: <Truck size={16} /> },
+    { id: 'details', label: 'Details', icon: <FileText size={16} /> }
+  ];
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center border-b p-4 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {truck ? 'Edit Vehicle' : 'Add New Vehicle'}
+        <div className="flex justify-between items-center border-b px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0">
+          <h2 className="text-xl font-semibold flex items-center">
+            {truck ? (
+              <>
+                <Truck size={20} className="mr-2" />
+                Edit Vehicle: {truck.name}
+              </>
+            ) : (
+              <>
+                <Truck size={20} className="mr-2" />
+                Add New Vehicle
+              </>
+            )}
           </h2>
           <button 
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-white hover:bg-blue-700 rounded-full p-1"
             disabled={isSubmitting}
           >
             <X size={24} />
@@ -272,295 +292,399 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         
         {/* Success/Error Messages */}
         {submitSuccess && (
-          <div className="mx-6 mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
-              <p className="text-sm text-green-700">{submitSuccess}</p>
-            </div>
+          <div className="mx-6 mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
+            <CheckCircle className="h-5 w-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-green-700">{submitSuccess}</p>
           </div>
         )}
         
         {submitError && (
-          <div className="mx-6 mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <p className="text-sm text-red-700">{submitError}</p>
-            </div>
+          <div className="mx-6 mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700">{submitError}</p>
           </div>
         )}
         
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Basic Information */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Basic Information</h3>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Vehicle Name / ID *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="e.g. Truck #101"
-                required
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
-                Make *
-              </label>
-              <input
-                type="text"
-                id="make"
-                name="make"
-                value={formData.make}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.make ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="e.g. Freightliner"
-                required
-              />
-              {errors.make && (
-                <p className="mt-1 text-sm text-red-600">{errors.make}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
-                Model *
-              </label>
-              <input
-                type="text"
-                id="model"
-                name="model"
-                value={formData.model}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.model ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="e.g. Cascadia"
-                required
-              />
-              {errors.model && (
-                <p className="mt-1 text-sm text-red-600">{errors.model}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
-                Year *
-              </label>
-              <input
-                type="text"
-                id="year"
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.year ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="e.g. 2023"
-                required
-              />
-              {errors.year && (
-                <p className="mt-1 text-sm text-red-600">{errors.year}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+        {/* Tab Navigation */}
+        <div className="px-6 pt-4 border-b">
+          <div className="flex space-x-4">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`pb-3 px-2 font-medium text-sm flex items-center transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveTab(tab.id)}
               >
-                <option value="Active">Active</option>
-                <option value="In Maintenance">In Maintenance</option>
-                <option value="Out of Service">Out of Service</option>
-                <option value="Idle">Idle</option>
-              </select>
-            </div>
-
-            {/* Vehicle Details */}
-            <div className="md:col-span-2 mt-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Vehicle Details</h3>
-            </div>
-            
-            <div>
-              <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">
-                VIN
-              </label>
-              <input
-                type="text"
-                id="vin"
-                name="vin"
-                value={formData.vin}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.vin ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="Vehicle Identification Number"
-              />
-              {errors.vin && (
-                <p className="mt-1 text-sm text-red-600">{errors.vin}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="license_plate" className="block text-sm font-medium text-gray-700 mb-1">
-                License Plate
-              </label>
-              <input
-                type="text"
-                id="license_plate"
-                name="license_plate"
-                value={formData.license_plate}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="e.g. TX-12345"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Purchase Date
-              </label>
-              <input
-                type="date"
-                id="purchase_date"
-                name="purchase_date"
-                value={formData.purchase_date}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 mb-1">
-                Odometer (miles)
-              </label>
-              <input
-                type="text"
-                id="odometer"
-                name="odometer"
-                value={formData.odometer}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.odometer ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="Current mileage"
-              />
-              {errors.odometer && (
-                <p className="mt-1 text-sm text-red-600">{errors.odometer}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="fuel_type" className="block text-sm font-medium text-gray-700 mb-1">
-                Fuel Type
-              </label>
-              <select
-                id="fuel_type"
-                name="fuel_type"
-                value={formData.fuel_type}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="Diesel">Diesel</option>
-                <option value="Gasoline">Gasoline</option>
-                <option value="CNG">CNG (Compressed Natural Gas)</option>
-                <option value="LNG">LNG (Liquefied Natural Gas)</option>
-                <option value="Electric">Electric</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                Vehicle Image
-              </label>
-              <input
-                type="file"
-                id="image"
-                name="image"
-                accept="image/*"
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-              
-              {/* Image preview */}
-              {formData.image && (
-                <div className="mt-2">
-                  <img 
-                    src={formData.image} 
-                    alt="Vehicle preview" 
-                    className="h-32 w-auto object-cover rounded-md border border-gray-300" 
-                  />
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Form Content */}
+        <div className="overflow-y-auto flex-1 px-6 py-4">
+          <form onSubmit={handleSubmit}>
+            {/* Basic Information Tab */}
+            {activeTab === 'basic' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Left column */}
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Vehicle Name / ID *
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="e.g. Truck #101"
+                        required
+                      />
+                      {errors.name && (
+                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
+                          Make *
+                        </label>
+                        <input
+                          type="text"
+                          id="make"
+                          name="make"
+                          value={formData.make}
+                          onChange={handleChange}
+                          className={`block w-full px-3 py-2 border ${
+                            errors.make ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-md shadow-sm text-sm`}
+                          placeholder="e.g. Freightliner"
+                          required
+                        />
+                        {errors.make && (
+                          <p className="mt-1 text-sm text-red-600">{errors.make}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
+                          Model *
+                        </label>
+                        <input
+                          type="text"
+                          id="model"
+                          name="model"
+                          value={formData.model}
+                          onChange={handleChange}
+                          className={`block w-full px-3 py-2 border ${
+                            errors.model ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-md shadow-sm text-sm`}
+                          placeholder="e.g. Cascadia"
+                          required
+                        />
+                        {errors.model && (
+                          <p className="mt-1 text-sm text-red-600">{errors.model}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+                          Year *
+                        </label>
+                        <input
+                          type="text"
+                          id="year"
+                          name="year"
+                          value={formData.year}
+                          onChange={handleChange}
+                          className={`block w-full px-3 py-2 border ${
+                            errors.year ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-md shadow-sm text-sm`}
+                          placeholder="e.g. 2023"
+                          required
+                        />
+                        {errors.year && (
+                          <p className="mt-1 text-sm text-red-600">{errors.year}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="In Maintenance">In Maintenance</option>
+                        <option value="Out of Service">Out of Service</option>
+                        <option value="Idle">Idle</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Purchase Date
+                      </label>
+                      <div className="flex items-center">
+                        <Calendar size={18} className="text-gray-400 mr-2" />
+                        <input
+                          type="date"
+                          id="purchase_date"
+                          name="purchase_date"
+                          value={formData.purchase_date}
+                          onChange={handleChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right column - Image upload */}
+                  <div className="md:w-1/3 flex flex-col items-center space-y-4">
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Vehicle Photo
+                      </label>
+                      <div className="flex flex-col items-center space-y-4">
+                        {formData.image ? (
+                          <div className="relative">
+                            <img 
+                              src={formData.image} 
+                              alt="Vehicle preview" 
+                              className="h-40 w-auto object-cover rounded-md border border-gray-300" 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData({...formData, image: null, image_file: null})}
+                              className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="h-40 w-full rounded-md bg-gray-100 flex items-center justify-center">
+                            <Truck size={60} className="text-gray-400" />
+                          </div>
+                        )}
+                        
+                        <label className="w-full flex flex-col items-center px-4 py-2 bg-blue-50 text-blue-500 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                          <Upload size={18} className="mb-1" />
+                          <span className="text-sm font-medium">Upload Photo</span>
+                          <input
+                            type="file"
+                            id="image"
+                            name="image"
+                            accept="image/*"
+                            onChange={handleChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
-            <div className="md:col-span-2">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows="3"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="Additional information about this vehicle"
-              ></textarea>
-            </div>
-          </div>
+            {/* Details Tab */}
+            {activeTab === 'details' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">
+                      VIN
+                    </label>
+                    <div className="flex items-center">
+                      <Hash size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="vin"
+                        name="vin"
+                        value={formData.vin}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.vin ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="Vehicle Identification Number"
+                      />
+                    </div>
+                    {errors.vin && (
+                      <p className="mt-1 text-sm text-red-600">{errors.vin}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="license_plate" className="block text-sm font-medium text-gray-700 mb-1">
+                      License Plate
+                    </label>
+                    <div className="flex items-center">
+                      <Tag size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="license_plate"
+                        name="license_plate"
+                        value={formData.license_plate}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="e.g. TX-12345"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 mb-1">
+                      Odometer (miles)
+                    </label>
+                    <div className="flex items-center">
+                      <MapPin size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="odometer"
+                        name="odometer"
+                        value={formData.odometer}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.odometer ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="Current mileage"
+                      />
+                    </div>
+                    {errors.odometer && (
+                      <p className="mt-1 text-sm text-red-600">{errors.odometer}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="fuel_type" className="block text-sm font-medium text-gray-700 mb-1">
+                      Fuel Type
+                    </label>
+                    <div className="flex items-center">
+                      <Fuel size={18} className="text-gray-400 mr-2" />
+                      <select
+                        id="fuel_type"
+                        name="fuel_type"
+                        value={formData.fuel_type}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="Diesel">Diesel</option>
+                        <option value="Gasoline">Gasoline</option>
+                        <option value="CNG">CNG (Compressed Natural Gas)</option>
+                        <option value="LNG">LNG (Liquefied Natural Gas)</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Hybrid">Hybrid</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleChange}
+                    rows="3"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Additional information about this vehicle"
+                  ></textarea>
+                </div>
+                
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
+                  <div className="flex">
+                    <Wrench className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
+                    <p className="text-sm text-blue-700">
+                      Regular vehicle inspections and maintenance keep your fleet operating efficiently and safely.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+        
+        {/* Form Actions */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
           
-          {/* Form Actions */}
-          <div className="mt-8 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>{truck ? 'Update Vehicle' : 'Add Vehicle'}</>
-              )}
-            </button>
+          <div className="flex items-center space-x-2">
+            {activeTab !== 'basic' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                  if (currentIndex > 0) {
+                    setActiveTab(tabs[currentIndex - 1].id);
+                  }
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                disabled={isSubmitting}
+              >
+                Previous
+              </button>
+            )}
+            
+            {activeTab !== tabs[tabs.length - 1].id ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                  if (currentIndex < tabs.length - 1) {
+                    setActiveTab(tabs[currentIndex + 1].id);
+                  }
+                }}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                disabled={isSubmitting}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>{truck ? 'Update Vehicle' : 'Add Vehicle'}</>
+                )}
+              </button>
+            )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

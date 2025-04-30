@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { X, RefreshCw, AlertCircle, CheckCircle, Upload, Calendar, User, Briefcase, Phone, Mail, MapPin, IdCard, FileCheck } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createDriver, updateDriver, uploadDriverImage } from "@/lib/services/driverService";
@@ -45,6 +45,9 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(null);
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState('basic');
 
   // Save form data to localStorage when specific fields change (only for new drivers)
   const handleSaveToLocalStorage = () => {
@@ -105,6 +108,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
   useEffect(() => {
     if (!isOpen) {
       setInitialDataLoaded(false);
+      setActiveTab('basic');
       
       // Only clear storage for new forms, keep edit forms in case user returns
       if (!driver) {
@@ -282,17 +286,34 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
 
   if (!isOpen) return null;
 
+  // Tabs for form sections
+  const tabs = [
+    { id: 'basic', label: 'Basic Info', icon: <User size={16} /> },
+    { id: 'contact', label: 'Contact Info', icon: <Phone size={16} /> },
+    { id: 'license', label: 'License', icon: <IdCard size={16} /> }
+  ];
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center border-b p-4 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {driver ? 'Edit Driver' : 'Add New Driver'}
+        <div className="flex justify-between items-center border-b px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0">
+          <h2 className="text-xl font-semibold flex items-center">
+            {driver ? (
+              <>
+                <User size={20} className="mr-2" />
+                Edit Driver: {driver.name}
+              </>
+            ) : (
+              <>
+                <User size={20} className="mr-2" />
+                Add New Driver
+              </>
+            )}
           </h2>
           <button 
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-white hover:bg-blue-700 rounded-full p-1"
             disabled={isSubmitting}
           >
             <X size={24} />
@@ -301,354 +322,490 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         
         {/* Success/Error Messages */}
         {submitSuccess && (
-          <div className="mx-6 mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
-              <p className="text-sm text-green-700">{submitSuccess}</p>
-            </div>
+          <div className="mx-6 mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
+            <CheckCircle className="h-5 w-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-green-700">{submitSuccess}</p>
           </div>
         )}
         
         {submitError && (
-          <div className="mx-6 mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <p className="text-sm text-red-700">{submitError}</p>
-            </div>
+          <div className="mx-6 mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700">{submitError}</p>
           </div>
         )}
         
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Basic Information */}
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Basic Information</h3>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Driver Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="Full name"
-                required
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">
-                Position
-              </label>
-              <select
-                id="position"
-                name="position"
-                value={formData.position}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+        {/* Tab Navigation */}
+        <div className="px-6 pt-4 border-b">
+          <div className="flex space-x-4">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`pb-3 px-2 font-medium text-sm flex items-center transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveTab(tab.id)}
               >
-                <option value="Driver">Driver</option>
-                <option value="Lead Driver">Lead Driver</option>
-                <option value="Owner-Operator">Owner-Operator</option>
-                <option value="Dispatcher">Dispatcher</option>
-                <option value="Manager">Manager</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="On Leave">On Leave</option>
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Hire Date
-              </label>
-              <input
-                type="date"
-                id="hire_date"
-                name="hire_date"
-                value={formData.hire_date}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                Driver Image
-              </label>
-              <input
-                type="file"
-                id="image"
-                name="image"
-                accept="image/*"
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-              
-              {/* Image preview */}
-              {formData.image && (
-                <div className="mt-2">
-                  <img 
-                    src={formData.image} 
-                    alt="Driver preview" 
-                    className="h-32 w-32 object-cover rounded-full border border-gray-300" 
-                  />
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Form Content */}
+        <div className="overflow-y-auto flex-1 px-6 py-4">
+          <form onSubmit={handleSubmit}>
+            {/* Basic Information Tab */}
+            {activeTab === 'basic' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Left column */}
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Driver Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="Full name"
+                        required
+                      />
+                      {errors.name && (
+                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">
+                        Position
+                      </label>
+                      <div className="flex items-center">
+                        <Briefcase size={18} className="text-gray-400 mr-2" />
+                        <select
+                          id="position"
+                          name="position"
+                          value={formData.position}
+                          onChange={handleChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        >
+                          <option value="Driver">Driver</option>
+                          <option value="Lead Driver">Lead Driver</option>
+                          <option value="Owner-Operator">Owner-Operator</option>
+                          <option value="Dispatcher">Dispatcher</option>
+                          <option value="Manager">Manager</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="On Leave">On Leave</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="hire_date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Hire Date
+                      </label>
+                      <div className="flex items-center">
+                        <Calendar size={18} className="text-gray-400 mr-2" />
+                        <input
+                          type="date"
+                          id="hire_date"
+                          name="hire_date"
+                          value={formData.hire_date}
+                          onChange={handleChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes
+                      </label>
+                      <textarea
+                        id="notes"
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleChange}
+                        rows="3"
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Additional information about this driver"
+                      ></textarea>
+                    </div>
+                  </div>
+                  
+                  {/* Right column - Image upload */}
+                  <div className="md:w-1/3 flex flex-col items-center space-y-4">
+                    <div className="w-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Driver Photo
+                      </label>
+                      <div className="flex flex-col items-center space-y-4">
+                        {formData.image ? (
+                          <div className="relative">
+                            <img 
+                              src={formData.image} 
+                              alt="Driver preview" 
+                              className="h-40 w-40 object-cover rounded-full border border-gray-300" 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData({...formData, image: null, image_file: null})}
+                              className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="h-40 w-40 rounded-full bg-gray-100 flex items-center justify-center">
+                            <User size={60} className="text-gray-400" />
+                          </div>
+                        )}
+                        
+                        <label className="w-full flex flex-col items-center px-4 py-2 bg-blue-50 text-blue-500 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                          <Upload size={18} className="mb-1" />
+                          <span className="text-sm font-medium">Upload Photo</span>
+                          <input
+                            type="file"
+                            id="image"
+                            name="image"
+                            accept="image/*"
+                            onChange={handleChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Contact Information */}
-            <div className="md:col-span-2 mt-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Contact Information</h3>
-            </div>
+              </div>
+            )}
             
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="email@example.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
+            {/* Contact Information Tab */}
+            {activeTab === 'contact' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <div className="flex items-center">
+                      <Mail size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.email ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="email@example.com"
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
+                    <div className="flex items-center">
+                      <Phone size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.phone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-md shadow-sm text-sm`}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    <div className="flex items-center">
+                      <MapPin size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="City"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                      State
+                    </label>
+                    <div className="flex items-center">
+                      <MapPin size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="State"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Emergency Contact Information</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="emergency_contact" className="block text-sm font-medium text-gray-700 mb-1">
+                        Emergency Contact
+                      </label>
+                      <div className="flex items-center">
+                        <User size={18} className="text-gray-400 mr-2" />
+                        <input
+                          type="text"
+                          id="emergency_contact"
+                          name="emergency_contact"
+                          value={formData.emergency_contact}
+                          onChange={handleChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="Contact name"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="emergency_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Emergency Phone
+                      </label>
+                      <div className="flex items-center">
+                        <Phone size={18} className="text-gray-400 mr-2" />
+                        <input
+                          type="tel"
+                          id="emergency_phone"
+                          name="emergency_phone"
+                          value={formData.emergency_phone}
+                          onChange={handleChange}
+                          className={`block w-full px-3 py-2 border ${
+                            errors.emergency_phone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-md shadow-sm text-sm`}
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
+                      {errors.emergency_phone && (
+                        <p className="mt-1 text-sm text-red-600">{errors.emergency_phone}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.phone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="(555) 123-4567"
-              />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                City
-              </label>
-              <input
-                type="text"
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="City"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                State
-              </label>
-              <input
-                type="text"
-                id="state"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="State"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="emergency_contact" className="block text-sm font-medium text-gray-700 mb-1">
-                Emergency Contact
-              </label>
-              <input
-                type="text"
-                id="emergency_contact"
-                name="emergency_contact"
-                value={formData.emergency_contact}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="Contact name"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="emergency_phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Emergency Phone
-              </label>
-              <input
-                type="tel"
-                id="emergency_phone"
-                name="emergency_phone"
-                value={formData.emergency_phone}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.emergency_phone ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } rounded-md shadow-sm placeholder-gray-400 text-sm`}
-                placeholder="(555) 123-4567"
-              />
-              {errors.emergency_phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.emergency_phone}</p>
-              )}
-            </div>
-
-            {/* License Information */}
-            <div className="md:col-span-2 mt-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">License Information</h3>
-            </div>
-            
-            <div>
-              <label htmlFor="license_number" className="block text-sm font-medium text-gray-700 mb-1">
-                License Number
-              </label>
-              <input
-                type="text"
-                id="license_number"
-                name="license_number"
-                value={formData.license_number}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="Driver's license number"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="license_state" className="block text-sm font-medium text-gray-700 mb-1">
-                License State
-              </label>
-              <input
-                type="text"
-                id="license_state"
-                name="license_state"
-                value={formData.license_state}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="e.g. TX"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="license_expiry" className="block text-sm font-medium text-gray-700 mb-1">
-                License Expiry Date
-              </label>
-              <input
-                type="date"
-                id="license_expiry"
-                name="license_expiry"
-                value={formData.license_expiry}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.license_expiry_warning ? 'border-yellow-300' : 'border-gray-300'
-                } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm`}
-              />
-              {errors.license_expiry_warning && (
-                <p className="mt-1 text-sm text-yellow-600">{errors.license_expiry_warning}</p>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="medical_card_expiry" className="block text-sm font-medium text-gray-700 mb-1">
-                Medical Card Expiry
-              </label>
-              <input
-                type="date"
-                id="medical_card_expiry"
-                name="medical_card_expiry"
-                value={formData.medical_card_expiry}
-                onChange={handleChange}
-                className={`block w-full px-3 py-2 border ${
-                  errors.medical_card_expiry_warning ? 'border-yellow-300' : 'border-gray-300'
-                } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm`}
-              />
-              {errors.medical_card_expiry_warning && (
-                <p className="mt-1 text-sm text-yellow-600">{errors.medical_card_expiry_warning}</p>
-              )}
-            </div>
-            
-            {/* Notes */}
-            <div className="md:col-span-2 mt-4">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows="3"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm"
-                placeholder="Additional information about this driver"
-              ></textarea>
-            </div>
-          </div>
+            {/* License Information Tab */}
+            {activeTab === 'license' && (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md mb-6">
+                  <div className="flex">
+                    <FileCheck className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
+                    <p className="text-sm text-blue-700">
+                      Keep license information up-to-date to ensure compliance with regulatory requirements.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="license_number" className="block text-sm font-medium text-gray-700 mb-1">
+                      License Number
+                    </label>
+                    <div className="flex items-center">
+                      <IdCard size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="license_number"
+                        name="license_number"
+                        value={formData.license_number}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Driver's license number"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="license_state" className="block text-sm font-medium text-gray-700 mb-1">
+                      License State
+                    </label>
+                    <div className="flex items-center">
+                      <MapPin size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="text"
+                        id="license_state"
+                        name="license_state"
+                        value={formData.license_state}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="e.g. TX"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="license_expiry" className="block text-sm font-medium text-gray-700 mb-1">
+                      License Expiry Date
+                    </label>
+                    <div className="flex items-center">
+                      <Calendar size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="date"
+                        id="license_expiry"
+                        name="license_expiry"
+                        value={formData.license_expiry}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.license_expiry_warning ? 'border-yellow-300' : 'border-gray-300'
+                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm`}
+                      />
+                    </div>
+                    {errors.license_expiry_warning && (
+                      <div className="mt-1 flex items-center text-sm text-yellow-600">
+                        <AlertCircle size={14} className="mr-1 flex-shrink-0" />
+                        {errors.license_expiry_warning}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="medical_card_expiry" className="block text-sm font-medium text-gray-700 mb-1">
+                      Medical Card Expiry
+                    </label>
+                    <div className="flex items-center">
+                      <Calendar size={18} className="text-gray-400 mr-2" />
+                      <input
+                        type="date"
+                        id="medical_card_expiry"
+                        name="medical_card_expiry"
+                        value={formData.medical_card_expiry}
+                        onChange={handleChange}
+                        className={`block w-full px-3 py-2 border ${
+                          errors.medical_card_expiry_warning ? 'border-yellow-300' : 'border-gray-300'
+                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm`}
+                      />
+                    </div>
+                    {errors.medical_card_expiry_warning && (
+                      <div className="mt-1 flex items-center text-sm text-yellow-600">
+                        <AlertCircle size={14} className="mr-1 flex-shrink-0" />
+                        {errors.medical_card_expiry_warning}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+        
+        {/* Form Actions */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
           
-          {/* Form Actions */}
-          <div className="mt-8 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none flex items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>{driver ? 'Update Driver' : 'Add Driver'}</>
-              )}
-            </button>
+          <div className="flex items-center space-x-2">
+            {activeTab !== 'basic' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                  if (currentIndex > 0) {
+                    setActiveTab(tabs[currentIndex - 1].id);
+                  }
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                disabled={isSubmitting}
+              >
+                Previous
+              </button>
+            )}
+            
+            {activeTab !== tabs[tabs.length - 1].id ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+                  if (currentIndex < tabs.length - 1) {
+                    setActiveTab(tabs[currentIndex + 1].id);
+                  }
+                }}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                disabled={isSubmitting}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>{driver ? 'Update Driver' : 'Add Driver'}</>
+                )}
+              </button>
+            )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
