@@ -1,22 +1,24 @@
+// src/components/expenses/ExpenseItem.js
 "use client";
 
-import { useState, useEffect } from "react";
 import { 
+  Eye, 
   Edit, 
-  Trash2, 
-  Image,
+  Trash2,
   Fuel,
   Wrench,
   Shield,
+  MapPin,
+  Briefcase,
+  FileCheck,
+  Coffee,
   Tag,
   Truck
 } from "lucide-react";
-// Correct the import name if necessary, assuming ReceiptViewerModal is the actual component
-import ReceiptViewerModal from "../fuel/ReceiptViewerModal"; // Assuming this is the correct path
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function ExpenseItem({ expense, onEdit, onDelete }) {
-  const [receiptViewerOpen, setReceiptViewerOpen] = useState(false);
+export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }) {
   const [vehicleInfo, setVehicleInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -31,8 +33,6 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
         setLoading(true);
         setLoadError(null);
         
-        console.log(`Attempting to load vehicle info for ID: ${expense.vehicle_id}`);
-        
         // First try to get from the vehicles table
         let { data: vehicleData, error: vehicleError } = await supabase
           .from('vehicles')
@@ -41,8 +41,6 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
           .single();
           
         if (vehicleError) {
-          console.log(`No match in vehicles table: ${vehicleError.message}`);
-          
           // If that fails, try the trucks table
           const { data: truckData, error: truckError } = await supabase
             .from('trucks')
@@ -51,14 +49,11 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
             .single();
             
           if (truckError) {
-            console.log(`No match in trucks table: ${truckError.message}`);
             setLoadError("Could not find vehicle information");
           } else {
-            console.log('Found match in trucks table:', truckData);
             setVehicleInfo(truckData);
           }
         } else {
-          console.log('Found match in vehicles table:', vehicleData);
           setVehicleInfo(vehicleData);
         }
       } catch (error) {
@@ -72,7 +67,7 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
     loadVehicleInfo();
   }, [expense.vehicle_id]);
   
-  // Format date
+  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -98,23 +93,33 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
         return <Wrench size={18} className="text-blue-600" />;
       case 'Insurance':
         return <Shield size={18} className="text-green-600" />;
+      case 'Tolls':
+        return <MapPin size={18} className="text-purple-600" />;
+      case 'Office':
+        return <Briefcase size={18} className="text-gray-600" />;
+      case 'Permits':
+        return <FileCheck size={18} className="text-indigo-600" />;
+      case 'Meals':
+        return <Coffee size={18} className="text-red-600" />;
       default:
         return <Tag size={18} className="text-gray-600" />;
     }
   };
   
-  // Display alternate vehicle information for specific vehicle IDs
-  const getSpecialVehicleMapping = (id) => {
-    // Add any special mappings you know here
-    // For example, if certain IDs should map to specific names
-    const specialMappings = {
-      'truck1': { name: 'Truck 1', license_plate: 'ABC123' },
-      'truck2': { name: 'Truck 2', license_plate: 'XYZ789' },
-      // Add more as needed
+  // Get category badge class
+  const getCategoryBadgeClass = () => {
+    const categoryClasses = {
+      'Fuel': 'bg-yellow-100 text-yellow-800',
+      'Maintenance': 'bg-blue-100 text-blue-800',
+      'Insurance': 'bg-green-100 text-green-800',
+      'Tolls': 'bg-purple-100 text-purple-800',
+      'Office': 'bg-gray-100 text-gray-800',
+      'Permits': 'bg-indigo-100 text-indigo-800',
+      'Meals': 'bg-red-100 text-red-800'
     };
     
-    return specialMappings[id] || null;
-  }
+    return categoryClasses[expense.category] || 'bg-gray-100 text-gray-800';
+  };
   
   // Format vehicle info display
   const getVehicleDisplay = () => {
@@ -122,7 +127,6 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
       return <span className="text-xs text-gray-400">Loading vehicle info...</span>;
     }
     
-    // First check if we have vehicle info from database
     if (vehicleInfo && vehicleInfo.name) {
       return (
         <div className="flex items-center text-xs text-gray-500">
@@ -132,22 +136,9 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
       );
     }
     
-    // Then check for special mappings
-    const specialMapping = expense.vehicle_id ? getSpecialVehicleMapping(expense.vehicle_id) : null;
-    if (specialMapping) {
-      return (
-        <div className="flex items-center text-xs text-gray-500">
-          <Truck size={14} className="mr-1" />
-          <span>{specialMapping.name} {specialMapping.license_plate && `(${specialMapping.license_plate})`}</span>
-        </div>
-      );
-    }
-    
-    // Fallback to showing just the ID
+    // Display vehicle ID if no detailed info is available
     if (expense.vehicle_id) {
-      // If the ID looks like a UUID, truncate it for display
-      const isUuid = expense.vehicle_id.length > 20 && expense.vehicle_id.includes('-');
-      const displayId = isUuid 
+      const displayId = expense.vehicle_id.length > 20 
         ? `${expense.vehicle_id.substring(0, 8)}...` 
         : expense.vehicle_id;
         
@@ -161,64 +152,63 @@ export default function ExpenseItem({ expense, onEdit, onDelete }) {
     
     return null;
   };
-  
+
   return (
-    <>
-      <tr className="hover:bg-gray-50">
-        <td className="px-6 py-4">
-          <div className="text-sm font-medium text-gray-900">{expense.description}</div>
-          {getVehicleDisplay()}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {formatDate(expense.date)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <span className="mr-2">{getCategoryIcon()}</span>
-            <span className="text-sm text-gray-900">{expense.category}</span>
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-6 py-4">
+        <div className="flex items-center">
+          <div className="mr-3">
+            {getCategoryIcon()}
           </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-          {formatCurrency(expense.amount)}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {expense.payment_method}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+          <div>
+            <div className="text-sm font-medium text-gray-900">
+              {expense.description}
+            </div>
+            {getVehicleDisplay()}
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {formatDate(expense.date)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryBadgeClass()}`}>
+          {expense.category}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+        {formatCurrency(expense.amount)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {expense.payment_method}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex justify-end space-x-1">
           {expense.receipt_image && (
             <button
-              onClick={() => setReceiptViewerOpen(true)}
-              className="text-blue-600 hover:text-blue-900 mr-3"
+              onClick={() => onViewReceipt(expense)}
+              className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
               title="View Receipt"
             >
-              <Image size={18} alt="View Receipt" />
+              <Eye size={16} />
             </button>
           )}
           <button
-            onClick={onEdit}
-            className="text-indigo-600 hover:text-indigo-900 mr-3"
+            onClick={() => onEdit(expense)}
+            className="p-1.5 bg-green-50 text-green-600 rounded-md hover:bg-green-100"
             title="Edit Expense"
           >
-            <Edit size={18} />
+            <Edit size={16} />
           </button>
           <button
-            onClick={onDelete}
-            className="text-red-600 hover:text-red-900"
+            onClick={() => onDelete(expense)}
+            className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100"
             title="Delete Expense"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
-        </td>
-      </tr>
-      
-      {/* Receipt Viewer Modal */}
-      {/* Pass the entire expense object as 'receipt' and the fetched vehicleInfo */}
-      <ReceiptViewerModal
-        isOpen={receiptViewerOpen}
-        onClose={() => setReceiptViewerOpen(false)}
-        receipt={expense} // Pass the full expense object
-        vehicleInfo={vehicleInfo} // Pass the fetched vehicle info
-      />
-    </>
+        </div>
+      </td>
+    </tr>
   );
 }

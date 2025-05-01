@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
+// src/components/expenses/ExpenseFormModal.js
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { X, RefreshCw, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, RefreshCw, CheckCircle, FileText, AlertCircle, Calendar, Info, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { createExpense, updateExpense, uploadReceiptImage } from "@/lib/services/expenseService";
 
@@ -58,161 +58,215 @@ function prepareDateForSubmission(dateString) {
 }
 
 // Helper function to get form data from local storage
-const getFormDataFromLocalStorage = () => {
-  const formDataString = localStorage.getItem('expenseFormData');
-  return formDataString ? JSON.parse(formDataString) : null;
+const getFormDataFromLocalStorage = (formKey) => {
+  try {
+    if (typeof window === 'undefined') return null;
+    
+    const formDataString = localStorage.getItem(formKey);
+    return formDataString ? JSON.parse(formDataString) : null;
+  } catch (error) {
+    console.error("Error retrieving from localStorage:", error);
+    return null;
+  }
 };
 
 // Helper function to set form data to local storage
-const setFormDataToLocalStorage = (data) => {
-  localStorage.setItem('expenseFormData', JSON.stringify(data));
+const setFormDataToLocalStorage = (formKey, data) => {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.setItem(formKey, JSON.stringify(data));
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+  }
 };
 
 // Helper function to clear form data from local storage
-const clearFormDataFromLocalStorage = () => {
-  localStorage.removeItem('expenseFormData');
+const clearFormDataFromLocalStorage = (formKey) => {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.removeItem(formKey);
+  } catch (error) {
+    console.error("Error clearing localStorage:", error);
+  }
 };
 
 export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
-  // Check local storage for existing form data
-  const initialFormData = getFormDataFromLocalStorage() || {
-      description: '',
-      amount: '',
-      date: getCurrentDateFormatted(),
-      category: 'Fuel',
-      payment_method: 'Credit Card',
-      notes: '',
-      receipt_image: null,
-      receipt_file: null, // To store the actual file
-      vehicle_id: '',
-      deductible: true
-    };
+  // Initial form data
+  const initialFormData = {
+    description: '',
+    amount: '',
+    date: getCurrentDateFormatted(),
+    category: 'Fuel',
+    payment_method: 'Credit Card',
+    notes: '',
+    receipt_image: null,
+    receipt_file: null,
+    vehicle_id: '',
+    deductible: true
+  };
+  
+  // Generate unique form key based on whether we're editing or creating
+  const formKey = expense ? `expenseForm-${expense.id}` : 'expenseForm-new';
+  
+  // Main form state
   const [formData, setFormData] = useState(initialFormData);
-
+  
+  // UI control states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  
-  // Save form data to local storage whenever it changes
-  useEffect(() => {
-    setFormDataToLocalStorage(formData);
-  }, [formData]);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [hasRestoredData, setHasRestoredData] = useState(false);
 
-  // Load vehicles when the modal opens
-  const loadVehicles = useCallback(async () => {
+  // Load initial data: either from expense (when editing) or from localStorage (when creating)
+  useEffect(() => {
     if (!isOpen) return;
     
-    try {
-      setVehiclesLoading(true);
+    // For editing existing expense
+    if (expense) {
+      setFormData({
+        description: expense.description || "",
+        amount: expense.amount?.toString() || "",
+        date: formatDateForInput(expense.date) || getCurrentDateFormatted(),
+        category: expense.category || "Fuel",
+        payment_method: expense.payment_method || "Credit Card",
+        notes: expense.notes || "",
+        receipt_image: expense.receipt_image || null,
+        receipt_file: null, // Reset file input when editing
+        vehicle_id: expense.vehicle_id || "",
+        deductible: expense.deductible !== false
+      });
       
-      // Get the current user ID
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Not authenticated");
+      // Clear any saved data for new expense to avoid confusion
+      clearFormDataFromLocalStorage('expenseForm-new');
+      
+      // Save this as the latest edited state
+      setFormDataToLocalStorage(formKey, {
+        description: expense.description || "",
+        amount: expense.amount?.toString() || "",
+        date: formatDateForInput(expense.date) || getCurrentDateFormatted(),
+        category: expense.category || "Fuel",
+        payment_method: expense.payment_method || "Credit Card",
+        notes: expense.notes || "",
+        receipt_image: expense.receipt_image || null,
+        vehicle_id: expense.vehicle_id || "",
+        deductible: expense.deductible !== false
+      });
+      
+      setInitialDataLoaded(true);
+    } 
+    // For creating new expense
+    else if (!initialDataLoaded) {
+      // Check if we have stored data
+      const storedData = getFormDataFromLocalStorage(formKey);
+      
+      if (storedData && (storedData.description || storedData.amount)) {
+        setFormData(storedData);
+        setHasRestoredData(true);
       }
       
-      const userId = session.user.id;
-      
-      // First try to get vehicles from the vehicles table
-      let { data, error } = await supabase
-        .from('vehicles')
-        .select('id, name, license_plate')
-        .eq('user_id', userId);
-      
-      // If that fails, try the trucks table instead
-      if (error || !data || data.length === 0) {
-        const { data: trucksData, error: trucksError } = await supabase
-          .from('trucks')
-          .select('id, name, license_plate')
-          .eq('user_id', userId);
-          
-        if (!trucksError) {
-          data = trucksData;
-        }
+      setInitialDataLoaded(true);
+    }
+  }, [expense, isOpen, initialDataLoaded, formKey]);
+
+  // Save form data to localStorage when form data changes
+  useEffect(() => {
+    if (initialDataLoaded && isOpen) {
+      // Don't save the file object to localStorage
+      const dataToStore = { ...formData };
+      if (dataToStore.receipt_file) {
+        delete dataToStore.receipt_file;
       }
       
-      // If we still don't have data, create some sample vehicles
-      if (!data || data.length === 0) {
-        data = [
-          { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
-          { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
-        ];
-      }
-      
-      setVehicles(data);
-      
-    } catch (error) {
-      console.error('Error loading vehicles:', error);
-      
-      // Set some default vehicles as fallback
-      setVehicles([
-        { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
-        { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
-      ]);
-    } finally {
-      setVehiclesLoading(false);
+      setFormDataToLocalStorage(formKey, dataToStore);
+    }
+  }, [formData, initialDataLoaded, isOpen, formKey]);
+
+  // Reset initialDataLoaded when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInitialDataLoaded(false);
+      setHasRestoredData(false);
     }
   }, [isOpen]);
-  
-  useEffect(() => {
-    loadVehicles();
-  }, [loadVehicles]);
 
-  // Handle reset when modal opens or an expense is provided
+  // Load vehicles when the modal opens
   useEffect(() => {
-    // Reset or load form data based on context
-    if (expense) {
-      console.log("Original expense date:", expense.date);
-      // Format the date properly for an existing expense
-      const formattedDate = formatDateForInput(expense.date);
-      console.log("Formatted date for form:", formattedDate);
+    async function loadVehicles() {
+      if (!isOpen) return;
       
-      setFormData({
-        ...expense,
-        date: formattedDate,
-        amount: expense.amount.toString(),
-        receipt_file: null // Reset file input when editing
-        });
-    } else {
-      // Reset form for new expense
-      setFormData({
-        description: '',
-        amount: '',
-        date: getCurrentDateFormatted(),
-        category: 'Fuel',
-        payment_method: 'Credit Card',
-        notes: '',
-        receipt_image: null,
-        receipt_file: null,
-        vehicle_id: '',
-        deductible: true
-        });
+      try {
+        setVehiclesLoading(true);
+        
+        // Get the current user ID
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Not authenticated");
+        }
+        
+        const userId = session.user.id;
+        
+        // First try to get vehicles from the vehicles table
+        let { data, error } = await supabase
+          .from('vehicles')
+          .select('id, name, license_plate')
+          .eq('user_id', userId);
+        
+        // If that fails, try the trucks table instead
+        if (error || !data || data.length === 0) {
+          const { data: trucksData, error: trucksError } = await supabase
+            .from('trucks')
+            .select('id, name, license_plate')
+            .eq('user_id', userId);
+            
+          if (!trucksError) {
+            data = trucksData;
+          }
+        }
+        
+        // If we still don't have data, create some sample vehicles
+        if (!data || data.length === 0) {
+          data = [
+            { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
+            { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
+          ];
+        }
+        
+        setVehicles(data);
+        
+      } catch (error) {
+        console.error('Error loading vehicles:', error);
+        
+        // Set some default vehicles as fallback
+        setVehicles([
+          { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
+          { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
+        ]);
+      } finally {
+        setVehiclesLoading(false);
+      }
     }
     
-    // Clear any previous errors
-    setError(null);
-    
-    // Clear local storage if modal is closed and no expense is being edited
-    if (!isOpen && !expense) {
-      clearFormDataFromLocalStorage();
-    }
-  }, [expense, isOpen]);
+    loadVehicles();
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     
-    if (type === 'file' && files?.length > 0) {
+    if (type === "file" && files?.length > 0) {
       setFormData({
         ...formData,
         receipt_file: files[0], // Store the file object
         receipt_image: URL.createObjectURL(files[0]) // Create preview URL
       });
-    } else if (type === 'checkbox') {
+    } else if (type === "checkbox") {
       setFormData({
         ...formData,
         [name]: checked
-        });
+      });
     } else {
       setFormData({
         ...formData,
@@ -253,8 +307,6 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
         deductible: formData.deductible
       };
       
-      console.log("Submitting date:", expenseData.date);
-      
       // Add user_id for new expenses
       if (!expense) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -273,7 +325,11 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       
       // Call the parent component's onSave callback with the result
       onSave(result);
-      clearFormDataFromLocalStorage();
+      
+      // Clear form data from local storage
+      clearFormDataFromLocalStorage(formKey);
+      
+      // Close the modal
       onClose();
     } catch (err) {
       console.error('Error saving expense:', err);
@@ -286,238 +342,291 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {expense ? "Edit Expense" : "Add New Expense"}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-5 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-t-xl">
+          <h2 className="text-xl font-bold flex items-center">
+            <Wallet size={20} className="mr-2" />
+            {expense ? "Edit Expense" : "Add Expense"}
           </h2>
           <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            onClick={onClose} 
+            className="p-2 text-white hover:bg-blue-500 rounded-full transition-colors focus:outline-none"
             disabled={isSubmitting}
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6">
-          {/* Show error message if exists */}
+        {/* Form content */}
+        <div className="p-6">
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <div className="flex">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
           
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description *
-              </label>
-              <input
-                type="text"
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+          {hasRestoredData && !expense && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md flex items-start">
+              <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-blue-700">Your previous form data has been restored.</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+                <Info size={18} className="mr-2 text-blue-500" />
+                Basic Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. Fuel for Truck #123"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount ($) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  >
+                    <option value="Fuel">Fuel</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Tolls">Tolls</option>
+                    <option value="Office">Office</option>
+                    <option value="Permits">Permits</option>
+                    <option value="Meals">Meals</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    id="payment_method"
+                    name="payment_method"
+                    value={formData.payment_method}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Debit Card">Debit Card</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Check">Check</option>
+                    <option value="EFT">EFT</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-                Amount ($) *
-              </label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                step="0.01"
-                min="0"
-                value={formData.amount}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                Date *
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category *
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="Fuel">Fuel</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="Insurance">Insurance</option>
-                <option value="Tolls">Tolls</option>
-                <option value="Office">Office</option>
-                <option value="Permits">Permits</option>
-                <option value="Meals">Meals</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700">
-                Payment Method
-              </label>
-              <select
-                id="payment_method"
-                name="payment_method"
-                value={formData.payment_method}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="Credit Card">Credit Card</option>
-                <option value="Debit Card">Debit Card</option>
-                <option value="Cash">Cash</option>
-                <option value="Check">Check</option>
-                <option value="EFT">EFT</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
-                Vehicle
-              </label>
-              <select
-                id="vehicle_id"
-                name="vehicle_id"
-                value={formData.vehicle_id}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select Vehicle</option>
-                {vehiclesLoading ? (
-                  <option disabled>Loading vehicles...</option>
-                ) : (
-                  vehicles.map(vehicle => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.name} {vehicle.license_plate ? `(${vehicle.license_plate})` : ''}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <label htmlFor="receipt_image" className="block text-sm font-medium text-gray-700">
-                Upload Receipt (optional)
-              </label>
-              <input
-                type="file"
-                id="receipt_image"
-                name="receipt_image"
-                accept="image/*"
-                onChange={handleChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {/* Show receipt preview if available */}
-              {formData.receipt_image && (
-                <div className="mt-2">
-                  {typeof formData.receipt_image === 'string' && formData.receipt_image.startsWith('blob') ? (
-                    <img 
-                      src={formData.receipt_image} 
-                      alt="Receipt Preview" 
-                      className="h-32 object-contain border rounded-md" 
-                    />
-                  ) : formData.receipt_image ? (
-                    <div className="flex items-center">
-                      <img 
-                        src="/images/receipt-icon.png" 
-                        alt="Receipt" 
-                        className="h-6 mr-2" 
-                      />
-                      <span className="text-sm text-gray-600">Receipt uploaded</span>
+            {/* Vehicle & Receipt Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+                <FileText size={18} className="mr-2 text-blue-500" />
+                Vehicle & Receipt
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle
+                  </label>
+                  <select
+                    id="vehicle_id"
+                    name="vehicle_id"
+                    value={formData.vehicle_id}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="">Select Vehicle</option>
+                    {vehiclesLoading ? (
+                      <option disabled>Loading vehicles...</option>
+                    ) : (
+                      vehicles.map(vehicle => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.name} {vehicle.license_plate ? `(${vehicle.license_plate})` : ''}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="receipt_image" className="block text-sm font-medium text-gray-700 mb-1">
+                    Upload Receipt (optional)
+                  </label>
+                  <input
+                    type="file"
+                    id="receipt_image"
+                    name="receipt_image"
+                    accept="image/*,.pdf"
+                    onChange={handleChange}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              {/* Receipt preview */}
+              {(formData.receipt_image || formData.receipt_file) && (
+                <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 mr-3">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <FileText size={20} className="text-blue-600" />
+                      </div>
                     </div>
-                  ) : null}
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">Receipt</h4>
+                      {formData.receipt_file ? (
+                        <p className="text-xs text-gray-500">
+                          Selected file: {formData.receipt_file.name}
+                        </p>
+                      ) : formData.receipt_image ? (
+                        <p className="text-xs text-gray-500">Receipt on file</p>
+                      ) : null}
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, receipt_file: null, receipt_image: null })}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                Notes
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows="3"
-                value={formData.notes}
-                onChange={handleChange}
-                className="block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
-              ></textarea>
-            </div>
-            
-            <div className="md:col-span-2">
-              <div className="flex items-center">
-                <input
-                  id="deductible"
-                  name="deductible"
-                  type="checkbox"
-                  checked={formData.deductible}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="deductible" className="ml-2 block text-sm text-gray-700">
-                  Tax Deductible
+              
+              <div>
+                <label htmlFor="deductible" className="flex items-center space-x-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="deductible"
+                    name="deductible"
+                    checked={formData.deductible}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">Tax Deductible</span>
                 </label>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-8 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                expense ? "Update Expense" : "Save Expense"
-              )}
-            </button>
-          </div>
-        </form>
+            
+            {/* Notes Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+                <Info size={18} className="mr-2 text-blue-500" />
+                Additional Notes
+              </h3>
+              
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows="3"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Any additional information"
+                ></textarea>
+              </div>
+            </div>
+            
+            {/* Form actions */}
+            <div className="border-t border-gray-200 pt-4 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center transition-colors"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} className="mr-2" />
+                    {expense ? "Update Expense" : "Save Expense"}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
