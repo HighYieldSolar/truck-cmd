@@ -5,20 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Plus, 
-  FileText, 
-  Trash2, 
-  Edit,
-  RefreshCw,
-  AlertCircle,
-  Wallet,
-  Calendar,
-  Search,
-  BarChart2,
-  Filter,
-  Eye
-} from "lucide-react";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 // Import expense service functions
 import { 
@@ -28,18 +15,35 @@ import {
 } from "@/lib/services/expenseService";
 
 // Import components
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import ExpenseFormModal from "@/components/expenses/ExpenseFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import ReceiptViewer from "@/components/expenses/ReceiptViewer";
 import ExpenseItem from "@/components/expenses/ExpenseItem";
+import ExpenseChart from "@/components/expenses/ExpenseChart";
+import ExpenseSummary from "@/components/expenses/ExpenseSummary";
+import ExpenseCategories from "@/components/expenses/ExpenseCategories";
+import TopExpenses from "@/components/expenses/TopExpenses";
+import ExpenseFilters from "@/components/expenses/ExpenseFilters";
+
+// Import icons
+import { 
+  Plus, 
+  FileText, 
+  RefreshCw,
+  AlertCircle,
+  Wallet,
+  BarChart2,
+  Filter,
+  Download,
+  ArrowRight
+} from "lucide-react";
 
 export default function ExpensesPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expenses, setExpenses] = useState([]); // Raw expenses data
-  const [filteredExpenses, setFilteredExpenses] = useState([]); // Filtered expenses for display
+  const [expenses, setExpenses] = useState([]);
+  const [filteredExpenses, setFilteredExpenses] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -199,6 +203,24 @@ export default function ExpensesPage() {
     }));
   };
 
+  // Handle date range change
+  const handleDateRangeChange = (value) => {
+    setFilters(prev => ({
+      ...prev,
+      dateRange: value
+    }));
+  };
+
+  // Handle custom date change
+  const handleCustomDateChange = (startDate, endDate) => {
+    setFilters(prev => ({
+      ...prev,
+      dateRange: 'Custom',
+      startDate,
+      endDate
+    }));
+  };
+
   // Reset all filters
   const handleResetFilters = () => {
     const defaultFilters = {
@@ -211,6 +233,14 @@ export default function ExpensesPage() {
       sortDirection: "desc"
     };
     setFilters(defaultFilters);
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    setFilters(prev => ({
+      ...prev,
+      category
+    }));
   };
 
   // Modal handlers
@@ -327,13 +357,6 @@ export default function ExpensesPage() {
         console.log(`Subscription status:`, status);
       });
     
-    // Test connection
-    setTimeout(() => {
-      console.log('Testing subscription connection...');
-      const activeChannels = supabase.getChannels();
-      console.log('Active channels:', activeChannels);
-    }, 2000);
-    
     // Cleanup function
     return () => {
       console.log('Removing expense subscription channel');
@@ -351,6 +374,58 @@ export default function ExpensesPage() {
     }).format(value);
   };
 
+  // Export expenses data to CSV
+  const handleExportData = () => {
+    if (filteredExpenses.length === 0) return;
+    
+    // Convert data to CSV
+    const headers = [
+      "Description",
+      "Date",
+      "Category",
+      "Amount", 
+      "Payment Method",
+      "Notes",
+      "Deductible"
+    ];
+    
+    const csvData = filteredExpenses.map((expense) => [
+      expense.description || "",
+      expense.date || "",
+      expense.category || "",
+      expense.amount || "",
+      expense.payment_method || "",
+      expense.notes || "",
+      expense.deductible === false ? "No" : "Yes"
+    ]);
+    
+    // Create CSV content
+    let csvContent = headers.join(",") + "\n";
+    csvData.forEach(row => {
+      // Escape fields with commas or quotes
+      const escapedRow = row.map(field => {
+        // Convert to string
+        const str = String(field);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          // Escape double quotes with double quotes
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      });
+      csvContent += escapedRow.join(",") + "\n";
+    });
+    
+    // Download the CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `expenses_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Set loading state while checking auth
   if (loading && !user) {
     return (
@@ -362,102 +437,57 @@ export default function ExpensesPage() {
 
   return (
     <DashboardLayout activePage="expenses">
-      <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Expense Tracking</h1>
-              <p className="text-gray-600">Track and manage your business expenses</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
-              <button
-                onClick={handleAddExpense}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Expense
-              </button>
+          {/* Header with background */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-3xl font-bold mb-1">Expense Tracking</h1>
+                <p className="text-blue-100">Track and manage all your business expenses</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleAddExpense}
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Add Expense
+                </button>
+                <button 
+                  onClick={handleExportData}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                  disabled={filteredExpenses.length === 0}
+                >
+                  <Download size={18} className="mr-2" />
+                  Export Report
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Show error if present */}
+          {/* Error message */}
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
               <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
+                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
           )}
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow px-5 py-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">TOTAL</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{formatCurrency(stats.total)}</p>
-                </div>
-                <div className="rounded-md p-2 bg-red-100 text-red-600">
-                  <Wallet size={20} />
-                </div>
-              </div>
-              <div className="mt-3">
-                <p className="text-sm text-gray-500">This Month expenses</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow px-5 py-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">TOP CATEGORY</p>
-                  <p className="text-2xl font-semibold text-blue-600 mt-1">
-                    {stats.topCategory ? stats.topCategory.name : "None"}
-                  </p>
-                </div>
-                <div className="rounded-md p-2 bg-blue-100 text-blue-600">
-                  <BarChart2 size={20} />
-                </div>
-              </div>
-              <div className="mt-3">
-                <p className="text-sm text-gray-500">
-                  {stats.topCategory 
-                    ? `${formatCurrency(stats.topCategory.amount)}` 
-                    : "No data available"}
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow px-5 py-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">DAILY AVERAGE</p>
-                  <p className="text-2xl font-semibold text-purple-600 mt-1">{formatCurrency(stats.dailyAverage)}</p>
-                </div>
-                <div className="rounded-md p-2 bg-purple-100 text-purple-600">
-                  <Calendar size={20} />
-                </div>
-              </div>
-              <div className="mt-3">
-                <p className="text-sm text-gray-500">Average spending per day</p>
-              </div>
-            </div>
-          </div>
+          {/* Statistics */}
+          <ExpenseSummary stats={stats} dateRange={filters.dateRange} />
 
-          {/* Expense Categories */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Left Sidebar */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Top Expenses */}
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="lg:col-span-1">
+              {/* Top 3 Expenses Card */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="bg-red-500 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
-                    <FileText size={18} className="mr-2" />
+                    <Wallet size={18} className="mr-2" />
                     Top Expenses
                   </h3>
                 </div>
@@ -466,61 +496,20 @@ export default function ExpensesPage() {
                     <div className="flex justify-center items-center py-4">
                       <RefreshCw size={24} className="animate-spin text-gray-400" />
                     </div>
-                  ) : filteredExpenses.length === 0 ? (
-                    <div className="text-center py-6">
-                      <p className="text-gray-500">No expenses found</p>
-                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      {filteredExpenses
-                        .slice(0, 5)
-                        .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))
-                        .map(expense => (
-                        <div 
-                          key={expense.id}
-                          className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
-                                {expense.description}
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {expense.category}
-                              </p>
-                            </div>
-                            <span className="text-sm font-medium text-red-600">
-                              {formatCurrency(expense.amount)}
-                            </span>
-                          </div>
-                          
-                          <div className="mt-2 pt-2 border-t border-gray-200 flex justify-end space-x-2">
-                            {expense.receipt_image && (
-                              <button
-                                onClick={() => handleViewReceipt(expense)}
-                                className="text-blue-600 hover:text-blue-800 p-1"
-                                title="View Receipt"
-                              >
-                                <Eye size={14} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleEditExpense(expense)}
-                              className="text-green-600 hover:text-green-800 p-1"
-                              title="Edit Expense"
-                            >
-                              <Edit size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <TopExpenses 
+                      expenses={filteredExpenses
+                        .slice(0, 3) // Limiting to only 3 expenses
+                        .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))}
+                      onViewReceipt={handleViewReceipt}
+                      onEditExpense={handleEditExpense}
+                    />
                   )}
                 </div>
               </div>
               
               {/* Expense Categories */}
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="bg-blue-500 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <BarChart2 size={18} className="mr-2" />
@@ -532,41 +521,12 @@ export default function ExpensesPage() {
                     <div className="flex justify-center items-center py-4">
                       <RefreshCw size={24} className="animate-spin text-gray-400" />
                     </div>
-                  ) : Object.keys(stats.byCategory).filter(cat => stats.byCategory[cat] > 0).length === 0 ? (
-                    <div className="text-center py-6">
-                      <p className="text-gray-500">No categories found</p>
-                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      {Object.entries(stats.byCategory)
-                        .filter(([_, amount]) => amount > 0)
-                        .sort(([_, amountA], [__, amountB]) => amountB - amountA)
-                        .map(([category, amount]) => (
-                          <div
-                            key={category}
-                            className="p-3 rounded-lg flex items-center justify-between bg-gray-50 hover:bg-blue-50 transition-colors"
-                            onClick={() => setFilters(prev => ({ ...prev, category }))}
-                          >
-                            <span className="text-sm font-medium text-gray-700">{category}</span>
-                            <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
-                              {formatCurrency(amount)}
-                            </span>
-                          </div>
-                        ))
-                      }
-                      
-                      <div className="pt-2 mt-2 border-t border-gray-200">
-                        <div
-                          className="p-3 rounded-lg flex items-center justify-between bg-gray-50 hover:bg-blue-50 transition-colors"
-                          onClick={() => setFilters(prev => ({ ...prev, category: 'All' }))}
-                        >
-                          <span className="text-sm font-medium text-gray-700">All Categories</span>
-                          <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
-                            {formatCurrency(Object.values(stats.byCategory).reduce((sum, amount) => sum + amount, 0))}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <ExpenseCategories 
+                      categories={stats.byCategory} 
+                      onCategorySelect={handleCategorySelect}
+                      selectedCategory={filters.category}
+                    />
                   )}
                 </div>
               </div>
@@ -575,104 +535,27 @@ export default function ExpensesPage() {
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
-              <div className="bg-white rounded-lg shadow mb-6">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
                   <h3 className="font-medium flex items-center text-gray-700">
                     <Filter size={18} className="mr-2 text-gray-500" />
                     Filter Expenses
                   </h3>
                 </div>
-                
-                <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Category filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      name="category"
-                      value={filters.category}
-                      onChange={handleFilterChange}
-                      className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                    >
-                      <option value="All">All Categories</option>
-                      <option value="Fuel">Fuel</option>
-                      <option value="Maintenance">Maintenance</option>
-                      <option value="Insurance">Insurance</option>
-                      <option value="Tolls">Tolls</option>
-                      <option value="Office">Office</option>
-                      <option value="Permits">Permits</option>
-                      <option value="Meals">Meals</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  
-                  {/* Date range filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-                    <select
-                      name="dateRange"
-                      value={filters.dateRange}
-                      onChange={handleFilterChange}
-                      className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                    >
-                      <option value="This Month">This Month</option>
-                      <option value="Last Month">Last Month</option>
-                      <option value="This Quarter">This Quarter</option>
-                      <option value="Last Quarter">Last Quarter</option>
-                      <option value="This Year">This Year</option>
-                      <option value="All Time">All Time</option>
-                      <option value="Custom">Custom Range</option>
-                    </select>
-                  </div>
-                  
-                  {/* Sort by filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-                    <select
-                      name="sortBy"
-                      value={filters.sortBy}
-                      onChange={handleFilterChange}
-                      className="block w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                    >
-                      <option value="date">Date</option>
-                      <option value="amount">Amount</option>
-                      <option value="category">Category</option>
-                      <option value="description">Description</option>
-                    </select>
-                  </div>
-                  
-                  {/* Search field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                    <div className="relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search size={16} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="search"
-                        value={filters.search}
-                        onChange={handleSearchChange}
-                        className="block w-full pl-10 rounded-md border border-gray-300 py-2 px-3 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                        placeholder="Search expenses..."
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Reset filters button */}
-                  <div className="md:col-span-4 flex justify-end mt-4">
-                    <button
-                      onClick={handleResetFilters}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <RefreshCw size={16} className="mr-2" />
-                      Reset Filters
-                    </button>
-                  </div>
+                <div className="p-4">
+                  <ExpenseFilters 
+                    filters={filters}
+                    onSearchChange={handleSearchChange}
+                    onFilterChange={handleFilterChange}
+                    onDateRangeChange={handleDateRangeChange}
+                    onCustomDateChange={handleCustomDateChange}
+                    onResetFilters={handleResetFilters}
+                  />
                 </div>
               </div>
               
               {/* Expense Records */}
-              <div className="bg-white rounded-lg shadow mb-6">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 flex items-center">
                     <FileText size={18} className="mr-2 text-blue-500" />
@@ -687,9 +570,9 @@ export default function ExpensesPage() {
                   </button>
                 </div>
                 
-                <div className="p-4">
+                <div className="overflow-x-auto">
                   {dataLoading ? (
-                    <div className="flex justify-center items-center py-10">
+                    <div className="flex justify-center items-center py-12">
                       <RefreshCw size={32} className="animate-spin text-blue-500" />
                     </div>
                   ) : filteredExpenses.length === 0 ? (
@@ -708,49 +591,74 @@ export default function ExpensesPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Description
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Category
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Amount
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Payment Method
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredExpenses.map(expense => (
-                            <ExpenseItem 
-                              key={expense.id}
-                              expense={expense}
-                              onEdit={handleEditExpense}
-                              onDelete={handleDeleteExpense}
-                              onViewReceipt={handleViewReceipt}
-                            />
-                          ))}
-                        </tbody>
-                      </table>
-                      
-                      <div className="mt-4 px-6 py-3 border-t border-gray-200 text-right">
-                        <p className="text-sm text-gray-500">
-                          Total: {formatCurrency(filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0))}
-                        </p>
-                      </div>
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Description
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Category
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Payment Method
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredExpenses.map(expense => (
+                          <ExpenseItem 
+                            key={expense.id}
+                            expense={expense}
+                            onEdit={handleEditExpense}
+                            onDelete={handleDeleteExpense}
+                            onViewReceipt={handleViewReceipt}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                
+                {filteredExpenses.length > 0 && (
+                  <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      Showing {filteredExpenses.length} of {expenses.length} expenses
                     </div>
+                    <div className="text-sm font-medium text-gray-700">
+                      Total: {formatCurrency(filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Expense Chart - Now below the expense records */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                <div className="px-5 py-4 border-b border-gray-200">
+                  <h3 className="font-medium flex items-center text-gray-700">
+                    <BarChart2 size={18} className="mr-2 text-blue-500" />
+                    Expense Analysis
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {dataLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                      <RefreshCw size={32} className="animate-spin text-blue-500" />
+                    </div>
+                  ) : (
+                    <ExpenseChart 
+                      data={stats.byCategory} 
+                      period={filters.dateRange} 
+                    />
                   )}
                 </div>
               </div>
