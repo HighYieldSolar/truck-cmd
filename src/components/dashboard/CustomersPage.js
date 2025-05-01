@@ -1,7 +1,7 @@
 // src/components/dashboard/CustomersPage.js
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -19,92 +19,477 @@ import {
   Download,
   Filter,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Eye,
+  UserPlus,
+  FileText,
+  Building,
+  User,
+  X
 } from "lucide-react";
 import { fetchCustomers, deleteCustomer } from "@/lib/services/customerService";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import EmptyState from "@/components/common/EmptyState";
 import CustomerFormModal from "@/lib/services/CustomerFormModal";
-import { Badge } from "@/components/ui";
+import StatusBadge from "@/components/compliance/StatusBadge";
 
-// Customer Item Component
-const CustomerItem = ({ customer, onEdit, onDelete, isExpanded, onToggleExpand }) => {
+// Customer Summary Component (like ComplianceSummary)
+const CustomerSummary = ({ stats }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-4 border border-gray-200">
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalCustomers}</p>
+          </div>
+          <div className="bg-blue-100 p-3 rounded-xl">
             <Users size={20} className="text-blue-600" />
           </div>
+        </div>
+        <div className="px-4 py-2 bg-gray-50">
+          <span className="text-xs text-gray-500">All customers</span>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <div className="font-medium text-gray-900">{customer.company_name}</div>
-            <div className="text-sm text-gray-500">{customer.customer_type || "Business"}</div>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Active</p>
+            <p className="text-2xl font-bold text-green-600 mt-1">{stats.activeCustomers}</p>
+          </div>
+          <div className="bg-green-100 p-3 rounded-xl">
+            <Users size={20} className="text-green-600" />
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onEdit(customer)}
-            className="text-blue-600 hover:text-blue-900"
-            aria-label="Edit customer"
-          >
-            <Edit size={18} />
-          </button>
-          <button
-            onClick={() => onDelete(customer)}
-            className="text-red-600 hover:text-red-900"
-            aria-label="Delete customer"
-          >
-            <Trash2 size={18} />
-          </button>
+        <div className="px-4 py-2 bg-gray-50">
+          <span className="text-xs text-gray-500">Current customers</span>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <div className="flex items-center text-sm text-gray-900">
-            <Mail size={16} className="text-gray-400 mr-2" />
-            <span className="truncate">{customer.email || "—"}</span>
+      
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">New</p>
+            <p className="text-2xl font-bold text-purple-600 mt-1">{stats.newCustomers}</p>
+          </div>
+          <div className="bg-purple-100 p-3 rounded-xl">
+            <UserPlus size={20} className="text-purple-600" />
           </div>
         </div>
-        <div>
-          <div className="flex items-center text-sm text-gray-900">
-            <Phone size={16} className="text-gray-400 mr-2" />
-            {customer.phone || "—"}
-          </div>
+        <div className="px-4 py-2 bg-gray-50">
+          <span className="text-xs text-gray-500">Added in last 30 days</span>
         </div>
       </div>
-
-      {isExpanded && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-2 text-gray-700">Additional Information</h4>
-          <p className="text-sm text-gray-600">
-            <MapPin size={16} className="inline-block text-gray-400 mr-1" />
-            {customer.city ? `${customer.city}, ${customer.state}` : "No location data"}
-          </p>
-          {customer.notes && (
-            <p className="text-sm text-gray-600 mt-2">
-              <span className="font-medium">Notes:</span> {customer.notes}
+      
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Businesses</p>
+            <p className="text-2xl font-bold text-orange-600 mt-1">
+              {stats.businessCustomers || Math.round(stats.totalCustomers * 0.7)}
             </p>
-          )}
+          </div>
+          <div className="bg-orange-100 p-3 rounded-xl">
+            <Building size={20} className="text-orange-600" />
+          </div>
         </div>
-      )}
-      <button
-        onClick={() => onToggleExpand()}
-        className="text-blue-600 hover:text-blue-900 mt-2"
-        aria-label={isExpanded ? "Collapse details" : "Expand details"}
-      >
-        {isExpanded ? <><ChevronUp size={16} className="inline mr-1" /> Hide Details</> : <><ChevronDown size={16} className="inline mr-1" /> Show Details</>}
-      </button>
+        <div className="px-4 py-2 bg-gray-50">
+          <span className="text-xs text-gray-500">Business customers</span>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Individuals</p>
+            <p className="text-2xl font-bold text-cyan-600 mt-1">
+              {stats.individualCustomers || Math.round(stats.totalCustomers * 0.3)}
+            </p>
+          </div>
+          <div className="bg-cyan-100 p-3 rounded-xl">
+            <User size={20} className="text-cyan-600" />
+          </div>
+        </div>
+        <div className="px-4 py-2 bg-gray-50">
+          <span className="text-xs text-gray-500">Individual customers</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-// Customer Detail Row Component
-const CustomerDetailRow = ({ customer, isExpanded }) => {
-  if (!isExpanded) return null;
+// Customer Filters Component (like ComplianceFilters)
+const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 mb-6">
+      <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
+        <h3 className="font-medium flex items-center text-gray-700">
+          <Filter size={18} className="mr-2 text-gray-500" />
+          Filter Customers
+        </h3>
+      </div>
+      <div className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              name="status"
+              value={filters.status}
+              onChange={onFilterChange}
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="all">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+          
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select
+              name="type"
+              value={filters.type}
+              onChange={onFilterChange}
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="all">All Types</option>
+              <option value="Business">Business</option>
+              <option value="Individual">Individual</option>
+            </select>
+          </div>
+          
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <select
+              name="state"
+              value={filters.state}
+              onChange={onFilterChange}
+              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="all">All States</option>
+              {filters.availableStates.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={onSearch}
+                className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Search customers..."
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
+          <div className="text-sm text-gray-500">
+            Showing {filters.filteredCount} of {filters.totalCount} customers
+          </div>
+          <button
+            onClick={filters.onReset}
+            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+            disabled={!filters.isFiltered}
+          >
+            <RefreshCw size={14} className="mr-1" />
+            Reset filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Customer Table Component (like ComplianceTable)
+const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 mb-6">
+      <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="font-medium text-gray-700">Customer Records</h3>
+        <button
+          onClick={onAddNew}
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+        >
+          <Plus size={16} className="mr-1" />
+          Add New
+        </button>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Customer Name
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Contact Info
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Location
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {customers.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
+                  <div>
+                    <Users size={32} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-lg font-medium text-gray-900 mb-1">No customers found</p>
+                    <p className="text-gray-500 mb-4">Add your first customer to get started</p>
+                    <button
+                      onClick={onAddNew}
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Customer
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              customers.map(customer => (
+                <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => onView(customer)}
+                      className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {customer.company_name}
+                    </button>
+                    {customer.contact_name && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {customer.contact_name}
+                      </p>
+                    )}
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">
+                      {customer.email && (
+                        <div className="flex items-center">
+                          <Mail size={14} className="text-gray-400 mr-2" />
+                          {customer.email}
+                        </div>
+                      )}
+                      {customer.phone && (
+                        <div className="flex items-center mt-1">
+                          <Phone size={14} className="text-gray-400 mr-2" />
+                          {customer.phone}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">
+                      {customer.city && customer.state ? (
+                        <div className="flex items-center">
+                          <MapPin size={14} className="text-gray-400 mr-2" />
+                          {customer.city}, {customer.state}
+                        </div>
+                      ) : customer.state ? (
+                        <div className="flex items-center">
+                          <MapPin size={14} className="text-gray-400 mr-2" />
+                          {customer.state}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {customer.customer_type || "Business"}
+                    </span>
+                  </td>
+                  
+                  <td className="px-6 py-4">
+                    <StatusBadge status={customer.status || "Active"} />
+                  </td>
+                  
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center space-x-3">
+                      <button 
+                        onClick={() => onView(customer)} 
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                        title="View Details"
+                      >
+                        <Eye size={18} />
+                      </button>
+
+                      <button 
+                        onClick={() => onEdit(customer)} 
+                        className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
+                        title="Edit Customer"
+                      >
+                        <Edit size={18} />
+                      </button>
+
+                      <button 
+                        onClick={() => onDelete(customer)} 
+                        className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-gray-700 text-sm">
+        Showing {customers.length} customers
+      </div>
+    </div>
+  );
+};
+
+// View Customer Modal (like ViewComplianceModal)
+const ViewCustomerModal = ({ isOpen, onClose, customer }) => {
+  if (!isOpen || !customer) return null;
 
   return (
-    <></>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
+          <h2 className="text-lg font-medium text-gray-900 flex items-center">
+            <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+              {customer.customer_type === "Individual" ? (
+                <User size={18} className="text-blue-600" />
+              ) : (
+                <Building size={18} className="text-blue-600" />
+              )}
+            </div>
+            <span className="truncate max-w-md">{customer.company_name}</span>
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {/* Status */}
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <StatusBadge status={customer.status || "Active"} />
+            {customer.customer_type && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {customer.customer_type}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="block mb-4">
+              <h3 className="text-sm font-medium mb-1">Customer Information</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Company:</span>{" "}
+                  <span className="text-gray-500">{customer.company_name || "N/A"}</span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Contact:</span>{" "}
+                  <span className="text-gray-500">{customer.contact_name || "N/A"}</span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Type:</span>{" "}
+                  <span className="text-gray-500">{customer.customer_type || "Business"}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="block mb-4">
+              <h3 className="text-sm font-medium mb-1">Contact Information</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Email:</span>{" "}
+                  <span className="text-gray-500">{customer.email || "N/A"}</span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Phone:</span>{" "}
+                  <span className="text-gray-500">{customer.phone || "N/A"}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="block mb-4">
+              <h3 className="text-sm font-medium mb-1">Location</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Address:</span>{" "}
+                  <span className="text-gray-500">{customer.address || "N/A"}</span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">City, State:</span>{" "}
+                  <span className="text-gray-500">
+                    {customer.city ? `${customer.city}, ${customer.state}` : customer.state || "N/A"}
+                  </span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Zip Code:</span>{" "}
+                  <span className="text-gray-500">{customer.zip || "N/A"}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="block mb-4">
+              <h3 className="text-sm font-medium mb-1">Account Details</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Status:</span>{" "}
+                  <span className="text-gray-500">{customer.status || "Active"}</span>
+                </p>
+                <p className="text-sm mb-1">
+                  <span className="font-medium">Customer Since:</span>{" "}
+                  <span className="text-gray-500">
+                    {customer.created_at 
+                      ? new Date(customer.created_at).toLocaleDateString() 
+                      : "N/A"}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 block mb-4">
+              <h3 className="text-sm font-medium mb-1">Notes</h3>
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm text-gray-500 whitespace-pre-wrap">
+                  {customer.notes || "No notes available."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -118,23 +503,25 @@ export default function CustomersPage() {
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [stateFilter, setStateFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [stateFilter, setStateFilter] = useState('all');
   
   // Modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Detail expansion state
-  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
-
   // Stats state
   const [stats, setStats] = useState({
     totalCustomers: 0,
     activeCustomers: 0,
-    newCustomers: 0
+    newCustomers: 0,
+    businessCustomers: 0,
+    individualCustomers: 0
   });
 
   // Load customers function
@@ -146,17 +533,21 @@ export default function CustomersPage() {
       setCustomers(data || []);
       
       // Calculate stats
-      setStats({
-        totalCustomers: data.length,
-        activeCustomers: data.filter(c => c.status === 'Active').length,
-        newCustomers: data.filter(c => {
-          // Consider customers added in the last 30 days as "new"
-          const createdDate = new Date(c.created_at);
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          return createdDate >= thirtyDaysAgo;
-        }).length
-      });
+      if (data) {
+        setStats({
+          totalCustomers: data.length,
+          activeCustomers: data.filter(c => c.status === 'Active').length,
+          newCustomers: data.filter(c => {
+            // Consider customers added in the last 30 days as "new"
+            const createdDate = new Date(c.created_at);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return createdDate >= thirtyDaysAgo;
+          }).length,
+          businessCustomers: data.filter(c => c.customer_type === 'Business').length,
+          individualCustomers: data.filter(c => c.customer_type === 'Individual').length
+        });
+      }
       
       return data;
     } catch (error) {
@@ -248,15 +639,16 @@ export default function CustomersPage() {
     setFormModalOpen(true);
   };
 
+  // Handle customer view
+  const handleViewCustomer = (customer) => {
+    setCurrentCustomer(customer);
+    setViewModalOpen(true);
+  };
+
   // Handle customer delete
   const handleDeleteCustomer = (customer) => {
     setCustomerToDelete(customer);
     setDeleteModalOpen(true);
-  };
-
-  // Toggle customer details expansion
-  const handleToggleExpand = (customerId) => {
-    setExpandedCustomerId(expandedCustomerId === customerId ? null : customerId);
   };
 
   // Confirm customer deletion
@@ -305,8 +697,22 @@ export default function CustomersPage() {
       return true;
     })
     .filter(customer => {
+      // Apply status filter
+      if (statusFilter && statusFilter !== 'all') {
+        return customer.status === statusFilter;
+      }
+      return true;
+    })
+    .filter(customer => {
+      // Apply type filter
+      if (typeFilter && typeFilter !== 'all') {
+        return customer.customer_type === typeFilter;
+      }
+      return true;
+    })
+    .filter(customer => {
       // Apply state filter
-      if (stateFilter && stateFilter !== 'All') {
+      if (stateFilter && stateFilter !== 'all') {
         return customer.state === stateFilter;
       }
       return true;
@@ -314,6 +720,36 @@ export default function CustomersPage() {
 
   // Get unique states for filter dropdown
   const availableStates = [...new Set(customers.map(c => c.state).filter(Boolean))].sort();
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setStateFilter('all');
+  };
+
+  // Check if any filters are applied
+  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || typeFilter !== 'all' || stateFilter !== 'all';
+
+  // Handle filter change
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    
+    switch (name) {
+      case 'status':
+        setStatusFilter(value);
+        break;
+      case 'type':
+        setTypeFilter(value);
+        break;
+      case 'state':
+        setStateFilter(value);
+        break;
+      default:
+        break;
+    }
+  };
 
   if (loading) {
     return (
@@ -325,207 +761,220 @@ export default function CustomersPage() {
 
   return (
     <DashboardLayout activePage="customers">
-      {/* Main Content */}
-      <div className="p-4 bg-gray-100">
-        <div className="mx-auto">
-          {/* Page Header */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Customer Management</h1>
-              <p className="text-gray-600">Manage your customers and contacts</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
-              <button
-                onClick={() => {
-                  setCurrentCustomer(null);
-                  setFormModalOpen(true);
-                }}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Customer
-              </button>
-              <button
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
-              >
-                <Download size={16} className="mr-2" />
-                Export
-              </button>
-            </div>
-          </div>
-
-          {/* Show error if present */}
-          {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with background */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-3xl font-bold mb-1">Customer Management</h1>
+                <p className="text-blue-100">Organize and manage all your customer relationships</p>
               </div>
-            </div>
-          )}
-
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-100 mr-4">
-                  <Users size={20} className="text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Customers</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.totalCustomers}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-100 mr-4">
-                  <Users size={20} className="text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Active Customers</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.activeCustomers}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-100 mr-4">
-                  <Users size={20} className="text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">New Customers (30d)</p>
-                  <p className="text-2xl font-semibold text-gray-900">{stats.newCustomers}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-              <div className="flex-1 flex flex-col space-y-2">
-                <label htmlFor="search" className="text-sm font-medium text-gray-700">
-                  Search
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    id="search"
-                    placeholder="Search customers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  />
-                </div>
-              </div>
-              
-              <div className="w-full md:w-56 flex flex-col space-y-2">
-                <label htmlFor="state-filter" className="text-sm font-medium text-gray-700">
-                  State
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Filter size={16} className="text-gray-400" />
-                  </div>
-                  <select
-                    id="state-filter"
-                    value={stateFilter}
-                    onChange={(e) => setStateFilter(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="All">All States</option>
-                    {availableStates.map(state => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              <div className="flex-none flex items-end">
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => {
-                    setSearchTerm('');
-                    setStateFilter('All');
+                    setCurrentCustomer(null);
+                    setFormModalOpen(true);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                 >
-                  <RefreshCw size={16} className="mr-2 inline-block" />
-                  Reset Filters
+                  <Plus size={18} className="mr-2" />
+                  Add Customer
+                </button>
+                <button 
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Download size={18} className="mr-2" />
+                  Export Data
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Statistics */}
+          <CustomerSummary stats={stats} />
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1">
+              {/* Customer Types */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-blue-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <Building size={18} className="mr-2" />
+                    Customer Categories
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div
+                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                      typeFilter === 'Business' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setTypeFilter(typeFilter === 'Business' ? 'all' : 'Business')}
+                  >
+                    <div className="flex items-center">
+                      <Building size={16} className="text-blue-600 mr-2" />
+                      <span className="text-sm font-medium text-gray-700">Business</span>
+                    </div>
+                    <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                      {stats.businessCustomers || Math.round(stats.totalCustomers * 0.7)}
+                    </span>
+                  </div>
+                  
+                  <div
+                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                      typeFilter === 'Individual' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                    }`}
+                    onClick={() => setTypeFilter(typeFilter === 'Individual' ? 'all' : 'Individual')}
+                  >
+                    <div className="flex items-center">
+                      <User size={16} className="text-blue-600 mr-2" />
+                      <span className="text-sm font-medium text-gray-700">Individual</span>
+                    </div>
+                    <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                      {stats.individualCustomers || Math.round(stats.totalCustomers * 0.3)}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                    <button 
+                      onClick={() => {
+                        setCurrentCustomer(null);
+                        setFormModalOpen(true);
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                    >
+                      Add new customer
+                      <Plus size={14} className="ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               
-          {/* Customers Table */}
-          <div className="bg-white shadow rounded-md overflow-hidden">
-            <div className="overflow-x-auto">
-              {customersLoading ? (
-                <div className="p-8 text-center">
-                  <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-blue-500" />
-                  <p className="text-gray-500">Loading customers...</p>
+              {/* Popular States */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-blue-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <MapPin size={18} className="mr-2" />
+                    Customer Locations
+                  </h3>
                 </div>
-              ) : filteredCustomers.length === 0 ? (
-                <EmptyState 
-                  message={searchTerm || stateFilter !== 'All' 
-                    ? "No customers found matching your search or filters." 
-                    : "You haven't added any customers yet."}
-                  icon={<Users size={28} className="text-gray-400" />}
-                  buttonText="Add Your First Customer"
-                  onAction={() => {
-                    setCurrentCustomer(null);
-                    setFormModalOpen(true);
-                  }}                />
-              ) : (
-                <div>
-                  {filteredCustomers.map(customer => (
-                    <CustomerItem
-                      key={customer.id}
-                      customer={customer}
-                      onEdit={handleEditCustomer}
-                      onDelete={handleDeleteCustomer}
-                      isExpanded={expandedCustomerId === customer.id}
-                      onToggleExpand={() => handleToggleExpand(customer.id)}
-                    />
-                  ))}
+                <div className="p-4">
+                  {availableStates.length > 0 ? (
+                    availableStates.slice(0, 5).map(state => {
+                      const count = customers.filter(c => c.state === state).length;
+                      
+                      return (
+                        <div
+                          key={state}
+                          className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                            stateFilter === state ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                          }`}
+                          onClick={() => setStateFilter(stateFilter === state ? 'all' : state)}
+                        >
+                          <div className="flex items-center">
+                            <MapPin size={16} className="text-blue-600 mr-2" />
+                            <span className="text-sm font-medium text-gray-700">{state}</span>
+                          </div>
+                          <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <MapPin size={36} className="mx-auto mb-2 text-gray-400" />
+                      <p>No location data available</p>
+                    </div>
+                  )}
+                  
+                  {availableStates.length > 5 && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                      <button 
+                        onClick={() => {
+                          // Show location filter
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                      >
+                        View all states
+                        <ChevronDown size={14} className="ml-1" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
+            
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Filters */}
+              <CustomerFilters 
+                filters={{
+                  status: statusFilter,
+                  type: typeFilter,
+                  state: stateFilter,
+                  search: searchTerm,
+                  availableStates,
+                  filteredCount: filteredCustomers.length,
+                  totalCount: customers.length,
+                  isFiltered,
+                  onReset: resetFilters
+                }}
+                onFilterChange={handleFilterChange}
+                onSearch={(e) => setSearchTerm(e.target.value)}
+              />
+              
+              {/* Customers Table */}
+              <CustomerTable 
+                customers={filteredCustomers}
+                onEdit={handleEditCustomer}
+                onDelete={handleDeleteCustomer}
+                onView={handleViewCustomer}
+                onAddNew={() => {
+                  setCurrentCustomer(null);
+                  setFormModalOpen(true);
+                }}
+              />
             </div>
           </div>
         </div>
-      </div>
-      <style jsx>{`
-        @media (max-width: 767px) {
-          .md\:table-header-group {
-            display: none;
-          }
-        }
-      `}</style>
-      {/* Modals */}
-      {formModalOpen && (
-        <CustomerFormModal 
-          isOpen={formModalOpen}
+        
+        {/* Modals */}
+        {formModalOpen && (
+          <CustomerFormModal 
+            isOpen={formModalOpen}
+            onClose={() => {
+              setFormModalOpen(false);
+              setCurrentCustomer(null);
+            }}
+            userId={user?.id}
+            existingCustomer={currentCustomer}
+            onSave={handleSaveCustomer}
+            isSubmitting={customersLoading}
+          />
+        )}
+        
+        <ViewCustomerModal
+          isOpen={viewModalOpen}
           onClose={() => {
-            setFormModalOpen(false);
+            setViewModalOpen(false);
             setCurrentCustomer(null);
           }}
-          userId={user?.id}
-          existingCustomer={currentCustomer}
-          onSave={handleSaveCustomer}
-          isSubmitting={customersLoading}
+          customer={currentCustomer}
         />
-      )}
-      
-      {deleteModalOpen && (
+        
         <DeleteConfirmationModal 
           isOpen={deleteModalOpen}
           onClose={() => {
@@ -538,7 +987,7 @@ export default function CustomersPage() {
           message="This will delete all customer information. This action cannot be undone."
           isDeleting={isDeleting}
         />
-      )}
+      </main>
     </DashboardLayout>
   );
 }
