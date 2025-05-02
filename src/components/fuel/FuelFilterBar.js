@@ -1,4 +1,6 @@
 // src/components/fuel/FuelFilterBar.js
+"use client";
+
 import { useState } from "react";
 import { Search, Filter, Calendar, Truck, MapPin, X, RefreshCw } from "lucide-react";
 import { getUSStates } from "@/lib/services/fuelService";
@@ -56,8 +58,8 @@ export default function FuelFilterBar({
             )}
           </div>
           
-{/* Toggle Filters Button */}
-<button
+          {/* Toggle Filters Button */}
+          <button
             onClick={() => setExpanded(!expanded)}
             className={`flex-shrink-0 inline-flex items-center px-3 py-2 border ${
               hasActiveFilters() ? 

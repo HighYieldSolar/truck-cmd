@@ -1,4 +1,4 @@
-// src/components/FuelTrackerPage.js - Modified to use the enhanced VehicleSelector
+// src/components/FuelTrackerPage.js
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -8,25 +8,30 @@ import {
   FileDown, 
   Download, 
   Fuel, 
-  Trash2,
   RefreshCw,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  BarChart2,
+  Filter,
+  FileText
 } from "lucide-react";
 
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
 import { exportFuelDataForIFTA } from "@/lib/services/fuelService";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import FilterBar from "@/components/fuel/FilterBar";
 import FuelStats from "@/components/fuel/FuelStats";
 import StateSummary from "@/components/fuel/StateSummary";
 import FuelEntryItem from "@/components/fuel/FuelEntryItem";
-// Import updated components
 import FuelEntryForm from "@/components/fuel/FuelEntryForm";
 import ReceiptViewerModal from "@/components/fuel/ReceiptViewerModal";
 import FuelDeletionModal from "@/components/fuel/FuelDeletionModal";
 import EmptyState from "@/components/common/EmptyState";
+import StatusAlert from "@/components/common/StatusAlert";
+import FuelFilterBar from "@/components/fuel/FuelFilterBar";
+import FuelCategories from "@/components/fuel/FuelCategories";
+import TopFuelEntries from "@/components/fuel/TopFuelEntries";
+import FuelChart from "@/components/fuel/FuelChart";
 
 export default function FuelTrackerPage() {
   const router = useRouter();
@@ -245,17 +250,18 @@ export default function FuelTrackerPage() {
   
   // Open the receipt viewer modal
   const handleViewReceipt = (fuelEntry, vehicleInfo) => {
-    console.log("Opening receipt viewer with:", { fuelEntry, vehicleInfo });
-    // Add additional logging to verify receipt image URL
-    if (fuelEntry?.receipt_image) {
-      console.log("Receipt image URL:", fuelEntry.receipt_image);
-    }
-    
     setSelectedReceipt(fuelEntry);
     setSelectedVehicleInfo(vehicleInfo);
     setReceiptViewerOpen(true);
   };
 
+  // State selection filter
+  const handleStateSelect = (state) => {
+    setFilters(prev => ({
+      ...prev,
+      state: state === 'All' ? '' : state
+    }));
+  };
   
   // Reset all filters
   const handleResetFilters = () => {
@@ -287,9 +293,9 @@ export default function FuelTrackerPage() {
           state.amount.toFixed(2),
           state.purchases,
           state.average_price.toFixed(3)
-        ].join(',')) // Join each row data with a comma
+        ].join(','))
       ];
-      const csvContent = csvRows.join('\n'); // Fixed: Properly escaped newline character
+      const csvContent = csvRows.join('\n');
 
       // Create a download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -319,6 +325,16 @@ export default function FuelTrackerPage() {
     }
   };
   
+  // Format currency 
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+  
   // Show loading indicator while checking auth
   if (initialLoading) {
     return (
@@ -328,198 +344,311 @@ export default function FuelTrackerPage() {
     );
   }
   
+  // Generate state categories for the sidebar
+  const generateStateCategories = () => {
+    // Group by state and calculate total per state
+    const stateCategories = {};
+    
+    fuelEntries.forEach(entry => {
+      if (!stateCategories[entry.state]) {
+        stateCategories[entry.state] = 0;
+      }
+      stateCategories[entry.state] += parseFloat(entry.total_amount);
+    });
+    
+    return stateCategories;
+  };
+  
+  // Get the top 3 most expensive fuel entries
+  const getTopFuelEntries = () => {
+    return [...fuelEntries]
+      .sort((a, b) => parseFloat(b.total_amount) - parseFloat(a.total_amount))
+      .slice(0, 3);
+  };
+
   return (
-    <DashboardLayout activePage="fuel" className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0"> 
-          {/* Page Header - Updated Layout */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Title/Description Block */}
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Fuel Tracker</h1>
-              <p className="mt-1 text-sm text-gray-600">Track fuel purchases by state for IFTA reporting</p>
-            </div>
-            {/* Button Block */}
-            <div className="flex flex-shrink-0 flex-wrap gap-3">
-              <button 
-                onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Fuel Purchase
-              </button>
-              <button
-                onClick={handleExportIFTA}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
-              >            
-                <Download size={16} className="mr-2" /> 
-                Export IFTA
-              </button>
+    <DashboardLayout activePage="fuel">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with background */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-3xl font-bold mb-1">Fuel Tracker</h1>
+                <p className="text-blue-100">Track fuel purchases and generate IFTA reports by state</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Add Fuel Purchase
+                </button>
+                <button 
+                  onClick={handleExportIFTA}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                  disabled={fuelEntries.length === 0}
+                >
+                  <Download size={18} className="mr-2" />
+                  Export IFTA
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Main content area */}
-          <div className="mt-5">
-            {/* Show error if present */}
-            {error && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Show operation message if present */}
-            {operationMessage && (
-              <div className={`mb-6 ${
-                operationMessage.type === 'success' 
-                  ? 'bg-green-50 border-l-4 border-green-400' 
-                  : operationMessage.type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-red-50 border-l-4 border-red-400'
-              } p-4 rounded-md`}>
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    {operationMessage.type === 'success' ? (
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                    ) : operationMessage.type === 'warning' ? (
-                      <AlertCircle className="h-5 w-5 text-yellow-400" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-red-400" />
-                    )}
-                  </div>
-                  <div className="ml-3">
-                    <p className={`text-sm ${
-                      operationMessage.type === 'success' ? 'text-green-700' : 
-                      operationMessage.type === 'warning' ? 'text-yellow-700' :
-                      'text-red-700'
-                    }`}>
-                      {operationMessage.text}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <FuelStats 
-              stats={stats}
-              isLoading={loading} 
-              period={filters.dateRange === 'This Quarter' ? 'This Quarter' : filters.dateRange === 'Last Quarter' ? 'Last Quarter' : 'Selected Period'} 
-            />          
+          {/* Status messages */}
+          {error && (
+            <div className="mb-6">
+              <StatusAlert 
+                type="error"
+                message={error}
+                onClose={() => setError(null)}
+              />
+            </div>
+          )}
+          
+          {operationMessage && (
+            <div className="mb-6">
+              <StatusAlert 
+                type={operationMessage.type}
+                message={operationMessage.text}
+                onClose={() => setOperationMessage(null)}
+                duration={5000}
+              />
+            </div>
+          )}
 
-            {/* Filters */}
-            <FilterBar 
-              filters={filters} 
-              setFilters={setFilters} 
-              vehicles={vehicles} 
-              onReset={handleResetFilters}
-            />          
-            
-            {/* Per-state Summary */}
-            {fuelEntries.length > 0 && (
-              <div className="mb-6">
-                <StateSummary 
-                  fuelData={fuelEntries} 
-                  onExportForIFTA={handleExportIFTA}
-                />
-              </div>
-            )}
-            
-            {/* Fuel Entries Table */}
-            <div className="bg-white shadow overflow-hidden rounded-md mb-6">
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Fuel Purchases</h3>
-                <div className="text-sm text-gray-500">
-                  Showing {fuelEntries.length} entries
+          {/* Statistics */}
+          <FuelStats 
+            stats={stats}
+            isLoading={loading} 
+            period={filters.dateRange === 'This Quarter' ? 'This Quarter' : filters.dateRange === 'Last Quarter' ? 'Last Quarter' : 'Selected Period'}
+            className="mb-6" 
+          />
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1">
+              {/* Top 3 Fuel Purchases Card */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-green-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <Fuel size={18} className="mr-2" />
+                    Top Fuel Purchases
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {loading ? (
+                    <div className="flex justify-center items-center py-4">
+                      <RefreshCw size={24} className="animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <TopFuelEntries
+                      entries={getTopFuelEntries()}
+                      onViewReceipt={handleViewReceipt}
+                      onEditFuelEntry={handleEditFuelEntry}
+                    />
+                  )}
                 </div>
               </div>
               
-              <div className="overflow-x-auto">
-                {loading ? (
-                  <div className="p-8 text-center">
-                    <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-blue-500" />
-                    <p className="text-gray-500">Loading fuel purchases...</p>
-                  </div>
-                ) : fuelEntries.length === 0 ? (
-                  <EmptyState 
-                    message="No fuel entries found"
-                    description={
-                      filters.search || filters.state || filters.vehicleId || filters.dateRange !== 'This Quarter'
-                        ? "Try adjusting your search or filters."
-                        : "Start tracking your fuel purchases by adding your first entry."
-                    }
-                    icon={<Fuel size={28} className="text-gray-400" />}
-                    actionText="Add Fuel Purchase"
-                    onAction={() => {
-                      setCurrentFuelEntry(null);
-                      setFormModalOpen(true);
-                    }}
-                  />
-                ) : (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Location
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Gallons
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Vehicle
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Receipt
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Expense Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {fuelEntries.map(entry => (
-                        <FuelEntryItem 
-                          key={entry.id} 
-                          fuelEntry={entry} 
-                          onEdit={handleEditFuelEntry} 
-                          onDelete={handleDeleteFuelEntry} 
-                          onViewReceipt={handleViewReceipt} 
-                        />
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr>
-                        <td colSpan="2" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                          Total
-                        </td>
-                        <td className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                          {fuelEntries.reduce((sum, entry) => sum + entry.gallons, 0).toFixed(3)} gal
-                        </td>
-                        <td colSpan="5" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                          ${fuelEntries.reduce((sum, entry) => sum + entry.total_amount, 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                )}
+              {/* States Categories */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-blue-500 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <BarChart2 size={18} className="mr-2" />
+                    States
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {loading ? (
+                    <div className="flex justify-center items-center py-4">
+                      <RefreshCw size={24} className="animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <FuelCategories 
+                      categories={generateStateCategories()} 
+                      onCategorySelect={handleStateSelect}
+                      selectedCategory={filters.state || 'All'}
+                    />
+                  )}
+                </div>
               </div>
             </div>
+            
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Filters */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
+                  <h3 className="font-medium flex items-center text-gray-700">
+                    <Filter size={18} className="mr-2 text-gray-500" />
+                    Filter Fuel Purchases
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <FuelFilterBar 
+                    filters={filters} 
+                    setFilters={setFilters} 
+                    vehicles={vehicles} 
+                    onReset={handleResetFilters}
+                  />
+                </div>
+              </div>
+              
+              {/* Fuel Entries Records */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="font-medium text-gray-700 flex items-center">
+                    <FileText size={18} className="mr-2 text-blue-500" />
+                    Fuel Purchase Records
+                  </h3>
+                  <button
+                    onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Add New
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                      <RefreshCw size={32} className="animate-spin text-blue-500" />
+                    </div>
+                  ) : fuelEntries.length === 0 ? (
+                    <EmptyState 
+                      message="No fuel entries found"
+                      description={
+                        filters.search || filters.state || filters.vehicleId || filters.dateRange !== 'This Quarter'
+                          ? "Try adjusting your search or filters."
+                          : "Start tracking your fuel purchases by adding your first entry."
+                      }
+                      icon={<Fuel size={28} className="text-gray-400" />}
+                      actionText="Add Fuel Purchase"
+                      onAction={() => {
+                        setCurrentFuelEntry(null);
+                        setFormModalOpen(true);
+                      }}
+                    />
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Location
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Gallons
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Vehicle
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Receipt
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Expense Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {fuelEntries.map(entry => (
+                          <FuelEntryItem 
+                            key={entry.id} 
+                            fuelEntry={entry} 
+                            onEdit={handleEditFuelEntry} 
+                            onDelete={handleDeleteFuelEntry} 
+                            onViewReceipt={handleViewReceipt} 
+                          />
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-50">
+                        <tr>
+                          <td colSpan="2" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                            Total
+                          </td>
+                          <td className="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                            {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
+                          </td>
+                          <td colSpan="5" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                            {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+                
+                {fuelEntries.length > 0 && (
+                  <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      Showing {fuelEntries.length} entries
+                    </div>
+                    <div className="text-sm font-medium text-gray-700">
+                      Total: {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* State Summary */}
+              {fuelEntries.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="font-medium flex items-center text-gray-700">
+                      <BarChart2 size={18} className="mr-2 text-blue-500" />
+                      IFTA State Summary
+                    </h3>
+                  </div>
+                  <div className="p-0">
+                    <StateSummary 
+                      fuelData={fuelEntries} 
+                      onExportForIFTA={handleExportIFTA}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Fuel Chart */}
+              {fuelEntries.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="font-medium flex items-center text-gray-700">
+                      <BarChart2 size={18} className="mr-2 text-blue-500" />
+                      Fuel Analysis
+                    </h3>
+                  </div>
+                  <div className="p-4">
+                    {loading ? (
+                      <div className="flex justify-center items-center py-12">
+                        <RefreshCw size={32} className="animate-spin text-blue-500" />
+                      </div>
+                    ) : (
+                      <FuelChart 
+                        data={generateStateCategories()} 
+                        period={filters.dateRange} 
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          {/* /End replace */}
         </div>
-      </div>
+      </main>
 
       {/* Modals */}
       <FuelEntryForm 
@@ -531,10 +660,9 @@ export default function FuelTrackerPage() {
         fuelEntry={currentFuelEntry}
         onSave={handleSaveFuelEntry}
         isSubmitting={loading}
-        vehicles={vehicles} // This is still needed but only for compatibility
+        vehicles={vehicles}
       />
 
-      {/* ReceiptViewerModal */}
       <ReceiptViewerModal
         isOpen={receiptViewerOpen}
         onClose={() => {
@@ -546,7 +674,6 @@ export default function FuelTrackerPage() {
         vehicleInfo={selectedVehicleInfo}
       />
 
-      {/* Custom Fuel Deletion Modal */}
       <FuelDeletionModal
         isOpen={deleteModalOpen}
         onClose={() => {
