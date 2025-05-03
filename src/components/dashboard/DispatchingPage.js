@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { fetchCustomers } from "@/lib/services/customerService";
+import useDatabaseSync from "@/hooks/useDatabaseSync";
 import {
   Plus,
   Search,
@@ -23,6 +24,7 @@ import {
   AlertCircle,
   Package as PackageIcon,
   DollarSign,
+  Filter
 } from "lucide-react";
 
 // Import your components
@@ -37,15 +39,12 @@ import StatCard from "@/components/common/StatCard";
 // Fetch drivers from the database
 const fetchDrivers = async (userId) => {
   try {
-    // Try to get drivers data
     const { data, error } = await supabase
       .from('drivers')
       .select('*')
       .eq('user_id', userId);
       
     if (error) throw error;
-    
-    // Return the data, or an empty array if no data
     return data || [];
   } catch (error) {
     console.error('Error fetching drivers:', error);
@@ -56,13 +55,11 @@ const fetchDrivers = async (userId) => {
 // Fetch trucks from the database
 const fetchTrucks = async (userId) => {
   try {
-    // Try vehicles table first
     const { data, error } = await supabase
       .from('vehicles')
       .select('*')
       .eq('user_id', userId);
       
-    // If that fails, try trucks table
     if (error || !data || data.length === 0) {
       const { data: trucksData, error: trucksError } = await supabase
         .from('trucks')
@@ -91,7 +88,6 @@ const fetchLoads = async (userId, filters = {}) => {
     // Apply status filter
     if (filters.status && filters.status !== 'All') {
       if (filters.status === 'Active') {
-        // Active means any status that is not Completed or Cancelled
         query = query.not('status', 'in', '("Completed","Cancelled")');
       } else {
         query = query.eq('status', filters.status);
@@ -134,7 +130,6 @@ const fetchLoads = async (userId, filters = {}) => {
       }
     }
 
-    // Apply sorting
     if (filters.sortBy) {
       switch (filters.sortBy) {
         case 'pickupDate':
@@ -154,7 +149,6 @@ const fetchLoads = async (userId, filters = {}) => {
           break;
       }
     } else {
-      // Default sort by creation date (newest first)
       query = query.order('created_at', { ascending: false });
     }
     
@@ -162,12 +156,10 @@ const fetchLoads = async (userId, filters = {}) => {
     
     if (error) throw error;
     
-    // If no loads found yet, return empty array
     if (!data || data.length === 0) {
       return [];
     }
     
-    // Map database schema to component-friendly format
     return data.map(load => ({
       id: load.id,
       loadNumber: load.load_number,
@@ -211,7 +203,7 @@ const calculateLoadStats = (loads) => {
 export default function DispatchingPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadingLoads, setLoadingLoads] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   
   // State for the loads
   const [loads, setLoads] = useState([]);
@@ -246,10 +238,10 @@ export default function DispatchingPage() {
   // Error handling state
   const [error, setError] = useState(null);
 
-  // Define loadLoadsData BEFORE any useEffect that uses it
   const loadLoadsData = useCallback(async (userId) => {
+    if (!userId) return;
     try {
-      setLoadingLoads(true);
+      setDataLoading(true);
       const loadData = await fetchLoads(userId, filters);
       setLoads(loadData);
       setTotalLoads(loadData.length);
@@ -258,30 +250,37 @@ export default function DispatchingPage() {
       console.error('Error loading loads:', error);
       setError('Failed to load loads data. Please try refreshing the page.');
     } finally {
-      setLoadingLoads(false);
+      setDataLoading(false);
     }
-  }, [filters]); // Include filters as a dependency
+  }, [filters]);
 
-  // Now use loadLoadsData in useEffect
+  // Database sync hook (still used for auto-refresh functionality)
+  useDatabaseSync({
+    autoRefresh: true, 
+    refreshInterval: 5 * 60 * 1000,
+    onRefresh: async () => {
+      if (user) {
+        await loadLoadsData(user.id);
+      }
+    }
+  });
+
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
         
-        // Get user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
       
         if (userError) throw userError;
         
         if (!user) {
-          // Redirect to login page if not authenticated
           window.location.href = '/login';
           return;
         }
         
         setUser(user);
         
-        // Fetch all required data in parallel
         const [cusData, drvData, trkData] = await Promise.all([
           fetchCustomers(user.id),
           fetchDrivers(user.id),
@@ -292,7 +291,6 @@ export default function DispatchingPage() {
         setDrivers(drvData);
         setTrucks(trkData);
         
-        // Now fetch loads (this might take longer so do it separately)
         await loadLoadsData(user.id);
       
         setLoading(false);
@@ -304,14 +302,13 @@ export default function DispatchingPage() {
     }
 
     fetchData();
-  }, [loadLoadsData]); // Add loadLoadsData as a dependency
+  }, [loadLoadsData]);
   
-  // Effect to reload loads when filters change
   useEffect(() => {
     if (user) {
       loadLoadsData(user.id);
     }
-  }, [user, loadLoadsData]); // Include loadLoadsData here
+  }, [user, loadLoadsData]);
 
   // Handle selecting a load to view details
   const handleSelectLoad = (load) => {
@@ -326,7 +323,6 @@ export default function DispatchingPage() {
   // Handle status change for a load
   const handleStatusChange = async (updatedLoad) => {
     try {
-      // Update the load in the local state
       const updatedLoads = loads.map(load => {
         if (load.id === updatedLoad.id) {
           return updatedLoad;
@@ -346,7 +342,6 @@ export default function DispatchingPage() {
   // Handle assigning a driver to a load
   const handleAssignDriver = async (loadId, driverName, driverId) => {
     try {
-      // Update the load in the local state
       const updatedLoads = loads.map(load => {
         if (load.id === loadId) {
           return {
@@ -362,7 +357,6 @@ export default function DispatchingPage() {
       setLoads(updatedLoads);
       setLoadStats(calculateLoadStats(updatedLoads));
       
-      // Update the selected load if it's open
       if (selectedLoad && selectedLoad.id === loadId) {
         setSelectedLoad({
           ...selectedLoad,
@@ -380,7 +374,6 @@ export default function DispatchingPage() {
   // Handle assigning a truck to a load
   const handleAssignTruck = async (loadId, truckInfo, truckId) => {
     try {
-      // Update the load in the local state
       const updatedLoads = loads.map(load => {
         if (load.id === loadId) {
           return {
@@ -394,7 +387,6 @@ export default function DispatchingPage() {
       
       setLoads(updatedLoads);
       
-      // Update the selected load if it's open
       if (selectedLoad && selectedLoad.id === loadId) {
         setSelectedLoad({
           ...selectedLoad,
@@ -429,7 +421,6 @@ export default function DispatchingPage() {
     try {
       setIsDeleting(true);
       
-      // Delete the load from the database
       const { error } = await supabase
         .from('loads')
         .delete()
@@ -437,13 +428,11 @@ export default function DispatchingPage() {
       
       if (error) throw error;
       
-      // Update the UI by removing the deleted load
       const updatedLoads = loads.filter(load => load.id !== loadToDelete.id);
       setLoads(updatedLoads);
       setTotalLoads(updatedLoads.length);
       setLoadStats(calculateLoadStats(updatedLoads));
       
-      // Close the modal
       setDeleteModalOpen(false);
       setLoadToDelete(null);
       
@@ -465,29 +454,41 @@ export default function DispatchingPage() {
 
   return (
     <DashboardLayout activePage="dispatching">
-      {/* Main Content */}
-      <div className="p-4 bg-gray-100">
-        <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Dispatching</h1>
-              <p className="text-gray-600">Create and manage your loads and dispatching</p>
-            </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
-              <button 
-                onClick={() => setShowNewLoadModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus size={16} className="mr-2" />
-                Create Load
-              </button>
+      <main className="flex-1 overflow-y-auto bg-gray-100">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          {/* Header with gradient background - matching dashboard style */}
+          <div className="mb-6">
+            <div className="relative rounded-xl overflow-hidden shadow-sm">
+              {/* Gradient background with overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400"></div>
+              
+              {/* Content */}
+              <div className="relative p-6 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-4 sm:mb-0">
+                    <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+                      <Truck size={28} className="mr-3" />
+                      Load Management
+                    </h1>
+                    <p className="mt-1 text-blue-100">Create and manage your loads and dispatching</p>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button 
+                      onClick={() => setShowNewLoadModal(true)}
+                      className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Create Load
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
+          
           {/* Error message */}
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-xl">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-5 w-5 text-red-400" />
@@ -499,91 +500,103 @@ export default function DispatchingPage() {
             </div>
           )}
           
-          {/* Statistics Cards */}
+          {/* Statistics Cards - updated styling */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard 
               title="Active Loads" 
               value={loadStats.activeLoads} 
-              color="blue" 
+              color="blue"
+              icon={<Truck size={24} />}
             />
             <StatCard 
               title="Pending Loads" 
               value={loadStats.pendingLoads} 
               color="yellow" 
+              icon={<Clock size={24} />}
             />
             <StatCard 
               title="In Transit" 
               value={loadStats.inTransitLoads} 
               color="purple" 
+              icon={<MapPin size={24} />}
             />
             <StatCard 
               title="Completed" 
               value={loadStats.completedLoads} 
               color="green" 
+              icon={<CheckCircleIcon size={24} />}
             />
           </div>
           
-          {/* Filter Bar */}
-          <FilterBar filters={filters} setFilters={setFilters} />
-          
-          {/* Loads Grid */}
-          <div className="mb-4 flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">
-              Loads ({loads.length})
-            </h2>
-            <div className="text-sm text-gray-500">
-              {filters.status !== "All" || filters.search || filters.dateRange !== "all" ? (
-                <button 
-                  onClick={() => setFilters({search: "", status: "All", dateRange: "all", sortBy: "pickupDate"})}
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
-                >
-                  <RefreshCw size={12} className="mr-1" />
-                  Clear Filters
-                </button>
-              ) : null}
-            </div>
+          {/* Enhanced Filter Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+            <FilterBar filters={filters} setFilters={setFilters} />
           </div>
           
-          {/* Loads Grid */}
-          {loadingLoads ? (
-            <div className="flex items-center justify-center h-64">
-              <RefreshCw size={32} className="animate-spin text-blue-500" />
-            </div>
-          ) : loads.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-              <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <PackageIcon size={32} className="text-gray-400" />
+          {/* Load List Section */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-4 sm:mb-0">
+                  <h2 className="text-lg font-semibold text-gray-900">Loads</h2>
+                  <p className="mt-1 text-sm text-gray-500">{loads.length} total loads</p>
+                </div>
+                {filters.status !== "All" || filters.search || filters.dateRange !== "all" ? (
+                  <button 
+                    onClick={() => setFilters({search: "", status: "All", dateRange: "all", sortBy: "pickupDate"})}
+                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    <RefreshCw size={14} className="mr-1" />
+                    Clear Filters
+                  </button>
+                ) : null}
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No loads found</h3>
-              <p className="text-gray-500 mb-4">
-                {filters.status !== "All" || filters.search || filters.dateRange !== "all" 
-                  ? "Try adjusting your filters or search criteria."
-                  : "Get started by creating your first load."}
-              </p>
-              <button 
-                onClick={() => setShowNewLoadModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus size={16} className="mr-2" />
-                Create Load
-              </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {loads.map(load => (
-                <LoadCard
-                  key={load.id}
-                  load={load}
-                  onSelect={handleSelectLoad}
-                  onDelete={handleDeleteLoad}
-                />
-              ))}
+            
+            {/* Content */}
+            <div className="p-6">
+              {dataLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <RefreshCw size={32} className="animate-spin text-blue-500" />
+                </div>
+              ) : loads.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <PackageIcon size={32} className="text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">No loads found</h3>
+                  <p className="text-gray-500 mb-6">
+                    {filters.status !== "All" || filters.search || filters.dateRange !== "all" 
+                      ? "Try adjusting your filters or search criteria."
+                      : "Get started by creating your first load."}
+                  </p>
+                  <button 
+                    onClick={() => setShowNewLoadModal(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Create Load
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {loads.map(load => (
+                    <LoadCard
+                      key={load.id}
+                      load={load}
+                      onSelect={handleSelectLoad}
+                      onDelete={handleDeleteLoad}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      </main>
 
-      {/* Load Detail Modal */}
+      {/* Modals */}
       {selectedLoad && (
         <LoadDetailModal
           load={selectedLoad}
@@ -596,7 +609,6 @@ export default function DispatchingPage() {
         />
       )}
 
-      {/* New Load Modal */}
       {showNewLoadModal && (
         <NewLoadModal
           onClose={() => setShowNewLoadModal(false)}
@@ -605,7 +617,6 @@ export default function DispatchingPage() {
         />
       )}
 
-      {/* Delete Load Modal */}
       {deleteModalOpen && (
         <DeleteLoadModal
           isOpen={deleteModalOpen}

@@ -1,34 +1,48 @@
 // src/components/dispatching/FilterBar.js
 "use client";
 
-import { Search, Truck, CheckCircle } from "lucide-react";
+import { Search, Filter, Truck, CheckCircle, Clock, SlidersHorizontal } from "lucide-react";
 
 export default function FilterBar({ filters, setFilters }) {
   const statusOptions = [
-    "All",
-    "Pending",
-    "Assigned",
-    "In Transit",
-    "Loading",
-    "Unloading",
-    "Delivered",
-    "Completed",
-    "Cancelled",
-    "Delayed"
+    { value: "All", label: "All Status", icon: <SlidersHorizontal size={14} /> },
+    { value: "Pending", label: "Pending", icon: <Clock size={14} /> },
+    { value: "Assigned", label: "Assigned", icon: <Truck size={14} /> },
+    { value: "In Transit", label: "In Transit", icon: <Truck size={14} /> },
+    { value: "Loading", label: "Loading", icon: <SlidersHorizontal size={14} /> },
+    { value: "Unloading", label: "Unloading", icon: <SlidersHorizontal size={14} /> },
+    { value: "Delivered", label: "Delivered", icon: <CheckCircle size={14} /> },
+    { value: "Completed", label: "Completed", icon: <CheckCircle size={14} /> },
+    { value: "Cancelled", label: "Cancelled", icon: <SlidersHorizontal size={14} /> },
+    { value: "Delayed", label: "Delayed", icon: <Clock size={14} /> }
+  ];
+
+  const dateRangeOptions = [
+    { value: "all", label: "All Time" },
+    { value: "today", label: "Today" },
+    { value: "tomorrow", label: "Tomorrow" },
+    { value: "thisWeek", label: "This Week" },
+    { value: "thisMonth", label: "This Month" },
+  ];
+
+  const sortOptions = [
+    { value: "pickupDate", label: "Pickup Date" },
+    { value: "deliveryDate", label: "Delivery Date" },
+    { value: "status", label: "Status" },
+    { value: "customer", label: "Customer" },
+    { value: "rate", label: "Rate" },
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-      <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+    <div className="p-6">
+      <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
         {/* Search */}
         <div className="flex-1">
-          <label htmlFor="search" className="block text-xs font-medium text-gray-700 mb-1">Search</label>
           <div className="relative">
             <input
               type="text"
-              id="search"
-              placeholder="Search by load #, customer, or driver"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Search loads by number, customer, or driver..."
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50"
               value={filters.search}
               onChange={(e) => setFilters({...filters, search: e.target.value})}
             />
@@ -38,57 +52,90 @@ export default function FilterBar({ filters, setFilters }) {
           </div>
         </div>
 
-        {/* Status */}
-        <div className="sm:w-40">
-          <label htmlFor="status" className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-          <select
-            id="status"
-            className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-            value={filters.status}
-            onChange={(e) => setFilters({...filters, status: e.target.value})}
-          >
-            {statusOptions.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Status Filter */}
+          <div className="relative min-w-[160px]">
+            <select
+              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              value={filters.status}
+              onChange={(e) => setFilters({...filters, status: e.target.value})}
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <Filter size={14} className="text-gray-400" />
+            </div>
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="relative min-w-[140px]">
+            <select
+              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              value={filters.dateRange}
+              onChange={(e) => setFilters({...filters, dateRange: e.target.value})}
+            >
+              {dateRangeOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By */}
+          <div className="relative min-w-[140px]">
+            <select
+              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              value={filters.sortBy}
+              onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
+            >
+              {sortOptions.map(option => (
+                <option key={option.value} value={option.value}>Sort by {option.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
       
-      {/* Quick filter buttons */}
+      {/* Quick filter chips */}
       <div className="flex flex-wrap gap-2 mt-4">
-        <button
+        <FilterChip 
+          label="All"
+          icon={<SlidersHorizontal size={12} />}
+          isActive={filters.status === "All"} 
           onClick={() => setFilters({...filters, status: "All"})}
-          className={`px-3 py-1 text-xs rounded-full ${
-            filters.status === "All" 
-              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-              : 'bg-gray-100 text-gray-800 border border-gray-200'
-          }`}
-        >
-          All
-        </button>
-        <button
+        />
+        <FilterChip 
+          label="Active"
+          icon={<Truck size={12} />}
+          isActive={filters.status === "Active"} 
           onClick={() => setFilters({...filters, status: "Active"})}
-          className={`px-3 py-1 text-xs rounded-full flex items-center ${
-            filters.status === "Active" 
-              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-              : 'bg-gray-100 text-gray-800 border border-gray-200'
-          }`}
-        >
-          <Truck size={10} className="mr-1" />
-          Active
-        </button>
-        <button
+        />
+        <FilterChip 
+          label="Completed"
+          icon={<CheckCircle size={12} />}
+          isActive={filters.status === "Completed"} 
           onClick={() => setFilters({...filters, status: "Completed"})}
-          className={`px-3 py-1 text-xs rounded-full flex items-center ${
-            filters.status === "Completed" 
-              ? 'bg-green-100 text-green-800 border border-green-300' 
-              : 'bg-gray-100 text-gray-800 border border-gray-200'
-          }`}
-        >
-          <CheckCircle size={10} className="mr-1" />
-          Completed
-        </button>
+        />
       </div>
     </div>
+  );
+}
+
+// Filter Chip Component
+function FilterChip({ label, icon, isActive, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+        isActive
+          ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+          : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+      }`}
+    >
+      {icon && <span className="mr-1.5">{icon}</span>}
+      {label}
+    </button>
   );
 }
