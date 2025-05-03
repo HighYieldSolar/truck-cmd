@@ -1,49 +1,120 @@
-// src/components/dispatching/NewLoadModal.js
-import React, { useState, useEffect } from 'react';
-import { X, Truck, Calendar, MapPin, DollarSign } from 'lucide-react';
+// src/components/dashboard/NewLoadForm.js
+"use client";
 
-const STORAGE_KEY = 'new_load_form_data';
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { 
+  X, MapPin, Building, Calendar, DollarSign, FileText, RefreshCw, 
+  CheckCircle, AlertCircle, Info, Truck, Route, Clock
+} from "lucide-react";
 
-export default function NewLoadModal({ onClose, onSave, customers = [] }) {
-  // Add debugging
-  console.log('Customers prop received:', customers);
+// Helper function to get form data from local storage
+const getFormDataFromLocalStorage = (formKey) => {
+  try {
+    if (typeof window === 'undefined') return null;
+    
+    const formDataString = localStorage.getItem(formKey);
+    return formDataString ? JSON.parse(formDataString) : null;
+  } catch (error) {
+    console.error("Error retrieving from localStorage:", error);
+    return null;
+  }
+};
+
+// Helper function to set form data to local storage
+const setFormDataToLocalStorage = (formKey, data) => {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.setItem(formKey, JSON.stringify(data));
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+  }
+};
+
+// Helper function to clear form data from local storage
+const clearFormDataFromLocalStorage = (formKey) => {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.removeItem(formKey);
+  } catch (error) {
+    console.error("Error clearing localStorage:", error);
+  }
+};
+
+export default function NewLoadForm({ onClose, onSubmit }) {
+  // Form key for localStorage
+  const formKey = 'loadForm-new';
   
-  const [formData, setFormData] = useState({
-    loadNumber: '',
-    customer: '',
-    origin: '',
-    destination: '',
-    pickupDate: '',
-    deliveryDate: '',
-    rate: '',
-    distance: '',
-    description: '',
-    status: 'Pending'
-  });
-
-  // Load data from localStorage on component mount
+  // Initial form data
+  const initialFormData = {
+    customer: "",
+    origin: "",
+    destination: "",
+    pickupDate: "",
+    deliveryDate: "",
+    rate: "",
+    description: "",
+  };
+  
+  // State management
+  const [formData, setFormData] = useState(initialFormData);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [customers, setCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [hasRestoredData, setHasRestoredData] = useState(false);
+  
+  // Load initial data from localStorage
   useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        console.log('Loaded from localStorage:', parsedData);
-        setFormData(prev => ({
-          ...prev,
-          ...parsedData
-        }));
-      } catch (error) {
-        console.error('Error parsing saved form data:', error);
-      }
+    const storedData = getFormDataFromLocalStorage(formKey);
+    
+    if (storedData && Object.values(storedData).some(value => value !== "" && value !== null)) {
+      setFormData(storedData);
+      setHasRestoredData(true);
     }
+    
+    setInitialDataLoaded(true);
   }, []);
-
-  // Save to localStorage whenever formData changes
+  
+  // Save form data to localStorage when form data changes
   useEffect(() => {
-    console.log('Saving to localStorage:', formData);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-  }, [formData]);
-
+    if (initialDataLoaded) {
+      setFormDataToLocalStorage(formKey, formData);
+    }
+  }, [formData, initialDataLoaded]);
+  
+  // Load customers
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        setCustomersLoading(true);
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+        
+        const { data, error } = await supabase
+          .from("customers")
+          .select("id, company_name")
+          .eq("user_id", user.id)
+          .order("company_name");
+        
+        if (error) throw error;
+        
+        setCustomers(data || []);
+      } catch (err) {
+        console.error("Error loading customers:", err);
+        setError("Failed to load customers. You can still enter customer name manually.");
+      } finally {
+        setCustomersLoading(false);
+      }
+    };
+    
+    loadCustomers();
+  }, []);
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -51,291 +122,359 @@ export default function NewLoadModal({ onClose, onSave, customers = [] }) {
       [name]: value
     }));
   };
-
+  
+  const validateForm = () => {
+    if (!formData.customer.trim()) {
+      setError("Customer name is required");
+      return false;
+    }
+    if (!formData.origin.trim()) {
+      setError("Pickup location is required");
+      return false;
+    }
+    if (!formData.destination.trim()) {
+      setError("Delivery location is required");
+      return false;
+    }
+    if (!formData.pickupDate) {
+      setError("Pickup date is required");
+      return false;
+    }
+    if (!formData.deliveryDate) {
+      setError("Delivery date is required");
+      return false;
+    }
+    if (!formData.rate || isNaN(parseFloat(formData.rate))) {
+      setError("Valid rate is required");
+      return false;
+    }
+    
+    const pickupDateTime = new Date(formData.pickupDate);
+    const deliveryDateTime = new Date(formData.deliveryDate);
+    
+    if (deliveryDateTime <= pickupDateTime) {
+      setError("Delivery date must be after pickup date");
+      return false;
+    }
+    
+    return true;
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     
-    // Create load object with all needed data
-    const newLoad = {
-      ...formData,
-      loadNumber: formData.loadNumber || `L${Math.floor(10000 + Math.random() * 90000)}`,
-      rate: parseFloat(formData.rate) || 0,
-      distance: parseFloat(formData.distance) || 0,
-      createdAt: new Date().toISOString()
-    };
+    if (!validateForm()) {
+      return;
+    }
     
-    // Save the load
-    await onSave(newLoad);
-    
-    // Clear localStorage after successful save
-    localStorage.removeItem(STORAGE_KEY);
-    
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const loadData = {
+        user_id: user.id,
+        customer: formData.customer,
+        origin: formData.origin,
+        destination: formData.destination,
+        pickup_date: formData.pickupDate,
+        delivery_date: formData.deliveryDate,
+        rate: parseFloat(formData.rate),
+        description: formData.description || "",
+        status: "Pending",
+        created_at: new Date().toISOString(),
+      };
+      
+      const { data, error } = await supabase
+        .from("loads")
+        .insert([loadData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Clear form data from localStorage on successful submission
+      clearFormDataFromLocalStorage(formKey);
+      
+      onSubmit(data);
+      onClose();
+    } catch (err) {
+      console.error("Error creating load:", err);
+      setError(err.message || "Failed to create load");
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  const handleClose = () => {
+    // Keep data in localStorage when closing
     onClose();
   };
-
-  const handleClear = () => {
-    setFormData({
-      loadNumber: '',
-      customer: '',
-      origin: '',
-      destination: '',
-      pickupDate: '',
-      deliveryDate: '',
-      rate: '',
-      distance: '',
-      description: '',
-      status: 'Pending'
-    });
-    localStorage.removeItem(STORAGE_KEY);
+  
+  const handleClearForm = () => {
+    clearFormDataFromLocalStorage(formKey);
+    setFormData(initialFormData);
+    setHasRestoredData(false);
   };
-
-  const handleCloseModal = () => {
-    // Don't clear localStorage when closing
-    onClose();
-  };
-
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-blue-500 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white flex items-center">
-            <Truck size={24} className="mr-3" />
-            Create New Load
-          </h2>
-          <button 
-            onClick={handleCloseModal}
-            className="text-white hover:text-blue-100 rounded-full p-1 transition-colors"
-          >
-            <X size={24} />
-          </button>
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 p-5 rounded-t-xl text-white z-10">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold flex items-center">
+              <Route size={20} className="mr-2" />
+              Create New Load
+            </h2>
+            <button 
+              onClick={handleClose}
+              className="p-2 hover:bg-blue-500 rounded-full transition-colors"
+              disabled={saving}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Load Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Load Number
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Truck size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="loadNumber"
-                  value={formData.loadNumber}
-                  onChange={handleChange}
-                  placeholder="Auto-generated if empty"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                />
-              </div>
+        
+        {/* Form content */}
+        <div className="p-6">
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-red-700">{error}</p>
             </div>
-
-            {/* Customer */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer *
-              </label>
-              <select
-                name="customer"
-                value={formData.customer}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                required
+          )}
+          
+          {hasRestoredData && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md flex items-start justify-between">
+              <div className="flex items-start">
+                <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-sm text-blue-700">Your previous form data has been restored.</p>
+              </div>
+              <button
+                onClick={handleClearForm}
+                className="ml-4 text-sm text-blue-600 hover:text-blue-800 underline"
               >
-                <option value="" style={{ backgroundColor: 'black', color: 'white' }}>
-                  Select a customer
-                </option>
-                {customers && customers.length > 0 ? (
-                  customers.map(customer => (
-                    <option 
-                      key={customer.id} 
-                      value={customer.company_name || customer.name}
-                      style={{ backgroundColor: 'black', color: 'white' }}
-                    >
-                      {customer.company_name || customer.name}
-                    </option>
-                  ))
+                Clear form
+              </button>
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Customer section */}
+            <div>
+              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
+                Customer <span className="text-red-500">*</span>
+              </label>
+              <div className="flex space-x-2">
+                {customersLoading ? (
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Loading customers..."
+                      disabled
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <RefreshCw size={16} className="animate-spin text-gray-400" />
+                    </div>
+                  </div>
+                ) : customers.length > 0 ? (
+                  <select
+                    id="customer"
+                    name="customer"
+                    value={formData.customer}
+                    onChange={handleChange}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  >
+                    <option value="">Select a customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.company_name}>
+                        {customer.company_name}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
-                  <option value="" disabled style={{ backgroundColor: 'black', color: 'white' }}>
-                    No customers available
-                  </option>
+                  <input
+                    type="text"
+                    id="customer"
+                    name="customer"
+                    value={formData.customer}
+                    onChange={handleChange}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="Enter customer name"
+                    required
+                  />
                 )}
-              </select>
-            </div>
-
-            {/* Origin */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Origin *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="origin"
-                  value={formData.origin}
-                  onChange={handleChange}
-                  placeholder="Enter pickup location"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  required
-                />
               </div>
             </div>
-
-            {/* Destination */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Destination *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin size={18} className="text-gray-400" />
+            
+            {/* Location section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">
+                  Pickup Location <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin size={16} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="origin"
+                    name="origin"
+                    value={formData.origin}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="City, State"
+                    required
+                  />
                 </div>
-                <input
-                  type="text"
-                  name="destination"
-                  value={formData.destination}
-                  onChange={handleChange}
-                  placeholder="Enter delivery location"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  required
-                />
+              </div>
+              
+              <div>
+                <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Location <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin size={16} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="destination"
+                    name="destination"
+                    value={formData.destination}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="City, State"
+                    required
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Pickup Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Pickup Date *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Calendar size={18} className="text-gray-400" />
+            
+            {/* Date section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Pickup Date <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar size={16} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="date"
+                    id="pickupDate"
+                    name="pickupDate"
+                    value={formData.pickupDate}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  />
                 </div>
-                <input
-                  type="date"
-                  name="pickupDate"
-                  value={formData.pickupDate}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  required
-                />
+              </div>
+              
+              <div>
+                <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Expected Delivery Date <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar size={16} className="text-gray-400" />
+                  </div>
+                  <input
+                    type="date"
+                    id="deliveryDate"
+                    name="deliveryDate"
+                    value={formData.deliveryDate}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    required
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Delivery Date */}
+            
+            {/* Rate section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Delivery Date *
+              <label htmlFor="rate" className="block text-sm font-medium text-gray-700 mb-1">
+                Rate ($) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Calendar size={18} className="text-gray-400" />
-                </div>
-                <input
-                  type="date"
-                  name="deliveryDate"
-                  value={formData.deliveryDate}
-                  onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Rate */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rate *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <DollarSign size={18} className="text-gray-400" />
+                  <DollarSign size={16} className="text-gray-400" />
                 </div>
                 <input
                   type="number"
+                  id="rate"
                   name="rate"
                   value={formData.rate}
                   onChange={handleChange}
-                  placeholder="0.00"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                  required
-                  min="0"
                   step="0.01"
+                  min="0"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="0.00"
+                  required
                 />
               </div>
             </div>
-
-            {/* Distance */}
+            
+            {/* Description section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Distance (miles)
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
               </label>
-              <input
-                type="number"
-                name="distance"
-                value={formData.distance}
-                onChange={handleChange}
-                placeholder="Enter distance"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                min="0"
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Add any additional notes about this load..."
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              rows="3"
-            />
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 flex flex-col-reverse md:flex-row md:justify-between md:items-center gap-4">
-            {/* Draft notice */}
-            <div className="text-sm text-gray-500 text-center md:text-left">
-              Your data is automatically saved as you type
+              <div className="relative">
+                <div className="absolute top-3 left-0 pl-3 pointer-events-none">
+                  <FileText size={16} className="text-gray-400" />
+                </div>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="3"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Additional details about the load"
+                ></textarea>
+              </div>
             </div>
             
-            {/* Buttons */}
-            <div className="flex justify-center md:justify-end space-x-4">
+            {/* Action buttons */}
+            <div className="border-t border-gray-200 pt-6 flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={handleClear}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Clear Form
-              </button>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                onClick={handleClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                disabled={saving}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                disabled={saving}
+                className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
               >
-                Create Load
+                {saving ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin mr-2" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={16} className="mr-2" />
+                    Create Load
+                  </>
+                )}
               </button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
