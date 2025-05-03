@@ -1,3 +1,4 @@
+// src/components/dashboard/CompleteLoadPage.js
 "use client";
 
 import React, { Suspense } from 'react';
@@ -52,7 +53,7 @@ export default function CompleteLoadPage({ params }) {
   if (!loadId) {
     return (
       <DashboardLayout activePage="dispatching">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
             <h2 className="text-lg font-medium text-yellow-800">Missing Load ID</h2>
             <p className="mt-2 text-sm text-yellow-700">

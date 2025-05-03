@@ -57,7 +57,7 @@ export default function FilterBar({ filters, setFilters }) {
           {/* Status Filter */}
           <div className="relative min-w-[160px]">
             <select
-              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              className="text-gray-600 block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
               value={filters.status}
               onChange={(e) => setFilters({...filters, status: e.target.value})}
             >
@@ -73,7 +73,7 @@ export default function FilterBar({ filters, setFilters }) {
           {/* Date Range Filter */}
           <div className="relative min-w-[140px]">
             <select
-              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              className="text-gray-600 block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
               value={filters.dateRange}
               onChange={(e) => setFilters({...filters, dateRange: e.target.value})}
             >
@@ -86,7 +86,7 @@ export default function FilterBar({ filters, setFilters }) {
           {/* Sort By */}
           <div className="relative min-w-[140px]">
             <select
-              className="block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
+              className="text-gray-600 block w-full pl-3 pr-10 py-2.5 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none"
               value={filters.sortBy}
               onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
             >
