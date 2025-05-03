@@ -644,7 +644,7 @@ export default function CompleteLoadForm({ loadId }) {
   return (
     <div className="bg-gray-100 min-h-screen">
       {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg">
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">

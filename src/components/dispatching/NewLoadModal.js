@@ -1,303 +1,341 @@
 // src/components/dispatching/NewLoadModal.js
-"use client";
+import React, { useState, useEffect } from 'react';
+import { X, Truck, Calendar, MapPin, DollarSign } from 'lucide-react';
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { X, RefreshCw, Users, Truck as TruckIcon, Plus } from "lucide-react";
+const STORAGE_KEY = 'new_load_form_data';
 
-export default function NewLoadModal({ onClose, onSave, customers }) {
-  const [formData, setFormData] = useState({
-    customer: "",
-    origin: "",
-    destination: "",
-    pickupDate: "",
-    deliveryDate: "",
-    rate: "",
-    description: "",
-    loadNumber: "",
-    driverId: "",
-    truckId: ""
-  });
+export default function NewLoadModal({ onClose, onSave, customers = [] }) {
+  // Add debugging
+  console.log('Customers prop received:', customers);
   
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [drivers, setDrivers] = useState([]);
-  const [trucks, setTrucks] = useState([]);
-  const [loadingFleet, setLoadingFleet] = useState(true);
-  const [fleetError, setFleetError] = useState(null);
+  const [formData, setFormData] = useState({
+    loadNumber: '',
+    customer: '',
+    origin: '',
+    destination: '',
+    pickupDate: '',
+    deliveryDate: '',
+    rate: '',
+    distance: '',
+    description: '',
+    status: 'Pending'
+  });
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        console.log('Loaded from localStorage:', parsedData);
+        setFormData(prev => ({
+          ...prev,
+          ...parsedData
+        }));
+      } catch (error) {
+        console.error('Error parsing saved form data:', error);
+      }
+    }
+  }, []);
+
+  // Save to localStorage whenever formData changes
+  useEffect(() => {
+    console.log('Saving to localStorage:', formData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
-    // Maintain the same submission logic
-    // Just updating the UI components
+    // Create load object with all needed data
+    const newLoad = {
+      ...formData,
+      loadNumber: formData.loadNumber || `L${Math.floor(10000 + Math.random() * 90000)}`,
+      rate: parseFloat(formData.rate) || 0,
+      distance: parseFloat(formData.distance) || 0,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Save the load
+    await onSave(newLoad);
+    
+    // Clear localStorage after successful save
+    localStorage.removeItem(STORAGE_KEY);
+    
+    onClose();
+  };
+
+  const handleClear = () => {
+    setFormData({
+      loadNumber: '',
+      customer: '',
+      origin: '',
+      destination: '',
+      pickupDate: '',
+      deliveryDate: '',
+      rate: '',
+      distance: '',
+      description: '',
+      status: 'Pending'
+    });
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const handleCloseModal = () => {
+    // Don't clear localStorage when closing
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10 rounded-t-xl">
-          <div className="flex items-center">
-            <div className="p-2 rounded-lg bg-blue-100 mr-3">
-              <Plus size={20} className="text-blue-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">Create New Load</h2>
-          </div>
+        <div className="bg-blue-500 px-6 py-4 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <Truck size={24} className="mr-3" />
+            Create New Load
+          </h2>
           <button 
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            disabled={isSubmitting}
+            onClick={handleCloseModal}
+            className="text-white hover:text-blue-100 rounded-full p-1 transition-colors"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
-        
-        {/* Form Content */}
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-8">
-            {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Load Number */}
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Load Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="loadNumber"
-                    value={formData.loadNumber}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    required
-                  />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Load Number
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Truck size={18} className="text-gray-400" />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Customer <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="customer"
-                    value={formData.customer}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                    required
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map(customer => (
-                      <option key={customer.id} value={customer.company_name}>{customer.company_name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            {/* Route Information */}
-            <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Route Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Origin <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="origin"
-                    placeholder="City, State"
-                    value={formData.origin}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Destination <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="destination"
-                    placeholder="City, State"
-                    value={formData.destination}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Schedule */}
-            <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Schedule</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Pickup Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="pickupDate"
-                    value={formData.pickupDate}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Delivery Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="deliveryDate"
-                    value={formData.deliveryDate}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Financial Information */}
-            <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Financial Information</h3>
-              <div className="md:w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Rate ($) <span className="text-red-500">*</span>
-                </label>
                 <input
-                  type="number"
-                  name="rate"
-                  placeholder="0.00"
-                  value={formData.rate}
+                  type="text"
+                  name="loadNumber"
+                  value={formData.loadNumber}
                   onChange={handleChange}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Auto-generated if empty"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Customer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer *
+              </label>
+              <select
+                name="customer"
+                value={formData.customer}
+                onChange={handleChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                required
+              >
+                <option value="" style={{ backgroundColor: 'black', color: 'white' }}>
+                  Select a customer
+                </option>
+                {customers && customers.length > 0 ? (
+                  customers.map(customer => (
+                    <option 
+                      key={customer.id} 
+                      value={customer.company_name || customer.name}
+                      style={{ backgroundColor: 'black', color: 'white' }}
+                    >
+                      {customer.company_name || customer.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled style={{ backgroundColor: 'black', color: 'white' }}>
+                    No customers available
+                  </option>
+                )}
+              </select>
+            </div>
+
+            {/* Origin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Origin *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MapPin size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="origin"
+                  value={formData.origin}
+                  onChange={handleChange}
+                  placeholder="Enter pickup location"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                   required
                 />
               </div>
             </div>
-            
-            {/* Assignment */}
+
+            {/* Destination */}
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Assignment</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                    <Users size={16} className="mr-2" /> Driver Assignment
-                  </label>
-                  <select
-                    name="driverId"
-                    value={formData.driverId}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                    disabled={loadingFleet}
-                  >
-                    <option value="">Unassigned</option>
-                    {drivers.map(driver => (
-                      <option key={driver.id} value={driver.id}>{driver.name}</option>
-                    ))}
-                  </select>
-                  {loadingFleet && (
-                    <p className="mt-1.5 text-xs text-gray-500 flex items-center">
-                      <RefreshCw size={12} className="animate-spin mr-1" />
-                      Loading drivers...
-                    </p>
-                  )}
-                  {drivers.length === 0 && !loadingFleet && (
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      No active drivers found. <a href="/dashboard/fleet/drivers" className="text-blue-600 hover:underline">Add drivers</a> in fleet management.
-                    </p>
-                  )}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Destination *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MapPin size={18} className="text-gray-400" />
                 </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center">
-                    <TruckIcon size={16} className="mr-2" /> Truck Assignment
-                  </label>
-                  <select
-                    name="truckId"
-                    value={formData.truckId}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                    disabled={loadingFleet}
-                  >
-                    <option value="">No truck assigned</option>
-                    {trucks.map(truck => (
-                      <option key={truck.id} value={truck.id}>{truck.name} - {truck.make} {truck.model}</option>
-                    ))}
-                  </select>
-                  {loadingFleet && (
-                    <p className="mt-1.5 text-xs text-gray-500 flex items-center">
-                      <RefreshCw size={12} className="animate-spin mr-1" />
-                      Loading trucks...
-                    </p>
-                  )}
-                  {trucks.length === 0 && !loadingFleet && (
-                    <p className="mt-1.5 text-xs text-gray-500">
-                      No active trucks found. <a href="/dashboard/fleet/trucks" className="text-blue-600 hover:underline">Add trucks</a> in fleet management.
-                    </p>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  name="destination"
+                  value={formData.destination}
+                  onChange={handleChange}
+                  placeholder="Enter delivery location"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  required
+                />
               </div>
             </div>
-            
-            {/* Additional Information */}
+
+            {/* Pickup Date */}
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-5">Additional Information</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description (Optional)</label>
-                <textarea
-                  name="description"
-                  placeholder="Enter any special instructions or notes..."
-                  value={formData.description}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pickup Date *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Calendar size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="date"
+                  name="pickupDate"
+                  value={formData.pickupDate}
                   onChange={handleChange}
-                  rows={3}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                ></textarea>
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  required
+                />
               </div>
+            </div>
+
+            {/* Delivery Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Delivery Date *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Calendar size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="date"
+                  name="deliveryDate"
+                  value={formData.deliveryDate}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Rate */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Rate *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <DollarSign size={18} className="text-gray-400" />
+                </div>
+                <input
+                  type="number"
+                  name="rate"
+                  value={formData.rate}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Distance */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Distance (miles)
+              </label>
+              <input
+                type="number"
+                name="distance"
+                value={formData.distance}
+                onChange={handleChange}
+                placeholder="Enter distance"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                min="0"
+              />
             </div>
           </div>
-          
-          {fleetError && (
-            <div className="mt-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200">
-              {fleetError}
+
+          {/* Description */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Add any additional notes about this load..."
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              rows="3"
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 flex flex-col-reverse md:flex-row md:justify-between md:items-center gap-4">
+            {/* Draft notice */}
+            <div className="text-sm text-gray-500 text-center md:text-left">
+              Your data is automatically saved as you type
             </div>
-          )}
-        </form>
-        
-        {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-xl sticky bottom-0 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 text-sm font-medium transition-colors"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center transition-colors"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <RefreshCw size={16} className="mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Plus size={16} className="mr-2" />
+            
+            {/* Buttons */}
+            <div className="flex justify-center md:justify-end space-x-4">
+              <button
+                type="button"
+                onClick={handleClear}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Clear Form
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
                 Create Load
-              </>
-            )}
-          </button>
-        </div>
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );
