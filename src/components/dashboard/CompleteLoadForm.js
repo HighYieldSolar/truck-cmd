@@ -1,13 +1,13 @@
 // src/components/dashboard/CompleteLoadForm.js
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Image } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock,
-  User, FileText, Upload, Download, Camera, Eye, Trash2, RefreshCw,
-  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package,
-  Users, Loader2, Check
+  ChevronLeft, AlertCircle, CheckCircle, X, MapPin,
+  User, FileText, Upload, Download, Eye, Trash2,
+  Info, DollarSign, Star, ChevronRight, Building, Truck,
+  Users, Loader2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
@@ -178,15 +178,19 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
 
         <div className="flex-1 overflow-auto bg-gray-50 p-6 flex items-center justify-center">
           {file && typeof file !== 'string' && file.type.startsWith('image/') ? (
-            <img
+            <Image
               src={fileUrl}
               alt="Document Preview"
+              width={800} // Adjust width as needed
+              height={600} // Adjust height as needed
               className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
             />
           ) : file && typeof file === 'string' && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ? (
-            <img
+            <Image
               src={fileUrl}
               alt="Document Preview"
+              width={800} // Adjust width as needed
+              height={600} // Adjust height as needed
               className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
             />
           ) : (
@@ -312,28 +316,27 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     }
   }, [formData, loadId]);
 
-  // Load data on mount if not provided
+  // Load data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Check if we already have load details
-        if (initialLoadDetails) {
-          setLoadDetails(initialLoadDetails);
-          setLoading(false);
-          return;
-        }
-
+        // First, ensure we have a valid user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-        if (userError) throw userError;
+        if (userError) {
+          console.error("Auth error:", userError);
+          throw userError;
+        }
 
         if (!user) {
+          console.log("No user found, redirecting to login");
           router.push('/login');
           return;
         }
 
+        console.log("User authenticated:", user.id);
         setUser(user);
 
         if (!loadId) {
@@ -393,7 +396,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     if (loadId) {
       fetchData();
     }
-  }, [loadId, router, initialLoadDetails]);
+  }, [loadId, router]); // Removed initialLoadDetails from dependencies
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -530,12 +533,23 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
     setSubmitting(true);
     try {
+      // Check if user exists first
       if (!user) {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) {
-          throw new Error("User not authenticated");
+        // Try to get the user again
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !currentUser) {
+          throw new Error("Authentication required. Please log in again.");
         }
+
+        // Update the user state
         setUser(currentUser);
+      }
+
+      // Now safely use user.id
+      const currentUserId = user?.id;
+      if (!currentUserId) {
+        throw new Error("User ID not found. Please log in again.");
       }
 
       const deliveryDateTime = new Date(`${formData.deliveryDate}T${formData.deliveryTime}`);
@@ -549,7 +563,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           continue;
         }
 
-        const fileName = `${user.id}/loads/${loadDetails.loadNumber}/pod/${Date.now()}-${file.name}`;
+        // Use currentUserId instead of user.id directly
+        const fileName = `${currentUserId}/loads/${loadDetails.loadNumber}/pod/${Date.now()}-${file.name}`;
 
         const { data: fileData, error: fileError } = await supabase.storage
           .from('documents')
@@ -568,7 +583,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
       const loadUpdateData = {
         status: 'Completed',
         completed_at: new Date().toISOString(),
-        completed_by: user?.id || null,
+        completed_by: currentUserId, // Use currentUserId here
         actual_delivery_date: formData.deliveryDate,
         actual_delivery_time: formData.deliveryTime,
         received_by: formData.receivedBy,
@@ -607,7 +622,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
       if (formData.useFactoring) {
         try {
-          await recordFactoredEarnings(user.id, loadId, totalRate, {
+          // Use currentUserId instead of user.id
+          await recordFactoredEarnings(currentUserId, loadId, totalRate, {
             date: formData.deliveryDate,
             description: `Factored load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`,
             factoringCompany: formData.factoringCompany || null
@@ -617,7 +633,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         }
       } else if (formData.generateInvoice) {
         // Generate invoice logic here
-        // ... (keeping the same invoice generation logic)
+        // Make sure to use currentUserId if needed
         invoiceCreated = true;
       }
 
@@ -633,7 +649,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
       }, 2500);
     } catch (err) {
       console.error('Error completing load:', err);
-      setError('Failed to complete load: ' + (err.message || 'Unknown error'));
+      setError(err.message || 'Failed to complete load');
       window.scrollTo(0, 0);
     } finally {
       setSubmitting(false);
