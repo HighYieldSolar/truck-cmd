@@ -1,10 +1,12 @@
 // src/components/dashboard/CompleteLoadForm.js
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock, 
-  User, FileText, Upload, Download, Camera, Eye, Trash2, RefreshCw, 
-  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package, 
+import {
+  ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock,
+  User, FileText, Upload, Download, Camera, Eye, Trash2, RefreshCw,
+  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package,
   Users, Loader2, Check
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
@@ -13,24 +15,33 @@ import Link from 'next/link';
 // Helper to persist form data to localStorage
 const saveFormToStorage = (formData, loadId) => {
   if (typeof window !== 'undefined') {
-    const { podFiles, ...serializableData } = formData;
-    
-    const serializedData = {
-      ...serializableData,
-      podFileNames: podFiles ? podFiles.map(file => 
-        typeof file === 'string' ? file : file.name
-      ) : []
-    };
-    
-    localStorage.setItem(`load_form_${loadId}`, JSON.stringify(serializedData));
+    try {
+      const { podFiles, ...serializableData } = formData;
+
+      const serializedData = {
+        ...serializableData,
+        podFileNames: podFiles ? podFiles.map(file =>
+          typeof file === 'string' ? file : file.name
+        ) : []
+      };
+
+      localStorage.setItem(`load_form_${loadId}`, JSON.stringify(serializedData));
+    } catch (err) {
+      console.error("Error saving form to storage:", err);
+    }
   }
 };
 
 // Helper to load form data from localStorage
 const loadFormFromStorage = (loadId) => {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(`load_form_${loadId}`);
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem(`load_form_${loadId}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch (err) {
+      console.error("Error loading form from storage:", err);
+      return null;
+    }
   }
   return null;
 };
@@ -48,14 +59,14 @@ const recordFactoredEarnings = async (userId, loadId, amount, options = {}) => {
       factoring_company: options.factoringCompany || null,
       created_at: new Date().toISOString()
     };
-    
+
     const { data, error } = await supabase
       .from('earnings')
       .insert([earningData])
       .select();
-      
+
     if (error) throw error;
-    
+
     return data && data.length > 0 ? data[0] : null;
   } catch (error) {
     console.error('Error recording factored earnings:', error);
@@ -66,7 +77,7 @@ const recordFactoredEarnings = async (userId, loadId, amount, options = {}) => {
 // Star Rating Component
 const StarRating = ({ rating, setRating, disabled = false }) => {
   const [hoverRating, setHoverRating] = useState(0);
-  
+
   return (
     <div className="flex items-center">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -82,11 +93,10 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
         >
           <Star
             size={24}
-            className={`transition-colors duration-150 ${
-              star <= (hoverRating || rating)
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
+            className={`transition-colors duration-150 ${star <= (hoverRating || rating)
+              ? 'text-yellow-400 fill-current'
+              : 'text-gray-300'
+              }`}
           />
         </button>
       ))}
@@ -116,23 +126,22 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
             <div key={i} className={`h-full flex-1 ${getStepConnectorColor(i + 1)}`} />
           ))}
         </div>
-        
+
         {/* Step circles */}
         {[...Array(totalSteps)].map((_, index) => {
           const step = index + 1;
           const isComplete = step < currentStep;
           const isCurrent = step === currentStep;
-          
+
           return (
             <div key={step} className="flex flex-col items-center relative z-10">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center font-medium transition-all duration-200 ${getStepColor(step)}`}>
                 {isComplete ? <CheckCircle size={20} /> : step}
               </div>
-              
-              <span className={`mt-3 text-sm font-medium ${
-                isCurrent ? 'text-blue-600' : 
+
+              <span className={`mt-3 text-sm font-medium ${isCurrent ? 'text-blue-600' :
                 isComplete ? 'text-green-600' : 'text-gray-500'
-              }`}>
+                }`}>
                 {step === 1 && "Delivery Details"}
                 {step === 2 && "Documentation"}
                 {step === 3 && "Completion"}
@@ -148,10 +157,10 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
 // Document Preview Modal
 const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
   if (!isOpen || !file) return null;
-  
+
   const fileUrl = typeof file === 'string' ? file : URL.createObjectURL(file);
   const fileName = typeof file === 'string' ? file.split('/').pop() : file.name;
-  
+
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -166,7 +175,7 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-auto bg-gray-50 p-6 flex items-center justify-center">
           {file && typeof file !== 'string' && file.type.startsWith('image/') ? (
             <img
@@ -243,23 +252,23 @@ const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFacto
 };
 
 // Main component
-export default function CompleteLoadForm({ loadId }) {
+export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetails = null }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
-  
+
   // State management
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [loadDetails, setLoadDetails] = useState(null);
+  const [loadDetails, setLoadDetails] = useState(initialLoadDetails);
   const [error, setError] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
-  
+
   // Document preview state
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     deliveryDate: new Date().toISOString().split('T')[0],
@@ -276,11 +285,13 @@ export default function CompleteLoadForm({ loadId }) {
     useFactoring: false,
     factoringCompany: ""
   });
-  
+
   // Form validation
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  
+
+  console.log("CompleteLoadForm rendered with loadId:", loadId);
+
   // Load saved form data on initialization
   useEffect(() => {
     if (loadId) {
@@ -293,47 +304,58 @@ export default function CompleteLoadForm({ loadId }) {
       }
     }
   }, [loadId]);
-  
+
   // Save form data when it changes
   useEffect(() => {
     if (loadId) {
       saveFormToStorage(formData, loadId);
     }
   }, [formData, loadId]);
-  
-  // Load data on mount
+
+  // Load data on mount if not provided
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        
+
+        // Check if we already have load details
+        if (initialLoadDetails) {
+          setLoadDetails(initialLoadDetails);
+          setLoading(false);
+          return;
+        }
+
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError) throw userError;
-        
+
         if (!user) {
           router.push('/login');
           return;
         }
-        
+
         setUser(user);
-        
+
         if (!loadId) {
           throw new Error("Load ID is required");
         }
-        
+
+        console.log("Fetching load details for ID:", loadId);
+
         const { data, error } = await supabase
           .from('loads')
           .select('*')
           .eq('id', loadId)
           .single();
-          
+
         if (error) throw error;
-        
+
         if (!data) {
           throw new Error("Load not found");
         }
-        
+
+        console.log("Load details fetched successfully:", data);
+
         const formattedLoad = {
           id: data.id,
           loadNumber: data.load_number,
@@ -351,9 +373,9 @@ export default function CompleteLoadForm({ loadId }) {
           truckId: data.truck_id || null,
           truckInfo: data.truck_info || ''
         };
-        
+
         setLoadDetails(formattedLoad);
-        
+
         if (data.delivery_date) {
           setFormData(prev => ({
             ...prev,
@@ -366,24 +388,26 @@ export default function CompleteLoadForm({ loadId }) {
       } finally {
         setLoading(false);
       }
+    };
+
+    if (loadId) {
+      fetchData();
     }
-    
-    fetchData();
-  }, [loadId, router]);
-  
+  }, [loadId, router, initialLoadDetails]);
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    
+
     if (type === 'file') {
       if (files && files.length > 0) {
         const fileArray = Array.from(files);
-        
+
         setFormData(prev => ({
           ...prev,
           podFiles: [...prev.podFiles, ...fileArray]
         }));
-        
+
         e.target.value = "";
       }
     } else if (type === 'checkbox') {
@@ -397,20 +421,20 @@ export default function CompleteLoadForm({ loadId }) {
         [name]: value
       }));
     }
-    
+
     setTouched(prev => ({ ...prev, [name]: true }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
-  
+
   // Handle file preview
   const handleFilePreview = (file) => {
     setPreviewFile(file);
     setPreviewModalOpen(true);
   };
-  
+
   // Handle factoring toggle
   const handleFactoringToggle = (useFactoring) => {
     if (useFactoring) {
@@ -428,7 +452,7 @@ export default function CompleteLoadForm({ loadId }) {
       }));
     }
   };
-  
+
   // Remove a file from the list
   const handleRemoveFile = (index) => {
     setFormData(prev => ({
@@ -436,54 +460,54 @@ export default function CompleteLoadForm({ loadId }) {
       podFiles: prev.podFiles.filter((_, i) => i !== index)
     }));
   };
-  
+
   // Form validation
   const validateStep = () => {
     const newErrors = {};
     let isValid = true;
-    
+
     switch (currentStep) {
       case 1:
         if (!formData.deliveryDate) {
           newErrors.deliveryDate = "Delivery date is required";
           isValid = false;
         }
-        
+
         if (!formData.deliveryTime) {
           newErrors.deliveryTime = "Delivery time is required";
           isValid = false;
         }
-        
+
         if (!formData.receivedBy.trim()) {
           newErrors.receivedBy = "Receiver name is required";
           isValid = false;
         }
         break;
-        
+
       case 2:
         if (formData.podFiles.length === 0) {
           newErrors.podFiles = "At least one proof of delivery document is required";
           isValid = false;
         }
         break;
-        
+
       case 3:
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
           newErrors.additionalChargesDescription = "Description is required for additional charges";
           isValid = false;
         }
-        
+
         if (formData.useFactoring && !formData.factoringCompany.trim()) {
           newErrors.factoringCompany = "Factoring company name is required";
           isValid = false;
         }
         break;
     }
-    
+
     setErrors(newErrors);
     return isValid;
   };
-  
+
   // Navigate to next step
   const handleNextStep = () => {
     if (validateStep()) {
@@ -491,24 +515,32 @@ export default function CompleteLoadForm({ loadId }) {
       window.scrollTo(0, 0);
     }
   };
-  
+
   // Navigate to previous step
   const handlePrevStep = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
     window.scrollTo(0, 0);
   };
-  
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateStep()) {
       return;
     }
-    
+
     setSubmitting(true);
     try {
+      if (!user) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) {
+          throw new Error("User not authenticated");
+        }
+        setUser(currentUser);
+      }
+
       const deliveryDateTime = new Date(`${formData.deliveryDate}T${formData.deliveryTime}`);
       const totalRate = loadDetails.rate + parseFloat(formData.additionalCharges || 0);
-      
+
       // Upload proof of delivery documents
       const podUrls = [];
       for (const file of formData.podFiles) {
@@ -516,22 +548,22 @@ export default function CompleteLoadForm({ loadId }) {
           podUrls.push({ name: file.split('/').pop(), url: file });
           continue;
         }
-        
+
         const fileName = `${user.id}/loads/${loadDetails.loadNumber}/pod/${Date.now()}-${file.name}`;
-        
+
         const { data: fileData, error: fileError } = await supabase.storage
           .from('documents')
           .upload(fileName, file);
-          
+
         if (fileError) throw fileError;
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('documents')
           .getPublicUrl(fileName);
-          
+
         podUrls.push({ name: file.name, url: publicUrl });
       }
-      
+
       // Prepare load update data
       const loadUpdateData = {
         status: 'Completed',
@@ -552,7 +584,7 @@ export default function CompleteLoadForm({ loadId }) {
         vehicle_id: loadDetails.truckId,
         truck_info: loadDetails.truckInfo
       };
-      
+
       // Add factoring information if applicable
       if (formData.useFactoring) {
         loadUpdateData.factored = true;
@@ -560,19 +592,19 @@ export default function CompleteLoadForm({ loadId }) {
         loadUpdateData.factored_at = new Date().toISOString();
         loadUpdateData.factored_amount = totalRate;
       }
-      
+
       // Update the load in Supabase
       const { data: updatedLoad, error: updateError } = await supabase
         .from('loads')
         .update(loadUpdateData)
         .eq('id', loadId)
         .select();
-        
+
       if (updateError) throw updateError;
-      
+
       // Process factoring or create invoice
       let invoiceCreated = false;
-      
+
       if (formData.useFactoring) {
         try {
           await recordFactoredEarnings(user.id, loadId, totalRate, {
@@ -588,14 +620,14 @@ export default function CompleteLoadForm({ loadId }) {
         // ... (keeping the same invoice generation logic)
         invoiceCreated = true;
       }
-      
+
       // Clear form data
       if (typeof window !== 'undefined') {
         localStorage.removeItem(`load_form_${loadId}`);
       }
-      
+
       setSuccessModalOpen(true);
-      
+
       setTimeout(() => {
         router.push('/dashboard/dispatching');
       }, 2500);
@@ -607,7 +639,15 @@ export default function CompleteLoadForm({ loadId }) {
       setSubmitting(false);
     }
   };
-  
+
+  // Format dates for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+
+    const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -615,7 +655,7 @@ export default function CompleteLoadForm({ loadId }) {
       </div>
     );
   }
-  
+
   if (error || !loadDetails) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-100">
@@ -624,23 +664,23 @@ export default function CompleteLoadForm({ loadId }) {
             <AlertCircle size={32} className="text-red-500" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900 mb-2 text-center">
-            {error || "Load not found"}
+            {!loadDetails ? "Load not found" : error}
           </h1>
           <p className="text-gray-600 mb-6 text-center">
             Unable to load the requested data. Please try again or contact support.
           </p>
           <Link
             href="/dashboard/dispatching"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center mx-auto"
+            className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-48 mx-auto"
           >
-            <ChevronLeft size={18} className="mr-2" />
+            <ChevronLeft size={18} className="inline mr-2" />
             Return to Dispatching
           </Link>
         </div>
       </div>
     );
   }
-  
+
   return (
     <div className="bg-gray-100 min-h-screen">
       {/* Header with gradient background */}
@@ -666,9 +706,9 @@ export default function CompleteLoadForm({ loadId }) {
             </div>
             <div className="flex items-center">
               <span className={`px-3 py-1 rounded-full text-sm font-medium 
-                ${loadDetails.status === 'In Transit' ? 'bg-blue-100 text-blue-800' : 
-                  loadDetails.status === 'Assigned' ? 'bg-purple-100 text-purple-800' : 
-                  'bg-gray-100 text-gray-800'}`}
+                ${loadDetails.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                  loadDetails.status === 'Assigned' ? 'bg-purple-100 text-purple-800' :
+                    'bg-gray-100 text-gray-800'}`}
               >
                 {loadDetails.status}
               </span>
@@ -690,7 +730,7 @@ export default function CompleteLoadForm({ loadId }) {
             </div>
           </div>
         )}
-        
+
         {/* Load Summary Card */}
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
           <div className="px-6 py-4 bg-blue-50 border-b border-blue-100">
@@ -717,7 +757,7 @@ export default function CompleteLoadForm({ loadId }) {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-4">Route Details</h3>
                 <div className="space-y-3">
@@ -737,7 +777,7 @@ export default function CompleteLoadForm({ loadId }) {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-4">Assignment</h3>
                 <div className="space-y-3">
@@ -762,10 +802,10 @@ export default function CompleteLoadForm({ loadId }) {
             </div>
           </div>
         </div>
-        
+
         {/* Steps Progress */}
         <StepsProgress currentStep={currentStep} />
-        
+
         {/* Form Content */}
         <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
           <div className="px-6 py-6 border-b border-gray-200">
@@ -775,10 +815,10 @@ export default function CompleteLoadForm({ loadId }) {
               {currentStep === 3 && "Billing & Completion"}
             </h2>
           </div>
-          
+
           <div className="p-6">
-{/* Step 1: Delivery Details */}
-{currentStep === 1 && (
+            {/* Step 1: Delivery Details */}
+            {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -791,17 +831,16 @@ export default function CompleteLoadForm({ loadId }) {
                       name="deliveryDate"
                       value={formData.deliveryDate}
                       onChange={handleInputChange}
-                      className={`block w-full px-3 py-2.5 border ${
-                        errors.deliveryDate 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-lg shadow-sm text-sm`}
+                      className={`block w-full px-3 py-2.5 border ${errors.deliveryDate
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-lg shadow-sm text-sm`}
                     />
                     {errors.deliveryDate && (
                       <p className="mt-1.5 text-sm text-red-600">{errors.deliveryDate}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Actual Delivery Time*
@@ -812,18 +851,17 @@ export default function CompleteLoadForm({ loadId }) {
                       name="deliveryTime"
                       value={formData.deliveryTime}
                       onChange={handleInputChange}
-                      className={`block w-full px-3 py-2.5 border ${
-                        errors.deliveryTime 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-lg shadow-sm text-sm`}
+                      className={`block w-full px-3 py-2.5 border ${errors.deliveryTime
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-lg shadow-sm text-sm`}
                     />
                     {errors.deliveryTime && (
                       <p className="mt-1.5 text-sm text-red-600">{errors.deliveryTime}</p>
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Received By (Name)*
@@ -839,18 +877,17 @@ export default function CompleteLoadForm({ loadId }) {
                       value={formData.receivedBy}
                       onChange={handleInputChange}
                       placeholder="Enter receiver's name"
-                      className={`block w-full pl-10 pr-3 py-2.5 border ${
-                        errors.receivedBy 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                      } rounded-lg shadow-sm text-sm`}
+                      className={`block w-full pl-10 pr-3 py-2.5 border ${errors.receivedBy
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        } rounded-lg shadow-sm text-sm`}
                     />
                   </div>
                   {errors.receivedBy && (
                     <p className="mt-1.5 text-sm text-red-600">{errors.receivedBy}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Delivery Notes
@@ -865,14 +902,14 @@ export default function CompleteLoadForm({ loadId }) {
                     className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                   ></textarea>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Delivery Rating
                   </label>
                   <div className="mt-1">
-                    <StarRating 
-                      rating={formData.deliveryRating} 
+                    <StarRating
+                      rating={formData.deliveryRating}
                       setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
                     />
                   </div>
@@ -882,7 +919,7 @@ export default function CompleteLoadForm({ loadId }) {
                 </div>
               </div>
             )}
-            
+
             {/* Step 2: Documentation */}
             {currentStep === 2 && (
               <div className="space-y-6">
@@ -904,7 +941,7 @@ export default function CompleteLoadForm({ loadId }) {
                             name="podFiles"
                             type="file"
                             multiple
-                            accept="image/jpeg,image/png,image/jpg" 
+                            accept="image/jpeg,image/png,image/jpg"
                             className="sr-only"
                             onChange={handleInputChange}
                             ref={fileInputRef}
@@ -921,7 +958,7 @@ export default function CompleteLoadForm({ loadId }) {
                     <p className="mt-1.5 text-sm text-red-600">{errors.podFiles}</p>
                   )}
                 </div>
-                
+
                 {/* Display uploaded files */}
                 {formData.podFiles.length > 0 && (
                   <div className="mt-4">
@@ -965,7 +1002,7 @@ export default function CompleteLoadForm({ loadId }) {
                     </ul>
                   </div>
                 )}
-                
+
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-6">
                   <div className="flex">
                     <div className="flex-shrink-0">
@@ -975,7 +1012,7 @@ export default function CompleteLoadForm({ loadId }) {
                       <h3 className="text-sm font-medium text-blue-800">Important</h3>
                       <div className="mt-2 text-sm text-blue-700">
                         <p>
-                          Proof of delivery documents are essential for invoicing and dispute resolution. 
+                          Proof of delivery documents are essential for invoicing and dispute resolution.
                           Recommended documents include:
                         </p>
                         <ul className="list-disc pl-5 mt-1 space-y-1">
@@ -990,7 +1027,7 @@ export default function CompleteLoadForm({ loadId }) {
                 </div>
               </div>
             )}
-            
+
             {/* Step 3: Billing & Completion */}
             {currentStep === 3 && (
               <div className="space-y-6">
@@ -1015,7 +1052,7 @@ export default function CompleteLoadForm({ loadId }) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="additionalCharges" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Additional Charges
@@ -1040,7 +1077,7 @@ export default function CompleteLoadForm({ loadId }) {
                       </div>
                     </div>
                   </div>
-                  
+
                   {parseFloat(formData.additionalCharges) > 0 && (
                     <div className="md:col-span-2">
                       <label htmlFor="additionalChargesDescription" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -1053,11 +1090,10 @@ export default function CompleteLoadForm({ loadId }) {
                         value={formData.additionalChargesDescription}
                         onChange={handleInputChange}
                         placeholder="Explain additional charges"
-                        className={`block w-full px-3 py-2.5 border ${
-                          errors.additionalChargesDescription 
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-lg shadow-sm text-sm`}
+                        className={`block w-full px-3 py-2.5 border ${errors.additionalChargesDescription
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-lg shadow-sm text-sm`}
                       />
                       {errors.additionalChargesDescription && (
                         <p className="mt-1.5 text-sm text-red-600">{errors.additionalChargesDescription}</p>
@@ -1065,7 +1101,7 @@ export default function CompleteLoadForm({ loadId }) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Billing Summary */}
                 <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Billing Summary</h3>
@@ -1084,12 +1120,12 @@ export default function CompleteLoadForm({ loadId }) {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Invoice Options */}
                 <div className="mt-6">
                   <fieldset className="space-y-5">
                     <legend className="text-sm font-medium text-gray-900">Payment & Invoice Options</legend>
-                    
+
                     <div className="relative flex items-start">
                       <div className="flex items-center h-5">
                         <input
@@ -1107,7 +1143,7 @@ export default function CompleteLoadForm({ loadId }) {
                         <p className="text-gray-500">Generate and track invoices in Truck Command</p>
                       </div>
                     </div>
-                    
+
                     <div className="relative flex items-start">
                       <div className="flex items-center h-5">
                         <input
@@ -1125,7 +1161,7 @@ export default function CompleteLoadForm({ loadId }) {
                         <p className="text-gray-500">Record earnings without generating an invoice</p>
                       </div>
                     </div>
-                    
+
                     {!formData.useFactoring && (
                       <div className="ml-7 pl-3 border-l-2 border-gray-100 space-y-4">
                         <div className="relative flex items-start">
@@ -1144,7 +1180,7 @@ export default function CompleteLoadForm({ loadId }) {
                             <p className="text-gray-500">Create an invoice immediately</p>
                           </div>
                         </div>
-                        
+
                         {formData.generateInvoice && (
                           <div className="relative flex items-start ml-6 pl-6 border-l-2 border-gray-100">
                             <div className="flex items-center h-5">
@@ -1165,7 +1201,7 @@ export default function CompleteLoadForm({ loadId }) {
                         )}
                       </div>
                     )}
-                    
+
                     {formData.useFactoring && (
                       <div className="ml-7 pl-3 border-l-2 border-gray-100 space-y-4">
                         <div className="bg-blue-50 p-4 rounded-lg">
@@ -1198,7 +1234,7 @@ export default function CompleteLoadForm({ loadId }) {
                     )}
                   </fieldset>
                 </div>
-                
+
                 {/* Final Confirmation */}
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200 mt-6">
                   <div className="flex">
@@ -1225,7 +1261,7 @@ export default function CompleteLoadForm({ loadId }) {
               </div>
             )}
           </div>
-          
+
           {/* Navigation Buttons */}
           <div className="bg-gray-50 px-6 py-4 flex justify-between rounded-b-xl">
             <button
@@ -1237,7 +1273,7 @@ export default function CompleteLoadForm({ loadId }) {
               <ChevronLeft size={16} className="mr-2" />
               {currentStep > 1 ? "Previous" : "Cancel"}
             </button>
-            
+
             {currentStep < 3 ? (
               <button
                 type="button"
@@ -1270,14 +1306,14 @@ export default function CompleteLoadForm({ loadId }) {
           </div>
         </div>
       </div>
-      
+
       {/* Document Preview Modal */}
       <DocumentPreviewModal
         file={previewFile}
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
       />
-      
+
       {/* Success Modal */}
       <CompletionSuccessModal
         isOpen={successModalOpen}

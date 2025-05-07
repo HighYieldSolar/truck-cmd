@@ -1,18 +1,30 @@
-// src/components/dashboard/NewLoadForm.js
+// src/components/dispatching/NewLoadModal.js
 "use client";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { 
-  X, MapPin, Building, Calendar, DollarSign, FileText, RefreshCw, 
-  CheckCircle, AlertCircle, Info, Truck, Route, Clock
+import {
+  X,
+  MapPin,
+  Building,
+  Calendar,
+  DollarSign,
+  FileText,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Truck,
+  Route,
+  Clock,
+  Package
 } from "lucide-react";
 
 // Helper function to get form data from local storage
 const getFormDataFromLocalStorage = (formKey) => {
   try {
     if (typeof window === 'undefined') return null;
-    
+
     const formDataString = localStorage.getItem(formKey);
     return formDataString ? JSON.parse(formDataString) : null;
   } catch (error) {
@@ -25,7 +37,7 @@ const getFormDataFromLocalStorage = (formKey) => {
 const setFormDataToLocalStorage = (formKey, data) => {
   try {
     if (typeof window === 'undefined') return;
-    
+
     localStorage.setItem(formKey, JSON.stringify(data));
   } catch (error) {
     console.error("Error saving to localStorage:", error);
@@ -36,19 +48,32 @@ const setFormDataToLocalStorage = (formKey, data) => {
 const clearFormDataFromLocalStorage = (formKey) => {
   try {
     if (typeof window === 'undefined') return;
-    
+
     localStorage.removeItem(formKey);
   } catch (error) {
     console.error("Error clearing localStorage:", error);
   }
 };
 
-export default function NewLoadForm({ onClose, onSubmit }) {
+// Helper function to generate a load number
+const generateLoadNumber = () => {
+  // Generate format: LC-YYYYMMDD-XXXX (where XXXX is random)
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  const random = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+
+  return `LC-${year}${month}${day}-${random}`;
+};
+
+export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
   // Form key for localStorage
   const formKey = 'loadForm-new';
-  
+
   // Initial form data
   const initialFormData = {
+    load_number: "",
     customer: "",
     origin: "",
     destination: "",
@@ -57,7 +82,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
     rate: "",
     description: "",
   };
-  
+
   // State management
   const [formData, setFormData] = useState(initialFormData);
   const [saving, setSaving] = useState(false);
@@ -66,43 +91,48 @@ export default function NewLoadForm({ onClose, onSubmit }) {
   const [customersLoading, setCustomersLoading] = useState(true);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [hasRestoredData, setHasRestoredData] = useState(false);
-  
+  const [autoGenerateNumber, setAutoGenerateNumber] = useState(true);
+
   // Load initial data from localStorage
   useEffect(() => {
     const storedData = getFormDataFromLocalStorage(formKey);
-    
+
     if (storedData && Object.values(storedData).some(value => value !== "" && value !== null)) {
       setFormData(storedData);
       setHasRestoredData(true);
+      // If a load number was stored, disable auto-generation
+      if (storedData.load_number && storedData.load_number.trim() !== "") {
+        setAutoGenerateNumber(false);
+      }
     }
-    
+
     setInitialDataLoaded(true);
   }, []);
-  
+
   // Save form data to localStorage when form data changes
   useEffect(() => {
     if (initialDataLoaded) {
       setFormDataToLocalStorage(formKey, formData);
     }
   }, [formData, initialDataLoaded]);
-  
+
   // Load customers
   useEffect(() => {
     const loadCustomers = async () => {
       try {
         setCustomersLoading(true);
-        
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
-        
+
         const { data, error } = await supabase
           .from("customers")
           .select("id, company_name")
           .eq("user_id", user.id)
           .order("company_name");
-        
+
         if (error) throw error;
-        
+
         setCustomers(data || []);
       } catch (err) {
         console.error("Error loading customers:", err);
@@ -111,18 +141,24 @@ export default function NewLoadForm({ onClose, onSubmit }) {
         setCustomersLoading(false);
       }
     };
-    
+
     loadCustomers();
   }, []);
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // If changing the load number, update auto-generate flag
+    if (name === "load_number") {
+      setAutoGenerateNumber(value.trim() === "");
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
-  
+
   const validateForm = () => {
     if (!formData.customer.trim()) {
       setError("Customer name is required");
@@ -148,31 +184,34 @@ export default function NewLoadForm({ onClose, onSubmit }) {
       setError("Valid rate is required");
       return false;
     }
-    
+
     const pickupDateTime = new Date(formData.pickupDate);
     const deliveryDateTime = new Date(formData.deliveryDate);
-    
+
     if (deliveryDateTime <= pickupDateTime) {
       setError("Delivery date must be after pickup date");
       return false;
     }
-    
+
     return true;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      
+
+      // Use provided load number or generate one
+      const loadNumber = formData.load_number.trim() ? formData.load_number.trim() : generateLoadNumber();
+
       const loadData = {
         user_id: user.id,
         customer: formData.customer,
@@ -182,23 +221,35 @@ export default function NewLoadForm({ onClose, onSubmit }) {
         delivery_date: formData.deliveryDate,
         rate: parseFloat(formData.rate),
         description: formData.description || "",
+        load_number: loadNumber,
         status: "Pending",
         created_at: new Date().toISOString(),
       };
-      
+
       const { data, error } = await supabase
         .from("loads")
         .insert([loadData])
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       // Clear form data from localStorage on successful submission
       clearFormDataFromLocalStorage(formKey);
-      
-      onSubmit(data);
-      onClose();
+
+      // Only call onSubmit if it's a function
+      if (typeof onSubmit === 'function') {
+        try {
+          onSubmit(data);
+        } catch (submitError) {
+          console.error("Error in onSubmit callback:", submitError);
+        }
+      }
+
+      // Close the modal
+      if (typeof onClose === 'function') {
+        onClose();
+      }
     } catch (err) {
       console.error("Error creating load:", err);
       setError(err.message || "Failed to create load");
@@ -206,18 +257,21 @@ export default function NewLoadForm({ onClose, onSubmit }) {
       setSaving(false);
     }
   };
-  
+
   const handleClose = () => {
     // Keep data in localStorage when closing
-    onClose();
+    if (typeof onClose === 'function') {
+      onClose();
+    }
   };
-  
+
   const handleClearForm = () => {
     clearFormDataFromLocalStorage(formKey);
     setFormData(initialFormData);
     setHasRestoredData(false);
+    setAutoGenerateNumber(true);
   };
-  
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -228,7 +282,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
               <Route size={20} className="mr-2" />
               Create New Load
             </h2>
-            <button 
+            <button
               onClick={handleClose}
               className="p-2 hover:bg-blue-500 rounded-full transition-colors"
               disabled={saving}
@@ -237,7 +291,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
             </button>
           </div>
         </div>
-        
+
         {/* Form content */}
         <div className="p-6">
           {error && (
@@ -246,7 +300,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
-          
+
           {hasRestoredData && (
             <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md flex items-start justify-between">
               <div className="flex items-start">
@@ -261,8 +315,46 @@ export default function NewLoadForm({ onClose, onSubmit }) {
               </button>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Load Number field */}
+            <div>
+              <label htmlFor="load_number" className="block text-sm font-medium text-gray-700 mb-1">
+                Load Number (Optional)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Package size={16} className="text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="load_number"
+                  name="load_number"
+                  value={formData.load_number}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Leave blank to generate automatically"
+                />
+              </div>
+              <div className="flex items-center mt-1.5">
+                <input
+                  type="checkbox"
+                  id="autoGenerate"
+                  checked={autoGenerateNumber}
+                  onChange={() => {
+                    setAutoGenerateNumber(!autoGenerateNumber);
+                    if (!autoGenerateNumber) {
+                      setFormData(prev => ({ ...prev, load_number: "" }));
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="autoGenerate" className="ml-2 block text-xs text-gray-500">
+                  Auto-generate load number (LC-YYYYMMDD-XXXX format)
+                </label>
+              </div>
+            </div>
+
             {/* Customer section */}
             <div>
               <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,7 +403,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                 )}
               </div>
             </div>
-            
+
             {/* Location section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -334,7 +426,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">
                   Delivery Location <span className="text-red-500">*</span>
@@ -356,7 +448,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                 </div>
               </div>
             </div>
-            
+
             {/* Date section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -378,7 +470,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Expected Delivery Date <span className="text-red-500">*</span>
@@ -399,7 +491,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                 </div>
               </div>
             </div>
-            
+
             {/* Rate section */}
             <div>
               <label htmlFor="rate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -423,7 +515,7 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                 />
               </div>
             </div>
-            
+
             {/* Description section */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
@@ -444,7 +536,21 @@ export default function NewLoadForm({ onClose, onSubmit }) {
                 ></textarea>
               </div>
             </div>
-            
+
+            {/* Preview section - show what load number will be used */}
+            {autoGenerateNumber && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
+                <div className="flex items-center">
+                  <Package size={16} className="text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-900">
+                    Load Number: <span className="font-medium">{generateLoadNumber()}</span>
+                  </span>
+                  <span className="ml-2 text-xs text-gray-500">(Example - will be generated on save)</span>
+                </div>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="border-t border-gray-200 pt-6 flex justify-end space-x-3">
               <button
