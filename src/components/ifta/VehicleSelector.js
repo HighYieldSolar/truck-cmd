@@ -154,9 +154,9 @@ export default function VehicleSelector({
         value={selectedVehicle}
         onChange={(e) => setSelectedVehicle(e.target.value)}
         disabled={isLoading || loading}
-        className="block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
-                 focus:ring-blue-500 focus:border-blue-500 
-                 bg-gray-50 text-gray-900"
+        className="appearance-none block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
+        focus:ring-blue-500 focus:border-blue-500 
+        bg-gray-50 text-gray-900"
       >
         <option value="all" className="bg-white text-gray-900">All Vehicles</option>
         {vehicleOptions.map((vehicle) => (

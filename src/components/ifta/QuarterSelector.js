@@ -47,21 +47,24 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
         value={activeQuarter}
         onChange={(e) => setActiveQuarter(e.target.value)}
         disabled={isLoading}
-        className="block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
-                 focus:ring-blue-500 focus:border-blue-500 
-                 bg-gray-50 text-gray-900"
+        className="appearance-none block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
+        focus:ring-blue-500 focus:border-blue-500 
+        bg-gray-50 text-gray-900"
+        style={{ backgroundImage: "url('/path/to/your/icon.svg')" }} // Optional: Add a custom background image
       >
         <option value="">Select Quarter</option>
-        {quarters.map((q) => (
-          <option key={q.value} value={q.value} className="bg-white text-gray-900">
-            {q.label}
-            {q.year === currentYear && q.quarter === currentQuarter ? " (Current)" : ""}
-          </option>
-        ))}
-      </select>
+        {
+          quarters.map((q) => (
+            <option key={q.value} value={q.value} className="bg-white text-gray-900">
+              {q.label}
+              {q.year === currentYear && q.quarter === currentQuarter ? " (Current)" : ""}
+            </option>
+          ))
+        }
+      </select >
       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
         <ChevronDown size={16} className="text-gray-400" />
       </div>
-    </div>
+    </div >
   );
 }

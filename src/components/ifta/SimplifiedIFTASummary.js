@@ -6,9 +6,7 @@ import {
   Calculator,
   DownloadCloud,
   Flag,
-  AlertTriangle,
   Fuel,
-  FileDown,
   ChevronRight,
   ChevronDown,
   BarChart2,
@@ -53,7 +51,7 @@ export default function SimplifiedIFTASummary({
           jurisdictionData[trip.start_jurisdiction] = {
             jurisdiction: trip.start_jurisdiction,
             miles: 0,
-            fuelPurchased: 0
+            fuelGallons: 0
           };
         }
         jurisdictionData[trip.start_jurisdiction].miles += parseFloat(trip.total_miles || 0);
@@ -65,14 +63,14 @@ export default function SimplifiedIFTASummary({
           jurisdictionData[trip.start_jurisdiction] = {
             jurisdiction: trip.start_jurisdiction,
             miles: 0,
-            fuelPurchased: 0
+            fuelGallons: 0
           };
         }
         if (!jurisdictionData[trip.end_jurisdiction]) {
           jurisdictionData[trip.end_jurisdiction] = {
             jurisdiction: trip.end_jurisdiction,
             miles: 0,
-            fuelPurchased: 0
+            fuelGallons: 0
           };
         }
 
@@ -88,30 +86,23 @@ export default function SimplifiedIFTASummary({
           jurisdictionData[entry.state] = {
             jurisdiction: entry.state,
             miles: 0,
-            fuelPurchased: 0
+            fuelGallons: 0
           };
         }
-        jurisdictionData[entry.state].fuelPurchased += parseFloat(entry.gallons || 0);
+        jurisdictionData[entry.state].fuelGallons += parseFloat(entry.gallons || 0);
       }
     });
 
     // Calculate totals
     const totalMiles = Object.values(jurisdictionData).reduce((sum, j) => sum + j.miles, 0);
-    const totalGallons = Object.values(jurisdictionData).reduce((sum, j) => sum + j.fuelPurchased, 0);
+    const totalGallons = Object.values(jurisdictionData).reduce((sum, j) => sum + j.fuelGallons, 0);
     const avgMpg = totalGallons > 0 ? totalMiles / totalGallons : 0;
 
-    // Calculate taxable gallons for each jurisdiction
-    const jurisdictionSummaryData = Object.values(jurisdictionData).map(j => {
-      const taxableGallons = avgMpg > 0 ? j.miles / avgMpg : 0;
-      const netTaxableGallons = taxableGallons - j.fuelPurchased;
-
-      return {
-        ...j,
-        taxableGallons,
-        netTaxableGallons,
-        stateName: getStateName(j.jurisdiction)
-      };
-    });
+    // Create jurisdiction summary data
+    const jurisdictionSummaryData = Object.values(jurisdictionData).map(j => ({
+      ...j,
+      stateName: getStateName(j.jurisdiction)
+    }));
 
     setJurisdictionSummary(jurisdictionSummaryData);
     setSummary({
@@ -163,22 +154,14 @@ export default function SimplifiedIFTASummary({
   const handleExportReport = () => {
     try {
       // Create CSV content
-      const headers = [
-        'Jurisdiction',
-        'Miles',
-        'Taxable Gallons',
-        'Tax-Paid Gallons',
-        'Net Taxable Gallons'
-      ];
+      const headers = ['Jurisdiction', 'Miles', 'Fuel Gallons'];
 
       const rows = [
         headers.join(','),
         ...jurisdictionSummary.map(j => [
           `${j.stateName} (${j.jurisdiction})`,
           formatNumber(j.miles, 1),
-          formatNumber(j.taxableGallons, 3),
-          formatNumber(j.fuelPurchased, 3),
-          formatNumber(j.netTaxableGallons, 3)
+          formatNumber(j.fuelGallons, 3)
         ].join(','))
       ];
 
@@ -186,9 +169,7 @@ export default function SimplifiedIFTASummary({
       rows.push([
         'TOTALS',
         formatNumber(summary.totalMiles, 1),
-        formatNumber(summary.totalMiles / summary.avgMpg, 3),
-        formatNumber(summary.totalGallons, 3),
-        formatNumber((summary.totalMiles / summary.avgMpg) - summary.totalGallons, 3)
+        formatNumber(summary.totalGallons, 3)
       ].join(','));
 
       // Create the CSV file
@@ -302,24 +283,8 @@ export default function SimplifiedIFTASummary({
           </div>
         </div>
 
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-4">
           <h4 className="text-lg font-medium text-gray-900">Jurisdiction Summary</h4>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            {showDetails ? (
-              <>
-                <ChevronDown size={16} className="mr-1" />
-                Hide Details
-              </>
-            ) : (
-              <>
-                <ChevronRight size={16} className="mr-1" />
-                Show Details
-              </>
-            )}
-          </button>
         </div>
 
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -332,16 +297,8 @@ export default function SimplifiedIFTASummary({
                 <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Miles
                 </th>
-                {showDetails && (
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Taxable Gallons
-                  </th>
-                )}
                 <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tax-Paid Gallons
-                </th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Net Taxable Gallons
+                  Fuel Gallons
                 </th>
               </tr>
             </thead>
@@ -362,19 +319,8 @@ export default function SimplifiedIFTASummary({
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                     {formatNumber(j.miles, 1)}
                   </td>
-                  {showDetails && (
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {formatNumber(j.taxableGallons, 3)}
-                    </td>
-                  )}
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {formatNumber(j.fuelPurchased, 3)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right">
-                    <div className={`text-sm font-medium ${j.netTaxableGallons < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatNumber(j.netTaxableGallons, 3)}
-                      {j.netTaxableGallons < 0 ? ' (Credit)' : ''}
-                    </div>
+                    {formatNumber(j.fuelGallons, 3)}
                   </td>
                 </tr>
               ))}
@@ -387,16 +333,8 @@ export default function SimplifiedIFTASummary({
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
                   {formatNumber(summary.totalMiles, 1)}
                 </td>
-                {showDetails && (
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                    {formatNumber(summary.totalMiles / summary.avgMpg, 3)}
-                  </td>
-                )}
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
                   {formatNumber(summary.totalGallons, 3)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                  {formatNumber((summary.totalMiles / summary.avgMpg) - summary.totalGallons, 3)}
                 </td>
               </tr>
             </tfoot>
@@ -407,13 +345,11 @@ export default function SimplifiedIFTASummary({
           <div className="flex items-start">
             <Fuel className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
             <div>
-              <h5 className="text-sm font-medium text-blue-800">About IFTA Net Taxable Gallons</h5>
+              <h5 className="text-sm font-medium text-blue-800">About IFTA Reporting</h5>
               <p className="text-sm text-blue-700 mt-1">
-                Net Taxable Gallons = (Miles ÷ Average MPG) - Tax-Paid Gallons
-              </p>
-              <p className="text-sm text-blue-700 mt-1">
-                Positive values indicate tax due to that jurisdiction. Negative values (credits) can offset
-                taxes owed to other jurisdictions. Check your state&#39;s IFTA guidelines for specific rules.
+                This summary shows total miles driven and fuel gallons purchased by jurisdiction.
+                Use this data to complete your quarterly IFTA tax return. Be sure to keep all
+                fuel receipts and trip records for your files.
               </p>
             </div>
           </div>
