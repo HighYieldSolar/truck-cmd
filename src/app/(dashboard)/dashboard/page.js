@@ -299,17 +299,7 @@ export default function Dashboard() {
             isLoading={dataLoading || isRefreshing}
           />
 
-          {/* Database Connection Status */}
-          <DatabaseSyncStatus
-            isConnected={isConnected}
-            isRefreshing={dataLoading || isRefreshing}
-            lastRefresh={lastRefresh}
-            autoRefreshEnabled={autoRefreshEnabled}
-            onToggleAutoRefresh={toggleAutoRefresh}
-            onManualRefresh={handleRefresh}
-            error={syncError || error}
-            className="mb-6"
-          />
+
 
           {/* Date Range Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
