@@ -17,7 +17,8 @@ import {
   Truck,
   Route,
   Clock,
-  Package
+  Package,
+  Users
 } from "lucide-react";
 
 // Helper function to get form data from local storage
@@ -67,7 +68,10 @@ const generateLoadNumber = () => {
   return `LC-${year}${month}${day}-${random}`;
 };
 
-export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
+export default function NewLoadForm({
+  onClose,
+  onSubmit = () => { }
+}) {
   // Form key for localStorage
   const formKey = 'loadForm-new';
 
@@ -81,6 +85,8 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
     deliveryDate: "",
     rate: "",
     description: "",
+    driver_id: "",
+    truck_id: ""
   };
 
   // State management
@@ -89,6 +95,10 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
   const [error, setError] = useState("");
   const [customers, setCustomers] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(true);
+  const [drivers, setDrivers] = useState([]);
+  const [driversLoading, setDriversLoading] = useState(true);
+  const [trucks, setTrucks] = useState([]);
+  const [trucksLoading, setTrucksLoading] = useState(true);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [hasRestoredData, setHasRestoredData] = useState(false);
   const [autoGenerateNumber, setAutoGenerateNumber] = useState(true);
@@ -143,6 +153,68 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
     };
 
     loadCustomers();
+  }, []);
+
+  // Load drivers
+  useEffect(() => {
+    const loadDrivers = async () => {
+      try {
+        setDriversLoading(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, name, status")
+          .eq("user_id", user.id)
+          .eq("status", "Active")
+          .order("name");
+
+        if (error) throw error;
+
+        setDrivers(data || []);
+      } catch (err) {
+        console.error("Error loading drivers:", err);
+      } finally {
+        setDriversLoading(false);
+      }
+    };
+
+    loadDrivers();
+  }, []);
+
+  // Load trucks - Fixed table name and query
+  useEffect(() => {
+    const loadTrucks = async () => {
+      try {
+        setTrucksLoading(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        // Fixed: Using 'vehicles' table instead of 'trucks'
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select("id, name, license_plate, status")
+          .eq("user_id", user.id)
+          .eq("status", "Active")
+          .order("name");
+
+        if (error) {
+          console.error("Supabase error loading vehicles:", error);
+          throw error;
+        }
+
+        setTrucks(data || []);
+      } catch (err) {
+        console.error("Error loading trucks:", err);
+      } finally {
+        setTrucksLoading(false);
+      }
+    };
+
+    loadTrucks();
   }, []);
 
   const handleChange = (e) => {
@@ -212,6 +284,22 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
       // Use provided load number or generate one
       const loadNumber = formData.load_number.trim() ? formData.load_number.trim() : generateLoadNumber();
 
+      // Get driver and truck info for display
+      let driverName = null;
+      let truckInfo = null;
+
+      if (formData.driver_id) {
+        const driver = drivers.find(d => d.id === formData.driver_id);
+        driverName = driver ? driver.name : null;
+      }
+
+      if (formData.truck_id) {
+        const truck = trucks.find(t => t.id === formData.truck_id);
+        if (truck) {
+          truckInfo = `${truck.name} (${truck.license_plate})`;
+        }
+      }
+
       const loadData = {
         user_id: user.id,
         customer: formData.customer,
@@ -222,7 +310,11 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
         rate: parseFloat(formData.rate),
         description: formData.description || "",
         load_number: loadNumber,
-        status: "Pending",
+        driver_id: formData.driver_id || null,
+        driver: driverName,
+        truck_id: formData.truck_id || null,
+        truck_info: truckInfo,
+        status: formData.driver_id ? "Assigned" : "Pending",
         created_at: new Date().toISOString(),
       };
 
@@ -237,7 +329,7 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
       // Clear form data from localStorage on successful submission
       clearFormDataFromLocalStorage(formKey);
 
-      // Only call onSubmit if it's a function
+      // Call onSubmit if it's a function
       if (typeof onSubmit === 'function') {
         try {
           onSubmit(data);
@@ -250,6 +342,9 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
       if (typeof onClose === 'function') {
         onClose();
       }
+
+      // Refresh the page to show the new load
+      window.location.reload();
     } catch (err) {
       console.error("Error creating load:", err);
       setError(err.message || "Failed to create load");
@@ -515,6 +610,90 @@ export default function NewLoadForm({ onClose, onSubmit = () => { } }) {
                 />
               </div>
             </div>
+
+            {/* Assignment section - Updated display format */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign Driver
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Users size={16} className="text-gray-400" />
+                  </div>
+                  {driversLoading ? (
+                    <input
+                      type="text"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Loading drivers..."
+                      disabled
+                    />
+                  ) : (
+                    <select
+                      id="driver_id"
+                      name="driver_id"
+                      value={formData.driver_id}
+                      onChange={handleChange}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">Select a driver</option>
+                      {drivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="truck_id" className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign Truck
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Truck size={16} className="text-gray-400" />
+                  </div>
+                  {trucksLoading ? (
+                    <input
+                      type="text"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Loading trucks..."
+                      disabled
+                    />
+                  ) : (
+                    <select
+                      id="truck_id"
+                      name="truck_id"
+                      value={formData.truck_id}
+                      onChange={handleChange}
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value="">Select a truck</option>
+                      {trucks.map((truck) => (
+                        <option key={truck.id} value={truck.id}>
+                          {truck.name} ({truck.license_plate})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Info message for assignment */}
+            {(formData.driver_id || formData.truck_id) && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex">
+                  <Info size={16} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-700">
+                    Assigning a driver will automatically set the load status to &quot;Assigned&quot;.
+                    You can leave these fields empty and assign them later.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Description section */}
             <div>

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // src/components/dashboard/CompleteLoadForm.js
 "use client";
 
