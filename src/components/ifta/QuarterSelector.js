@@ -1,139 +1,66 @@
+// src/components/ifta/QuarterSelector.js
 "use client";
 
-import { useState, useEffect } from "react";
 import { Calendar, ChevronDown } from "lucide-react";
 
 export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoading = false }) {
-  const [quarters, setQuarters] = useState([]);
-  
-  // Generate available quarters (current and past 7 quarters)
-  useEffect(() => {
-    const generateQuarters = () => {
-      const result = [];
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
-      
-      // Include current quarter and past 7 quarters
-      for (let i = 0; i < 8; i++) {
-        let quarter = currentQuarter - i;
-        let year = currentYear;
-        
-        // Adjust year if we go back to previous year
-        while (quarter <= 0) {
-          quarter += 4;
-          year -= 1;
-        }
-        
-        result.push({
-          id: `${year}-Q${quarter}`,
-          label: `${year} Q${quarter} (${getQuarterMonths(quarter)})`,
-          current: i === 0
-        });
-      }
-      
-      setQuarters(result);
-    };
-    
-    generateQuarters();
-  }, []);
-  
-  // Helper to get month labels for quarter
-  const getQuarterMonths = (quarter) => {
-    switch (quarter) {
-      case 1: return "Jan-Mar";
-      case 2: return "Apr-Jun";
-      case 3: return "Jul-Sep";
-      case 4: return "Oct-Dec";
-      default: return "";
-    }
-  };
+  // Get current date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentQuarter = Math.floor(currentMonth / 3) + 1;
 
-  // Parse quarter string into more readable format
-  const formatQuarterLabel = (quarterString) => {
-    if (!quarterString) return "";
-    
-    const [year, quarter] = quarterString.split('-Q');
-    return `${year} Quarter ${quarter} (${getQuarterMonths(parseInt(quarter))})`;
-  };
-  
-  // Handle changing the quarter
-  const handleQuarterChange = (e) => {
-    setActiveQuarter(e.target.value);
-  };
+  // Generate quarters (current year, previous year, and next year)
+  const quarters = [];
+  for (let year = currentYear + 1; year >= currentYear - 2; year--) {
+    for (let q = 4; q >= 1; q--) {
+      // Skip future quarters
+      if (year === currentYear + 1 && q > currentQuarter) continue;
+      if (year > currentYear) continue;
 
-  // Get filing deadline date based on quarter
-  const getFilingDeadline = (quarterString) => {
-    if (!quarterString) return "";
-    
-    const [year, quarter] = quarterString.split('-Q');
-    const quarterInt = parseInt(quarter);
-    
-    switch (quarterInt) {
-      case 1: // Q1 deadline is April 30
-        return `April 30, ${year}`;
-      case 2: // Q2 deadline is July 31
-        return `July 31, ${year}`;
-      case 3: // Q3 deadline is October 31
-        return `October 31, ${year}`;
-      case 4: // Q4 deadline is January 31 of next year
-        return `January 31, ${parseInt(year) + 1}`;
-      default:
-        return "Check your jurisdiction";
+      quarters.push({
+        value: `${year}-Q${q}`,
+        label: `Q${q} ${year}`,
+        year,
+        quarter: q
+      });
     }
+  }
+
+  // Format label for display
+  const getDisplayLabel = (value) => {
+    if (!value) return "Select Quarter";
+
+    const selectedQuarter = quarters.find(q => q.value === value);
+    if (selectedQuarter) {
+      return `${selectedQuarter.label}${selectedQuarter.year === currentYear && selectedQuarter.quarter === currentQuarter ? " (Current)" : ""}`;
+    }
+    return value;
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-        <div className="flex items-center mb-3 sm:mb-0">
-          <Calendar size={18} className="text-blue-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">IFTA Reporting Period</h3>
-        </div>
-        
-        <div className="relative w-full sm:w-auto">
-          <select
-            id="quarter"
-            name="quarter"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={activeQuarter}
-            onChange={handleQuarterChange}
-          >
-            {quarters.map((quarter) => (
-              <option 
-                key={quarter.id} 
-                value={quarter.id}
-                className={quarter.current ? "font-bold" : ""}
-              >
-                {quarter.label} {quarter.current ? "(Current)" : ""}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-            <ChevronDown size={16} className="text-gray-400" />
-          </div>
-        </div>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <Calendar size={16} className="text-gray-400" />
       </div>
-      
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <div className="text-xs text-blue-500 uppercase font-medium">Reporting Quarter</div>
-          <div className="text-lg font-medium text-blue-700">{formatQuarterLabel(activeQuarter)}</div>
-        </div>
-        
-        <div className="bg-green-50 p-3 rounded-lg">
-          <div className="text-xs text-green-500 uppercase font-medium">Filing Deadline</div>
-          <div className="text-lg font-medium text-green-700">
-            {getFilingDeadline(activeQuarter)}
-          </div>
-        </div>
-        
-        <div className="md:col-span-2 bg-yellow-50 p-3 rounded-lg">
-          <div className="text-xs text-yellow-600 uppercase font-medium">REMINDER</div>
-          <div className="text-sm text-yellow-700">
-            Keep all fuel receipts and mileage records for at least 4 years. IFTA jurisdictions may audit your records at any time.
-          </div>
-        </div>
+      <select
+        value={activeQuarter}
+        onChange={(e) => setActiveQuarter(e.target.value)}
+        disabled={isLoading}
+        className="block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
+                 focus:ring-blue-500 focus:border-blue-500 
+                 bg-gray-50 text-gray-900"
+      >
+        <option value="">Select Quarter</option>
+        {quarters.map((q) => (
+          <option key={q.value} value={q.value} className="bg-white text-gray-900">
+            {q.label}
+            {q.year === currentYear && q.quarter === currentQuarter ? " (Current)" : ""}
+          </option>
+        ))}
+      </select>
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <ChevronDown size={16} className="text-gray-400" />
       </div>
     </div>
   );

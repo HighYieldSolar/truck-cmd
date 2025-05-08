@@ -1,8 +1,8 @@
 // src/components/ifta/SimplifiedExportModal.js - Updated with vehicle filtering
 import { useState } from "react";
-import { 
-  Download, 
-  X, 
+import {
+  Download,
+  X,
   FileDown,
   Printer,
   FileText,
@@ -12,11 +12,11 @@ import {
   Truck
 } from "lucide-react";
 
-export default function SimplifiedExportModal({ 
-  isOpen, 
-  onClose, 
-  trips = [], 
-  quarter, 
+export default function SimplifiedExportModal({
+  isOpen,
+  onClose,
+  trips = [],
+  quarter,
   fuelData = [],
   selectedVehicle = "all" // Add selectedVehicle prop
 }) {
@@ -32,8 +32,8 @@ export default function SimplifiedExportModal({
   };
 
   // Filter trips by selected vehicle if needed
-  const filteredTrips = selectedVehicle === "all" 
-    ? trips 
+  const filteredTrips = selectedVehicle === "all"
+    ? trips
     : trips.filter(trip => trip.vehicle_id === selectedVehicle);
 
   // Filter fuel data by selected vehicle if needed
@@ -45,7 +45,7 @@ export default function SimplifiedExportModal({
   const prepareJurisdictionData = () => {
     // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
-    
+
     // Process miles from filtered trips
     filteredTrips.forEach(trip => {
       // If trip has start and end in same jurisdiction
@@ -58,7 +58,7 @@ export default function SimplifiedExportModal({
           };
         }
         milesByJurisdiction[trip.start_jurisdiction].miles += parseFloat(trip.total_miles || 0);
-      } 
+      }
       // If trip crosses jurisdictions, split miles between them
       else if (trip.start_jurisdiction && trip.end_jurisdiction) {
         if (!milesByJurisdiction[trip.start_jurisdiction]) {
@@ -75,14 +75,14 @@ export default function SimplifiedExportModal({
             gallons: 0
           };
         }
-        
+
         // Split the miles between jurisdictions (simplified approach)
         const milesPerJurisdiction = parseFloat(trip.total_miles || 0) / 2;
         milesByJurisdiction[trip.start_jurisdiction].miles += milesPerJurisdiction;
         milesByJurisdiction[trip.end_jurisdiction].miles += milesPerJurisdiction;
       }
     });
-    
+
     // Calculate fuel by jurisdiction from filtered fuel purchase data
     filteredFuelData.forEach(entry => {
       const state = entry.state;
@@ -97,9 +97,9 @@ export default function SimplifiedExportModal({
         milesByJurisdiction[state].gallons += parseFloat(entry.gallons || 0);
       }
     });
-    
+
     // Convert to array and sort by state
-    return Object.values(milesByJurisdiction).sort((a, b) => 
+    return Object.values(milesByJurisdiction).sort((a, b) =>
       a.state.localeCompare(b.state)
     );
   };
@@ -109,18 +109,18 @@ export default function SimplifiedExportModal({
     try {
       setExportState('loading');
       setError(null);
-      
+
       const jurisdictionData = prepareJurisdictionData();
-      
+
       // Calculate totals
       const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
       const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
-      
+
       // Get vehicle information for filename and header
-      const vehicleInfo = selectedVehicle === "all" 
-        ? "all_vehicles" 
+      const vehicleInfo = selectedVehicle === "all"
+        ? "all_vehicles"
         : `vehicle_${selectedVehicle}`;
-      
+
       // Create CSV rows
       const rows = [
         // Header info
@@ -135,14 +135,14 @@ export default function SimplifiedExportModal({
           formatNumber(state.gallons, 3)
         ].join(','))
       ];
-      
+
       // Add total row
       rows.push([
         'TOTAL',
         formatNumber(totalMiles, 1),
         formatNumber(totalGallons, 3)
       ].join(','));
-      
+
       // Create and download the file
       const csvContent = rows.join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -153,7 +153,7 @@ export default function SimplifiedExportModal({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setExportState('success');
       setTimeout(() => {
         onClose();
@@ -170,35 +170,35 @@ export default function SimplifiedExportModal({
     try {
       setExportState('loading');
       setError(null);
-      
+
       const jurisdictionData = prepareJurisdictionData();
-      
+
       // Calculate totals
       const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
       const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
-      
+
       // Get vehicle information for filename and header
-      const vehicleInfo = selectedVehicle === "all" 
-        ? "All Vehicles" 
+      const vehicleInfo = selectedVehicle === "all"
+        ? "All Vehicles"
         : `Vehicle: ${selectedVehicle}`;
-      
+
       // Create text content
       let textContent = `IFTA SUMMARY FOR ${quarter} - ${vehicleInfo}\n`;
       textContent += `Generated on ${new Date().toLocaleDateString()}\n\n`;
       textContent += `JURISDICTION  |  MILES  |  GALLONS\n`;
       textContent += `------------------------------------\n`;
-      
+
       jurisdictionData.forEach(state => {
         textContent += `${state.state.padEnd(14)} | ${formatNumber(state.miles, 1).padStart(7)} | ${formatNumber(state.gallons, 3).padStart(9)}\n`;
       });
-      
+
       textContent += `------------------------------------\n`;
       textContent += `TOTAL         | ${formatNumber(totalMiles, 1).padStart(7)} | ${formatNumber(totalGallons, 3).padStart(9)}\n\n`;
-      
+
       // Add some additional info
       textContent += `Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchases.\n`;
       textContent += `Average MPG: ${totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : 'N/A'}\n`;
-      
+
       // Create and download the file
       const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -208,7 +208,7 @@ export default function SimplifiedExportModal({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setExportState('success');
       setTimeout(() => {
         onClose();
@@ -224,10 +224,10 @@ export default function SimplifiedExportModal({
   const printSummary = () => {
     try {
       setExportState('loading');
-      
+
       // Close the modal before printing to avoid it being included
       onClose();
-      
+
       // Slight delay to ensure modal is closed
       setTimeout(() => {
         window.print();
@@ -265,7 +265,7 @@ export default function SimplifiedExportModal({
           <h2 className="text-xl font-semibold text-gray-900">
             Export IFTA Summary
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             disabled={exportState === 'loading'}
@@ -273,15 +273,15 @@ export default function SimplifiedExportModal({
             <X size={24} />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 mb-4">
-            Export your IFTA summary to share with your accountant or paperwork handler. 
+            Export your IFTA summary to share with your accountant or paperwork handler.
             This will include miles and gallons by jurisdiction for {quarter}
             {selectedVehicle !== "all" ? ` for vehicle ${selectedVehicle}` : " for all vehicles"}.
           </p>
-          
+
           {/* Summary info */}
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
             <div className="flex items-start">
@@ -303,16 +303,15 @@ export default function SimplifiedExportModal({
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-2">
                 Export Format
               </label>
               <div className="grid grid-cols-3 gap-4">
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${
-                  exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                }`}>
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                  }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -325,10 +324,9 @@ export default function SimplifiedExportModal({
                   <span className="mt-2 text-sm font-medium text-gray-900">CSV</span>
                   <span className="text-xs text-gray-500">For Excel</span>
                 </label>
-                
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${
-                  exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                }`}>
+
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                  }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -341,10 +339,9 @@ export default function SimplifiedExportModal({
                   <span className="mt-2 text-sm font-medium text-gray-900">Text</span>
                   <span className="text-xs text-gray-500">Plain text</span>
                 </label>
-                
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${
-                  exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                }`}>
+
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                  }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -359,13 +356,13 @@ export default function SimplifiedExportModal({
                 </label>
               </div>
             </div>
-            
+
             {error && (
               <div className="bg-red-50 p-3 rounded-md">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
-            
+
             {exportState === 'success' && (
               <div className="bg-green-50 p-3 rounded-md flex items-center">
                 <Check size={16} className="text-green-500 mr-2" />
@@ -374,7 +371,7 @@ export default function SimplifiedExportModal({
             )}
           </div>
         </div>
-        
+
         {/* Actions */}
         <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
           <button

@@ -1,21 +1,37 @@
-// src/components/ifta/SimplifiedTripEntryForm.js - Fixed version
-import { useState, useEffect } from "react";
-import { 
-  Plus, 
-  Truck, 
-  Calendar, 
-  MapPin, 
-  Fuel, 
-  DollarSign, 
-  AlertTriangle,
+// src/components/ifta/SimplifiedTripEntryForm.js
+"use client";
+
+import { useState } from "react";
+import {
+  Plus,
+  Truck,
+  Calendar,
+  MapPin,
+  AlertCircle,
   RefreshCw,
-  Info,
-  ChevronDown
+  CheckCircle,
+  Route
 } from "lucide-react";
 
-// Helper function to get US states and Canadian provinces
-const getJurisdictions = () => {
-  return [
+export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, vehicles = [] }) {
+  const [formData, setFormData] = useState({
+    vehicleId: "",
+    date: new Date().toISOString().split('T')[0],
+    startJurisdiction: "",
+    endJurisdiction: "",
+    miles: "",
+    gallons: "",
+    fuelCost: "",
+    driverId: "",
+    notes: ""
+  });
+
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+
+  // Get jurisdictions list
+  const jurisdictions = [
     { code: "AL", name: "Alabama" },
     { code: "AK", name: "Alaska" },
     { code: "AZ", name: "Arizona" },
@@ -78,534 +94,351 @@ const getJurisdictions = () => {
     { code: "QC", name: "Quebec" },
     { code: "SK", name: "Saskatchewan" }
   ];
-};
 
-export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, vehicles = [] }) {
-  const [tripForm, setTripForm] = useState({
-    vehicleId: "",
-    date: new Date().toISOString().split('T')[0],
-    startJurisdiction: "",
-    endJurisdiction: "",
-    miles: "",
-    gallons: "",
-    fuelCost: "",
-    notes: ""
-  });
-  
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-  const [showTips, setShowTips] = useState(false);
-  const [formExpanded, setFormExpanded] = useState(true);
-  // Add a processed vehicles state to avoid processing on each render
-  const [processedVehicles, setProcessedVehicles] = useState([]);
-
-  // Process vehicles array once when it changes
-  useEffect(() => {
-    if (!vehicles || vehicles.length === 0) {
-      setProcessedVehicles([]);
-      return;
-    }
-
-    try {
-      const processed = vehicles.map(vehicle => {
-        // Process vehicle to ensure we have string keys and values
-        const vehicleId = typeof vehicle === 'object' ? 
-          (vehicle.id ? String(vehicle.id) : JSON.stringify(vehicle)) : 
-          String(vehicle);
-        
-        const vehicleLabel = typeof vehicle === 'object' ? 
-          (vehicle.name || vehicle.label || vehicleId) : 
-          vehicle;
-          
-        return {
-          id: vehicleId,
-          label: vehicleLabel,
-          license_plate: vehicle.license_plate || vehicle.licensePlate || ''
-        };
-      });
-      
-      setProcessedVehicles(processed);
-    } catch (error) {
-      console.error("Error processing vehicles:", error);
-      // Keep existing vehicles on error
-    }
-  }, [vehicles]);
-
-  // Define the toggle function after the state declaration
-  const toggleFormExpanded = () => {
-    setFormExpanded(!formExpanded);
-  };
-
-  // Get all states for dropdowns
-  const jurisdictions = getJurisdictions();
-
-  // Mark field as touched on blur
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    setTouched({ ...touched, [name]: true });
-    validateField(name, tripForm[name]);
-  };
-
-  // Validate a specific field
-  const validateField = (name, value) => {
-    let error = null;
-    
-    switch (name) {
-      case 'date':
-        if (!value) error = 'Date is required';
-        break;
-      case 'vehicleId':
-        if (!value) error = 'Vehicle ID is required';
-        break;
-      case 'startJurisdiction':
-        if (!value) error = 'Starting jurisdiction is required';
-        break;
-      case 'endJurisdiction':
-        if (!value) error = 'Ending jurisdiction is required';
-        break;
-      case 'miles':
-        if (!value || parseFloat(value) <= 0) {
-          error = 'Enter a valid number greater than 0';
-        }
-        break;
-      case 'gallons':
-        if (parseFloat(value) < 0) {
-          error = 'Gallons cannot be negative';
-        }
-        break;
-      case 'fuelCost':
-        if (parseFloat(value) < 0) {
-          error = 'Fuel cost cannot be negative';
-        }
-        break;
-      default:
-        break;
-    }
-    
-    setErrors(prev => ({ ...prev, [name]: error }));
-    return !error;
-  };
-
-  // Validate the entire form
-  const validateForm = () => {
-    const newErrors = {};
-    let isValid = true;
-    
-    // Validate required fields
-    const requiredFields = ['date', 'vehicleId', 'startJurisdiction', 'endJurisdiction', 'miles'];
-    
-    requiredFields.forEach(field => {
-      const valid = validateField(field, tripForm[field]);
-      if (!valid) isValid = false;
-    });
-    
-    // Mark all fields as touched
-    const allTouched = requiredFields.reduce((acc, field) => {
-      acc[field] = true;
-      return acc;
-    }, {});
-    
-    setTouched(prev => ({ ...prev, ...allTouched }));
-    
-    return isValid;
-  };
-
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    setTripForm({
-      ...tripForm,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
-    
-    // Clear any errors on change
+    }));
+
+    // Clear error when user types
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
-    
-    // For efficiency, auto-copy same state if both are empty
-    if (name === 'startJurisdiction' && !tripForm.endJurisdiction) {
-      setTripForm(prev => ({
+      setErrors(prev => ({
         ...prev,
-        [name]: value,
-        endJurisdiction: value
+        [name]: null
       }));
-    }
-    
-    // If miles is entered and there's no gallons, suggest based on 6.5 MPG
-    if (name === 'miles' && !tripForm.gallons && value) {
-      const miles = parseFloat(value);
-      if (!isNaN(miles) && miles > 0) {
-        const suggestedGallons = (miles / 6.5).toFixed(3);
-        setTripForm(prev => ({
-          ...prev,
-          [name]: value,
-          gallons: suggestedGallons
-        }));
-      }
     }
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!validateForm()) {
-      return;
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.vehicleId) newErrors.vehicleId = "Vehicle is required";
+    if (!formData.date) newErrors.date = "Date is required";
+    if (!formData.startJurisdiction) newErrors.startJurisdiction = "Starting jurisdiction is required";
+    if (!formData.endJurisdiction) newErrors.endJurisdiction = "Ending jurisdiction is required";
+    if (!formData.miles || parseFloat(formData.miles) <= 0) {
+      newErrors.miles = "Miles must be greater than 0";
     }
-    
-    // Format data for submission
-    const newTrip = {
-      ...tripForm,
-      miles: parseFloat(tripForm.miles) || 0,
-      gallons: parseFloat(tripForm.gallons) || 0,
-      fuelCost: parseFloat(tripForm.fuelCost) || 0
-    };
-    
-    // Call parent component's add function
-    onAddTrip(newTrip);
-    
-    // Reset form
-    setTripForm({
-      vehicleId: "",
-      date: new Date().toISOString().split('T')[0],
-      startJurisdiction: "",
-      endJurisdiction: "",
-      miles: "",
-      gallons: "",
-      fuelCost: "",
-      notes: ""
-    });
-    
-    // Reset validation states
-    setErrors({});
-    setTouched({});
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    try {
+      setIsSubmitting(true);
+      const success = await onAddTrip(formData);
+
+      if (success) {
+        // Reset form
+        setFormData({
+          vehicleId: "",
+          date: new Date().toISOString().split('T')[0],
+          startJurisdiction: "",
+          endJurisdiction: "",
+          miles: "",
+          gallons: "",
+          fuelCost: "",
+          driverId: "",
+          notes: ""
+        });
+
+        // Show success message
+        setSuccessMessage("Trip added successfully!");
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch (error) {
+      console.error("Error adding trip:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-white">
-        <div className="flex items-center">
-          <Plus size={20} className="text-blue-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">Add Trip for IFTA</h3>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={() => setShowTips(!showTips)}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            <Info size={14} className="mr-1" />
-            {showTips ? 'Hide Tips' : 'Show Tips'}
-          </button>
-          
-          <button
-            type="button"
-            onClick={toggleFormExpanded}
-            className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
-          >
-            <ChevronDown 
-              size={16} 
-              className={`transform transition-transform ${formExpanded ? 'rotate-180' : ''}`}
-            />
-          </button>
-        </div>
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-4 text-white">
+        <h3 className="font-semibold flex items-center">
+          <Plus size={18} className="mr-2" />
+          Add New Trip
+        </h3>
       </div>
-      
-      {/* Tips section */}
-      {showTips && (
-        <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
-          <div className="flex">
-            <Info size={16} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+
+      <form onSubmit={handleSubmit} className="p-6">
+        {/* Success message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
+            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 mr-2 flex-shrink-0" />
+            <p className="text-sm text-green-700">{successMessage}</p>
+          </div>
+        )}
+
+        {/* Basic Information Section */}
+        <div className="space-y-4">
+          <h4 className="text-md font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+            <Route size={16} className="mr-2 text-blue-500" />
+            Trip Information
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <h4 className="text-sm font-medium text-blue-800">IFTA Recording Tips</h4>
-              <ul className="mt-1 text-sm text-blue-700 list-disc list-inside space-y-1">
-                <li>Record each interstate trip, including deadhead miles</li>
-                <li>Enter miles first - gallons will be auto-suggested at 6.5 MPG</li>
-                <li>If your trip didn&apos;t change states, use the same state for both start and end</li>
-                <li>For better accuracy, use the State Mileage Tracker for exact state crossings</li>
-              </ul>
+              <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-1">
+                Vehicle <span className="text-red-500">*</span>
+              </label>
+              {vehicles.length > 0 ? (
+                <select
+                  id="vehicleId"
+                  name="vehicleId"
+                  value={formData.vehicleId}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border ${errors.vehicleId ? 'border-red-300' : 'border-gray-300'
+                    } px-3 py-2 text-sm`}
+                  required
+                >
+                  <option value="">Select Vehicle</option>
+                  {vehicles.map((vehicle) => (
+                    <option key={vehicle.id || vehicle} value={vehicle.id || vehicle}>
+                      {vehicle.name || vehicle.id || vehicle}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  id="vehicleId"
+                  name="vehicleId"
+                  placeholder="Enter vehicle ID"
+                  value={formData.vehicleId}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border ${errors.vehicleId ? 'border-red-300' : 'border-gray-300'
+                    } px-3 py-2 text-sm`}
+                  required
+                />
+              )}
+              {errors.vehicleId && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors.vehicleId}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                Trip Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className={`block w-full rounded-lg border ${errors.date ? 'border-red-300' : 'border-gray-300'
+                  } px-3 py-2 text-sm`}
+                required
+              />
+              {errors.date && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors.date}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="driverId" className="block text-sm font-medium text-gray-700 mb-1">
+                Driver ID
+              </label>
+              <input
+                type="text"
+                id="driverId"
+                name="driverId"
+                placeholder="Enter driver ID (optional)"
+                value={formData.driverId}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
             </div>
           </div>
         </div>
-      )}
-      
-      {formExpanded && (
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Trip basics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label htmlFor="vehicleId" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Truck size={16} className="text-gray-400 mr-1" /> Vehicle *
-                </label>
-                {processedVehicles.length > 0 ? (
-                  <select
-                    id="vehicleId"
-                    name="vehicleId"
-                    value={tripForm.vehicleId}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.vehicleId && touched.vehicleId
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  >
-                    <option value="">Select Vehicle</option>
-                    {processedVehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.label}
-                        {vehicle.license_plate && ` (${vehicle.license_plate})`}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    id="vehicleId"
-                    name="vehicleId"
-                    placeholder="Enter vehicle ID"
-                    value={tripForm.vehicleId}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`mt-1 block w-full rounded-md ${
-                      errors.vehicleId && touched.vehicleId
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } shadow-sm text-sm`}
-                    required
-                  />
-                )}
-                {errors.vehicleId && touched.vehicleId && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.vehicleId}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="date" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Calendar size={16} className="text-gray-400 mr-1" /> Trip Date *
-                </label>
-                <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  value={tripForm.date}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.date && touched.date
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
-                />
-                {errors.date && touched.date && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.date}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="miles" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Truck size={16} className="text-gray-400 mr-1" /> Miles Driven *
-                </label>
-                <input
-                  type="number"
-                  id="miles"
-                  name="miles"
-                  placeholder="0.0"
-                  min="0"
-                  step="0.1"
-                  value={tripForm.miles}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.miles && touched.miles
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
-                />
-                {errors.miles && touched.miles && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.miles}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {/* Jurisdictions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="startJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <MapPin size={16} className="text-gray-400 mr-1" /> Starting State *
-                </label>
-                <select
-                  id="startJurisdiction"
-                  name="startJurisdiction"
-                  value={tripForm.startJurisdiction}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.startJurisdiction && touched.startJurisdiction
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
-                >
-                  <option value="">Select Starting State</option>
-                  {jurisdictions.map((state) => (
-                    <option key={`start-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
-                  ))}
-                </select>
-                {errors.startJurisdiction && touched.startJurisdiction && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.startJurisdiction}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="endJurisdiction" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <MapPin size={16} className="text-gray-400 mr-1" /> Ending State *
-                </label>
-                <select
-                  id="endJurisdiction"
-                  name="endJurisdiction"
-                  value={tripForm.endJurisdiction}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.endJurisdiction && touched.endJurisdiction
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                  required
-                >
-                  <option value="">Select Ending State</option>
-                  {jurisdictions.map((state) => (
-                    <option key={`end-${state.code}`} value={state.code}>{state.name} ({state.code})</option>
-                  ))}
-                </select>
-                {errors.endJurisdiction && touched.endJurisdiction && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.endJurisdiction}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {/* Fuel information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="gallons" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <Fuel size={16} className="text-gray-400 mr-1" /> Gallons Used
-                </label>
-                <input
-                  type="number"
-                  id="gallons"
-                  name="gallons"
-                  placeholder="0.0"
-                  min="0"
-                  step="0.1"
-                  value={tripForm.gallons}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.gallons && touched.gallons
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                />
-                {errors.gallons && touched.gallons && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.gallons}
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="fuelCost" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <DollarSign size={16} className="text-gray-400 mr-1" /> Fuel Cost ($)
-                </label>
-                <input
-                  type="number"
-                  id="fuelCost"
-                  name="fuelCost"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  value={tripForm.fuelCost}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`mt-1 block w-full rounded-md ${
-                    errors.fuelCost && touched.fuelCost
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                  } shadow-sm text-sm`}
-                />
-                {errors.fuelCost && touched.fuelCost && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertTriangle size={12} className="mr-1" />
-                    {errors.fuelCost}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {/* Notes */}
+
+        {/* Route Information Section */}
+        <div className="space-y-4 mt-6">
+          <h4 className="text-md font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+            <MapPin size={16} className="mr-2 text-green-500" />
+            Route Details
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="notes" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-                Notes (Optional)
+              <label htmlFor="startJurisdiction" className="block text-sm font-medium text-gray-700 mb-1">
+                Starting Jurisdiction <span className="text-red-500">*</span>
               </label>
-              <textarea
-                id="notes"
-                name="notes"
-                rows="2"
-                placeholder="Any additional notes about this trip"
-                value={tripForm.notes}
+              <select
+                id="startJurisdiction"
+                name="startJurisdiction"
+                value={formData.startJurisdiction}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
-              ></textarea>
-            </div>
-            
-            {/* Submit button */}
-            <div className="pt-4 flex justify-end">
-              <button
-                type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading}
+                className={`block w-full rounded-lg border ${errors.startJurisdiction ? 'border-red-300' : 'border-gray-300'
+                  } px-3 py-2 text-sm`}
+                required
               >
-                {isLoading ? (
-                  <>
-                    <RefreshCw size={16} className="mr-2 animate-spin" />
-                    Adding Trip...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} className="mr-2" />
-                    Add Trip
-                  </>
-                )}
-              </button>
+                <option value="">Select Starting State</option>
+                {jurisdictions.map((state) => (
+                  <option key={state.code} value={state.code}>
+                    {state.name} ({state.code})
+                  </option>
+                ))}
+              </select>
+              {errors.startJurisdiction && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors.startJurisdiction}
+                </p>
+              )}
             </div>
-          </form>
+
+            <div>
+              <label htmlFor="endJurisdiction" className="block text-sm font-medium text-gray-700 mb-1">
+                Ending Jurisdiction <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="endJurisdiction"
+                name="endJurisdiction"
+                value={formData.endJurisdiction}
+                onChange={handleChange}
+                className={`block w-full rounded-lg border ${errors.endJurisdiction ? 'border-red-300' : 'border-gray-300'
+                  } px-3 py-2 text-sm`}
+                required
+              >
+                <option value="">Select Ending State</option>
+                {jurisdictions.map((state) => (
+                  <option key={state.code} value={state.code}>
+                    {state.name} ({state.code})
+                  </option>
+                ))}
+              </select>
+              {errors.endJurisdiction && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors.endJurisdiction}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Trip Metrics Section */}
+        <div className="space-y-4 mt-6">
+          <h4 className="text-md font-medium text-gray-900 flex items-center border-b border-gray-200 pb-2">
+            <Truck size={16} className="mr-2 text-orange-500" />
+            Trip Metrics
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="miles" className="block text-sm font-medium text-gray-700 mb-1">
+                Miles Driven <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                id="miles"
+                name="miles"
+                placeholder="0.0"
+                min="0"
+                step="0.1"
+                value={formData.miles}
+                onChange={handleChange}
+                className={`block w-full rounded-lg border ${errors.miles ? 'border-red-300' : 'border-gray-300'
+                  } px-3 py-2 text-sm`}
+                required
+              />
+              {errors.miles && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors.miles}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="gallons" className="block text-sm font-medium text-gray-700 mb-1">
+                Gallons Used
+              </label>
+              <input
+                type="number"
+                id="gallons"
+                name="gallons"
+                placeholder="0.0"
+                min="0"
+                step="0.1"
+                value={formData.gallons}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="fuelCost" className="block text-sm font-medium text-gray-700 mb-1">
+                Fuel Cost ($)
+              </label>
+              <input
+                type="number"
+                id="fuelCost"
+                name="fuelCost"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                value={formData.fuelCost}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Notes Section */}
+        <div className="mt-6">
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            Notes
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="2"
+            placeholder="Add any additional trip notes..."
+            value={formData.notes}
+            onChange={handleChange}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          ></textarea>
+        </div>
+
+        {/* Form actions */}
+        <div className="mt-6 border-t border-gray-200 pt-4 flex justify-end">
+          <button
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw size={16} className="animate-spin mr-2" />
+                Adding Trip...
+              </>
+            ) : (
+              <>
+                <Plus size={16} className="mr-2" />
+                Add Trip
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
