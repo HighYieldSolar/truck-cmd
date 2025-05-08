@@ -86,7 +86,7 @@ export default function NewLoadForm({
     rate: "",
     description: "",
     driver_id: "",
-    truck_id: ""
+    vehicle_id: "" // Changed from truck_id to vehicle_id
   };
 
   // State management
@@ -293,8 +293,8 @@ export default function NewLoadForm({
         driverName = driver ? driver.name : null;
       }
 
-      if (formData.truck_id) {
-        const truck = trucks.find(t => t.id === formData.truck_id);
+      if (formData.vehicle_id) {
+        const truck = trucks.find(t => t.id === formData.vehicle_id);
         if (truck) {
           truckInfo = `${truck.name} (${truck.license_plate})`;
         }
@@ -312,7 +312,7 @@ export default function NewLoadForm({
         load_number: loadNumber,
         driver_id: formData.driver_id || null,
         driver: driverName,
-        truck_id: formData.truck_id || null,
+        vehicle_id: formData.vehicle_id || null, // Changed from truck_id to vehicle_id
         truck_info: truckInfo,
         status: formData.driver_id ? "Assigned" : "Pending",
         created_at: new Date().toISOString(),
