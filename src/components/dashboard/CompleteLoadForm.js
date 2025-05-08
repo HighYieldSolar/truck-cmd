@@ -1,13 +1,13 @@
 // src/components/dashboard/CompleteLoadForm.js
 "use client";
 
-import React, { useState, useEffect, useRef, Image } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ChevronLeft, AlertCircle, CheckCircle, X, MapPin,
-  User, FileText, Upload, Download, Eye, Trash2,
-  Info, DollarSign, Star, ChevronRight, Building, Truck,
-  Users, Loader2,
+  ChevronLeft, AlertCircle, CheckCircle, X, MapPin, Calendar, Clock,
+  User, FileText, Upload, Download, Camera, Eye, Trash2, RefreshCw,
+  Info, Save, DollarSign, Star, ChevronRight, Building, Truck, Package,
+  Users, Loader2, Check
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
@@ -178,19 +178,15 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
 
         <div className="flex-1 overflow-auto bg-gray-50 p-6 flex items-center justify-center">
           {file && typeof file !== 'string' && file.type.startsWith('image/') ? (
-            <Image
+            <img
               src={fileUrl}
               alt="Document Preview"
-              width={800} // Adjust width as needed
-              height={600} // Adjust height as needed
               className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
             />
           ) : file && typeof file === 'string' && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ? (
-            <Image
+            <img
               src={fileUrl}
               alt="Document Preview"
-              width={800} // Adjust width as needed
-              height={600} // Adjust height as needed
               className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
             />
           ) : (
@@ -316,27 +312,28 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     }
   }, [formData, loadId]);
 
-  // Load data on mount
+  // Load data on mount if not provided
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // First, ensure we have a valid user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError) {
-          console.error("Auth error:", userError);
-          throw userError;
+        // Check if we already have load details
+        if (initialLoadDetails) {
+          setLoadDetails(initialLoadDetails);
+          setLoading(false);
+          return;
         }
 
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+
         if (!user) {
-          console.log("No user found, redirecting to login");
           router.push('/login');
           return;
         }
 
-        console.log("User authenticated:", user.id);
         setUser(user);
 
         if (!loadId) {
@@ -396,7 +393,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     if (loadId) {
       fetchData();
     }
-  }, [loadId, router]); // Removed initialLoadDetails from dependencies
+  }, [loadId, router, initialLoadDetails]);
 
   // Handle input changes
   const handleInputChange = (e) => {
@@ -533,21 +530,24 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
     setSubmitting(true);
     try {
-      // Check if user exists first
-      if (!user) {
-        // Try to get the user again
+      let currentUserId = user?.id;
+
+      // If we don't have a user ID, fetch the current user
+      if (!currentUserId) {
         const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !currentUser) {
           throw new Error("Authentication required. Please log in again.");
         }
 
-        // Update the user state
+        // Use the fetched user ID directly
+        currentUserId = currentUser.id;
+
+        // Update the state for future renders
         setUser(currentUser);
       }
 
-      // Now safely use user.id
-      const currentUserId = user?.id;
+      // Make sure we have a valid user ID
       if (!currentUserId) {
         throw new Error("User ID not found. Please log in again.");
       }
@@ -563,7 +563,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           continue;
         }
 
-        // Use currentUserId instead of user.id directly
+        // Use currentUserId instead of user.id
         const fileName = `${currentUserId}/loads/${loadDetails.loadNumber}/pod/${Date.now()}-${file.name}`;
 
         const { data: fileData, error: fileError } = await supabase.storage
