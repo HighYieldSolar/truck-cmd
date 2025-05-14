@@ -6,37 +6,78 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, Truck, FileText, Wallet, Users, Package, CheckCircle, 
-  Calculator, Fuel, Settings, LogOut, Bell, Search, Menu, X, 
+import {
+  LayoutDashboard, Truck, FileText, Wallet, Users, Package, CheckCircle,
+  Calculator, Fuel, Settings, LogOut, Search, Menu, X,
   User, MapPin, Home
 } from "lucide-react";
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 import UserDropdown from "@/components/UserDropdown";
+import NotificationIcon from "@/components/notifications/NotificationIcon";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 
-export default function DashboardLayout({activePage = "dashboard", children}) {
+export default function DashboardLayout({ activePage = "dashboard", children, pageTitle }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [bannerVisible, setBannerVisible] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const notificationsRef = useRef(null);
+  const notificationsContainerRef = useRef(null);
   const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  
-  // Get subscription context
-  const { 
-    user, 
-    subscription, 
-    loading: subscriptionLoading, 
+
+  const {
+    user,
+    subscription,
+    loading: subscriptionLoading,
     getDaysLeftInTrial,
     isTrialActive,
     isSubscriptionActive
   } = useSubscription();
+
+  const [notificationsData, setNotificationsData] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [notificationError, setNotificationError] = useState(null);
+
+  // Fetch initial notifications summary
+  useEffect(() => {
+    if (user && user.id) {
+      const fetchNotifications = async () => {
+        try {
+          setNotificationError(null);
+          const { data, error } = await supabase.rpc('get_unread_notifications_summary', {
+            p_user_id: user.id
+          });
+
+          if (error) {
+            console.error("Error fetching notifications summary:", error);
+            setNotificationError("Failed to load notifications.");
+            setNotificationsData([]);
+            setUnreadNotificationCount(0);
+            return;
+          }
+
+          if (data) {
+            setNotificationsData(data.recent_notifications || []);
+            setUnreadNotificationCount(data.unread_count || 0);
+          }
+        } catch (e) {
+          console.error("Client-side error fetching notifications summary:", e);
+          setNotificationError("An unexpected error occurred.");
+          setNotificationsData([]);
+          setUnreadNotificationCount(0);
+        }
+      };
+      fetchNotifications();
+    } else {
+      // Clear notifications if user logs out or is not available
+      setNotificationsData([]);
+      setUnreadNotificationCount(0);
+    }
+  }, [user]); // Rerun when user object changes
 
   // Determine subscription status
   const subscriptionStatus = subscription?.status === 'active' && isSubscriptionActive()
@@ -46,7 +87,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
       : 'expired';
 
   const daysLeft = getDaysLeftInTrial ? getDaysLeftInTrial() : 0;
-  
+
   // Check if user is subscribed (either active subscription or valid trial)
   const isSubscribed = () => {
     return subscriptionStatus === 'active' || subscriptionStatus === 'trial';
@@ -55,7 +96,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
   // Get current active page from pathname
   const getActivePage = () => {
     if (!pathname) return "dashboard";
-    
+
     const path = pathname.split('/');
     // If path is like /dashboard/invoices, return "invoices"
     if (path.length > 2) {
@@ -69,14 +110,14 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
 
   // Check if user is authenticated
   useEffect(() => {
-    async function checkUser() {
+    async function checkUserAuth() {
       try {
         setLoading(true);
-        
+
         // Get current user
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user) {
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+
+        if (error || !authUser) {
           router.push('/login');
           return;
         }
@@ -87,9 +128,13 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
         setLoading(false);
       }
     }
-    
-    checkUser();
-  }, [router]);
+
+    if (!user) { // Only run if user from context isn't available yet
+      checkUserAuth();
+    } else {
+      setLoading(false); // User already loaded from context
+    }
+  }, [router, user]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -112,15 +157,15 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Close notifications dropdown when clicking outside
-      if (notificationsOpen && notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+      if (notificationsOpen && notificationsContainerRef.current && !notificationsContainerRef.current.contains(event.target)) {
         setNotificationsOpen(false);
       }
-      
+
       // Close search dropdown when clicking outside
       if (searchOpen && searchRef.current && !searchRef.current.contains(event.target)) {
         setSearchOpen(false);
       }
-      
+
       // Close mobile menu when clicking outside
       if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
         const menuButton = document.querySelector('.mobile-menu-button');
@@ -129,7 +174,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -138,111 +183,159 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
 
   // Menu items definition
   const menuItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
+    {
+      name: 'Dashboard',
+      href: '/dashboard',
       icon: <LayoutDashboard size={20} />,
-      active: currentActivePage === 'dashboard'
+      active: currentActivePage === 'dashboard' && !pageTitle
     },
-    { 
-      name: 'Load Management', 
-      href: '/dashboard/dispatching', 
+    {
+      name: 'Load Management',
+      href: '/dashboard/dispatching',
       icon: <Truck size={20} />,
-      active: currentActivePage === 'dispatching',
+      active: currentActivePage === 'dispatching' && !pageTitle,
       protected: true
     },
     {
-      name: 'State Mileage', 
-      href: '/dashboard/mileage', 
+      name: 'State Mileage',
+      href: '/dashboard/mileage',
       icon: <MapPin size={20} />,
-      active: currentActivePage === 'mileage',
+      active: currentActivePage === 'mileage' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Invoices', 
-      href: '/dashboard/invoices', 
+    {
+      name: 'Invoices',
+      href: '/dashboard/invoices',
       icon: <FileText size={20} />,
-      active: currentActivePage === 'invoices',
+      active: currentActivePage === 'invoices' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Expenses', 
-      href: '/dashboard/expenses', 
+    {
+      name: 'Expenses',
+      href: '/dashboard/expenses',
       icon: <Wallet size={20} />,
-      active: currentActivePage === 'expenses',
+      active: currentActivePage === 'expenses' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Customers', 
-      href: '/dashboard/customers', 
+    {
+      name: 'Customers',
+      href: '/dashboard/customers',
       icon: <Users size={20} />,
-      active: currentActivePage === 'customers',
+      active: currentActivePage === 'customers' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Fleet', 
-      href: '/dashboard/fleet', 
+    {
+      name: 'Fleet',
+      href: '/dashboard/fleet',
       icon: <Package size={20} />,
-      active: currentActivePage === 'fleet',
+      active: currentActivePage === 'fleet' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Compliance', 
-      href: '/dashboard/compliance', 
+    {
+      name: 'Compliance',
+      href: '/dashboard/compliance',
       icon: <CheckCircle size={20} />,
-      active: currentActivePage === 'compliance',
+      active: currentActivePage === 'compliance' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'IFTA Calculator', 
-      href: '/dashboard/ifta', 
+    {
+      name: 'IFTA Calculator',
+      href: '/dashboard/ifta',
       icon: <Calculator size={20} />,
-      active: currentActivePage === 'ifta',
+      active: currentActivePage === 'ifta' && !pageTitle,
       protected: true
     },
-    { 
-      name: 'Fuel Tracker', 
-      href: '/dashboard/fuel', 
+    {
+      name: 'Fuel Tracker',
+      href: '/dashboard/fuel',
       icon: <Fuel size={20} />,
-      active: currentActivePage === 'fuel',
+      active: currentActivePage === 'fuel' && !pageTitle,
       protected: true
     },
   ];
 
   // System menu items - only Settings now
   const systemItems = [
-    { 
-      name: 'Settings', 
-      href: '/dashboard/settings', 
+    {
+      name: 'Settings',
+      href: '/dashboard/settings',
       icon: <Settings size={20} />,
-      active: currentActivePage === 'settings'
+      active: currentActivePage === 'settings' && !pageTitle
     }
   ];
 
-  // Mock notifications data
-  const notifications = [
-    {
-      id: 1,
-      title: 'New invoice payment received',
-      description: 'Invoice #1234 has been paid',
-      time: '2 hours ago',
-      read: false,
-    },
-    {
-      id: 2,
-      title: 'Upcoming delivery reminder',
-      description: 'You have a delivery scheduled tomorrow',
-      time: '1 day ago',
-      read: true,
-    },
-    {
-      id: 3,
-      title: 'IFTA deadline approaching',
-      description: 'Q2 filing deadline is in 5 days',
-      time: '2 days ago',
-      read: true,
-    },
-  ];
+  // Placeholder functions for notification interactions
+  const handleMarkAllRead = async () => {
+    if (!user || !user.id) {
+      console.error("User not available for marking all notifications read.");
+      setNotificationError("User not found. Please try again.");
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('mark_all_notifications_as_read', {
+        p_user_id: user.id
+      });
+      if (error) {
+        console.error("Error marking all notifications as read:", error);
+        setNotificationError("Failed to mark all as read.");
+      } else {
+        setNotificationsData(notificationsData.map(n => ({ ...n, is_read: true })));
+        setUnreadNotificationCount(0);
+        setNotificationError(null); // Clear error on success
+      }
+    } catch (e) {
+      console.error("Client-side error marking all read:", e);
+      setNotificationError("An unexpected error occurred.");
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!user || !user.id) {
+      console.error("User not available for marking notification read.");
+      setNotificationError("User not found. Please try again.");
+      return;
+    }
+    try {
+      // Mark as read optimistically or after RPC success
+      if (!notification.is_read) {
+        const { error } = await supabase.rpc('mark_notification_as_read', {
+          p_notification_id: notification.id,
+          p_user_id: user.id
+        });
+
+        if (error) {
+          console.error("Error marking notification as read:", error);
+          setNotificationError("Failed to mark notification as read.");
+          // Optionally revert optimistic update here if implemented
+        } else {
+          setNotificationsData(
+            notificationsData.map(n =>
+              n.id === notification.id ? { ...n, is_read: true } : n
+            )
+          );
+          setUnreadNotificationCount(prevCount => Math.max(0, prevCount - 1));
+          setNotificationError(null); // Clear error on success
+        }
+      }
+
+      // Navigate if link_to is present
+      if (notification.link_to) {
+        router.push(notification.link_to);
+      }
+      setNotificationsOpen(false); // Close dropdown after click
+    } catch (e) {
+      console.error("Client-side error handling notification click:", e);
+      setNotificationError("An unexpected error occurred.");
+    }
+  };
+
+  const handleViewAllNotifications = () => {
+    router.push('/dashboard/notifications');
+    setNotificationsOpen(false);
+  };
+
+  // Determine the displayed title
+  const displayedTitle = pageTitle || menuItems.find(item => item.active)?.name || systemItems.find(item => item.active)?.name || 'Dashboard';
 
   if (loading || subscriptionLoading) {
     return (
@@ -252,11 +345,11 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
     );
   }
 
-  return (    
-    <div className="flex flex-col min-h-screen bg-gray-50">      
-      {/* Trial Banner */}      
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Trial Banner */}
       <TrialBanner />
-      
+
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
         <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white shadow-md fixed inset-y-0 z-20 transition-all duration-300">
@@ -282,7 +375,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 {menuItems.map((item) => {
                   // Determine if this menu item should be disabled
                   const isDisabled = item.protected && !isSubscribed();
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -305,7 +398,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 })}
               </nav>
             </div>
-            
+
             {/* System Navigation */}
             <div className="px-3 mt-6">
               <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -316,15 +409,13 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                      item.active
-                        ? "bg-blue-50 text-[#007BFF]"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                    }`}
+                    className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
+                      ? "bg-blue-50 text-[#007BFF]"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                      }`}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${
-                      item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
-                    }`}>
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
+                      }`}>
                       {item.icon}
                     </div>
                     {item.name}
@@ -332,7 +423,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 ))}
               </nav>
             </div>
-            
+
             {/* Trial Status */}
             {['trial', 'expired'].includes(subscriptionStatus) && (
               <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
@@ -343,27 +434,27 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   {subscriptionStatus === 'expired' ? (
                     <div className="text-sm text-gray-700">
                       <p className="mb-2">Your trial has expired. Upgrade now to continue accessing all features.</p>
-                      <Link 
-                        href="/dashboard/billing" 
+                      <Link
+                        href="/dashboard/billing"
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
-                        Upgrade now 
+                        Upgrade now
                       </Link>
                     </div>
                   ) : (
                     <div className="text-sm text-gray-700">
                       <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
                       <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full" 
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
                           style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
                         ></div>
                       </div>
-                      <Link 
-                        href="/dashboard/billing" 
+                      <Link
+                        href="/dashboard/billing"
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
-                        View plans 
+                        View plans
                       </Link>
                     </div>
                   )}
@@ -381,9 +472,8 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
         {/* Mobile Sidebar */}
         <div
           ref={mobileMenuRef}
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
@@ -403,7 +493,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               <X size={20} />
             </button>
           </div>
-          
+
           {/* User Profile Section (Mobile) */}
           {user && (
             <div className="p-4 border-b border-gray-200 flex items-center">
@@ -418,7 +508,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               </div>
             </div>
           )}
-          
+
           <div className="p-2">
             {/* Mobile Search Bar */}
             <div className="px-2 py-3">
@@ -435,7 +525,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 />
               </div>
             </div>
-            
+
             {/* Main Navigation */}
             <div className="mt-1 pb-2">
               <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -444,7 +534,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               {menuItems.map((item) => {
                 // Determine if this menu item should be disabled
                 const isDisabled = item.protected && !isSubscribed();
-                
+
                 return (
                   <Link
                     key={item.name}
@@ -457,9 +547,8 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                       ${isDisabled ? "opacity-50" : ""}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${
-                      item.active ? "text-[#007BFF]" : "text-gray-500"
-                    }`}>
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"
+                      }`}>
                       {item.icon}
                     </div>
                     {item.name}
@@ -467,7 +556,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 );
               })}
             </div>
-            
+
             {/* System Navigation */}
             <div className="mt-4 pt-3 border-t border-gray-200">
               <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -477,11 +566,10 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${
-                    item.active
-                      ? "bg-blue-50 text-[#007BFF]"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
-                  }`}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${item.active
+                    ? "bg-blue-50 text-[#007BFF]"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                    }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"}`}>
@@ -490,7 +578,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   {item.name}
                 </Link>
               ))}
-              
+
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-red-600 transition-all my-0.5"
@@ -499,7 +587,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 Logout
               </button>
             </div>
-            
+
             {/* Trial Status (Mobile) */}
             {subscriptionStatus !== 'active' && (
               <div className="mt-6 mx-2 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
@@ -510,8 +598,8 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   {subscriptionStatus === 'expired' ? (
                     <div className="text-sm text-gray-700">
                       <p className="mb-2">Your trial has expired. Subscribe now to continue using all features.</p>
-                      <Link 
-                        href="/dashboard/billing" 
+                      <Link
+                        href="/dashboard/billing"
                         className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] text-white rounded-lg hover:bg-blue-600"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -522,13 +610,13 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                     <div className="text-sm text-gray-700">
                       <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
                       <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full" 
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
                           style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
                         ></div>
                       </div>
-                      <Link 
-                        href="/dashboard/billing" 
+                      <Link
+                        href="/dashboard/billing"
                         className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] text-white rounded-lg hover:bg-blue-600"
                         onClick={() => setMobileMenuOpen(false)}
                       >
@@ -556,25 +644,21 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                 >
                   <Menu size={24} />
                 </button>
-                
+
                 <div className="flex flex-col justify-center">
                   <h1 className="text-lg font-semibold text-gray-900">
-                    {menuItems.find(item => item.active)?.name || 
-                     systemItems.find(item => item.active)?.name || 
-                     'Dashboard'}
+                    {displayedTitle}
                   </h1>
                   <div className="text-sm text-gray-500 hidden sm:block">
                     <Link href="/dashboard" className="hover:text-[#007BFF]">Home</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-gray-700">
-                      {menuItems.find(item => item.active)?.name || 
-                       systemItems.find(item => item.active)?.name || 
-                       'Dashboard'}
+                      {displayedTitle}
                     </span>
                   </div>
                 </div>
               </div>
-              
+
               {/* Right side: Search, Notifications, User Dropdown */}
               <div className="flex items-center space-x-3">
                 {/* Desktop Search */}
@@ -586,7 +670,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                   >
                     <Search size={20} />
                   </button>
-                  
+
                   {/* Search Dropdown */}
                   {searchOpen && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg p-4 border border-gray-200 z-20">
@@ -603,7 +687,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                           autoFocus
                         />
                       </div>
-                      
+
                       <div className="mt-3">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                           Quick Links
@@ -630,94 +714,41 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Notifications */}
-                <div className="relative" ref={notificationsRef}>
-                  <button
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none relative"
-                    onClick={() => setNotificationsOpen(!notificationsOpen)}
-                    aria-label="Notifications"
-                  >
-                    <Bell size={20} />
-                    {notifications.some(n => !n.read) && (
-                      <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 transform translate-x-1/2 -translate-y-1/2"></span>
-                    )}
-                  </button>
-                  
-                  {/* Notifications Dropdown */}
+                <div className="relative" ref={notificationsContainerRef}>
+                  <NotificationIcon
+                    onIconClick={() => setNotificationsOpen(!notificationsOpen)}
+                    hasUnread={unreadNotificationCount > 0}
+                  />
                   {notificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden border border-gray-200 z-20">
-                      <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                        <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
-                        <span className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer">
-                          Mark all as read
-                        </span>
-                      </div>
-                      
-                      <div className="max-h-72 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <div className="py-6 text-center text-gray-500">
-                            <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-                              <Bell size={24} className="text-gray-400" />
-                            </div>
-                            <p className="text-sm">No notifications yet</p>
-                          </div>
-                        ) : (
-                          <div>
-                            {notifications.map((notification) => (
-                              <div 
-                                key={notification.id}
-                                className={`px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${!notification.read ? 'bg-blue-50' : ''}`}
-                              >
-                                <div className="flex items-start">
-                                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!notification.read ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                                  <div className="ml-3 flex-1">
-                                    <div className="flex justify-between">
-                                      <p className={`text-sm font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>
-                                        {notification.title}
-                                      </p>
-                                      <span className="text-xs text-gray-500">{notification.time}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-600 mt-0.5">{notification.description}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
-                        <Link 
-                          href="/dashboard/notifications"
-                          className="block text-center text-sm text-blue-600 hover:text-blue-800"
-                          onClick={() => setNotificationsOpen(false)}
-                        >
-                          View all notifications
-                        </Link>
-                      </div>
-                    </div>
+                    <NotificationDropdown
+                      notifications={notificationsData}
+                      onMarkAllReadClick={handleMarkAllRead}
+                      onViewAllClick={handleViewAllNotifications}
+                      onNotificationItemClick={handleNotificationClick}
+                    />
                   )}
                 </div>
-                
+
                 {/* User Menu Dropdown */}
                 <UserDropdown />
               </div>
             </div>
           </header>
 
-{/* Page Content */}
+          {/* Page Content */}
           <main className="flex-1 overflow-x-hidden">
             <div className="container mx-auto py-4 px-4 lg:px-6">
               {/* Check if the current page is protected and subscription is expired */}
-              {menuItems.find(item => item.active)?.protected && !isSubscribed() ? (
+              {menuItems.find(item => item.href.endsWith(currentActivePage))?.protected && !isSubscribed() && !pageTitle ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
                     <LogOut size={24} className="text-red-600" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Feature Unavailable</h2>
                   <p className="text-gray-600 mb-6 text-center max-w-md">
-                    {subscriptionStatus === 'expired' 
+                    {subscriptionStatus === 'expired'
                       ? 'Your free trial has ended. Please subscribe to access this feature.'
                       : 'This feature requires an active subscription.'}
                   </p>
@@ -733,7 +764,7 @@ export default function DashboardLayout({activePage = "dashboard", children}) {
               )}
             </div>
           </main>
-          
+
           {/* Footer */}
           <footer className="bg-white border-t border-gray-200 mt-auto py-4 px-4 lg:px-6">
             <div className="container mx-auto">
