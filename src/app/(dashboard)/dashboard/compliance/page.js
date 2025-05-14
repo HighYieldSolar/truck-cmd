@@ -4,16 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  AlertCircle, 
-  Plus, 
-  Download, 
-  Filter, 
-  Search, 
-  FileText, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
+import {
+  AlertCircle,
+  Plus,
+  Download,
+  Filter,
+  Search,
+  FileText,
+  Calendar,
+  Clock,
+  CheckCircle,
   RefreshCw,
   ArrowRight,
   Edit,
@@ -21,9 +21,9 @@ import {
   Trash2
 } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
-import { 
-  fetchComplianceItems, 
-  createComplianceItem, 
+import {
+  fetchComplianceItems,
+  createComplianceItem,
   updateComplianceItem,
   deleteComplianceItem,
   uploadComplianceDocument,
@@ -45,11 +45,11 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  
+
   // Compliance items state
   const [complianceItems, setComplianceItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
-  
+
   // Filter state
   const [filters, setFilters] = useState({
     status: "all",
@@ -57,7 +57,7 @@ export default function Page() {
     entity: "all",
     search: ""
   });
-  
+
   // Modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -65,80 +65,101 @@ export default function Page() {
   const [currentItem, setCurrentItem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Helper function to get an item's status based on its expiration date
   const getItemStatus = useCallback((item) => {
     if (!item.expiration_date) return "Unknown";
-    
+
     const today = new Date();
     const expirationDate = new Date(item.expiration_date);
     const differenceInTime = expirationDate - today;
     const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-    
+
     if (differenceInDays < 0) return "Expired";
     if (differenceInDays <= 30) return "Expiring Soon";
     return "Active";
   }, []);
-  
+
   // Apply filters to compliance items
   const applyFilters = useCallback((items, currentFilters) => {
     let result = [...items];
-    
+
     // Filter by status
     if (currentFilters.status !== "all") {
       result = result.filter(item => {
-        const status = item.status ? item.status.toLowerCase() : getItemStatus(item).toLowerCase();
-        return status === currentFilters.status.toLowerCase();
+        if (!item.expiration_date) return currentFilters.status.toLowerCase() === "unknown";
+
+        // Calculate current status
+        const today = new Date();
+        const expirationDate = new Date(item.expiration_date);
+        const differenceInTime = expirationDate - today;
+        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+
+        let calculatedStatus;
+        if (differenceInDays < 0) {
+          calculatedStatus = "expired";
+        } else if (differenceInDays <= 30) {
+          calculatedStatus = "expiring soon";
+        } else {
+          calculatedStatus = "active";
+        }
+
+        // Use pending status from database if exists, otherwise use calculated status
+        const displayStatus = item.status?.toLowerCase() === "pending"
+          ? "pending"
+          : calculatedStatus;
+
+        return displayStatus === currentFilters.status.toLowerCase();
       });
     }
-    
+
     // Filter by compliance type
     if (currentFilters.type !== "all") {
       result = result.filter(item => item.compliance_type === currentFilters.type);
     }
-    
+
     // Filter by entity type
     if (currentFilters.entity !== "all") {
       result = result.filter(item => item.entity_type === currentFilters.entity);
     }
-    
+
     // Filter by search term
     if (currentFilters.search) {
       const searchLower = currentFilters.search.toLowerCase();
-      result = result.filter(item => 
+      result = result.filter(item =>
         (item.title && item.title.toLowerCase().includes(searchLower)) ||
         (item.entity_name && item.entity_name.toLowerCase().includes(searchLower)) ||
         (item.document_number && item.document_number.toLowerCase().includes(searchLower))
       );
     }
-    
+
     setFilteredItems(result);
-  }, [getItemStatus]);
-  
+  }, []);
+
   // Fetch user and compliance items on mount
   useEffect(() => {
     async function initialize() {
       try {
         setLoading(true);
-        
+
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError) throw userError;
-        
+
         if (!user) {
           // Redirect to login if not authenticated
           window.location.href = '/login';
           return;
         }
-        
+
         setUser(user);
-        
+
         // Fetch compliance items
         const items = await fetchComplianceItems(user.id);
         setComplianceItems(items);
         applyFilters(items, filters);
-        
+
         setLoading(false);
       } catch (error) {
         console.error("Error initializing compliance dashboard:", error);
@@ -146,10 +167,68 @@ export default function Page() {
         setLoading(false);
       }
     }
-    
+
     initialize();
   }, [applyFilters, filters]);
-  
+
+  // Update compliance item statuses based on expiration dates
+  useEffect(() => {
+    const updateComplianceStatuses = async () => {
+      if (!user || complianceItems.length === 0) return;
+
+      const today = new Date();
+      const itemsToUpdate = [];
+
+      // Check if any items need their status updated based on expiration date
+      for (const item of complianceItems) {
+        if (!item.expiration_date) continue;
+
+        const expirationDate = new Date(item.expiration_date);
+        const differenceInTime = expirationDate - today;
+        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+
+        let calculatedStatus;
+        if (differenceInDays < 0) {
+          calculatedStatus = "Expired";
+        } else if (differenceInDays <= 30) {
+          calculatedStatus = "Expiring Soon";
+        } else {
+          calculatedStatus = "Active";
+        }
+
+        // If the stored status doesn't match the calculated status based on date
+        if (item.status !== calculatedStatus) {
+          itemsToUpdate.push({
+            id: item.id,
+            newStatus: calculatedStatus,
+            currentStatus: item.status
+          });
+        }
+      }
+
+      // Update items with incorrect statuses in database
+      if (itemsToUpdate.length > 0) {
+        console.log(`Updating status for ${itemsToUpdate.length} compliance items`);
+
+        for (const item of itemsToUpdate) {
+          try {
+            await updateComplianceItem(item.id, { status: item.newStatus });
+            console.log(`Updated item ${item.id} status from ${item.currentStatus} to ${item.newStatus}`);
+          } catch (error) {
+            console.error(`Failed to update status for item ${item.id}:`, error);
+          }
+        }
+
+        // Refresh compliance items after updates
+        const updatedItems = await fetchComplianceItems(user.id);
+        setComplianceItems(updatedItems);
+        applyFilters(updatedItems, filters);
+      }
+    };
+
+    updateComplianceStatuses();
+  }, [user, complianceItems, filters, applyFilters]);
+
   // Handle filter changes
   const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -159,7 +238,7 @@ export default function Page() {
       return newFilters;
     });
   }, [applyFilters, complianceItems]);
-  
+
   // Handle search
   const handleSearch = useCallback((e) => {
     const value = e.target.value;
@@ -169,7 +248,7 @@ export default function Page() {
       return newFilters;
     });
   }, [applyFilters, complianceItems]);
-  
+
   // Handle type selection from the sidebar
   const handleTypeSelect = useCallback((type) => {
     setFilters(prev => {
@@ -178,33 +257,33 @@ export default function Page() {
       return newFilters;
     });
   }, [applyFilters, complianceItems]);
-  
+
   // Modal handlers
   const handleOpenFormModal = useCallback((item = null) => {
     setCurrentItem(item);
     setFormModalOpen(true);
   }, []);
-  
+
   const handleOpenViewModal = useCallback((item) => {
     setCurrentItem(item);
     setViewModalOpen(true);
   }, []);
-  
+
   const handleOpenDeleteModal = useCallback((item) => {
     setCurrentItem(item);
     setDeleteModalOpen(true);
   }, []);
-  
+
   // Save compliance item
   const handleSaveComplianceItem = useCallback(async (formData) => {
     if (!user) return;
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // Upload document if provided
       let documentUrl = currentItem?.document_url;
-      
+
       if (formData.document_file) {
         try {
           documentUrl = await uploadComplianceDocument(user.id, formData.document_file);
@@ -213,7 +292,7 @@ export default function Page() {
           throw uploadErr;
         }
       }
-      
+
       // Prepare compliance data
       const complianceData = {
         title: formData.title,
@@ -237,12 +316,12 @@ export default function Page() {
         // Insert new item
         await createComplianceItem(complianceData);
       }
-      
+
       // Refresh compliance items
       const updatedItems = await fetchComplianceItems(user.id);
       setComplianceItems(updatedItems);
       applyFilters(updatedItems, filters);
-      
+
       // Close the modal
       setFormModalOpen(false);
       setCurrentItem(null);
@@ -253,14 +332,14 @@ export default function Page() {
       setIsSubmitting(false);
     }
   }, [applyFilters, currentItem, filters, user]);
-  
+
   // Delete compliance item
   const handleDeleteComplianceItem = useCallback(async () => {
     if (!currentItem || !user) return;
-    
+
     try {
       setIsDeleting(true);
-      
+
       // Delete document from storage if exists
       if (currentItem.document_url) {
         try {
@@ -270,15 +349,15 @@ export default function Page() {
           // Continue with deletion even if removing file fails
         }
       }
-      
+
       // Delete the compliance item
       await deleteComplianceItem(currentItem.id);
-      
+
       // Refresh compliance items
       const updatedItems = await fetchComplianceItems(user.id);
       setComplianceItems(updatedItems);
       applyFilters(updatedItems, filters);
-      
+
       // Close the modal
       setDeleteModalOpen(false);
       setCurrentItem(null);
@@ -289,49 +368,71 @@ export default function Page() {
       setIsDeleting(false);
     }
   }, [applyFilters, currentItem, filters, user]);
-  
+
   // Get summary statistics
   const getSummaryStats = useCallback(() => {
     const total = complianceItems.length;
-    const active = complianceItems.filter(item => 
-      (item.status && item.status.toLowerCase() === "active") || 
-      (!item.status && getItemStatus(item) === "Active")
+
+    // Calculate current status for each item
+    const itemsWithCalculatedStatus = complianceItems.map(item => {
+      if (!item.expiration_date) return { ...item, calculatedStatus: "Unknown" };
+
+      const today = new Date();
+      const expirationDate = new Date(item.expiration_date);
+      const differenceInTime = expirationDate - today;
+      const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+
+      let calculatedStatus;
+      if (differenceInDays < 0) {
+        calculatedStatus = "Expired";
+      } else if (differenceInDays <= 30) {
+        calculatedStatus = "Expiring Soon";
+      } else {
+        calculatedStatus = "Active";
+      }
+
+      return {
+        ...item,
+        calculatedStatus: item.status === "Pending" ? "Pending" : calculatedStatus
+      };
+    });
+
+    const active = itemsWithCalculatedStatus.filter(item =>
+      item.calculatedStatus === "Active"
     ).length;
-    
-    const expiringSoon = complianceItems.filter(item => 
-      (item.status && item.status.toLowerCase() === "expiring soon") || 
-      (!item.status && getItemStatus(item) === "Expiring Soon")
+
+    const expiringSoon = itemsWithCalculatedStatus.filter(item =>
+      item.calculatedStatus === "Expiring Soon"
     ).length;
-    
-    const expired = complianceItems.filter(item => 
-      (item.status && item.status.toLowerCase() === "expired") || 
-      (!item.status && getItemStatus(item) === "Expired")
+
+    const expired = itemsWithCalculatedStatus.filter(item =>
+      item.calculatedStatus === "Expired"
     ).length;
-    
-    const pending = complianceItems.filter(item => 
-      item.status && item.status.toLowerCase() === "pending"
+
+    const pending = itemsWithCalculatedStatus.filter(item =>
+      item.calculatedStatus === "Pending"
     ).length;
-    
+
     return { total, active, expiringSoon, expired, pending };
-  }, [complianceItems, getItemStatus]);
-  
+  }, [complianceItems]);
+
   // Get upcoming expirations (items expiring in the next 30 days)
   const getUpcomingExpirations = useCallback(() => {
     const today = new Date();
     return complianceItems
       .filter(item => {
         if (!item.expiration_date) return false;
-        
+
         const expirationDate = new Date(item.expiration_date);
         const differenceInTime = expirationDate - today;
         const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-        
+
         return differenceInDays >= 0 && differenceInDays <= 30;
       })
       .sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date))
       .slice(0, 5); // Get top 5 upcoming expirations
   }, [complianceItems]);
-  
+
   const stats = getSummaryStats();
   const upcomingExpirations = getUpcomingExpirations();
 
@@ -346,7 +447,7 @@ export default function Page() {
   // Export compliance data to CSV
   const handleExportData = () => {
     if (complianceItems.length === 0) return;
-    
+
     // Convert data to CSV
     const headers = [
       "Title",
@@ -355,12 +456,12 @@ export default function Page() {
       "Entity Name",
       "Document Number",
       "Issue Date",
-      "Expiration Date", 
+      "Expiration Date",
       "Status",
       "Issuing Authority",
       "Notes"
     ];
-    
+
     const csvData = complianceItems.map((item) => [
       item.title || "",
       COMPLIANCE_TYPES[item.compliance_type]?.name || item.compliance_type || "",
@@ -373,7 +474,7 @@ export default function Page() {
       item.issuing_authority || "",
       item.notes || ""
     ]);
-    
+
     // Create CSV content
     let csvContent = headers.join(",") + "\n";
     csvData.forEach(row => {
@@ -389,7 +490,7 @@ export default function Page() {
       });
       csvContent += escapedRow.join(",") + "\n";
     });
-    
+
     // Download the CSV file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -420,7 +521,7 @@ export default function Page() {
                   <Plus size={18} className="mr-2" />
                   Add Record
                 </button>
-                <button 
+                <button
                   onClick={handleExportData}
                   className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
                   disabled={complianceItems.length === 0}
@@ -469,9 +570,9 @@ export default function Page() {
                         const daysLeft = Math.ceil(
                           (new Date(item.expiration_date) - new Date()) / (1000 * 60 * 60 * 24)
                         );
-                        
+
                         return (
-                          <div 
+                          <div
                             key={item.id}
                             className="p-3 bg-gray-50 rounded-lg hover:bg-orange-50 cursor-pointer transition-colors"
                             onClick={() => handleOpenViewModal(item)}
@@ -481,19 +582,18 @@ export default function Page() {
                                 <p className="font-medium text-gray-900 text-sm truncate">{item.title}</p>
                                 <p className="text-sm text-gray-500">{item.entity_name}</p>
                               </div>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                daysLeft <= 7 ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
-                              }`}>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${daysLeft <= 7 ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
+                                }`}>
                                 {daysLeft} days
                               </span>
                             </div>
                           </div>
                         );
                       })}
-                    
+
                       <div className="mt-2 pt-2 border-t border-gray-200 text-center">
-                        <button 
-                          onClick={() => setFilters({...filters, status: 'expiring soon'})}
+                        <button
+                          onClick={() => setFilters({ ...filters, status: 'expiring soon' })}
                           className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
                         >
                           View all expiring items
@@ -504,7 +604,7 @@ export default function Page() {
                   )}
                 </div>
               </div>
-              
+
               {/* Compliance Types */}
               <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="bg-blue-500 px-5 py-4 text-white">
@@ -517,13 +617,12 @@ export default function Page() {
                   {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => {
                     const count = complianceItems.filter(item => item.compliance_type === key).length;
                     if (count === 0) return null;
-                    
+
                     return (
                       <div
                         key={key}
-                        className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                          filters.type === key ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                        }`}
+                        className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${filters.type === key ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                          }`}
                         onClick={() => handleTypeSelect(key)}
                       >
                         <div className="flex items-center">
@@ -536,18 +635,18 @@ export default function Page() {
                       </div>
                     );
                   })}
-                  
-                  {Object.entries(COMPLIANCE_TYPES).every(([key]) => 
+
+                  {Object.entries(COMPLIANCE_TYPES).every(([key]) =>
                     complianceItems.filter(item => item.compliance_type === key).length === 0
                   ) && (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText size={36} className="mx-auto mb-2 text-gray-400" />
-                      <p>No compliance items found</p>
-                    </div>
-                  )}
-                  
+                      <div className="text-center py-8 text-gray-500">
+                        <FileText size={36} className="mx-auto mb-2 text-gray-400" />
+                        <p>No compliance items found</p>
+                      </div>
+                    )}
+
                   <div className="mt-2 pt-2 border-t border-gray-200 text-center">
-                    <button 
+                    <button
                       onClick={() => handleOpenFormModal()}
                       className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
                     >
@@ -558,7 +657,7 @@ export default function Page() {
                 </div>
               </div>
             </div>
-            
+
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
@@ -586,7 +685,7 @@ export default function Page() {
                         <option value="pending">Pending</option>
                       </select>
                     </div>
-                    
+
                     <div className="md:col-span-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                       <select
@@ -603,7 +702,7 @@ export default function Page() {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div className="md:col-span-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Entity</label>
                       <select
@@ -619,7 +718,7 @@ export default function Page() {
                         <option value="Other">Other</option>
                       </select>
                     </div>
-                    
+
                     <div className="md:col-span-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                       <div className="relative">
@@ -636,7 +735,7 @@ export default function Page() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
                     <div className="text-sm text-gray-500">
                       Showing {filteredItems.length} of {complianceItems.length} records
@@ -650,9 +749,9 @@ export default function Page() {
                       })}
                       className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
                       disabled={
-                        filters.status === "all" && 
-                        filters.type === "all" && 
-                        filters.entity === "all" && 
+                        filters.status === "all" &&
+                        filters.type === "all" &&
+                        filters.entity === "all" &&
                         filters.search === ""
                       }
                     >
@@ -662,7 +761,7 @@ export default function Page() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Compliance Table */}
               <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
                 <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -675,7 +774,7 @@ export default function Page() {
                     Add New
                   </button>
                 </div>
-                
+
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -742,17 +841,34 @@ export default function Page() {
                           const today = new Date();
                           const expirationDate = new Date(item.expiration_date);
                           const daysUntil = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
-                          
+
+                          // Calculate current status based on expiration date
+                          let calculatedStatus;
+                          if (daysUntil < 0) {
+                            calculatedStatus = "Expired";
+                          } else if (daysUntil <= 30) {
+                            calculatedStatus = "Expiring Soon";
+                          } else {
+                            calculatedStatus = "Active";
+                          }
+
+                          // Use Pending status from database if it exists, otherwise use calculated status
+                          const displayStatus = item.status === "Pending" ? "Pending" : calculatedStatus;
+
                           // Determine status class
                           let statusClass = "bg-green-100 text-green-800"; // Default: Active
-                          if (daysUntil < 0) {
-                            statusClass = "bg-red-100 text-red-800"; // Expired
-                          } else if (daysUntil <= 30) {
-                            statusClass = "bg-orange-100 text-orange-800"; // Expiring Soon
-                          } else if (item.status === "Pending") {
-                            statusClass = "bg-blue-100 text-blue-800"; // Pending
+                          switch (displayStatus) {
+                            case "Expired":
+                              statusClass = "bg-red-100 text-red-800";
+                              break;
+                            case "Expiring Soon":
+                              statusClass = "bg-orange-100 text-orange-800";
+                              break;
+                            case "Pending":
+                              statusClass = "bg-blue-100 text-blue-800";
+                              break;
                           }
-                          
+
                           return (
                             <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -774,7 +890,7 @@ export default function Page() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-                                  {item.status || (daysUntil < 0 ? "Expired" : daysUntil <= 30 ? "Expiring Soon" : "Active")}
+                                  {displayStatus}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -809,7 +925,7 @@ export default function Page() {
                     </tbody>
                   </table>
                 </div>
-                
+
                 {/* Pagination placeholder - can be implemented if needed */}
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                   <div className="text-sm text-gray-500">
@@ -823,7 +939,7 @@ export default function Page() {
             </div>
           </div>
         </div>
-        
+
         {/* Modals */}
         <ComplianceFormModal
           isOpen={formModalOpen}
@@ -835,7 +951,7 @@ export default function Page() {
           onSave={handleSaveComplianceItem}
           isSubmitting={isSubmitting}
         />
-        
+
         <ViewComplianceModal
           isOpen={viewModalOpen}
           onClose={() => {
@@ -844,7 +960,7 @@ export default function Page() {
           }}
           compliance={currentItem}
         />
-        
+
         <DeleteConfirmationModal
           isOpen={deleteModalOpen}
           onClose={() => {
