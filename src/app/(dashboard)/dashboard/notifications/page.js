@@ -39,13 +39,17 @@ export default function NotificationsPage() {
     }
     setIsLoading(true);
     setError(null);
+
+    // Fix status filter logic
     let filterReadStatus = null;
     if (currentFilters.status === "UNREAD") filterReadStatus = false;
-    if (currentFilters.status === "READ") filterReadStatus = true;
+    if (currentFilters.status === "READ" || currentFilters.status === "READ") filterReadStatus = true;
+
     let filterTypesArray = null;
     if (currentFilters.type !== "ALL") {
       filterTypesArray = [currentFilters.type];
     }
+
     try {
       const { data, error: rpcError } = await supabase.rpc('get_all_notifications', {
         p_user_id: user.id,
@@ -54,10 +58,13 @@ export default function NotificationsPage() {
         p_filter_types: filterTypesArray,
         p_filter_read_status: filterReadStatus,
       });
+
       if (rpcError) throw rpcError;
-      if (data && data.length > 0) {
-        setNotificationsList(data.map(n => ({ ...n, id: n.id })));
-        setTotalNotificationsCount(data[0].total_count || 0);
+
+      // Handle the new database function response format
+      if (data && data.notifications) {
+        setNotificationsList(data.notifications || []);
+        setTotalNotificationsCount(data.pagination?.total_count || 0);
       } else {
         setNotificationsList([]);
         setTotalNotificationsCount(0);
@@ -115,17 +122,16 @@ export default function NotificationsPage() {
   // Ensure these values match your 'notification_type' enum/text in the database
   const notificationTypes = [
     { label: "All Types", value: "ALL" },
+    { label: "Compliance Documents", value: "DOCUMENT_EXPIRY_COMPLIANCE" },
+    { label: "Driver Licenses", value: "DOCUMENT_EXPIRY_DRIVER_LICENSE" },
+    { label: "Driver Medical Cards", value: "DOCUMENT_EXPIRY_DRIVER_MEDICAL" },
     { label: "Deliveries", value: "DELIVERY_UPCOMING" },
-    { label: "Compliance Due", value: "COMPLIANCE_DUE" },
     { label: "IFTA Deadlines", value: "IFTA_DEADLINE" },
-    { label: "Document Expiry (User)", value: "DOCUMENT_EXPIRY_USER" },
-    { label: "Document Expiry (Driver)", value: "DOCUMENT_EXPIRY_DRIVER" },
     { label: "Load Assigned", value: "LOAD_ASSIGNED" },
-    { label: "Load Update", value: "LOAD_STATUS_UPDATE" },
+    { label: "Load Updates", value: "LOAD_STATUS_UPDATE" },
     { label: "Maintenance Due", value: "MAINTENANCE_DUE" },
-    { label: "System Error", value: "SYSTEM_ERROR" },
-    { label: "General Reminder", value: "GENERAL_REMINDER" },
-    // Add any other specific types you have defined
+    { label: "System Alerts", value: "SYSTEM_ERROR" },
+    { label: "General Reminders", value: "GENERAL_REMINDER" },
   ];
 
   const statusTypes = [

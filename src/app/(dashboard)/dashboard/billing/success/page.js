@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  RefreshCw, 
-  Home, 
+import {
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Home,
   FileText,
   ArrowRight
 } from "lucide-react";
@@ -22,93 +22,136 @@ export default function SuccessPage() {
   const [error, setError] = useState(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState(null);
   const { refreshSubscription } = useSubscription();
-  
+  const processedRef = useRef(false); // Prevent multiple processing attempts
+
   useEffect(() => {
+    // Prevent multiple executions
+    if (processedRef.current) return;
+
     async function processPayment() {
       try {
+        processedRef.current = true; // Mark as processing
+
         // Get session ID from URL params
         const sessionId = searchParams.get('session_id');
-        
+
         if (!sessionId) {
           setError("Session ID is missing. Please try again.");
           setLoading(false);
           return;
         }
-        
+
         // Get userId from storage
         const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
-        
+
         if (!userId) {
           setError("User ID is missing. Please return to the billing page and try again.");
           setLoading(false);
           return;
         }
-        
+
         console.log(`Processing payment for user ${userId} with session ${sessionId}`);
-        
+
         // First, verify the session with Stripe
         const verifyResponse = await fetch('/api/verify-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, userId }),
         });
-        
+
         const verifyResult = await verifyResponse.json();
-        
+
         if (!verifyResult.valid) {
           throw new Error(verifyResult.error || 'Payment verification failed');
         }
-        
+
         console.log('Session verified:', verifyResult);
-        
+
         // Next, activate the subscription in our database
         const activateResponse = await fetch('/api/activate-subscription', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, sessionId }),
+          body: JSON.stringify({
+            userId,
+            sessionId,
+            verificationData: verifyResult // Pass the verification data
+          }),
         });
-        
+
         const activateResult = await activateResponse.json();
-        
+
         if (!activateResult.success) {
           console.warn('Activation warning:', activateResult.error);
-          // Continue since payment was successful, but log the warning
+          // If it's already processed, that's actually success
+          if (activateResult.alreadyProcessed) {
+            console.log('Session was already processed successfully');
+          } else {
+            // Only throw error for actual failures, not duplicate processing
+            throw new Error(activateResult.error || 'Failed to activate subscription');
+          }
         }
-        
+
+        console.log('Subscription activation result:', activateResult);
+
         // Set subscription details from the verification response
         setSubscriptionDetails({
-          plan: verifyResult.plan || 'Premium Plan',
+          plan: (verifyResult.plan || 'Premium Plan').charAt(0).toUpperCase() + (verifyResult.plan || 'Premium Plan').slice(1),
           billingCycle: verifyResult.billingCycle || 'yearly',
-          nextPaymentDate: verifyResult.currentPeriodEnd 
-            ? new Date(verifyResult.currentPeriodEnd).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })
+          nextPaymentDate: verifyResult.currentPeriodEnd
+            ? new Date(verifyResult.currentPeriodEnd).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })
             : "April 27, 2026", // Fallback
-          amount: verifyResult.billingCycle === 'yearly' 
-            ? `$${verifyResult.yearlyTotal || 396}` 
+          amount: verifyResult.billingCycle === 'yearly'
+            ? `$${verifyResult.yearlyTotal || 396}`
             : `$${verifyResult.monthlyPrice || 33}/mo`,
           status: "active"
         });
-        
-        // Refresh the subscription context to update UI
-        refreshSubscription();
-        
+
+        // Refresh the subscription context to update UI (but with a delay to prevent loops)
+        setTimeout(() => {
+          console.log('Refreshing subscription context...');
+          refreshSubscription();
+        }, 1500);
+
         // Mark that the dashboard should be refreshed when navigating there
         sessionStorage.setItem('dashboard-refresh-needed', 'true');
-        
+
+        // Mark success in sessionStorage to prevent re-processing on page refresh
+        sessionStorage.setItem('payment-success-processed', sessionId);
+
         setLoading(false);
+        console.log('Payment processing completed successfully');
       } catch (err) {
         console.error("Error processing payment:", err);
         setError(err.message || "An error occurred while activating your subscription");
         setLoading(false);
+        processedRef.current = false; // Reset on error to allow retry
       }
     }
-    
+
+    // Check if we've already successfully processed this session
+    const processedSessionId = sessionStorage.getItem('payment-success-processed');
+    const currentSessionId = searchParams.get('session_id');
+
+    if (processedSessionId === currentSessionId) {
+      console.log('Session already processed successfully, skipping re-processing');
+      setLoading(false);
+      setSubscriptionDetails({
+        plan: 'Premium Plan',
+        billingCycle: 'yearly',
+        nextPaymentDate: "April 27, 2026",
+        amount: '$396',
+        status: "active"
+      });
+      return;
+    }
+
     processPayment();
-  }, [searchParams, refreshSubscription]);
-  
+  }, []); // Remove searchParams and refreshSubscription from dependencies to prevent re-runs
+
   if (loading) {
     return (
       <DashboardLayout activePage="billing">
@@ -122,7 +165,7 @@ export default function SuccessPage() {
       </DashboardLayout>
     );
   }
-  
+
   if (error) {
     return (
       <DashboardLayout activePage="billing">
@@ -135,14 +178,14 @@ export default function SuccessPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Processing Error</h2>
               <p className="text-gray-600 mb-8">{error}</p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link 
-                  href="/dashboard/billing" 
+                <Link
+                  href="/dashboard/billing"
                   className="inline-flex items-center justify-center px-5 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Return to Billing
                 </Link>
-                <Link 
-                  href="/dashboard" 
+                <Link
+                  href="/dashboard"
                   className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Go to Dashboard
@@ -154,7 +197,7 @@ export default function SuccessPage() {
       </DashboardLayout>
     );
   }
-  
+
   return (
     <DashboardLayout activePage="billing">
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -168,7 +211,7 @@ export default function SuccessPage() {
               <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
               <p className="text-green-100">Your subscription has been activated successfully</p>
             </div>
-            
+
             {/* Content */}
             <div className="p-8">
               <div className="mb-8">
@@ -180,7 +223,7 @@ export default function SuccessPage() {
                   className="h-10 mx-auto"
                 />
               </div>
-              
+
               {subscriptionDetails && (
                 <div className="bg-gray-50 rounded-lg p-6 mb-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Subscription Details</h3>
@@ -208,7 +251,7 @@ export default function SuccessPage() {
                   </div>
                 </div>
               )}
-              
+
               <div className="border-t pt-6 mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">What happens next?</h3>
                 <div className="space-y-4">
@@ -222,7 +265,7 @@ export default function SuccessPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex">
                     <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
                       2
@@ -233,7 +276,7 @@ export default function SuccessPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex">
                     <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
                       3
@@ -246,7 +289,7 @@ export default function SuccessPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link
                   href="/dashboard"
@@ -265,7 +308,7 @@ export default function SuccessPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Support info */}
           <div className="mt-8 text-center">
             <p className="text-gray-600">
@@ -273,7 +316,7 @@ export default function SuccessPage() {
             </p>
           </div>
         </div>
-        </div>
+      </div>
     </DashboardLayout>
   );
 }
