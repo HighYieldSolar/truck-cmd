@@ -25,19 +25,19 @@ export default function ProfileSettings() {
     async function loadUserData() {
       try {
         setLoading(true);
-        
+
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError) throw userError;
-        
+
         if (!user) {
           window.location.href = '/login';
           return;
         }
-        
+
         setUser(user);
-        
+
         // Set initial profile data from user metadata
         setProfile({
           fullName: user.user_metadata?.full_name || "",
@@ -45,9 +45,9 @@ export default function ProfileSettings() {
           jobFunction: user.user_metadata?.job_function || "",
           personalPreferences: user.user_metadata?.personal_preferences || ""
         });
-        
+
         setProfileImage(user.user_metadata?.profile_image || null);
-        
+
       } catch (error) {
         console.error('Error loading user data:', error);
         setErrorMessage('Failed to load your profile information. Please try again later.');
@@ -55,7 +55,7 @@ export default function ProfileSettings() {
         setLoading(false);
       }
     }
-    
+
     loadUserData();
   }, []);
 
@@ -72,24 +72,24 @@ export default function ProfileSettings() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-profile.${fileExt}`;
       const filePath = `profiles/${fileName}`;
-      
+
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
-        
+
       if (uploadError) throw uploadError;
-      
+
       // Get public URL
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
-        
+
       // Update profile state
       setProfileImage(data.publicUrl);
     } catch (error) {
@@ -106,12 +106,12 @@ export default function ProfileSettings() {
   // Save profile changes
   const saveProfile = async (e) => {
     e.preventDefault();
-    
+
     try {
       setSaving(true);
       setSuccessMessage(null);
       setErrorMessage(null);
-      
+
       // Update user metadata
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
@@ -122,17 +122,17 @@ export default function ProfileSettings() {
           profile_image: profileImage
         }
       });
-      
+
       if (updateError) throw updateError;
-      
+
       // Show success message
       setSuccessMessage('Profile updated successfully!');
-      
+
       // Hide success message after 5 seconds
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
-      
+
     } catch (error) {
       console.error('Error saving profile:', error);
       setErrorMessage(`Failed to update profile: ${error.message}`);
@@ -161,7 +161,7 @@ export default function ProfileSettings() {
           </div>
         </div>
       )}
-      
+
       {errorMessage && (
         <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
           <div className="flex items-start">
@@ -170,18 +170,18 @@ export default function ProfileSettings() {
           </div>
         </div>
       )}
-      
+
       <form onSubmit={saveProfile}>
         {/* Profile Image */}
         <div className="flex items-center mb-8">
           <div className="relative mr-6">
             <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-gray-300">
               {profileImage ? (
-                <Image 
-                  src={profileImage} 
-                  alt="Profile" 
-                  width={96} 
-                  height={96} 
+                <Image
+                  src={profileImage}
+                  alt="Profile"
+                  width={96}
+                  height={96}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -217,11 +217,13 @@ export default function ProfileSettings() {
             )}
           </div>
         </div>
-        
+
         {/* Personal Information */}
         <div className="mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
-          
+          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-4">
+            <h3 className="text-lg font-medium text-white">Personal Information</h3>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="fullName">
@@ -237,7 +239,7 @@ export default function ProfileSettings() {
                 placeholder="Your full name"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="preferredName">
                 What should we call you?
@@ -253,7 +255,7 @@ export default function ProfileSettings() {
               />
             </div>
           </div>
-          
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="jobFunction">
               What best describes your work?
@@ -274,7 +276,7 @@ export default function ProfileSettings() {
               <option value="other">Other</option>
             </select>
           </div>
-          
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="personalPreferences">
               What personal preferences should Claude consider in responses?
@@ -291,7 +293,7 @@ export default function ProfileSettings() {
             ></textarea>
           </div>
         </div>
-        
+
         {/* Save Button */}
         <div className="flex justify-end">
           <button
