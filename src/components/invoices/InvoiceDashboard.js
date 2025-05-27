@@ -30,6 +30,15 @@ import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import { fetchInvoices, updateInvoiceStatus, getInvoiceStats, recordPayment, deleteInvoice, emailInvoice } from "@/lib/services/invoiceService";
 import { subscribeToInvoices } from "@/lib/supabaseRealtime";
 
+// Import custom components that we'll need to create
+import InvoiceManagementHeader from "@/components/invoices/InvoiceManagementHeader";
+import InvoiceStatsComponent from "@/components/invoices/InvoiceStatsComponent";
+import PaymentDueSoonComponent from "@/components/invoices/PaymentDueSoonComponent";
+import OverdueInvoicesComponent from "@/components/invoices/OverdueInvoicesComponent";
+import QuickActionsComponent from "@/components/invoices/QuickActionsComponent";
+import InvoiceListComponent from "@/components/invoices/InvoiceListComponent";
+import InvoiceReportsComponent from "@/components/invoices/InvoiceReportsComponent";
+
 // Invoice Stats Card Component
 const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) => {
   return (
@@ -220,12 +229,12 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
         console.log('Invoice is already paid or has sufficient payments');
         return;
       }
-      
+
       // Calculate remaining balance to pay
       const amountPaid = parseFloat(invoice.amount_paid) || 0;
       const total = parseFloat(invoice.total) || 0;
       const remainingBalance = total - amountPaid;
-      
+
       if (remainingBalance <= 0) {
         console.log('Invoice already has full payment amount');
         // Just update status if needed
@@ -234,7 +243,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
         }
         return;
       }
-      
+
       // First record payment for the remaining balance
       const paymentData = {
         amount: remainingBalance,
@@ -244,13 +253,13 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
         description: `Payment for invoice ${invoice.invoice_number}`,
         status: 'completed'
       };
-      
+
       console.log('Recording payment for remaining balance:', remainingBalance);
-      
+
       // Record payment first - this should also update the invoice status to Paid
       // if the payment completes the total
       await recordPayment(invoiceId, paymentData);
-      
+
       // Update will be handled by the real-time subscription
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
@@ -293,22 +302,22 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                           </div>
                         </div>
                         <div className="mt-2 sm:mt-0 flex items-center space-x-2">
-                  <button 
-                    onClick={() => onViewInvoice(invoice.id)}
-                    className="text-blue-600 hover:text-blue-900"
-                    title="View Details"
-                  >
-                    <FileText size={18} />
-                  </button>
-                  {invoice.status.toLowerCase() !== 'paid' && (
-                    <button 
-                      onClick={() => handleMarkAsPaid(invoice.id)}
-                      className="text-green-600 hover:text-green-900"
-                      title="Mark as Paid"
-                    >
-                      <DollarSign size={18} />
-                    </button>
-                  )}
+                          <button
+                            onClick={() => onViewInvoice(invoice.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="View Details"
+                          >
+                            <FileText size={18} />
+                          </button>
+                          {invoice.status.toLowerCase() !== 'paid' && (
+                            <button
+                              onClick={() => handleMarkAsPaid(invoice.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Mark as Paid"
+                            >
+                              <DollarSign size={18} />
+                            </button>
+                          )}
                           <button
                             onClick={() => onDelete(invoice)}
                             className="text-red-600 hover:text-red-900"
@@ -333,12 +342,12 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
 // Delete Invoice Modal Component
 const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting }) => {
   const [deleteAssociatedLoad, setDeleteAssociatedLoad] = useState(false);
-  
+
   if (!isOpen || !invoice) return null;
 
   // Check if invoice has an associated load
   const hasAssociatedLoad = invoice.load_id || (invoice.loads && invoice.loads.length > 0);
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -349,7 +358,7 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
         <p className="text-center text-gray-500 mb-6">
           Are you sure you want to delete invoice {invoice.invoice_number}? This action cannot be undone.
         </p>
-        
+
         {/* Show option to delete load if there's an associated load */}
         {hasAssociatedLoad && (
           <div className="mb-6">
@@ -370,7 +379,7 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
             </p>
           </div>
         )}
-        
+
         <div className="flex justify-center space-x-4">
           <button
             onClick={onClose}
@@ -400,7 +409,7 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
 // Quick Action Card Component
 const QuickActionCard = ({ title, icon, onClick, bgColor = 'bg-blue-50' }) => {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={`${bgColor} p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col items-center justify-center`}
     >
@@ -446,10 +455,10 @@ const DueSoonWidget = ({ invoices, onViewInvoice }) => {
               const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
               let badgeColor = 'bg-yellow-100 text-yellow-800';
               if (daysUntilDue <= 2) badgeColor = 'bg-red-100 text-red-800';
-              
+
               return (
-                <div 
-                  key={invoice.id} 
+                <div
+                  key={invoice.id}
                   className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100"
                   onClick={() => onViewInvoice(invoice.id)}
                 >
@@ -505,10 +514,10 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
               const dueDate = new Date(invoice.due_date);
               const today = new Date();
               const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
-              
+
               return (
-                <div 
-                  key={invoice.id} 
+                <div
+                  key={invoice.id}
                   className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-100"
                   onClick={() => onViewInvoice(invoice.id)}
                 >
@@ -538,19 +547,8 @@ export default function InvoiceDashboard() {
   const [loading, setLoading] = useState(true);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [stats, setStats] = useState({
-    total: 0,
-    paid: 0,
-    pending: 0,
-    overdue: 0,
-    count: 0
-  });
-  
-  // Invoice state
   const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
-  
-  // Filter state
   const [filters, setFilters] = useState({
     status: 'all',
     dateRange: 'all',
@@ -558,82 +556,115 @@ export default function InvoiceDashboard() {
     sortBy: 'invoice_date',
     sortDirection: 'desc'
   });
-  
-  // Delete modal state
+  const [stats, setStats] = useState({
+    total: 0,
+    paid: 0,
+    pending: 0,
+    overdue: 0,
+    draft: 0
+  });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [recentInvoices, setRecentInvoices] = useState([]);
+  const [upcomingPayments, setUpcomingPayments] = useState([]);
+  const [overdueInvoices, setOverdueInvoices] = useState([]);
 
-  // Initialize user and load data
-  useEffect(() => {
-    async function initialize() {
-      try {
-        setLoading(true);
-        
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (!user) {
-          // Redirect to login if not authenticated
-          window.location.href = '/login';
-          return;
-        }
-        
-        setUser(user);
-        await loadDashboardData(user.id);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error initializing dashboard:', err);
-        setError('Failed to load dashboard. Please try again.');
-        setLoading(false);
-      }
-    }
-    
-    initialize();
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
-  // We're disabling the exhaustive-deps warning because loadDashboardData is defined in the component
-  // Including it would cause unnecessary re-renders
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (user) {
-      const unsubscribe = subscribeToInvoices(user.id, (payload) => {
-        // Refresh data when changes occur
-        loadDashboardData(user.id);
-      });
-      
-      // Clean up subscription on unmount
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [user]);  // eslint-disable-line react-hooks/exhaustive-deps
-  // We're disabling the exhaustive-deps warning because loadDashboardData is defined in the component
-  // Including it would cause unnecessary re-renders
-
-  // Load dashboard data
-  const loadDashboardData = async (userId) => {
+  // Load dashboard data - memoized with useCallback
+  const loadDashboardData = useCallback(async (userId) => {
     try {
       setInvoicesLoading(true);
-      
+
       // Fetch invoices and stats in parallel
       const [invoiceStats, invoicesData] = await Promise.all([
         getInvoiceStats(userId),
         fetchInvoices(userId, filters)
       ]);
-      
+
       setStats(invoiceStats);
       setInvoices(invoicesData);
       setFilteredInvoices(invoicesData);
+
+      // Set recent invoices (4 most recent)
+      const recent = [...invoicesData].sort((a, b) =>
+        new Date(b.invoice_date) - new Date(a.invoice_date)
+      ).slice(0, 4);
+      setRecentInvoices(recent);
+
+      // Set upcoming payments (due within 7 days)
+      const today = new Date();
+      const upcoming = invoicesData
+        .filter(invoice => {
+          if (invoice.status.toLowerCase() !== 'pending') return false;
+          const dueDate = new Date(invoice.due_date);
+          const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+          return daysUntilDue >= 0 && daysUntilDue <= 7;
+        })
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .slice(0, 5);
+      setUpcomingPayments(upcoming);
+
+      // Set overdue invoices
+      const overdue = invoicesData
+        .filter(invoice => invoice.status.toLowerCase() === 'overdue')
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .slice(0, 5);
+      setOverdueInvoices(overdue);
+
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError('Failed to load invoice data. Please try again.');
     } finally {
       setInvoicesLoading(false);
     }
-  };
+  }, [filters]); // Include filters as a dependency
+
+  // Get user and load initial data
+  useEffect(() => {
+    async function initialize() {
+      try {
+        setLoading(true);
+
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+
+        if (!user) {
+          window.location.href = '/login';
+          return;
+        }
+
+        setUser(user);
+
+        // Load dashboard data
+        await loadDashboardData(user.id);
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error initializing:', err);
+        setError('Failed to load data. Please try again.');
+        setLoading(false);
+      }
+    }
+
+    initialize();
+  }, [loadDashboardData]); // Now we can safely include loadDashboardData as a dependency
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToInvoices(user.id, (payload) => {
+        // Refresh data when changes occur
+        loadDashboardData(user.id);
+      });
+
+      // Clean up subscription on unmount
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [user, loadDashboardData]); // Include loadDashboardData here too
 
   // Apply filters
   const applyFilters = useCallback(async (newFilters) => {
@@ -655,7 +686,6 @@ export default function InvoiceDashboard() {
   const handleMarkAsPaid = async (invoiceId) => {
     try {
       await updateInvoiceStatus(invoiceId, 'Paid');
-      
       // Update will be handled by the real-time subscription
     } catch (err) {
       console.error('Error marking invoice as paid:', err);
@@ -669,28 +699,28 @@ export default function InvoiceDashboard() {
     setDeleteModalOpen(true);
   };
 
-// Confirm invoice deletion
-const confirmDeleteInvoice = async (deleteAssociatedLoad = false) => {
-  try {
-    if (invoiceToDelete && user) {
-      setIsDeleting(true);
-      
-      // Delete from database with option to delete associated load
-      await deleteInvoice(invoiceToDelete.id, deleteAssociatedLoad);
-      
-      // Update will be handled by the real-time subscription
-      
-      // Close modal
-      setDeleteModalOpen(false);
-      setInvoiceToDelete(null);
+  // Confirm invoice deletion
+  const confirmDeleteInvoice = async (deleteAssociatedLoad = false) => {
+    try {
+      if (invoiceToDelete && user) {
+        setIsDeleting(true);
+
+        // Delete from database with option to delete associated load
+        await deleteInvoice(invoiceToDelete.id, deleteAssociatedLoad);
+
+        // Update will be handled by the real-time subscription
+
+        // Close modal
+        setDeleteModalOpen(false);
+        setInvoiceToDelete(null);
+      }
+    } catch (err) {
+      console.error('Error deleting invoice:', err);
+      setError('Failed to delete invoice. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
-  } catch (err) {
-    console.error('Error deleting invoice:', err);
-    setError('Failed to delete invoice. Please try again.');
-  } finally {
-    setIsDeleting(false);
-  }
-};
+  };
 
   // Handle view invoice
   const handleViewInvoice = (invoiceId) => {
@@ -711,176 +741,74 @@ const confirmDeleteInvoice = async (deleteAssociatedLoad = false) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invoice Management</h1>
-          <p className="text-gray-600 mt-1">Create, track, and manage your trucking invoices</p>
-        </div>
-        <div className="mt-4 md:mt-0 flex space-x-3">
-          <Link
-            href="/dashboard/invoices/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-          >
-            <Plus size={16} className="mr-2" />
-            Create Invoice
-          </Link>
-          <button
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-          >
-            <Download size={16} className="mr-2" />
-            Export
-          </button>
-        </div>
-      </div>
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-100">
+      <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
+        <InvoiceManagementHeader />
 
-      {/* Error display */}
-      {error && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-            </div>
-            <div className="ml-3">
+        {/* Error message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard 
-          title="Total Invoices" 
-          value={formatCurrency(stats.total)} 
-          icon={<FileText size={22} className="text-gray-600" />}
-          bgColor="bg-white"
-          textColor="text-gray-900"
+        {/* Statistics */}
+        <InvoiceStatsComponent
+          stats={stats}
         />
-        <StatCard 
-          title="Paid" 
-          value={formatCurrency(stats.paid)} 
-          icon={<CheckCircle size={22} className="text-green-600" />}
-          bgColor="bg-green-50"
-          textColor="text-green-700"
-        />
-        <StatCard 
-          title="Pending" 
-          value={formatCurrency(stats.pending)} 
-          icon={<Clock size={22} className="text-yellow-600" />}
-          bgColor="bg-yellow-50"
-          textColor="text-yellow-700"
-        />
-        <StatCard 
-          title="Overdue" 
-          value={formatCurrency(stats.overdue)} 
-          icon={<AlertCircle size={22} className="text-red-600" />}
-          bgColor="bg-red-50"
-          textColor="text-red-700"
-        />
-      </div>
 
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <QuickActionCard 
-            title="New Invoice" 
-            icon={<Plus size={20} className="text-blue-600" />} 
-            onClick={() => window.location.href = '/dashboard/invoices/new'} 
-            bgColor="bg-blue-50"
-          />
-          <QuickActionCard 
-            title="Record Payment" 
-            icon={<DollarSign size={20} className="text-green-600" />} 
-            onClick={() => {
-              setFilters({...filters, status: 'pending'});
-              applyFilters({...filters, status: 'pending'});
-            }} 
-            bgColor="bg-green-50"
-          />
-          <QuickActionCard 
-            title="Send Reminder" 
-            icon={<Mail size={20} className="text-orange-600" />} 
-            onClick={() => {
-              setFilters({...filters, status: 'overdue'});
-              applyFilters({...filters, status: 'overdue'});
-            }} 
-            bgColor="bg-orange-50"
-          />
-          <QuickActionCard 
-            title="Generate Report" 
-            icon={<BarChart2 size={20} className="text-purple-600" />} 
-            bgColor="bg-purple-50"
-          />
-        </div>
-      </div>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left sidebar content */}
+          <div className="lg:col-span-1">
+            {/* Payment Due Soon Alerts card */}
+            <PaymentDueSoonComponent
+              upcomingPayments={upcomingPayments}
+              handleViewInvoice={handleViewInvoice}
+            />
 
-      {/* Two-column widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DueSoonWidget invoices={invoices} onViewInvoice={handleViewInvoice} />
-        <OverdueWidget invoices={invoices} onViewInvoice={handleViewInvoice} />
-      </div>
+            {/* Overdue Invoices */}
+            <OverdueInvoicesComponent
+              overdueInvoices={overdueInvoices}
+              handleViewInvoice={handleViewInvoice}
+            />
 
-      {/* Filters */}
-      <InvoiceFilters 
-        filters={filters}
-        setFilters={setFilters}
-        onApplyFilters={applyFilters}
-      />
-
-      {/* Invoices Table */}
-      <InvoicesTable 
-        invoices={filteredInvoices}
-        onMarkAsPaid={handleMarkAsPaid}
-        onDelete={handleDeleteInvoice}
-        loading={invoicesLoading}
-        onViewInvoice={handleViewInvoice}
-      />
-
-      {/* Pagination */}
-      {filteredInvoices.length > 0 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{filteredInvoices.length}</span> of{' '}
-              <span className="font-medium">{invoices.length}</span> invoices
-            </p>
+            {/* Quick Actions */}
+            <QuickActionsComponent />
           </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                <span className="sr-only">Previous</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-blue-600 hover:bg-gray-50">
-                1
-              </button>
-              <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                <span className="sr-only">Next</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </nav>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            {/* Invoice List Component */}
+            <InvoiceListComponent
+              invoices={recentInvoices}
+              handleViewInvoice={handleViewInvoice}
+              handleMarkAsPaid={handleMarkAsPaid}
+              handleDeleteInvoice={handleDeleteInvoice}
+              filters={filters}
+              setFilters={setFilters}
+              onApplyFilters={applyFilters}
+              loading={invoicesLoading}
+            />
           </div>
         </div>
-      )}
 
-      {/* Delete Confirmation Modal */}
-      <DeleteInvoiceModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
-        setDeleteModalOpen(false);
-        setInvoiceToDelete(null);
-      }}
-        onConfirm={confirmDeleteInvoice}
-        invoice={invoiceToDelete}
-        isDeleting={isDeleting}
-      />
+        {/* Invoice Reports Section */}
+        <InvoiceReportsComponent />
+
+        {/* Delete Invoice Modal */}
+        <DeleteInvoiceModal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={confirmDeleteInvoice}
+          invoice={invoiceToDelete}
+          isDeleting={isDeleting}
+        />
+      </div>
     </div>
   );
 }
