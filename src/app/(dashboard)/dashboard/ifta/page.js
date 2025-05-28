@@ -1,7 +1,7 @@
 // src/app/(dashboard)/dashboard/ifta/page.js
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -81,6 +81,9 @@ export default function IFTACalculatorPage() {
   const [showMileageImporter, setShowMileageImporter] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
 
+  // Add ref for the state mileage importer section
+  const mileageImporterRef = useRef(null);
+
   // Load trips for the selected quarter
   const loadTrips = useCallback(async () => {
     if (!user?.id || !activeQuarter) return [];
@@ -88,6 +91,7 @@ export default function IFTACalculatorPage() {
     try {
       console.log("Loading trips for user", user.id, "and quarter", activeQuarter);
 
+      // Get trips without attempting to join the vehicles table first
       const { data, error: tripsError } = await supabase
         .from('ifta_trip_records')
         .select('*')
@@ -105,11 +109,65 @@ export default function IFTACalculatorPage() {
         }
       }
 
-      console.log("Loaded trips:", data?.length || 0);
-      return data || [];
+      // Now that we have the trips, try to fetch vehicle information separately
+      const trips = data || [];
+      const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
+      const vehicleInfo = {};
+
+      if (vehicleIds.length > 0) {
+        try {
+          // Try vehicles table first
+          const { data: vehicleData } = await supabase
+            .from('vehicles')
+            .select('id, name, license_plate')
+            .in('id', vehicleIds);
+
+          if (vehicleData && vehicleData.length > 0) {
+            vehicleData.forEach(vehicle => {
+              vehicleInfo[vehicle.id] = {
+                name: vehicle.name,
+                license_plate: vehicle.license_plate
+              };
+            });
+          } else {
+            // Try trucks table as fallback
+            const { data: trucksData } = await supabase
+              .from('trucks')
+              .select('id, name, license_plate')
+              .in('id', vehicleIds);
+
+            if (trucksData && trucksData.length > 0) {
+              trucksData.forEach(truck => {
+                vehicleInfo[truck.id] = {
+                  name: truck.name,
+                  license_plate: truck.license_plate
+                };
+              });
+            }
+          }
+        } catch (vehicleError) {
+          console.warn("Could not fetch vehicle details:", vehicleError);
+          // Non-fatal error, continue with basic trip data
+        }
+      }
+
+      // Process data to add helpful fields
+      const processedTrips = trips.map(trip => {
+        // Add vehicle name if available
+        const vehicleDetails = vehicleInfo[trip.vehicle_id] || {};
+
+        return {
+          ...trip,
+          vehicle_name: vehicleDetails.name || null,
+          license_plate: vehicleDetails.license_plate || null
+        };
+      });
+
+      console.log("Loaded trips:", processedTrips.length);
+      return processedTrips;
     } catch (error) {
       console.error('Error loading trips:', error);
-      setError('Failed to load trip records. ' + error.message);
+      setError('Failed to load trip records. ' + (error.message || 'Unknown error'));
       return [];
     }
   }, [user?.id, activeQuarter]);
@@ -450,6 +508,27 @@ export default function IFTACalculatorPage() {
     setDataFetchKey(prev => prev + 1);
   }, []);
 
+  // Updated to scroll to importer and toggle it open if needed
+  const handleShowMileageImporter = () => {
+    // Make sure importer is visible
+    setShowMileageImporter(true);
+
+    // Scroll to the importer section with some offset
+    setTimeout(() => {
+      if (mileageImporterRef.current) {
+        // Scroll to element with offset
+        const yOffset = -100; // 100px offset from the top
+        const element = mileageImporterRef.current;
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
+  };
+
   // Get list of unique vehicles
   const uniqueVehicles = getUniqueVehicles();
   const stats = getStats();
@@ -646,7 +725,7 @@ export default function IFTACalculatorPage() {
                 <div className="p-4">
                   <div className="space-y-3">
                     <button
-                      onClick={() => setShowMileageImporter(!showMileageImporter)}
+                      onClick={handleShowMileageImporter}
                       className="w-full p-3 bg-gray-50 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between"
                     >
                       <div className="flex items-center">
@@ -781,8 +860,6 @@ export default function IFTACalculatorPage() {
                 </div>
               </div>
 
-
-
               {/* IFTA/Fuel Toggle */}
               <div className="mb-6">
                 <IFTAFuelToggle
@@ -822,7 +899,7 @@ export default function IFTACalculatorPage() {
 
               {/* State Mileage Importer */}
               {!databaseError && showMileageImporter && (
-                <div className="mb-6">
+                <div className="mb-6" ref={mileageImporterRef}>
                   {loading && !isDataLoaded ? (
                     <div className="p-4 bg-white shadow rounded-lg mb-6">
                       <div className="animate-pulse flex space-x-4">
