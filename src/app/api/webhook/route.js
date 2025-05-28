@@ -303,25 +303,95 @@ async function handleCheckoutCompleted(event, stripe) {
     };
 
     // Update subscription with complete information
-    const { error: subError } = await supabase
+    const { data: existingSubscriptions, error: queryError } = await supabase
       .from("subscriptions")
-      .update({
-        status: status,
-        stripe_subscription_id: subscriptionIdString,
-        stripe_customer_id: customerIdString,
-        plan: plan,
-        billing_cycle: billingCycle,
-        amount: calculateAmount(plan, billingCycle),
-        current_period_starts_at: currentPeriodStart,
-        current_period_ends_at: currentPeriodEnd,
-        trial_ends_at: null,
-        updated_at: new Date().toISOString()
-      })
+      .select("id")
       .eq("user_id", userId);
 
-    if (subError) {
-      console.error(`Error updating subscription in database: ${subError.message}`);
-      throw subError;
+    if (queryError) {
+      console.error(`Error querying subscriptions: ${queryError.message}`);
+      throw queryError;
+    }
+
+    if (existingSubscriptions && existingSubscriptions.length > 0) {
+      // Find the latest subscription to update
+      const { data: latestSub, error: latestError } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (latestError) {
+        console.error(`Error finding latest subscription: ${latestError.message}`);
+        throw latestError;
+      }
+
+      // Update only the latest subscription
+      const { error: subError } = await supabase
+        .from("subscriptions")
+        .update({
+          status: status,
+          stripe_subscription_id: subscriptionIdString,
+          stripe_customer_id: customerIdString,
+          plan: plan,
+          billing_cycle: billingCycle,
+          amount: calculateAmount(plan, billingCycle),
+          current_period_starts_at: currentPeriodStart,
+          current_period_ends_at: currentPeriodEnd,
+          trial_ends_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", latestSub.id);
+
+      if (subError) {
+        console.error(`Error updating subscription in database: ${subError.message}`);
+        throw subError;
+      }
+
+      // Clean up any duplicates if needed
+      if (existingSubscriptions.length > 1) {
+        const duplicateIds = existingSubscriptions
+          .map(sub => sub.id)
+          .filter(id => id !== latestSub.id);
+
+        console.log(`Cleaning up ${duplicateIds.length} duplicate subscription records`);
+
+        const { error: deleteError } = await supabase
+          .from("subscriptions")
+          .delete()
+          .in('id', duplicateIds);
+
+        if (deleteError) {
+          console.warn('Warning: Could not clean up duplicate subscriptions:', deleteError.message);
+        } else {
+          console.log(`Successfully removed ${duplicateIds.length} duplicate subscription records`);
+        }
+      }
+    } else {
+      // No existing subscriptions, create a new one
+      const { error: insertError } = await supabase
+        .from("subscriptions")
+        .insert({
+          user_id: userId,
+          status: status,
+          stripe_subscription_id: subscriptionIdString,
+          stripe_customer_id: customerIdString,
+          plan: plan,
+          billing_cycle: billingCycle,
+          amount: calculateAmount(plan, billingCycle),
+          current_period_starts_at: currentPeriodStart,
+          current_period_ends_at: currentPeriodEnd,
+          trial_ends_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        console.error(`Error creating subscription in database: ${insertError.message}`);
+        throw insertError;
+      }
     }
 
     console.log(`✅ Successfully updated subscription status to ${status} for user ${userId} via webhook`);
@@ -372,31 +442,50 @@ async function handleCheckoutCompleted(event, stripe) {
 async function updateUserStripeInfo(userId, stripeCustomerId) {
   console.log(`Updating user ${userId} with Stripe customer ID ${stripeCustomerId}`);
 
-  // First check if the user has a subscription record
+  // First check if the user has subscription records
   const { data: subData, error: subError } = await supabase
     .from("subscriptions")
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .order('created_at', { ascending: false });
 
-  if (subError && subError.code !== 'PGRST116') { // PGRST116 = not found
+  if (subError) {
     console.error(`Error checking for subscription: ${subError.message}`);
     return { error: subError };
   }
 
-  // If we found a subscription, update it with the customer ID
-  if (subData) {
+  // If we found any subscriptions, update the most recent one with the customer ID
+  if (subData && subData.length > 0) {
+    const latestSubscription = subData[0]; // Get the most recent subscription
+
     const { error: updateError } = await supabase
       .from("subscriptions")
       .update({
         stripe_customer_id: stripeCustomerId,
         updated_at: new Date().toISOString()
       })
-      .eq("user_id", userId);
+      .eq("id", latestSubscription.id);
 
     if (updateError) {
       console.error(`Error updating subscription with customer ID: ${updateError.message}`);
       return { error: updateError };
+    }
+
+    // Clean up any duplicate subscriptions if they exist
+    if (subData.length > 1) {
+      const duplicateIds = subData.slice(1).map(sub => sub.id);
+      console.log(`Cleaning up ${duplicateIds.length} older subscription records`);
+
+      const { error: deleteError } = await supabase
+        .from("subscriptions")
+        .delete()
+        .in('id', duplicateIds);
+
+      if (deleteError) {
+        console.warn('Warning: Could not clean up older subscriptions:', deleteError.message);
+      } else {
+        console.log(`Successfully removed ${duplicateIds.length} older subscription records`);
+      }
     }
   } else {
     // Otherwise create a new subscription record

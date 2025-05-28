@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   RefreshCw,
   AlertCircle,
   Users,
@@ -51,7 +51,7 @@ const CustomerSummary = ({ stats }) => {
           <span className="text-xs text-gray-500">All customers</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
@@ -66,7 +66,7 @@ const CustomerSummary = ({ stats }) => {
           <span className="text-xs text-gray-500">Current customers</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
@@ -81,7 +81,7 @@ const CustomerSummary = ({ stats }) => {
           <span className="text-xs text-gray-500">Added in last 30 days</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
@@ -98,7 +98,7 @@ const CustomerSummary = ({ stats }) => {
           <span className="text-xs text-gray-500">Business customers</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
@@ -145,7 +145,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               <option value="Pending">Pending</option>
             </select>
           </div>
-          
+
           <div className="md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
@@ -159,7 +159,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               <option value="Individual">Individual</option>
             </select>
           </div>
-          
+
           <div className="md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             <select
@@ -174,7 +174,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               ))}
             </select>
           </div>
-          
+
           <div className="md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
@@ -191,7 +191,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
           <div className="text-sm text-gray-500">
             Showing {filters.filteredCount} of {filters.totalCount} customers
@@ -224,7 +224,7 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
           Add New
         </button>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -283,7 +283,7 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
                       </p>
                     )}
                   </td>
-                  
+
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {customer.email && (
@@ -300,7 +300,7 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
                       )}
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {customer.city && customer.state ? (
@@ -318,37 +318,37 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
                       )}
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {customer.customer_type || "Business"}
                     </span>
                   </td>
-                  
+
                   <td className="px-6 py-4">
                     <StatusBadge status={customer.status || "Active"} />
                   </td>
-                  
+
                   <td className="px-6 py-4 text-center">
                     <div className="flex justify-center space-x-3">
-                      <button 
-                        onClick={() => onView(customer)} 
+                      <button
+                        onClick={() => onView(customer)}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
                         title="View Details"
                       >
                         <Eye size={18} />
                       </button>
 
-                      <button 
-                        onClick={() => onEdit(customer)} 
+                      <button
+                        onClick={() => onEdit(customer)}
                         className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
                         title="Edit Customer"
                       >
                         <Edit size={18} />
                       </button>
 
-                      <button 
-                        onClick={() => onDelete(customer)} 
+                      <button
+                        onClick={() => onDelete(customer)}
                         className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
                         title="Delete Customer"
                       >
@@ -362,7 +362,7 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
           </tbody>
         </table>
       </div>
-      
+
       <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-gray-700 text-sm">
         Showing {customers.length} customers
       </div>
@@ -470,8 +470,8 @@ const ViewCustomerModal = ({ isOpen, onClose, customer }) => {
                 <p className="text-sm mb-1">
                   <span className="font-medium">Customer Since:</span>{" "}
                   <span className="text-gray-500">
-                    {customer.created_at 
-                      ? new Date(customer.created_at).toLocaleDateString() 
+                    {customer.created_at
+                      ? new Date(customer.created_at).toLocaleDateString()
                       : "N/A"}
                   </span>
                 </p>
@@ -500,13 +500,13 @@ export default function CustomersPage() {
   const [customersLoading, setCustomersLoading] = useState(false);
   const [error, setError] = useState(null);
   const [customers, setCustomers] = useState([]);
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
-  
+
   // Modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -528,10 +528,10 @@ export default function CustomersPage() {
   const loadCustomers = useCallback(async (userId) => {
     try {
       setCustomersLoading(true);
-      
+
       const data = await fetchCustomers(userId);
       setCustomers(data || []);
-      
+
       // Calculate stats
       if (data) {
         setStats({
@@ -548,7 +548,7 @@ export default function CustomersPage() {
           individualCustomers: data.filter(c => c.customer_type === 'Individual').length
         });
       }
-      
+
       return data;
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -564,23 +564,23 @@ export default function CustomersPage() {
     async function checkUserAndLoadData() {
       try {
         setLoading(true);
-        
+
         // Get user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
         if (userError) throw userError;
-        
+
         if (!user) {
           // Redirect to login page if not authenticated
           window.location.href = '/login';
           return;
         }
-        
+
         setUser(user);
-        
+
         // Fetch customers
         await loadCustomers(user.id);
-        
+
         setLoading(false);
       } catch (error) {
         console.error('Error initializing data:', error);
@@ -615,14 +615,14 @@ export default function CustomersPage() {
               updated_at: new Date().toISOString()
             })
             .eq('id', customerData.id);
-            
+
           if (error) throw error;
-        } 
+        }
         // If this is a new customer, it will be handled by the CustomerFormModal
-        
+
         // Reload customers after save
         await loadCustomers(user.id);
-        
+
         // Close the modal
         setFormModalOpen(false);
         setCurrentCustomer(null);
@@ -656,19 +656,19 @@ export default function CustomersPage() {
     if (customerToDelete) {
       try {
         setIsDeleting(true);
-        
+
         // Delete from Supabase
         const success = await deleteCustomer(customerToDelete.id);
-        
+
         if (!success) {
           throw new Error("Failed to delete customer");
         }
-        
+
         // Reload customers
         if (user) {
           await loadCustomers(user.id);
         }
-        
+
         // Close modal
         setDeleteModalOpen(false);
         setCustomerToDelete(null);
@@ -735,7 +735,7 @@ export default function CustomersPage() {
   // Handle filter change
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    
+
     switch (name) {
       case 'status':
         setStatusFilter(value);
@@ -781,7 +781,7 @@ export default function CustomersPage() {
                   <Plus size={18} className="mr-2" />
                   Add Customer
                 </button>
-                <button 
+                <button
                   className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Download size={18} className="mr-2" />
@@ -818,9 +818,8 @@ export default function CustomersPage() {
                 </div>
                 <div className="p-4">
                   <div
-                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                      typeFilter === 'Business' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                    }`}
+                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${typeFilter === 'Business' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                      }`}
                     onClick={() => setTypeFilter(typeFilter === 'Business' ? 'all' : 'Business')}
                   >
                     <div className="flex items-center">
@@ -831,11 +830,10 @@ export default function CustomersPage() {
                       {stats.businessCustomers || Math.round(stats.totalCustomers * 0.7)}
                     </span>
                   </div>
-                  
+
                   <div
-                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                      typeFilter === 'Individual' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                    }`}
+                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${typeFilter === 'Individual' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                      }`}
                     onClick={() => setTypeFilter(typeFilter === 'Individual' ? 'all' : 'Individual')}
                   >
                     <div className="flex items-center">
@@ -846,9 +844,9 @@ export default function CustomersPage() {
                       {stats.individualCustomers || Math.round(stats.totalCustomers * 0.3)}
                     </span>
                   </div>
-                  
+
                   <div className="mt-2 pt-2 border-t border-gray-200 text-center">
-                    <button 
+                    <button
                       onClick={() => {
                         setCurrentCustomer(null);
                         setFormModalOpen(true);
@@ -861,7 +859,7 @@ export default function CustomersPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Popular States */}
               <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
                 <div className="bg-blue-500 px-5 py-4 text-white">
@@ -874,13 +872,12 @@ export default function CustomersPage() {
                   {availableStates.length > 0 ? (
                     availableStates.slice(0, 5).map(state => {
                       const count = customers.filter(c => c.state === state).length;
-                      
+
                       return (
                         <div
                           key={state}
-                          className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                            stateFilter === state ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                          }`}
+                          className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${stateFilter === state ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                            }`}
                           onClick={() => setStateFilter(stateFilter === state ? 'all' : state)}
                         >
                           <div className="flex items-center">
@@ -899,10 +896,10 @@ export default function CustomersPage() {
                       <p>No location data available</p>
                     </div>
                   )}
-                  
+
                   {availableStates.length > 5 && (
                     <div className="mt-2 pt-2 border-t border-gray-200 text-center">
-                      <button 
+                      <button
                         onClick={() => {
                           // Show location filter
                         }}
@@ -916,11 +913,11 @@ export default function CustomersPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
-              <CustomerFilters 
+              <CustomerFilters
                 filters={{
                   status: statusFilter,
                   type: typeFilter,
@@ -935,9 +932,9 @@ export default function CustomersPage() {
                 onFilterChange={handleFilterChange}
                 onSearch={(e) => setSearchTerm(e.target.value)}
               />
-              
+
               {/* Customers Table */}
-              <CustomerTable 
+              <CustomerTable
                 customers={filteredCustomers}
                 onEdit={handleEditCustomer}
                 onDelete={handleDeleteCustomer}
@@ -950,10 +947,10 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Modals */}
         {formModalOpen && (
-          <CustomerFormModal 
+          <CustomerFormModal
             isOpen={formModalOpen}
             onClose={() => {
               setFormModalOpen(false);
@@ -965,7 +962,7 @@ export default function CustomersPage() {
             isSubmitting={customersLoading}
           />
         )}
-        
+
         <ViewCustomerModal
           isOpen={viewModalOpen}
           onClose={() => {
@@ -974,8 +971,8 @@ export default function CustomersPage() {
           }}
           customer={currentCustomer}
         />
-        
-        <DeleteConfirmationModal 
+
+        <DeleteConfirmationModal
           isOpen={deleteModalOpen}
           onClose={() => {
             setDeleteModalOpen(false);

@@ -147,19 +147,46 @@ export async function POST(request) {
 
     // If subscription records exist, update them all
     if (existingSubscriptions && existingSubscriptions.length > 0) {
-      // Update all subscription records for this user
+      // Find the latest subscription record by id (assuming UUID v4 has sequential components)
+      const latestSubscription = existingSubscriptions.reduce((latest, current) =>
+        !latest || current.id > latest.id ? current : latest, null);
+
+      console.log(`Found ${existingSubscriptions.length} subscription records, updating only the latest one with ID: ${latestSubscription.id}`);
+
+      // Update only the latest subscription record
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update(subscriptionData)
-        .eq('user_id', userId);
+        .eq('id', latestSubscription.id);
 
       if (updateError) {
-        console.error('Error updating subscriptions:', updateError);
+        console.error('Error updating subscription:', updateError);
         return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
       }
 
-      console.log('Updated all subscription records with complete data');
-      result = { success: true, message: 'All subscription records updated with complete data' };
+      // Now delete any other subscription records for this user to clean up duplicates
+      if (existingSubscriptions.length > 1) {
+        const otherSubscriptionIds = existingSubscriptions
+          .filter(sub => sub.id !== latestSubscription.id)
+          .map(sub => sub.id);
+
+        console.log(`Cleaning up ${otherSubscriptionIds.length} duplicate subscription records`);
+
+        const { error: deleteError } = await supabase
+          .from('subscriptions')
+          .delete()
+          .in('id', otherSubscriptionIds);
+
+        if (deleteError) {
+          console.warn('Warning: Could not clean up duplicate subscriptions:', deleteError.message);
+          // Not critical, continue with the process
+        } else {
+          console.log(`Successfully removed ${otherSubscriptionIds.length} duplicate subscription records`);
+        }
+      }
+
+      console.log('Updated subscription record with complete data');
+      result = { success: true, message: 'Subscription record updated with complete data' };
     } else {
       // No records found, create a new one with complete data
       subscriptionData.created_at = new Date().toISOString();
