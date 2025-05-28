@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import ExportMileageButton from "./ExportMileageButton";
 import { deleteTrip } from "@/lib/services/mileageService";
+import { importMileageTripToIFTA } from "@/lib/services/iftaMileageService";
 
 // Helper function to get US states
 const getUSStates = () => {
@@ -426,6 +427,13 @@ export default function StateMileageLogger() {
           loading: false,
           mileageByState: []
         });
+      } else if (selectedTrip && selectedTrip.id === tripToDelete.id) {
+        // Also clear the selected active trip if we're deleting it
+        setSelectedTrip(null);
+        setSelectedTripData({
+          crossings: [],
+          loading: false
+        });
       }
 
       // Remove from completedTripCrossings
@@ -435,6 +443,9 @@ export default function StateMileageLogger() {
 
       // Remove from completedTrips
       setCompletedTrips(prev => prev.filter(trip => trip.id !== tripToDelete.id));
+
+      // Also remove from activeTrips if it was an active trip
+      setActiveTrips(prev => prev.filter(trip => trip.id !== tripToDelete.id));
 
       // Show success message
       setSuccess('Trip deleted successfully');
@@ -624,6 +635,14 @@ export default function StateMileageLogger() {
 
       // Calculate mileage by state
       const mileageByState = calculateStateMileageFromCrossings(data || []);
+
+      // Store in completedTripCrossings for future use
+      if (data && data.length > 0) {
+        setCompletedTripCrossings(prev => ({
+          ...prev,
+          [trip.id]: data
+        }));
+      }
 
       setSelectedPastTripData({
         crossings: data || [],
@@ -1050,13 +1069,6 @@ export default function StateMileageLogger() {
                     <Truck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 mb-1">No active trips</h3>
                     <p className="text-gray-500 mb-4">Start a new trip to track state mileage</p>
-                    <button
-                      onClick={() => setSelectedTrip(null)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Start New Trip
-                    </button>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1509,7 +1521,47 @@ export default function StateMileageLogger() {
                       </div>
 
                       {/* Export button */}
-                      <div className="mt-6 flex justify-end">
+                      <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              setError(null);
+
+                              // Get current quarter
+                              const now = new Date();
+                              const quarter = `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
+
+                              // Import to IFTA
+                              const result = await importMileageTripToIFTA(user.id, quarter, selectedPastTrip.id);
+
+                              if (result.alreadyImported) {
+                                setSuccess("This trip has already been imported to the IFTA calculator");
+                              } else if (result.importedCount === 0) {
+                                setSuccess("No mileage data to import");
+                              } else {
+                                setSuccess(`Successfully imported ${result.importedCount} state records to IFTA calculator for ${quarter}`);
+                              }
+
+                              setTimeout(() => setSuccess(null), 4000);
+                            } catch (error) {
+                              console.error("Error importing to IFTA:", error);
+                              setError("Failed to import to IFTA calculator. Please try again.");
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading || selectedPastTripData.mileageByState.length === 0}
+                          className="flex-grow px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {loading ? (
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Fuel className="h-4 w-4 mr-2" />
+                          )}
+                          Import to IFTA Calculator
+                        </button>
+
                         <ExportMileageButton
                           tripId={selectedPastTrip.id}
                           vehicleName={vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || 'Vehicle'}
