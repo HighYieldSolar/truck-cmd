@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { 
-  Settings, 
-  LogOut, 
+import {
+  Settings,
+  LogOut,
   User,
   ChevronRight,
   Globe,
@@ -32,7 +32,7 @@ export default function UserDropdown() {
         setIsOpen(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -52,10 +52,10 @@ export default function UserDropdown() {
   // Get user's current plan name
   const getPlanName = () => {
     if (!subscription) return 'Free trial';
-    
+
     const plan = subscription.plan || 'basic';
-    
-    switch(plan) {
+
+    switch (plan) {
       case 'basic': return 'Basic plan';
       case 'premium': return 'Premium plan';
       case 'fleet': return 'Fleet plan';
@@ -71,72 +71,72 @@ export default function UserDropdown() {
         className="flex items-center space-x-1 focus:outline-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold">
+        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-300 font-semibold">
           {user?.email?.[0]?.toUpperCase() || 'U'}
         </div>
-        <ChevronDown size={16} className="text-gray-500 ml-1" />
+        <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 ml-1" />
       </button>
-      
+
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg overflow-hidden z-50 border border-gray-200">
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
           {/* User info section */}
-          <div className="px-4 py-3 border-b border-gray-200">
-            <div className="text-sm text-gray-700 truncate mb-1">{user.email}</div>
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="text-sm text-gray-700 dark:text-gray-300 truncate mb-1">{user.email}</div>
             <div className="flex items-center">
-              <div className="text-xs font-medium text-gray-600 flex-1">{getPlanName()}</div>
-              {subscription?.status === 'active' && <Check size={14} className="text-green-600" />}
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex-1">{getPlanName()}</div>
+              {subscription?.status === 'active' && <Check size={14} className="text-green-600 dark:text-green-500" />}
             </div>
           </div>
-          
+
           {/* Menu items */}
           <div className="py-1">
             <Link
               href="/dashboard/settings"
-              className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setIsOpen(false)}
             >
               <span>Settings</span>
             </Link>
-            
-            <div className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+
+            <div className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
               <div className="flex items-center">
                 <span>Language</span>
-                <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 rounded text-gray-700">BETA</span>
+                <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded text-gray-700 dark:text-gray-300">BETA</span>
               </div>
-              <ChevronRight size={16} className="text-gray-400" />
+              <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
             </div>
-            
+
             <Link
               href="/help"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setIsOpen(false)}
             >
               <span>Get help</span>
             </Link>
           </div>
-          
-          <div className="border-t border-gray-200 py-1">
+
+          <div className="border-t border-gray-200 dark:border-gray-700 py-1">
             <Link
               href="/dashboard/billing"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               onClick={() => setIsOpen(false)}
             >
               <span>View all plans</span>
             </Link>
-            
-            <div className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+
+            <div className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
               <span>Learn more</span>
-              <ChevronRight size={16} className="text-gray-400" />
+              <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
             </div>
           </div>
-          
-          <div className="border-t border-gray-200">
+
+          <div className="border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
                 setIsOpen(false);
                 handleLogout();
               }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Log out
             </button>

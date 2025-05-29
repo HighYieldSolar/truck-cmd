@@ -19,6 +19,7 @@ export function useSubscription() {
 export function SubscriptionProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [subscription, setSubscription] = useState({
     status: 'loading', // loading, trial, active, expired, none
     plan: null,
@@ -27,10 +28,23 @@ export function SubscriptionProvider({ children }) {
   });
   const refreshTimeoutRef = useRef(null);
   const initialLoadRef = useRef(false);
+  const isCheckingRef = useRef(false);
+
+  // Add mounted state check
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load user and subscription data
   const checkUserAndSubscription = async () => {
+    // Prevent multiple simultaneous calls
+    if (isCheckingRef.current) {
+      console.log("Already checking subscription, skipping...");
+      return;
+    }
+
     try {
+      isCheckingRef.current = true;
       setLoading(true);
 
       // Get current user
@@ -39,6 +53,7 @@ export function SubscriptionProvider({ children }) {
       if (userError) throw userError;
 
       if (!user) {
+        setUser(null);
         setSubscription({
           status: 'none',
           plan: null,
@@ -125,23 +140,26 @@ export function SubscriptionProvider({ children }) {
       });
     } finally {
       setLoading(false);
+      isCheckingRef.current = false;
     }
   };
 
-  // Initial load effect
+  // Initial load effect - only run once when mounted
   useEffect(() => {
-    if (initialLoadRef.current) return;
-    initialLoadRef.current = true;
+    if (!mounted || initialLoadRef.current) return;
 
+    initialLoadRef.current = true;
     checkUserAndSubscription();
 
     // Set up subscription to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN') {
-          // Clear the initial load flag and re-check
-          initialLoadRef.current = false;
-          checkUserAndSubscription();
+          // Reset the checking flag and re-check
+          isCheckingRef.current = false;
+          setTimeout(() => {
+            checkUserAndSubscription();
+          }, 100); // Small delay to prevent race conditions
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setSubscription({
@@ -151,6 +169,7 @@ export function SubscriptionProvider({ children }) {
             currentPeriodEndsAt: null
           });
           initialLoadRef.current = false;
+          isCheckingRef.current = false;
         }
       }
     );
@@ -160,11 +179,11 @@ export function SubscriptionProvider({ children }) {
         authListener.subscription.unsubscribe();
       }
     };
-  }, []);
+  }, [mounted]);
 
   // Set up realtime subscription to database changes (with debouncing)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !mounted) return;
 
     const subscriptionsChannel = supabase
       .channel('subscriptions-changes')
@@ -180,26 +199,29 @@ export function SubscriptionProvider({ children }) {
 
           // Debounce the refresh to prevent rapid successive updates
           refreshTimeoutRef.current = setTimeout(() => {
-            // Only refresh if the change is from an external source (not our own updates)
-            const currentTime = Date.now();
-            const payloadTime = new Date(payload.new?.updated_at || payload.old?.updated_at).getTime();
+            // Only refresh if not currently checking
+            if (!isCheckingRef.current) {
+              // Only refresh if the change is from an external source
+              const currentTime = Date.now();
+              const payloadTime = new Date(payload.new?.updated_at || payload.old?.updated_at).getTime();
 
-            // If the change happened more than 5 seconds ago, it's likely from webhook
-            // Or if the status changed to 'active', always refresh to show the new subscription
-            const isStatusChangeToActive = payload.new?.status === 'active' && payload.old?.status !== 'active';
-            const isExternalChange = currentTime - payloadTime > 5000;
+              // If the change happened more than 5 seconds ago, it's likely from webhook
+              // Or if the status changed to 'active', always refresh to show the new subscription
+              const isStatusChangeToActive = payload.new?.status === 'active' && payload.old?.status !== 'active';
+              const isExternalChange = currentTime - payloadTime > 5000;
 
-            if (isExternalChange || isStatusChangeToActive) {
-              console.log("External subscription change or activation detected, refreshing...", {
-                isStatusChangeToActive,
-                isExternalChange,
-                timeDiff: currentTime - payloadTime
-              });
-              checkUserAndSubscription();
-            } else {
-              console.log("Recent subscription change detected, likely from current session, skipping refresh", {
-                timeDiff: currentTime - payloadTime
-              });
+              if (isExternalChange || isStatusChangeToActive) {
+                console.log("External subscription change or activation detected, refreshing...", {
+                  isStatusChangeToActive,
+                  isExternalChange,
+                  timeDiff: currentTime - payloadTime
+                });
+                checkUserAndSubscription();
+              } else {
+                console.log("Recent subscription change detected, likely from current session, skipping refresh", {
+                  timeDiff: currentTime - payloadTime
+                });
+              }
             }
           }, 2000); // Increased to 2 seconds for more stability
         })
@@ -212,7 +234,7 @@ export function SubscriptionProvider({ children }) {
       }
       supabase.removeChannel(subscriptionsChannel);
     };
-  }, [user]);
+  }, [user, mounted]);
 
   // Check if trial is active and valid
   const isTrialActive = () => {
@@ -276,6 +298,8 @@ export function SubscriptionProvider({ children }) {
 
   // Manually refresh subscription data (with rate limiting)
   const refreshSubscription = () => {
+    if (isCheckingRef.current) return; // Prevent multiple calls
+
     // Clear any existing timeout
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -287,6 +311,15 @@ export function SubscriptionProvider({ children }) {
       checkUserAndSubscription();
     }, 500);
   };
+
+  // Don't render children until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400"></div>
+      </div>
+    );
+  }
 
   // Provide the context value
   const value = {

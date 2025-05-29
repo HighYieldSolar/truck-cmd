@@ -16,9 +16,13 @@ import { useSubscription } from "@/context/SubscriptionContext";
 import UserDropdown from "@/components/UserDropdown";
 import NotificationIcon from "@/components/notifications/NotificationIcon";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function DashboardLayout({ activePage = "dashboard", children, pageTitle }) {
+  const { isDarkMode } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -42,42 +46,49 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationError, setNotificationError] = useState(null);
 
+  // Add mounted state check
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Fetch initial notifications summary
   useEffect(() => {
-    if (user && user.id) {
-      const fetchNotifications = async () => {
-        try {
-          setNotificationError(null);
-          const { data, error } = await supabase.rpc('get_unread_notifications_summary', {
-            p_user_id: user.id
-          });
-
-          if (error) {
-            console.error("Error fetching notifications summary:", error);
-            setNotificationError("Failed to load notifications.");
-            setNotificationsData([]);
-            setUnreadNotificationCount(0);
-            return;
-          }
-
-          if (data) {
-            setNotificationsData(data.recent_notifications || []);
-            setUnreadNotificationCount(data.unread_count || 0);
-          }
-        } catch (e) {
-          console.error("Client-side error fetching notifications summary:", e);
-          setNotificationError("An unexpected error occurred.");
-          setNotificationsData([]);
-          setUnreadNotificationCount(0);
-        }
-      };
-      fetchNotifications();
-    } else {
+    if (!mounted || !user || !user.id) {
       // Clear notifications if user logs out or is not available
       setNotificationsData([]);
       setUnreadNotificationCount(0);
+      return;
     }
-  }, [user]); // Rerun when user object changes
+
+    const fetchNotifications = async () => {
+      try {
+        setNotificationError(null);
+        const { data, error } = await supabase.rpc('get_unread_notifications_summary', {
+          p_user_id: user.id
+        });
+
+        if (error) {
+          console.error("Error fetching notifications summary:", error);
+          setNotificationError("Failed to load notifications.");
+          setNotificationsData([]);
+          setUnreadNotificationCount(0);
+          return;
+        }
+
+        if (data) {
+          setNotificationsData(data.recent_notifications || []);
+          setUnreadNotificationCount(data.unread_count || 0);
+        }
+      } catch (e) {
+        console.error("Client-side error fetching notifications summary:", e);
+        setNotificationError("An unexpected error occurred.");
+        setNotificationsData([]);
+        setUnreadNotificationCount(0);
+      }
+    };
+
+    fetchNotifications();
+  }, [user, mounted]); // Rerun when user object changes or when mounted
 
   // Determine subscription status
   const subscriptionStatus = subscription?.status === 'active' && isSubscriptionActive()
@@ -110,6 +121,8 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
   // Check if user is authenticated
   useEffect(() => {
+    if (!mounted) return; // Don't run until mounted
+
     async function checkUserAuth() {
       try {
         setLoading(true);
@@ -134,7 +147,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     } else {
       setLoading(false); // User already loaded from context
     }
-  }, [router, user]);
+  }, [router, user, mounted]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -337,31 +350,47 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   // Determine the displayed title
   const displayedTitle = pageTitle || menuItems.find(item => item.active)?.name || systemItems.find(item => item.active)?.name || 'Dashboard';
 
-  if (loading || subscriptionLoading) {
+  if (!mounted || loading || subscriptionLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Trial Banner */}
       <TrialBanner />
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white shadow-md fixed inset-y-0 z-20 transition-all duration-300">
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100">
+        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 z-20 transition-all duration-300">
+          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center">
-              <Image
-                src="/images/tc-name-tp-bg.png"
-                alt="Truck Command Logo"
-                width={150}
-                height={40}
-                className="h-10"
-              />
+              {isDarkMode ? (
+                <Image
+                  src="/images/tc white-logo with name.png"
+                  alt="Truck Command Logo"
+                  width={150}
+                  height={40}
+                  className="h-10"
+                  priority
+                  onError={(e) => {
+                    console.log('Error loading dark logo, falling back to default');
+                    e.target.src = "/images/tc-name-tp-bg.png";
+                  }}
+                />
+              ) : (
+                <Image
+                  src="/images/tc-name-tp-bg.png"
+                  alt="Truck Command Logo"
+                  width={150}
+                  height={40}
+                  className="h-10"
+                  priority
+                />
+              )}
             </Link>
           </div>
 
@@ -382,13 +411,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       href={isDisabled ? "/dashboard/billing" : item.href}
                       className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all 
                         ${item.active
-                          ? "bg-blue-50 text-[#007BFF]"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                          ? "bg-blue-50 text-[#007BFF] dark:bg-blue-900/30 dark:text-blue-300"
+                          : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF] dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-blue-300"
                         } 
                         ${isDisabled ? "opacity-50" : ""}`}
                     >
                       <div
-                        className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"}`}
+                        className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-300" : "text-gray-500 group-hover:text-[#007BFF] dark:text-gray-400 dark:group-hover:text-blue-300"}`}
                       >
                         {item.icon}
                       </div>
@@ -410,11 +439,11 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     key={item.name}
                     href={item.href}
                     className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
-                      ? "bg-blue-50 text-[#007BFF]"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                      ? "bg-blue-50 text-[#007BFF] dark:bg-blue-900/30 dark:text-blue-300"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF] dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-blue-300"
                       }`}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-300" : "text-gray-500 group-hover:text-[#007BFF] dark:text-gray-400 dark:group-hover:text-blue-300"
                       }`}>
                       {item.icon}
                     </div>
@@ -426,33 +455,33 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
             {/* Trial Status */}
             {['trial', 'expired'].includes(subscriptionStatus) && (
-              <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
-                <div className="px-4 py-3 bg-blue-500 text-white">
+              <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30">
+                <div className="px-4 py-3 bg-blue-500 dark:bg-blue-700 text-white">
                   <div className="font-medium">Truck Command Free Trial</div>
                 </div>
                 <div className="p-4">
                   {subscriptionStatus === 'expired' ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">Your trial has expired. Upgrade now to continue accessing all features.</p>
                       <Link
                         href="/dashboard/billing"
-                        className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
+                        className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         Upgrade now
                       </Link>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
-                      <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
+                      <div className="w-full bg-blue-100 dark:bg-blue-800 rounded-full h-2 mb-2">
                         <div
-                          className="bg-blue-500 h-2 rounded-full"
+                          className="bg-blue-500 dark:bg-blue-600 h-2 rounded-full"
                           style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
                         ></div>
                       </div>
                       <Link
                         href="/dashboard/billing"
-                        className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
+                        className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         View plans
                       </Link>
@@ -466,27 +495,43 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-gray-700/60 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)}></div>
+          <div className="fixed inset-0 bg-gray-700/60 dark:bg-black/60 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)}></div>
         )}
 
         {/* Mobile Sidebar */}
         <div
           ref={mobileMenuRef}
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
-              <Image
-                src="/images/tc-name-tp-bg.png"
-                alt="Truck Command Logo"
-                width={120}
-                height={30}
-                className="h-8"
-              />
+              {isDarkMode ? (
+                <Image
+                  src="/images/tc white-logo with name.png"
+                  alt="Truck Command Logo"
+                  width={120}
+                  height={30}
+                  className="h-8"
+                  priority
+                  onError={(e) => {
+                    console.log('Error loading dark logo (mobile), falling back to default');
+                    e.target.src = "/images/tc-name-tp-bg.png";
+                  }}
+                />
+              ) : (
+                <Image
+                  src="/images/tc-name-tp-bg.png"
+                  alt="Truck Command Logo"
+                  width={120}
+                  height={30}
+                  className="h-8"
+                  priority
+                />
+              )}
             </Link>
             <button
-              className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
               onClick={() => setMobileMenuOpen(false)}
               aria-label="Close menu"
             >
@@ -541,13 +586,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     href={isDisabled ? "/dashboard/billing" : item.href}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 
                       ${item.active
-                        ? "bg-blue-50 text-[#007BFF]"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                        ? "bg-blue-50 text-[#007BFF] dark:bg-blue-900/30 dark:text-blue-300"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF] dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-blue-300"
                       } 
                       ${isDisabled ? "opacity-50" : ""}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-300" : "text-gray-500 dark:text-gray-400"
                       }`}>
                       {item.icon}
                     </div>
@@ -567,25 +612,17 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   key={item.name}
                   href={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${item.active
-                    ? "bg-blue-50 text-[#007BFF]"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                    ? "bg-blue-50 text-[#007BFF] dark:bg-blue-900/30 dark:text-blue-300"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF] dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-blue-300"
                     }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"}`}>
+                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`}>
                     {item.icon}
                   </div>
                   {item.name}
                 </Link>
               ))}
-
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-red-600 transition-all my-0.5"
-              >
-                <LogOut size={20} className="mr-3 text-gray-500" />
-                Logout
-              </button>
             </div>
 
             {/* Trial Status (Mobile) */}
@@ -633,7 +670,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
           {/* Top Header */}
-          <header className="bg-white shadow-sm sticky top-0 z-10 transition-all border-b border-gray-200">
+          <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 transition-all border-b border-gray-200 dark:border-gray-700">
             <div className="flex h-16 items-center justify-between px-4">
               {/* Left side: Mobile menu button and page title */}
               <div className="flex items-center space-x-3">
@@ -646,13 +683,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 </button>
 
                 <div className="flex flex-col justify-center">
-                  <h1 className="text-lg font-semibold text-gray-900">
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {displayedTitle}
                   </h1>
-                  <div className="text-sm text-gray-500 hidden sm:block">
+                  <div className="text-sm text-gray-400 dark:text-gray-300 hidden sm:block">
                     <Link href="/dashboard" className="hover:text-[#007BFF]">Home</Link>
                     <span className="mx-1.5">/</span>
-                    <span className="text-gray-700">
+                    <span className="text-gray-500 dark:text-gray-400">
                       {displayedTitle}
                     </span>
                   </div>
@@ -664,7 +701,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 {/* Desktop Search */}
                 <div className="hidden md:block relative" ref={searchRef}>
                   <button
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none"
+                    className="p-2 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none"
                     onClick={() => setSearchOpen(!searchOpen)}
                     aria-label="Search"
                   >
@@ -673,14 +710,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
                   {/* Search Dropdown */}
                   {searchOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg p-4 border border-gray-200 z-20">
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg p-4 border border-gray-200 z-20 dark:bg-gray-800 dark:border-gray-700">
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Search size={18} className="text-gray-400" />
+                          <Search size={18} className="text-gray-400 dark:text-gray-500" />
                         </div>
                         <input
                           type="text"
-                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:text-gray-300"
                           placeholder="Search"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
@@ -702,10 +739,10 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                             <Link
                               key={i}
                               href={item.href}
-                              className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                              className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
                               onClick={() => setSearchOpen(false)}
                             >
-                              <span className="text-gray-500 mr-3">{item.icon}</span>
+                              <span className="text-gray-500 dark:text-gray-400 mr-3">{item.icon}</span>
                               {item.name}
                             </Link>
                           ))}

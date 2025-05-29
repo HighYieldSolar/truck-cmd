@@ -1,348 +1,139 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
-import {
-  RefreshCw,
-  Save,
-  CheckCircle,
-  AlertCircle,
-  Moon,
-  Sun,
-  Monitor,
-  Check
-} from "lucide-react";
+import { Moon, Sun, Monitor, Check } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function AppearanceSettings() {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // Theme settings
-  const [theme, setTheme] = useLocalStorage("theme", "system");
-  const [density, setDensity] = useLocalStorage("ui-density", "comfortable");
-  const [fontSize, setFontSize] = useLocalStorage("font-size", "medium");
-  const [accentColor, setAccentColor] = useLocalStorage("accent-color", "blue");
-
-  // Load user data
+  // After mounting, we can use the theme
   useEffect(() => {
-    async function loadUserData() {
-      try {
-        setLoading(true);
-
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
-
-        if (!user) {
-          window.location.href = '/login';
-          return;
-        }
-
-        setUser(user);
-
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        setErrorMessage('Failed to load your profile information. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadUserData();
+    setMounted(true);
   }, []);
 
-  // Apply theme to document
-  useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (theme === "dark" || (theme === "system" && prefersDark)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  // Save appearance settings
-  const saveAppearance = async (e) => {
-    e.preventDefault();
-
-    try {
-      setSaving(true);
-      setSuccessMessage(null);
-      setErrorMessage(null);
-
-      // In a real implementation, you might save these to user preferences in the database
-      // Here we're just using localStorage which was already saved
-
-      // Show success message
-      setSuccessMessage('Appearance settings updated successfully!');
-
-      // Hide success message after 5 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
-
-    } catch (error) {
-      console.error('Error saving appearance:', error);
-      setErrorMessage(`Failed to update appearance settings: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Theme option components for cleaner rendering
-  const ThemeOption = ({ value, label, icon }) => (
-    <div
-      className={`flex flex-col items-center cursor-pointer border rounded-lg p-4 transition-all ${theme === value
-        ? 'border-blue-500 bg-blue-50 shadow-sm'
-        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-        }`}
-      onClick={() => setTheme(value)}
-    >
-      <div className={`p-3 rounded-full mb-2 ${theme === value ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-        {icon}
-      </div>
-      <div className="font-medium text-gray-900">{label}</div>
-      {theme === value && (
-        <div className="absolute top-2 right-2 text-blue-600">
-          <Check size={16} />
-        </div>
-      )}
-    </div>
-  );
-
-  if (loading) {
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <RefreshCw size={32} className="animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-700">Loading appearance settings...</span>
+      <div className="animate-pulse">
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+        <div className="h-40 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
     );
   }
 
+  const handleThemeChange = (newTheme) => {
+    try {
+      setTheme(newTheme);
+    } catch (error) {
+      console.error('Error changing theme:', error);
+    }
+  };
+
   return (
-    <div>
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
-          <div className="flex items-start">
-            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
-            <span className="text-green-800">{successMessage}</span>
-          </div>
-        </div>
-      )}
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">Theme Settings</h2>
 
-      {errorMessage && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
-            <span className="text-red-800">{errorMessage}</span>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={saveAppearance}>
-        {/* Theme Settings */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Theme</h3>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">Choose how Truck Command looks to you</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <ThemeOption
-              value="light"
-              label="Light"
-              icon={<Sun size={24} />}
-            />
-
-            <ThemeOption
-              value="dark"
-              label="Dark"
-              icon={<Moon size={24} />}
-            />
-
-            <ThemeOption
-              value="system"
-              label="System"
-              icon={<Monitor size={24} />}
-            />
-          </div>
-        </div>
-
-        {/* Density Settings */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Density</h3>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">Control how compact the interface appears</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div
-              className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${density === 'comfortable'
-                ? 'border-blue-500 bg-blue-50 shadow-sm'
-                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+        <div className="space-y-4">
+          {/* Theme Options */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Light Theme Option */}
+            <button
+              onClick={() => handleThemeChange("light")}
+              className={`relative flex flex-col items-center p-4 border rounded-lg transition-all ${theme === "light"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
                 }`}
-              onClick={() => setDensity('comfortable')}
             >
-              <div className="w-full">
-                <div className="font-medium text-gray-900">Comfortable</div>
-                <div className="text-sm text-gray-500">Standard spacing</div>
-              </div>
-              {density === 'comfortable' && (
-                <div className="absolute top-2 right-2 text-blue-600">
-                  <Check size={16} />
+              {theme === "light" && (
+                <div className="absolute top-2 right-2 text-blue-500">
+                  <Check size={20} />
                 </div>
               )}
-            </div>
-
-            <div
-              className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${density === 'compact'
-                ? 'border-blue-500 bg-blue-50 shadow-sm'
-                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                }`}
-              onClick={() => setDensity('compact')}
-            >
-              <div className="w-full">
-                <div className="font-medium text-gray-900">Compact</div>
-                <div className="text-sm text-gray-500">Reduced spacing</div>
-              </div>
-              {density === 'compact' && (
-                <div className="absolute top-2 right-2 text-blue-600">
-                  <Check size={16} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Font Size */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Font Size</h3>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">Adjust the text size throughout the application</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div
-              className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${fontSize === 'small'
-                ? 'border-blue-500 bg-blue-50 shadow-sm'
-                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                }`}
-              onClick={() => setFontSize('small')}
-            >
-              <div className="w-full text-center">
-                <div className="font-medium text-gray-900" style={{ fontSize: '0.9rem' }}>Small Text</div>
-              </div>
-              {fontSize === 'small' && (
-                <div className="absolute top-2 right-2 text-blue-600">
-                  <Check size={16} />
-                </div>
-              )}
-            </div>
-
-            <div
-              className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${fontSize === 'medium'
-                ? 'border-blue-500 bg-blue-50 shadow-sm'
-                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                }`}
-              onClick={() => setFontSize('medium')}
-            >
-              <div className="w-full text-center">
-                <div className="font-medium text-gray-900" style={{ fontSize: '1rem' }}>Medium Text</div>
-              </div>
-              {fontSize === 'medium' && (
-                <div className="absolute top-2 right-2 text-blue-600">
-                  <Check size={16} />
-                </div>
-              )}
-            </div>
-
-            <div
-              className={`relative flex items-center p-4 border rounded-lg cursor-pointer transition-all ${fontSize === 'large'
-                ? 'border-blue-500 bg-blue-50 shadow-sm'
-                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                }`}
-              onClick={() => setFontSize('large')}
-            >
-              <div className="w-full text-center">
-                <div className="font-medium text-gray-900" style={{ fontSize: '1.1rem' }}>Large Text</div>
-              </div>
-              {fontSize === 'large' && (
-                <div className="absolute top-2 right-2 text-blue-600">
-                  <Check size={16} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Accent Color */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Accent Color</h3>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">Select your preferred accent color</p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-            {["blue", "green", "purple", "red", "orange", "teal"].map((color) => (
               <div
-                key={color}
-                className={`relative flex flex-col items-center p-4 border rounded-lg cursor-pointer transition-all ${accentColor === color
-                  ? 'border-gray-700 shadow-sm'
-                  : 'border-gray-200 hover:border-gray-400'
+                className={`p-3 rounded-full mb-3 ${theme === "light"
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                   }`}
-                onClick={() => setAccentColor(color)}
               >
-                <div
-                  className={`w-8 h-8 rounded-full mb-2 bg-${color}-500`}
-                  style={{
-                    backgroundColor:
-                      color === 'blue' ? '#3b82f6' :
-                        color === 'green' ? '#22c55e' :
-                          color === 'purple' ? '#a855f7' :
-                            color === 'red' ? '#ef4444' :
-                              color === 'orange' ? '#f97316' :
-                                color === 'teal' ? '#14b8a6' : '#3b82f6'
-                  }}
-                ></div>
-                <div className="text-sm font-medium text-gray-900 capitalize">{color}</div>
-                {accentColor === color && (
-                  <div className="absolute top-2 right-2 text-gray-900">
-                    <Check size={16} />
-                  </div>
-                )}
+                <Sun size={24} />
               </div>
-            ))}
+              <div className="text-center">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Light Mode</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Light background with dark text
+                </p>
+              </div>
+            </button>
+
+            {/* Dark Theme Option */}
+            <button
+              onClick={() => handleThemeChange("dark")}
+              className={`relative flex flex-col items-center p-4 border rounded-lg transition-all ${theme === "dark"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
+                }`}
+            >
+              {theme === "dark" && (
+                <div className="absolute top-2 right-2 text-blue-500">
+                  <Check size={20} />
+                </div>
+              )}
+              <div
+                className={`p-3 rounded-full mb-3 ${theme === "dark"
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+              >
+                <Moon size={24} />
+              </div>
+              <div className="text-center">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Dark background with light text
+                </p>
+              </div>
+            </button>
+
+            {/* System Theme Option */}
+            <button
+              onClick={() => handleThemeChange("system")}
+              className={`relative flex flex-col items-center p-4 border rounded-lg transition-all ${theme === "system"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
+                }`}
+            >
+              {theme === "system" && (
+                <div className="absolute top-2 right-2 text-blue-500">
+                  <Check size={20} />
+                </div>
+              )}
+              <div
+                className={`p-3 rounded-full mb-3 ${theme === "system"
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+              >
+                <Monitor size={24} />
+              </div>
+              <div className="text-center">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">System</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Follows your device settings
+                </p>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+            <p>
+              Your theme preference will be saved to your account and synchronized across your devices.
+            </p>
           </div>
         </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <RefreshCw size={18} className="animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save size={18} className="mr-2" />
-                Save Changes
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

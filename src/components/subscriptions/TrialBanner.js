@@ -3,16 +3,18 @@ import { useState, useEffect } from "react";
 import { Clock, X, CreditCard, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function TrialBanner() {
   const { subscription, isTrialActive, isSubscriptionActive, getDaysLeftInTrial } = useSubscription();
+  const { isDarkMode } = useTheme();
   const [dismissed, setDismissed] = useState(false);
 
   // If banner was dismissed recently, don't show it
   useEffect(() => {
     const isDismissed = localStorage.getItem('trialBannerDismissed');
     const dismissedTime = parseInt(isDismissed || '0');
-    
+
     // Show again after 4 hours
     if (dismissedTime && (Date.now() - dismissedTime < 4 * 60 * 60 * 1000)) {
       setDismissed(true);
@@ -34,15 +36,15 @@ export default function TrialBanner() {
   // Get the appropriate banner styles and messages
   const getBannerStyle = () => {
     if (!isTrialActive()) {
-      return "bg-red-600"; // Expired
+      return isDarkMode ? "bg-red-900" : "bg-red-600"; // Expired
     }
-    
+
     if (daysLeft <= 1) {
-      return "bg-orange-600"; // Last day
+      return isDarkMode ? "bg-orange-900" : "bg-orange-600"; // Last day
     } else if (daysLeft <= 3) {
-      return "bg-yellow-600"; // Getting close
+      return isDarkMode ? "bg-yellow-800" : "bg-yellow-600"; // Getting close
     } else {
-      return "bg-blue-600"; // Plenty of time
+      return isDarkMode ? "bg-blue-800" : "bg-blue-600"; // Plenty of time
     }
   };
 
@@ -69,17 +71,20 @@ export default function TrialBanner() {
               </>
             )}
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-center sm:justify-end">
             <Link
               href="/dashboard/billing"
-              className="whitespace-nowrap py-1.5 px-4 rounded-md bg-white text-blue-700 hover:bg-blue-50 font-medium text-sm transition-colors flex items-center"
+              className={`whitespace-nowrap py-1.5 px-4 rounded-md font-medium text-sm transition-colors flex items-center ${isDarkMode
+                  ? "bg-gray-800 text-blue-300 hover:bg-gray-700"
+                  : "bg-white text-blue-700 hover:bg-blue-50"
+                }`}
             >
               <CreditCard size={16} className="mr-1.5" />
               {!isTrialActive() ? "Subscribe Now" : "Upgrade Plan"}
             </Link>
-            
+
             <button
               onClick={handleDismiss}
               className="p-1.5 rounded-full hover:bg-white/10"

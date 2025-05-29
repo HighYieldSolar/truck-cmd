@@ -1,5 +1,6 @@
 import './globals.css';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export const metadata = {
   title: 'Truck Command - Trucking Business Management Software',
@@ -8,10 +9,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <SubscriptionProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </SubscriptionProvider>
       </body>
     </html>
