@@ -290,13 +290,11 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout activePage="dashboard">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
           <DashboardHeader 
             user={user}
-            onRefresh={handleRefresh}
-            isLoading={dataLoading || isRefreshing}
           />
 
 
@@ -304,31 +302,39 @@ export default function Dashboard() {
           {/* Date Range Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="text-sm font-medium text-gray-700">Date Range:</div>
-              <div className="flex bg-white rounded-lg shadow-sm border border-gray-200 divide-x">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range:</div>
+              <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
                 <button 
                   onClick={() => handleDateRangeChange('month')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'month' ? 
-                    'bg-blue-50 text-blue-600 font-medium' : 
-                    'text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-3 py-1.5 text-sm rounded-l-lg ${dateRange === 'month' ? 
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
                   This Month
                 </button>
                 <button 
                   onClick={() => handleDateRangeChange('quarter')}
                   className={`px-3 py-1.5 text-sm ${dateRange === 'quarter' ? 
-                    'bg-blue-50 text-blue-600 font-medium' : 
-                    'text-gray-600 hover:bg-gray-50'}`}
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
                   This Quarter
                 </button>
                 <button 
                   onClick={() => handleDateRangeChange('year')}
                   className={`px-3 py-1.5 text-sm ${dateRange === 'year' ? 
-                    'bg-blue-50 text-blue-600 font-medium' : 
-                    'text-gray-600 hover:bg-gray-50'}`}
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
                   This Year
+                </button>
+                <button 
+                  onClick={() => handleDateRangeChange('all')}
+                  className={`px-3 py-1.5 text-sm rounded-r-lg ${dateRange === 'all' ? 
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  All Time
                 </button>
               </div>
             </div>
@@ -389,8 +395,8 @@ export default function Dashboard() {
  */
 function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-      <div className="bg-purple-500 px-5 py-4 text-white flex justify-between items-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/10 overflow-hidden border border-gray-200 dark:border-gray-700">
+      <div className="bg-purple-500 dark:bg-purple-600 px-5 py-4 text-white flex justify-between items-center">
         <h3 className="font-semibold flex items-center">
           <CalendarIcon size={18} className="mr-2" />
           Upcoming Deliveries
@@ -403,27 +409,27 @@ function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
         {isLoading ? (
           // Skeleton loader for upcoming deliveries
           Array(2).fill(0).map((_, index) => (
-            <div key={index} className="flex items-start py-3 border-b border-gray-100 last:border-0 animate-pulse">
-              <div className="rounded-full h-10 w-10 bg-gray-200 mr-4"></div>
+            <div key={index} className="flex items-start py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 animate-pulse">
+              <div className="rounded-full h-10 w-10 bg-gray-200 dark:bg-gray-700 mr-4"></div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                  <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </div>
-                <div className="h-3 w-40 bg-gray-200 rounded mt-2"></div>
+                <div className="h-3 w-40 bg-gray-200 dark:bg-gray-700 rounded mt-2"></div>
               </div>
             </div>
           ))
         ) : deliveries.length === 0 ? (
           <div className="text-center py-8">
-            <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-              <Truck size={24} className="text-gray-400" />
+            <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+              <Truck size={24} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900">No deliveries scheduled</h3>
-            <p className="mt-2 text-gray-500">Schedule your first delivery to see it here</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No deliveries scheduled</h3>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Schedule your first delivery to see it here</p>
             <Link 
               href="/dashboard/dispatching/new"
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600"
             >
               <Plus size={16} className="mr-2" />
               Schedule Delivery
@@ -445,21 +451,21 @@ function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
  */
 function DeliveryItem({ delivery }) {
   return (
-    <div className="flex items-start py-3 border-b border-gray-100 last:border-0">
-      <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-4">
+    <div className="flex items-start py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 mr-4">
         <Truck size={16} />
       </div>
       <div className="flex-1">
         <div className="flex justify-between">
-          <p className="text-sm font-medium text-gray-900">{delivery.client}</p>
-          <span className="text-xs text-gray-500">{delivery.date}</span>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{delivery.client}</p>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{delivery.date}</span>
         </div>
-        <p className="text-sm text-gray-600">Destination: {delivery.destination}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Destination: {delivery.destination}</p>
         <div className="mt-1">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            delivery.status === 'In Transit' ? 'bg-green-100 text-green-800' :
-            delivery.status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
-            'bg-yellow-100 text-yellow-800'
+            delivery.status === 'In Transit' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' :
+            delivery.status === 'Assigned' ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400' :
+            'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400'
           }`}>
             {delivery.status}
           </span>

@@ -3,85 +3,133 @@ import { supabase } from "../supabaseClient";
 /**
  * Fetches dashboard statistics for the authenticated user
  * @param {string} userId - The authenticated user's ID
+ * @param {string} dateRange - The date range to filter by ('month', 'quarter', 'year', 'all')
  * @returns {Promise<Object>} Dashboard statistics
  */
-export async function fetchDashboardStats(userId) {
+export async function fetchDashboardStats(userId, dateRange = 'month') {
   try {
-    console.log("Fetching dashboard stats for user:", userId);
+    console.log("Fetching dashboard stats for user:", userId, "dateRange:", dateRange);
     
-    // Get current month date range for MTD calculations
+    // Get date range for calculations based on the dateRange parameter
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const firstDayOfMonthStr = firstDayOfMonth.toISOString().split('T')[0];
-    const todayStr = now.toISOString().split('T')[0];
+    let startDate, endDate, previousStartDate, previousEndDate;
     
-    // For comparison with previous month
-    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    const firstDayOfLastMonthStr = firstDayOfLastMonth.toISOString().split('T')[0];
-    const lastDayOfLastMonthStr = lastDayOfLastMonth.toISOString().split('T')[0];
+    switch (dateRange) {
+      case 'quarter':
+        // Current quarter
+        const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        startDate = quarterStart.toISOString().split('T')[0];
+        endDate = now.toISOString().split('T')[0];
+        
+        // Previous quarter for comparison
+        const prevQuarterStart = new Date(quarterStart);
+        prevQuarterStart.setMonth(prevQuarterStart.getMonth() - 3);
+        const prevQuarterEnd = new Date(quarterStart);
+        prevQuarterEnd.setDate(prevQuarterEnd.getDate() - 1);
+        previousStartDate = prevQuarterStart.toISOString().split('T')[0];
+        previousEndDate = prevQuarterEnd.toISOString().split('T')[0];
+        break;
+        
+      case 'year':
+        // Current year
+        startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+        endDate = now.toISOString().split('T')[0];
+        
+        // Previous year for comparison
+        previousStartDate = new Date(now.getFullYear() - 1, 0, 1).toISOString().split('T')[0];
+        previousEndDate = new Date(now.getFullYear() - 1, 11, 31).toISOString().split('T')[0];
+        break;
+        
+      case 'all':
+        // All time - no date filtering
+        startDate = '1900-01-01'; // Far back start date
+        endDate = now.toISOString().split('T')[0];
+        
+        // For comparison, use data from 30 days ago to yesterday
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        previousStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+        previousEndDate = yesterday.toISOString().split('T')[0];
+        break;
+        
+      default: // 'month'
+        // Current month
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        endDate = now.toISOString().split('T')[0];
+        
+        // Previous month for comparison
+        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        previousStartDate = firstDayOfLastMonth.toISOString().split('T')[0];
+        previousEndDate = lastDayOfLastMonth.toISOString().split('T')[0];
+        break;
+    }
+    
+    console.log("Date ranges:", { startDate, endDate, previousStartDate, previousEndDate });
     
     // Run parallel queries for better performance
     const [
       invoicesResult, 
       factoringsResult, 
-      lastMonthInvoicesResult, 
-      lastMonthFactoringsResult,
+      previousInvoicesResult, 
+      previousFactoringsResult,
       expensesResult,
-      lastMonthExpensesResult,
+      previousExpensesResult,
       activeLoadsResult,
       pendingInvoicesResult,
       upcomingDeliveriesResult
     ] = await Promise.all([
-      // Current month invoices
+      // Current period invoices
       supabase
         .from('invoices')
         .select('total, amount_paid, status, invoice_date')
         .eq('user_id', userId)
-        .gte('invoice_date', firstDayOfMonthStr)
-        .lte('invoice_date', todayStr),
+        .gte('invoice_date', startDate)
+        .lte('invoice_date', endDate),
         
-      // Current month factored earnings
+      // Current period factored earnings
       supabase
         .from('earnings')
         .select('amount, date')
         .eq('user_id', userId)
         .eq('source', 'Factoring')
-        .gte('date', firstDayOfMonthStr)
-        .lte('date', todayStr),
+        .gte('date', startDate)
+        .lte('date', endDate),
       
-      // Last month invoices
+      // Previous period invoices
       supabase
         .from('invoices')
         .select('total, amount_paid')
         .eq('user_id', userId)
-        .gte('invoice_date', firstDayOfLastMonthStr)
-        .lte('invoice_date', lastDayOfLastMonthStr),
+        .gte('invoice_date', previousStartDate)
+        .lte('invoice_date', previousEndDate),
       
-      // Last month factored earnings
+      // Previous period factored earnings
       supabase
         .from('earnings')
         .select('amount, date')
         .eq('user_id', userId)
         .eq('source', 'Factoring')
-        .gte('date', firstDayOfLastMonthStr)
-        .lte('date', lastDayOfLastMonthStr),
+        .gte('date', previousStartDate)
+        .lte('date', previousEndDate),
       
-      // Current month expenses
+      // Current period expenses
       supabase
         .from('expenses')
         .select('amount, date')
         .eq('user_id', userId)
-        .gte('date', firstDayOfMonthStr)
-        .lte('date', todayStr),
+        .gte('date', startDate)
+        .lte('date', endDate),
       
-      // Last month expenses
+      // Previous period expenses
       supabase
         .from('expenses')
         .select('amount')
         .eq('user_id', userId)
-        .gte('date', firstDayOfLastMonthStr)
-        .lte('date', lastDayOfLastMonthStr),
+        .gte('date', previousStartDate)
+        .lte('date', previousEndDate),
       
       // Active loads
       supabase
@@ -103,16 +151,16 @@ export async function fetchDashboardStats(userId) {
         .select('id')
         .eq('user_id', userId)
         .in('status', ['Assigned', 'In Transit'])
-        .gte('delivery_date', todayStr)
+        .gte('delivery_date', endDate)
     ]);
     
     // Destructure results
     const { data: currentInvoices, error: invoicesError } = invoicesResult;
     const { data: currentFactoredEarnings, error: factoredError } = factoringsResult; 
-    const { data: lastMonthInvoices, error: lastMonthInvoicesError } = lastMonthInvoicesResult;
-    const { data: lastMonthFactoredEarnings, error: lastMonthFactoredError } = lastMonthFactoringsResult;
+    const { data: previousInvoices, error: previousInvoicesError } = previousInvoicesResult;
+    const { data: previousFactoredEarnings, error: previousFactoredError } = previousFactoringsResult;
     const { data: currentExpenses, error: expensesError } = expensesResult;
-    const { data: lastMonthExpenses, error: lastMonthExpensesError } = lastMonthExpensesResult;
+    const { data: previousExpenses, error: previousExpensesError } = previousExpensesResult;
     const { data: activeLoads, error: loadsError } = activeLoadsResult;
     const { data: pendingInvoices, error: pendingInvoicesError } = pendingInvoicesResult;
     const { data: upcomingDeliveries, error: deliveryError } = upcomingDeliveriesResult;
@@ -120,95 +168,99 @@ export async function fetchDashboardStats(userId) {
     // Handle query errors
     if (invoicesError) throw invoicesError;
     if (factoredError) throw factoredError;
-    if (lastMonthInvoicesError) throw lastMonthInvoicesError;
-    if (lastMonthFactoredError) throw lastMonthFactoredError;
+    if (previousInvoicesError) throw previousInvoicesError;
+    if (previousFactoredError) throw previousFactoredError;
     if (expensesError) throw expensesError;
-    if (lastMonthExpensesError) throw lastMonthExpensesError;
+    if (previousExpensesError) throw previousExpensesError;
     if (loadsError) throw loadsError;
     if (pendingInvoicesError) throw pendingInvoicesError;
     if (deliveryError) throw deliveryError;
     
     // Log factored earnings data for debugging
-    console.log("Current month factored earnings:", currentFactoredEarnings);
+    console.log("Current period factored earnings:", currentFactoredEarnings);
     
-    // Calculate current month totals
+    // Calculate current period totals
     // Calculate invoice-based earnings (paid amounts)
-    const currentMonthPaidInvoices = currentInvoices
+    const currentPaidInvoices = currentInvoices
       ? currentInvoices
           .filter(invoice => invoice.status === 'Paid' || invoice.status === 'Partially Paid')
           .reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0)
       : 0;
     
     // Calculate factored earnings
-    const currentMonthFactoredEarnings = currentFactoredEarnings
+    const currentFactoredEarningsTotal = currentFactoredEarnings
       ? currentFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
       : 0;
     
     console.log("Calculated earnings:", {
-      paidInvoices: currentMonthPaidInvoices,
-      factoredEarnings: currentMonthFactoredEarnings
+      paidInvoices: currentPaidInvoices,
+      factoredEarnings: currentFactoredEarningsTotal,
+      dateRange,
+      startDate,
+      endDate
     });
     
     // Total earnings = paid invoices + factored earnings
-    const currentMonthEarnings = currentMonthPaidInvoices + currentMonthFactoredEarnings;
+    const currentEarnings = currentPaidInvoices + currentFactoredEarningsTotal;
     
     // Calculate expenses total
-    const currentMonthExpensesTotal = currentExpenses
+    const currentExpensesTotal = currentExpenses
       ? currentExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0)
       : 0;
     
     // Calculate profit
-    const currentProfit = currentMonthEarnings - currentMonthExpensesTotal;
+    const currentProfit = currentEarnings - currentExpensesTotal;
     
-    // Calculate last month totals for comparison
-    // Last month paid invoices
-    const lastMonthPaidInvoices = lastMonthInvoices
-      ? lastMonthInvoices.reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0)
+    // Calculate previous period totals for comparison
+    // Previous period paid invoices
+    const previousPaidInvoices = previousInvoices
+      ? previousInvoices.reduce((sum, invoice) => sum + (parseFloat(invoice.amount_paid) || 0), 0)
       : 0;
     
-    // Last month factored earnings
-    const lastMonthFactoredEarningsTotal = lastMonthFactoredEarnings
-      ? lastMonthFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
+    // Previous period factored earnings
+    const previousFactoredEarningsTotal = previousFactoredEarnings
+      ? previousFactoredEarnings.reduce((sum, earning) => sum + (parseFloat(earning.amount) || 0), 0)
       : 0;
     
-    // Last month total earnings
-    const lastMonthEarnings = lastMonthPaidInvoices + lastMonthFactoredEarningsTotal;
+    // Previous period total earnings
+    const previousEarnings = previousPaidInvoices + previousFactoredEarningsTotal;
     
-    // Last month expenses
-    const lastMonthExpensesTotal = lastMonthExpenses
-      ? lastMonthExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0)
+    // Previous period expenses
+    const previousExpensesTotal = previousExpenses
+      ? previousExpenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0)
       : 0;
     
-    // Last month profit
-    const lastMonthProfit = lastMonthEarnings - lastMonthExpensesTotal;
+    // Previous period profit
+    const previousProfit = previousEarnings - previousExpensesTotal;
     
     // Calculate percentage changes
-    const earningsChange = lastMonthEarnings > 0 
-      ? ((currentMonthEarnings - lastMonthEarnings) / lastMonthEarnings * 100).toFixed(1)
+    const earningsChange = previousEarnings > 0 
+      ? ((currentEarnings - previousEarnings) / previousEarnings * 100).toFixed(1)
       : null;
       
-    const expensesChange = lastMonthExpensesTotal > 0 
-      ? ((currentMonthExpensesTotal - lastMonthExpensesTotal) / lastMonthExpensesTotal * 100).toFixed(1)
+    const expensesChange = previousExpensesTotal > 0 
+      ? ((currentExpensesTotal - previousExpensesTotal) / previousExpensesTotal * 100).toFixed(1)
       : null;
       
-    const profitChange = lastMonthProfit > 0 
-      ? ((currentProfit - lastMonthProfit) / lastMonthProfit * 100).toFixed(1)
+    const profitChange = previousProfit > 0 
+      ? ((currentProfit - previousProfit) / previousProfit * 100).toFixed(1)
       : null;
     
     // Log final stats for debugging
     console.log("Final dashboard stats:", {
-      earnings: currentMonthEarnings,
-      paidInvoices: currentMonthPaidInvoices,
-      factoredEarnings: currentMonthFactoredEarnings,
-      expenses: currentMonthExpensesTotal,
-      profit: currentProfit
+      earnings: currentEarnings,
+      paidInvoices: currentPaidInvoices,
+      factoredEarnings: currentFactoredEarningsTotal,
+      expenses: currentExpensesTotal,
+      profit: currentProfit,
+      dateRange
     });
     
     return {
-      earnings: currentMonthEarnings,
+      earnings: currentEarnings,
       earningsChange: earningsChange,
       earningsPositive: earningsChange > 0,
-      expenses: currentMonthExpensesTotal,
+      expenses: currentExpensesTotal,
       expensesChange: expensesChange,
       expensesPositive: expensesChange < 0, // For expenses, negative change is positive
       profit: currentProfit,
@@ -218,8 +270,8 @@ export async function fetchDashboardStats(userId) {
       pendingInvoices: pendingInvoices?.length || 0,
       upcomingDeliveries: upcomingDeliveries?.length || 0,
       // Add detailed earnings breakdown
-      paidInvoices: currentMonthPaidInvoices,
-      factoredEarnings: currentMonthFactoredEarnings
+      paidInvoices: currentPaidInvoices,
+      factoredEarnings: currentFactoredEarningsTotal
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
