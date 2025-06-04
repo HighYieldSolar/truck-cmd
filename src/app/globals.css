@@ -7,11 +7,9 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0f1419;
+  --foreground: #e5e7eb;
 }
 
 body {
@@ -20,48 +18,57 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Add these styles to your globals.css file */
-
+/* Base layout styles */
 html, 
 body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #ffffff;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #__next {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
 }
 
-/* Fix for the mobile sidebar */
+/* Mobile sidebar improvements */
 .mobile-sidebar {
   max-height: 100vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Remove any background colors from containers that might be causing the issue */
-.main-content {
-  background-color: #ffffff;
-  flex: 1;
+/* Dark theme specific improvements */
+.dark {
+  color-scheme: dark;
 }
 
-/* Fix for sticky footer if you have one */
-footer {
-  background-color: #ffffff;
-}
-
-/* Additional fix for any element that might be causing the gray box */
+/* Fix for any problematic background overrides */
 .content-wrapper {
-  background-color: #ffffff;
-  min-height: calc(100vh - 64px); /* Adjust based on your header height */
+  min-height: calc(100vh - 64px);
 }
 
-/* Reset any problematic background colors */
-.bg-gray-100 {
-  background-color: #ffffff;
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbar for dark theme */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
 }

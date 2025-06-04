@@ -1,5 +1,6 @@
 import './globals.css';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export const metadata = {
   title: 'Truck Command - Trucking Business Management Software',
@@ -11,7 +12,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <SubscriptionProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </SubscriptionProvider>
       </body>
     </html>

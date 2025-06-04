@@ -25,13 +25,13 @@ export default function DashboardStats({ stats, isLoading }) {
       {isLoading ? (
         // Skeleton loaders for stats cards
         Array(3).fill(0).map((_, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm p-5 border border-gray-200 animate-pulse">
+          <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/10 p-5 border border-gray-200 dark:border-gray-700 animate-pulse">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
-                <div className="h-3 w-24 bg-gray-200 rounded"></div>
-                <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
               </div>
-              <div className="rounded-lg p-3 bg-gray-200 h-10 w-10"></div>
+              <div className="rounded-lg p-3 bg-gray-200 dark:bg-gray-700 h-10 w-10"></div>
             </div>
           </div>
         ))
@@ -76,26 +76,26 @@ function StatCard({ title, value, change, positive, icon, color = "blue" }) {
   const getColorClasses = () => {
     switch (color) {
       case 'blue':
-        return { bg: 'bg-blue-50', text: 'text-blue-600', icon: 'text-blue-500' };
+        return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500' };
       case 'green':
-        return { bg: 'bg-green-50', text: 'text-green-600', icon: 'text-green-500' };
+        return { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', icon: 'text-green-500' };
       case 'red':
-        return { bg: 'bg-red-50', text: 'text-red-600', icon: 'text-red-500' };
+        return { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', icon: 'text-red-500' };
       case 'yellow':
-        return { bg: 'bg-yellow-50', text: 'text-yellow-600', icon: 'text-yellow-500' };
+        return { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400', icon: 'text-yellow-500' };
       default:
-        return { bg: 'bg-blue-50', text: 'text-blue-600', icon: 'text-blue-500' };
+        return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500' };
     }
   };
 
   const colorClasses = getColorClasses();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/10 p-5 border border-gray-200 dark:border-gray-700 hover:shadow-md dark:hover:shadow-gray-900/20 transition-shadow">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{value}</p>
         </div>
         <div className={`rounded-lg p-3 ${colorClasses.bg}`}>
           {icon}
@@ -103,7 +103,7 @@ function StatCard({ title, value, change, positive, icon, color = "blue" }) {
       </div>
       {change !== null && (
         <div className="mt-3">
-          <p className={`text-sm flex items-center ${positive ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-sm flex items-center ${positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {positive ? (
               <TrendingUp size={16} className="mr-1" />
             ) : (

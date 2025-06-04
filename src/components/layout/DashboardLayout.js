@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTheme } from "@/context/ThemeContext";
 import UserDropdown from "@/components/UserDropdown";
 import NotificationIcon from "@/components/notifications/NotificationIcon";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
@@ -37,6 +38,8 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     isTrialActive,
     isSubscriptionActive
   } = useSubscription();
+  
+  const { theme } = useTheme();
 
   const [notificationsData, setNotificationsData] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -346,17 +349,17 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Trial Banner */}
       <TrialBanner />
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white shadow-md fixed inset-y-0 z-20 transition-all duration-300">
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100">
+        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 z-20 transition-all duration-300">
+          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center">
               <Image
-                src="/images/tc-name-tp-bg.png"
+                src={theme === 'dark' ? "/images/tc white-logo with name.png" : "/images/tc-name-tp-bg.png"}
                 alt="Truck Command Logo"
                 width={150}
                 height={40}
@@ -368,7 +371,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           <div className="flex-1 flex flex-col overflow-y-auto py-4">
             {/* Main Navigation */}
             <div className="px-3">
-              <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                 Main
               </h2>
               <nav className="space-y-1">
@@ -382,13 +385,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       href={isDisabled ? "/dashboard/billing" : item.href}
                       className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all 
                         ${item.active
-                          ? "bg-blue-50 text-[#007BFF]"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
                         } 
                         ${isDisabled ? "opacity-50" : ""}`}
                     >
                       <div
-                        className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"}`}
+                        className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-[#007BFF] dark:group-hover:text-blue-400"}`}
                       >
                         {item.icon}
                       </div>
@@ -401,7 +404,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
             {/* System Navigation */}
             <div className="px-3 mt-6">
-              <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                 System
               </h2>
               <nav className="space-y-1">
@@ -410,11 +413,11 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     key={item.name}
                     href={item.href}
                     className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
-                      ? "bg-blue-50 text-[#007BFF]"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
                       }`}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500 group-hover:text-[#007BFF]"
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-400" : "text-gray-500 dark:text-gray-400 group-hover:text-[#007BFF] dark:group-hover:text-blue-400"
                       }`}>
                       {item.icon}
                     </div>
@@ -426,13 +429,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
             {/* Trial Status */}
             {['trial', 'expired'].includes(subscriptionStatus) && (
-              <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
-                <div className="px-4 py-3 bg-blue-500 text-white">
+              <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20">
+                <div className="px-4 py-3 bg-blue-500 dark:bg-blue-600 text-white">
                   <div className="font-medium">Truck Command Free Trial</div>
                 </div>
                 <div className="p-4">
                   {subscriptionStatus === 'expired' ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">Your trial has expired. Upgrade now to continue accessing all features.</p>
                       <Link
                         href="/dashboard/billing"
@@ -442,9 +445,9 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       </Link>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
-                      <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
+                      <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
                           style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
@@ -472,13 +475,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         {/* Mobile Sidebar */}
         <div
           ref={mobileMenuRef}
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
               <Image
-                src="/images/tc-name-tp-bg.png"
+                src={theme === 'dark' ? "/images/tc white-logo with name.png" : "/images/tc-name-tp-bg.png"}
                 alt="Truck Command Logo"
                 width={120}
                 height={30}
@@ -486,7 +489,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
               />
             </Link>
             <button
-              className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
               onClick={() => setMobileMenuOpen(false)}
               aria-label="Close menu"
             >
@@ -496,15 +499,15 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
           {/* User Profile Section (Mobile) */}
           {user && (
-            <div className="p-4 border-b border-gray-200 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg mr-3">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-lg mr-3">
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                   {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                 </div>
-                <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</div>
               </div>
             </div>
           )}
@@ -514,11 +517,11 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             <div className="px-2 py-3">
               <div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400" />
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm text-gray-900 dark:text-gray-100"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -528,7 +531,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
             {/* Main Navigation */}
             <div className="mt-1 pb-2">
-              <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                 Main
               </h2>
               {menuItems.map((item) => {
@@ -541,13 +544,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     href={isDisabled ? "/dashboard/billing" : item.href}
                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 
                       ${item.active
-                        ? "bg-blue-50 text-[#007BFF]"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                        ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
                       } 
                       ${isDisabled ? "opacity-50" : ""}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"
+                    <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
                       }`}>
                       {item.icon}
                     </div>
@@ -558,8 +561,8 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             </div>
 
             {/* System Navigation */}
-            <div className="mt-4 pt-3 border-t border-gray-200">
-              <h2 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                 System
               </h2>
               {systemItems.map((item) => (
@@ -567,12 +570,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   key={item.name}
                   href={item.href}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${item.active
-                    ? "bg-blue-50 text-[#007BFF]"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-[#007BFF]"
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
                     }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF]" : "text-gray-500"}`}>
+                  <div className={`mr-3 flex-shrink-0 ${item.active ? "text-[#007BFF] dark:text-blue-400" : "text-gray-500 dark:text-gray-400"}`}>
                     {item.icon}
                   </div>
                   {item.name}
@@ -581,35 +584,35 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-red-600 transition-all my-0.5"
+                className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all my-0.5"
               >
-                <LogOut size={20} className="mr-3 text-gray-500" />
+                <LogOut size={20} className="mr-3 text-gray-500 dark:text-gray-400" />
                 Logout
               </button>
             </div>
 
             {/* Trial Status (Mobile) */}
             {subscriptionStatus !== 'active' && (
-              <div className="mt-6 mx-2 rounded-lg overflow-hidden border border-blue-100 bg-blue-50">
-                <div className="px-4 py-3 bg-blue-500 text-white">
+              <div className="mt-6 mx-2 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20">
+                <div className="px-4 py-3 bg-blue-500 dark:bg-blue-600 text-white">
                   <div className="font-medium">Free Trial Status</div>
                 </div>
                 <div className="p-4">
                   {subscriptionStatus === 'expired' ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">Your trial has expired. Subscribe now to continue using all features.</p>
                       <Link
                         href="/dashboard/billing"
-                        className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] text-white rounded-lg hover:bg-blue-600"
+                        className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Upgrade Now
                       </Link>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
                       <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
-                      <div className="w-full bg-blue-100 rounded-full h-2 mb-2">
+                      <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
                           style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
@@ -617,7 +620,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       </div>
                       <Link
                         href="/dashboard/billing"
-                        className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] text-white rounded-lg hover:bg-blue-600"
+                        className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         View Plans
@@ -633,12 +636,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
           {/* Top Header */}
-          <header className="bg-white shadow-sm sticky top-0 z-10 transition-all border-b border-gray-200">
+          <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 transition-all border-b border-gray-200 dark:border-gray-700">
             <div className="flex h-16 items-center justify-between px-4">
               {/* Left side: Mobile menu button and page title */}
               <div className="flex items-center space-x-3">
                 <button
-                  className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none mobile-menu-button"
+                  className="lg:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none mobile-menu-button"
                   onClick={() => setMobileMenuOpen(true)}
                   aria-label="Open menu"
                 >
@@ -646,13 +649,13 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 </button>
 
                 <div className="flex flex-col justify-center">
-                  <h1 className="text-lg font-semibold text-gray-900">
+                  <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {displayedTitle}
                   </h1>
-                  <div className="text-sm text-gray-500 hidden sm:block">
-                    <Link href="/dashboard" className="hover:text-[#007BFF]">Home</Link>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+                    <Link href="/dashboard" className="hover:text-[#007BFF] dark:hover:text-blue-400">Home</Link>
                     <span className="mx-1.5">/</span>
-                    <span className="text-gray-700">
+                    <span className="text-gray-700 dark:text-gray-300">
                       {displayedTitle}
                     </span>
                   </div>
@@ -664,7 +667,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 {/* Desktop Search */}
                 <div className="hidden md:block relative" ref={searchRef}>
                   <button
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none"
+                    className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none"
                     onClick={() => setSearchOpen(!searchOpen)}
                     aria-label="Search"
                   >
@@ -673,14 +676,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
                   {/* Search Dropdown */}
                   {searchOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg p-4 border border-gray-200 z-20">
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg p-4 border border-gray-200 dark:border-gray-700 z-20">
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Search size={18} className="text-gray-400" />
+                          <Search size={18} className="text-gray-400 dark:text-gray-500" />
                         </div>
                         <input
                           type="text"
-                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm text-gray-900 dark:text-gray-100"
                           placeholder="Search"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
@@ -689,7 +692,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       </div>
 
                       <div className="mt-3">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                           Quick Links
                         </h3>
                         <div className="space-y-1">
@@ -702,10 +705,10 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                             <Link
                               key={i}
                               href={item.href}
-                              className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                              className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
                               onClick={() => setSearchOpen(false)}
                             >
-                              <span className="text-gray-500 mr-3">{item.icon}</span>
+                              <span className="text-gray-500 dark:text-gray-400 mr-3">{item.icon}</span>
                               {item.name}
                             </Link>
                           ))}
@@ -743,18 +746,18 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
               {/* Check if the current page is protected and subscription is expired */}
               {menuItems.find(item => item.href.endsWith(currentActivePage))?.protected && !isSubscribed() && !pageTitle ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                    <LogOut size={24} className="text-red-600" />
+                  <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+                    <LogOut size={24} className="text-red-600 dark:text-red-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Feature Unavailable</h2>
-                  <p className="text-gray-600 mb-6 text-center max-w-md">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Feature Unavailable</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 text-center max-w-md">
                     {subscriptionStatus === 'expired'
                       ? 'Your free trial has ended. Please subscribe to access this feature.'
                       : 'This feature requires an active subscription.'}
                   </p>
                   <Link
                     href="/dashboard/billing"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                   >
                     View Subscription Plans
                   </Link>
@@ -766,20 +769,20 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           </main>
 
           {/* Footer */}
-          <footer className="bg-white border-t border-gray-200 mt-auto py-4 px-4 lg:px-6">
+          <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto py-4 px-4 lg:px-6">
             <div className="container mx-auto">
               <div className="flex flex-col sm:flex-row items-center justify-between">
-                <div className="text-sm text-gray-500 mb-2 sm:mb-0">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
                   &copy; {new Date().getFullYear()} Truck Command. All rights reserved.
                 </div>
                 <div className="flex space-x-4">
-                  <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-700">
+                  <Link href="/privacy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     Privacy Policy
                   </Link>
-                  <Link href="/terms" className="text-sm text-gray-500 hover:text-gray-700">
+                  <Link href="/terms" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     Terms of Service
                   </Link>
-                  <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-700">
+                  <Link href="/contact" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     Contact
                   </Link>
                 </div>

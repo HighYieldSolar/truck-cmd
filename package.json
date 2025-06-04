@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.8",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@stripe/stripe-js": "^6.1.0",
