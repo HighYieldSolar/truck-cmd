@@ -72,3 +72,66 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
+
+/* Fix text color for form elements on dark backgrounds while preserving existing styling */
+input[type="text"],
+input[type="email"], 
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  color: white !important;
+}
+
+/* Fix placeholder text color */
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder, 
+input[type="number"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="url"]::placeholder,
+input[type="search"]::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Fix dropdown option colors */
+select option {
+  color: white !important;
+  background-color: # !important;
+}
+
+/* Fix date picker calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* Dark mode overrides */
+.dark input[type="text"],
+.dark input[type="email"], 
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="tel"],
+.dark input[type="url"],
+.dark input[type="search"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"],
+.dark textarea,
+.dark select {
+  color: #e5e7eb !important;
+}
+
+.dark select option {
+  color: #e5e7eb !important;
+  background-color: #1f2937 !important;
+}
