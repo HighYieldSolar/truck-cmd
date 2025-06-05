@@ -137,7 +137,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="status"
               value={filters.status}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="Active">Active</option>
@@ -152,7 +152,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="type"
               value={filters.type}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Types</option>
               <option value="Business">Business</option>
@@ -166,7 +166,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="state"
               value={filters.state}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All States</option>
               {filters.availableStates.map(state => (
@@ -185,7 +185,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
                 type="text"
                 value={filters.search}
                 onChange={onSearch}
-                className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block w-full pl-10 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Search customers..."
               />
             </div>

@@ -676,7 +676,7 @@ export default function Page() {
                         name="status"
                         value={filters.status}
                         onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="all">All Statuses</option>
                         <option value="active">Active</option>
@@ -692,7 +692,7 @@ export default function Page() {
                         name="type"
                         value={filters.type}
                         onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="all">All Types</option>
                         {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
@@ -709,7 +709,7 @@ export default function Page() {
                         name="entity"
                         value={filters.entity}
                         onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="all">All Entities</option>
                         <option value="Vehicle">Vehicles</option>
@@ -730,7 +730,7 @@ export default function Page() {
                           value={filters.search}
                           onChange={handleSearch}
                           placeholder="Search records..."
-                          className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="block w-full pl-10 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                     </div>

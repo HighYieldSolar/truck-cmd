@@ -154,13 +154,13 @@ export default function VehicleSelector({
         value={selectedVehicle}
         onChange={(e) => setSelectedVehicle(e.target.value)}
         disabled={isLoading || loading}
-        className="appearance-none block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg 
+        className="appearance-none block w-full pl-10 pr-10 py-2 text-sm border border-gray-600 rounded-lg 
         focus:ring-blue-500 focus:border-blue-500 
-        bg-gray-50 text-gray-900"
+        bg-gray-800 text-white"
       >
-        <option value="all" className="bg-white text-gray-900">All Vehicles</option>
+        <option value="all" className="bg-gray-800 text-white">All Vehicles</option>
         {vehicleOptions.map((vehicle) => (
-          <option key={vehicle.id} value={vehicle.id} className="bg-white text-gray-900">
+          <option key={vehicle.id} value={vehicle.id} className="bg-gray-800 text-white">
             {vehicle.licensePlate
               ? `${vehicle.label} (${vehicle.licensePlate})`
               : vehicle.label}

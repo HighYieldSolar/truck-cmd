@@ -45,7 +45,7 @@ export default function ExpenseFilters({
           name="category"
           value={filters.category}
           onChange={onFilterChange}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="All">All Categories</option>
           <option value="Fuel">Fuel</option>
@@ -65,7 +65,7 @@ export default function ExpenseFilters({
           name="dateRange"
           value={filters.dateRange}
           onChange={handleDateRangeChange}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="All Time">All Time</option>
           <option value="This Month">This Month</option>
@@ -83,7 +83,7 @@ export default function ExpenseFilters({
           name="sortBy"
           value={filters.sortBy}
           onChange={onFilterChange}
-          className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="date">Date</option>
           <option value="amount">Amount</option>
@@ -103,7 +103,7 @@ export default function ExpenseFilters({
             value={filters.search}
             onChange={onSearchChange}
             placeholder="Search expenses..."
-            className="block w-full pl-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="block w-full pl-10 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function ExpenseFilters({
               type="date"
               value={filters.startDate}
               onChange={handleStartDateChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -126,7 +126,7 @@ export default function ExpenseFilters({
               type="date"
               value={filters.endDate}
               onChange={handleEndDateChange}
-              className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
