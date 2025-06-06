@@ -5,57 +5,9 @@ import { useState, useEffect } from "react";
 import { X, RefreshCw, CheckCircle, FileText, AlertCircle, Calendar, Info, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { createExpense, updateExpense, uploadReceiptImage } from "@/lib/services/expenseService";
+import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
-// Helper function to ensure correct date formatting for forms
-function formatDateForInput(dateString) {
-  if (!dateString) return '';
-  
-  try {
-    // Parse date using local timezone  
-    const date = new Date(dateString);
-    
-    // For UTC date strings that need adjustment
-    if (dateString.includes('T') && dateString.includes('Z')) {
-      // Add the timezone offset to convert to local date
-      const timezoneOffset = date.getTimezoneOffset() * 60000;
-      date.setTime(date.getTime() + timezoneOffset);
-    }
-    
-    // Format to YYYY-MM-DD
-    return date.toISOString().split('T')[0];
-  } catch (error) {
-    console.error("Date formatting error:", error);
-    return '';
-  }
-}
-
-// Get current date with timezone-safe approach
-function getCurrentDateFormatted() {
-  const now = new Date();
-  return now.toISOString().split('T')[0]; // YYYY-MM-DD format
-}
-
-// Helper to prepare date for submission to the server
-function prepareDateForSubmission(dateString) {
-  if (!dateString) return '';
-  
-  try {
-    // Create date from input value (which is already in YYYY-MM-DD format)
-    const parts = dateString.split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // months are 0-indexed
-    const day = parseInt(parts[2], 10);
-    
-    // Create date at midnight in local timezone
-    const date = new Date(year, month, day);
-    
-    // Format to YYYY-MM-DD (this should be identical to input)
-    return date.toISOString().split('T')[0];
-  } catch (error) {
-    console.error("Date preparation error:", error);
-    return dateString; // Return original if there's an error
-  }
-}
+// These helper functions are now replaced by the dateUtils imports above
 
 // Helper function to get form data from local storage
 const getFormDataFromLocalStorage = (formKey) => {
@@ -97,7 +49,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   const initialFormData = {
     description: '',
     amount: '',
-    date: getCurrentDateFormatted(),
+    date: getCurrentDateLocal(),
     category: 'Fuel',
     payment_method: 'Credit Card',
     notes: '',
@@ -130,7 +82,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       setFormData({
         description: expense.description || "",
         amount: expense.amount?.toString() || "",
-        date: formatDateForInput(expense.date) || getCurrentDateFormatted(),
+        date: formatDateLocal(expense.date) || getCurrentDateLocal(),
         category: expense.category || "Fuel",
         payment_method: expense.payment_method || "Credit Card",
         notes: expense.notes || "",
@@ -147,7 +99,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       setFormDataToLocalStorage(formKey, {
         description: expense.description || "",
         amount: expense.amount?.toString() || "",
-        date: formatDateForInput(expense.date) || getCurrentDateFormatted(),
+        date: formatDateLocal(expense.date) || getCurrentDateLocal(),
         category: expense.category || "Fuel",
         payment_method: expense.payment_method || "Credit Card",
         notes: expense.notes || "",
@@ -256,11 +208,15 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     
-    if (type === "file" && files?.length > 0) {
+    if (type === 'file' && files && files[0]) {
+      const file = files[0];
+      // Create a preview URL for the image
+      const previewUrl = URL.createObjectURL(file);
+      
       setFormData({
         ...formData,
-        receipt_file: files[0], // Store the file object
-        receipt_image: URL.createObjectURL(files[0]) // Create preview URL
+        receipt_file: file,
+        receipt_image: previewUrl
       });
     } else if (type === "checkbox") {
       setFormData({
@@ -298,7 +254,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       const expenseData = {
         description: formData.description,
         amount: parseFloat(formData.amount),
-        date: prepareDateForSubmission(formData.date),
+        date: prepareDateForDB(formData.date),
         category: formData.category,
         payment_method: formData.payment_method,
         notes: formData.notes,
@@ -513,48 +469,78 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                 </div>
                 
                 <div>
-                  <label htmlFor="receipt_image" className="block text-sm font-medium text-gray-700 mb-1">
-                    Upload Receipt (optional)
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Receipt Image (optional)
                   </label>
-                  <input
-                    type="file"
-                    id="receipt_image"
-                    name="receipt_image"
-                    accept="image/*,.pdf"
-                    onChange={handleChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-lg"
-                  />
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="receipt_image"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                        >
+                          <span>Upload a file</span>
+                          <input
+                            id="receipt_image"
+                            name="receipt_image"
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={handleChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              {/* Receipt preview */}
-              {(formData.receipt_image || formData.receipt_file) && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 mr-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <FileText size={20} className="text-blue-600" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">Receipt</h4>
-                      {formData.receipt_file ? (
-                        <p className="text-xs text-gray-500">
-                          Selected file: {formData.receipt_file.name}
-                        </p>
-                      ) : formData.receipt_image ? (
-                        <p className="text-xs text-gray-500">Receipt on file</p>
-                      ) : null}
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, receipt_file: null, receipt_image: null })}
-                        className="text-xs text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </div>
+              {/* Receipt Preview */}
+              {formData.receipt_image && (
+                <div className="border rounded-md p-4">
+                  <div className="mb-2 flex justify-between items-center">
+                    <h3 className="text-sm font-medium text-gray-700">Receipt Preview</h3>
+                    <button
+                      type="button"
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => window.open(formData.receipt_image, "_blank", "width=800,height=600")}
+                    >
+                      <FileText size={16} />
+                    </button>
+                  </div>
+                  <div className="relative aspect-[3/4] max-h-96 overflow-hidden bg-gray-100 rounded-md flex items-center justify-center">
+                    <img
+                      src={formData.receipt_image}
+                      alt="Receipt preview"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, receipt_file: null, receipt_image: null })}
+                      className="text-xs text-red-600 hover:text-red-800"
+                    >
+                      Remove Receipt
+                    </button>
                   </div>
                 </div>
               )}

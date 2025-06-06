@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { AlertCircle } from "lucide-react";
 import { getTruckStats } from "@/lib/services/truckService";
 import { getDriverStats } from "@/lib/services/driverService";
+import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 // Import custom components
 import FleetManagementHeader from "@/components/fleet/FleetManagementHeader";
@@ -94,7 +95,7 @@ export default function FleetManagementPage() {
           .from('maintenance_records')
           .select('*, trucks(name)')
           .eq('user_id', user.id)
-          .gte('due_date', new Date().toISOString().split('T')[0])
+          .gte('due_date', getCurrentDateLocal())
           .order('due_date', { ascending: true })
           .limit(5);
         
@@ -103,16 +104,17 @@ export default function FleetManagementPage() {
         }
         
         // Load document reminders (expiring soon)
-        const now = new Date();
+        const now = getCurrentDateLocal();
         const thirtyDaysLater = new Date();
-        thirtyDaysLater.setDate(now.getDate() + 30);
+        thirtyDaysLater.setDate(new Date().getDate() + 30);
+        const thirtyDaysLaterString = thirtyDaysLater.toISOString().split('T')[0];
         
         const { data: documents, error: documentsError } = await supabase
           .from('drivers')
           .select('id, name, license_expiry, medical_card_expiry')
           .eq('user_id', user.id)
-          .or(`license_expiry.gte.${now.toISOString().split('T')[0]},medical_card_expiry.gte.${now.toISOString().split('T')[0]}`)
-          .or(`license_expiry.lte.${thirtyDaysLater.toISOString().split('T')[0]},medical_card_expiry.lte.${thirtyDaysLater.toISOString().split('T')[0]}`);
+          .or(`license_expiry.gte.${now},medical_card_expiry.gte.${now}`)
+          .or(`license_expiry.lte.${thirtyDaysLaterString},medical_card_expiry.lte.${thirtyDaysLaterString}`);
         
         if (!documentsError) {
           // Format document reminders

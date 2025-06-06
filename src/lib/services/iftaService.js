@@ -1,5 +1,6 @@
 // src/lib/services/iftaService.js - Updated version with improved error handling
 import { supabase } from "../supabaseClient";
+import { getQuarterDateRange } from "../utils/dateUtils";
 
 /**
  * IFTA Service - Handles the synchronization between fuel entries and IFTA trip data
@@ -28,23 +29,19 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
       throw new Error("Invalid quarter format. Use YYYY-QN (e.g., 2023-Q1)");
     }
     
-    // Calculate quarter date range
-    const startMonth = (quarterNum - 1) * 3;
-    const startDate = new Date(parseInt(year), startMonth, 1);
-    const endDate = new Date(parseInt(year), startMonth + 3, 0);
-    
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
+    // Calculate quarter date range using utility function
+    const { startDate: startDateStr, endDate: endDateStr } = getQuarterDateRange(quarter);
     
     console.log(`Calculated date range: ${startDateStr} to ${endDateStr}`);
     
-    // Query fuel entries within the date range
+    // Query fuel entries within the date range - only include Diesel and Gasoline for IFTA
     const { data, error } = await supabase
       .from('fuel_entries')
       .select('*')
       .eq('user_id', userId)
       .gte('date', startDateStr)
       .lte('date', endDateStr)
+      .in('fuel_type', ['Diesel', 'Gasoline'])
       .order('date', { ascending: true });
     
     if (error) {

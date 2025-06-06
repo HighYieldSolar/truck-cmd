@@ -5,6 +5,7 @@ import { useState, Fragment } from "react";
 import { X, FileText, Calendar, Clock, Download, ExternalLink } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import StatusBadge from "./StatusBadge";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
   const [imagePreviewExpanded, setImagePreviewExpanded] = useState(false);
@@ -19,16 +20,12 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
     frequency: "Unknown"
   };
 
-  // Format dates for display
+  // Format dates for display (fixed timezone issue)
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateString || "N/A";

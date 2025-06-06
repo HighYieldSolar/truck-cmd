@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Eye 
 } from "lucide-react";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function ComplianceTable({ complianceItems, filteredItems, onEdit, onDelete, onView, onAddNew }) {
   return (
@@ -107,9 +108,9 @@ export default function ComplianceTable({ complianceItems, filteredItems, onEdit
                     statusTextColor = "text-gray-800";
                 }
                 
-                // Format dates
-                const issueDate = item.issue_date ? new Date(item.issue_date).toLocaleDateString() : 'N/A';
-                const expirationDate = item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : 'N/A';
+                // Format dates (fixed timezone issue)
+                const issueDate = item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : 'N/A';
+                const expirationDate = item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : 'N/A';
                 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">

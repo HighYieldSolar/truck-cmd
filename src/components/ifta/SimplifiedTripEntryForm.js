@@ -14,11 +14,12 @@ import {
   ChevronDown,
   ChevronRight
 } from "lucide-react";
+import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, vehicles = [] }) {
   const [formData, setFormData] = useState({
     vehicleId: "",
-    date: new Date().toISOString().split('T')[0],
+    date: getCurrentDateLocal(),
     startJurisdiction: "",
     endJurisdiction: "",
     miles: "",
@@ -136,13 +137,16 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
 
     try {
       setIsSubmitting(true);
-      const success = await onAddTrip(formData);
+      const success = await onAddTrip({
+        ...formData,
+        date: prepareDateForDB(formData.date)
+      });
 
       if (success) {
         // Reset form
         setFormData({
           vehicleId: "",
-          date: new Date().toISOString().split('T')[0],
+          date: getCurrentDateLocal(),
           startJurisdiction: "",
           endJurisdiction: "",
           miles: "",

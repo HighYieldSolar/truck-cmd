@@ -73,65 +73,102 @@ body {
   background: #4b5563;
 }
 
-/* Fix text color for form elements on dark backgrounds while preserving existing styling */
-input[type="text"],
-input[type="email"], 
-input[type="password"],
-input[type="number"],
-input[type="tel"],
-input[type="url"],
-input[type="search"],
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"],
-textarea,
-select {
-  color: white !important;
+/* Dashboard-specific form styling - only applies within dashboard pages */
+.dashboard-theme input[type="text"],
+.dashboard-theme input[type="email"], 
+.dashboard-theme input[type="password"],
+.dashboard-theme input[type="number"],
+.dashboard-theme input[type="tel"],
+.dashboard-theme input[type="url"],
+.dashboard-theme input[type="search"],
+.dashboard-theme input[type="date"],
+.dashboard-theme input[type="time"],
+.dashboard-theme input[type="datetime-local"],
+.dashboard-theme textarea,
+.dashboard-theme select {
+  color: #111827 !important;
+  background-color: #f3f4f6 !important;
+  border-color: #d1d5db !important;
 }
 
-/* Fix placeholder text color */
-input[type="text"]::placeholder,
-input[type="email"]::placeholder,
-input[type="password"]::placeholder, 
-input[type="number"]::placeholder,
-input[type="tel"]::placeholder,
-input[type="url"]::placeholder,
-input[type="search"]::placeholder,
-textarea::placeholder {
-  color: #9ca3af !important;
+/* Dashboard-specific placeholder text color */
+.dashboard-theme input[type="text"]::placeholder,
+.dashboard-theme input[type="email"]::placeholder,
+.dashboard-theme input[type="password"]::placeholder, 
+.dashboard-theme input[type="number"]::placeholder,
+.dashboard-theme input[type="tel"]::placeholder,
+.dashboard-theme input[type="url"]::placeholder,
+.dashboard-theme input[type="search"]::placeholder,
+.dashboard-theme textarea::placeholder {
+  color: #6b7280 !important;
 }
 
-/* Fix dropdown option colors */
-select option {
-  color: white !important;
-  background-color: # !important;
+/* Dashboard-specific dropdown option colors */
+.dashboard-theme select option {
+  color: #111827 !important;
+  background-color: #f3f4f6 !important;
 }
 
-/* Fix date picker calendar icon */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+/* Dashboard-specific date picker calendar icon */
+.dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator,
+.dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator,
+.dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
 }
 
-/* Dark mode overrides */
-.dark input[type="text"],
-.dark input[type="email"], 
-.dark input[type="password"],
-.dark input[type="number"],
-.dark input[type="tel"],
-.dark input[type="url"],
-.dark input[type="search"],
-.dark input[type="date"],
-.dark input[type="time"],
-.dark input[type="datetime-local"],
-.dark textarea,
-.dark select {
+/* Dashboard dark mode overrides */
+.dashboard-theme.dark input[type="text"],
+.dashboard-theme.dark input[type="email"], 
+.dashboard-theme.dark input[type="password"],
+.dashboard-theme.dark input[type="number"],
+.dashboard-theme.dark input[type="tel"],
+.dashboard-theme.dark input[type="url"],
+.dashboard-theme.dark input[type="search"],
+.dashboard-theme.dark input[type="date"],
+.dashboard-theme.dark input[type="time"],
+.dashboard-theme.dark input[type="datetime-local"],
+.dashboard-theme.dark textarea,
+.dashboard-theme.dark select {
   color: #e5e7eb !important;
 }
 
-.dark select option {
+.dashboard-theme.dark select option {
   color: #e5e7eb !important;
   background-color: #1f2937 !important;
+}
+
+/* Ensure auth forms (login/signup) have proper styling */
+/* Override any conflicting global styles for non-dashboard pages */
+body:not(.dashboard-theme) input[type="text"],
+body:not(.dashboard-theme) input[type="email"], 
+body:not(.dashboard-theme) input[type="password"],
+body:not(.dashboard-theme) input[type="number"],
+body:not(.dashboard-theme) input[type="tel"],
+body:not(.dashboard-theme) input[type="url"],
+body:not(.dashboard-theme) input[type="search"],
+body:not(.dashboard-theme) input[type="date"],
+body:not(.dashboard-theme) input[type="time"],
+body:not(.dashboard-theme) input[type="datetime-local"],
+body:not(.dashboard-theme) textarea,
+body:not(.dashboard-theme) select {
+  color: #111827 !important; /* Ensure dark text for auth forms */
+}
+
+/* Ensure proper placeholder colors for auth forms */
+body:not(.dashboard-theme) input[type="text"]::placeholder,
+body:not(.dashboard-theme) input[type="email"]::placeholder,
+body:not(.dashboard-theme) input[type="password"]::placeholder, 
+body:not(.dashboard-theme) input[type="number"]::placeholder,
+body:not(.dashboard-theme) input[type="tel"]::placeholder,
+body:not(.dashboard-theme) input[type="url"]::placeholder,
+body:not(.dashboard-theme) input[type="search"]::placeholder,
+body:not(.dashboard-theme) textarea::placeholder {
+  color: #6b7280 !important; /* Gray placeholder text */
+}
+
+/* Ensure dropdown options are properly styled for auth forms */
+body:not(.dashboard-theme) select option {
+  color: #111827 !important;
+  background-color: #ffffff !important;
 }

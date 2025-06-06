@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Fuel, MapPin, Calendar, DollarSign, Truck, FileImage, Edit, Trash2, CheckCircle, ExternalLink, Calculator } from "lucide-react";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   // Add state for IFTA link status
@@ -55,9 +56,9 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
     });
   };
   
-  // Format date string to localized format
+  // Format date string to localized format (fixed timezone issue)
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplayMMDDYYYY(dateString);
   };
   
   // Get current quarter for the fuel purchase date

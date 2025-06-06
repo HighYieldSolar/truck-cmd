@@ -6,6 +6,7 @@ import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, C
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabaseClient";
 import { getUSStates } from "@/lib/services/fuelService";
+import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 // Import the VehicleSelector component
 import VehicleSelector from "@/components/fuel/VehicleSelector";
@@ -14,7 +15,7 @@ const states = getUSStates();
 
 // Define initial form data
 const defaultFormData = {
-    date: new Date().toISOString().split('T')[0],
+    date: getCurrentDateLocal(),
     state: "",
     state_name: "",
     location: "",
@@ -24,6 +25,7 @@ const defaultFormData = {
     vehicle_id: '',
     odometer: '',
     fuel_type: 'Diesel',
+    payment_method: 'Credit Card',
     notes: '',
     receipt_image: null,
     receipt_file: null,
@@ -53,6 +55,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
   const [calculationMode, setCalculationMode] = useState('total');
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [roundGallons, setRoundGallons] = useState(false);
 
   useEffect(() => {
     if (!fuelEntry) {
@@ -70,7 +73,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
       setFormData({
         ...fuelEntry,
         // Format date to YYYY-MM-DD for the date input
-        date: fuelEntry.date ? new Date(fuelEntry.date).toISOString().split('T')[0] : '',
+        date: fuelEntry.date ? formatDateLocal(fuelEntry.date) : '',
         gallons: fuelEntry.gallons.toString(),
         price_per_gallon: fuelEntry.price_per_gallon.toString(),
         total_amount: fuelEntry.total_amount.toString(),
@@ -84,7 +87,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     } else {
       // Reset form for new fuel entry
       setFormData({
-        date: new Date().toISOString().split('T')[0], // Today's date
+        date: getCurrentDateLocal(), // Today's date
         state: '',
         state_name: '',
         location: '',
@@ -94,6 +97,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
         vehicle_id: '',
         odometer: '',
         fuel_type: 'Diesel',
+        payment_method: 'Credit Card',
         notes: '',
         receipt_image: null,
         receipt_file: null,
@@ -138,7 +142,18 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
       
       // Auto-calculate total amount or price per gallon
       if (name === 'gallons' || name === 'price_per_gallon' || name === 'total_amount') {
-        const gallons = parseFloat(name === 'gallons' ? value : formData.gallons) || 0;
+        let gallons = parseFloat(name === 'gallons' ? value : formData.gallons) || 0;
+        
+        // Apply rounding if enabled and we're updating gallons
+        if (name === 'gallons' && roundGallons && gallons > 0) {
+          gallons = Math.round(gallons);
+          // Update the form data with rounded value
+          setFormData(current => ({
+            ...current,
+            gallons: gallons.toString()
+          }));
+        }
+        
         const pricePerGallon = parseFloat(name === 'price_per_gallon' ? value : formData.price_per_gallon) || 0;
         const totalAmount = parseFloat(name === 'total_amount' ? value : formData.total_amount) || 0;
         
@@ -259,6 +274,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
       // Prepare data for submission
       const fuelEntryData = {
         ...formData,
+        date: prepareDateForDB(formData.date), // Ensure proper date format
         gallons: parseFloat(formData.gallons),
         price_per_gallon: parseFloat(formData.price_per_gallon),
         total_amount: parseFloat(formData.total_amount),
@@ -425,6 +441,60 @@ if (!isOpen) return null;
                   } rounded-md shadow-sm text-sm focus:outline-none`}
                   required
                 />
+                
+                {/* Round Gallons Checkbox */}
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        type="checkbox"
+                        id="roundGallons"
+                        checked={roundGallons}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          setRoundGallons(isChecked);
+                          
+                          // If checking the box and there's already a gallon value, round it immediately
+                          if (isChecked && formData.gallons && parseFloat(formData.gallons) > 0) {
+                            const currentGallons = parseFloat(formData.gallons);
+                            const roundedGallons = Math.round(currentGallons);
+                            setFormData(current => ({
+                              ...current,
+                              gallons: roundedGallons.toString()
+                            }));
+                            
+                            // Recalculate total if in total calculation mode
+                            if (calculationMode === 'total' && formData.price_per_gallon && parseFloat(formData.price_per_gallon) > 0) {
+                              const pricePerGallon = parseFloat(formData.price_per_gallon);
+                              const calculatedTotal = (roundedGallons * pricePerGallon).toFixed(2);
+                              setFormData(current => ({
+                                ...current,
+                                gallons: roundedGallons.toString(),
+                                total_amount: calculatedTotal
+                              }));
+                            }
+                          }
+                        }}
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                      />
+                    </div>
+                    <div className="ml-3">
+                      <label htmlFor="roundGallons" className="text-sm font-medium text-blue-900 cursor-pointer">
+                        Auto-round gallons to whole numbers
+                      </label>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Automatically rounds decimal gallons (e.g., 50.5 → 51, 50.4 → 50)
+                      </p>
+                      {roundGallons && (
+                        <div className="flex items-center mt-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          <span className="text-xs text-green-700 font-medium">Rounding enabled</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 {errors.gallons && touched.gallons && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                 <AlertCircle size={12} className="mr-1" />

@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function LoadCard({ load, onSelect, onDelete }) {
   const getStatusColor = (status) => {
@@ -64,14 +65,14 @@ export default function LoadCard({ load, onSelect, onDelete }) {
             <Calendar size={14} className="text-gray-400 mr-2" />
             <span className="text-gray-700">Pickup: </span>
             <span className="font-medium text-gray-900 ml-1">
-              {new Date(load.pickupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {formatDateForDisplayMMDDYYYY(load.pickupDate)}
             </span>
           </div>
           <div className="flex items-center text-sm">
             <Clock size={14} className="text-gray-400 mr-2" />
             <span className="text-gray-700">Delivery: </span>
             <span className="font-medium text-gray-900 ml-1">
-              {new Date(load.deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {formatDateForDisplayMMDDYYYY(load.deliveryDate)}
             </span>
           </div>
           <div className="flex items-center text-sm">
@@ -102,12 +103,7 @@ export default function LoadCard({ load, onSelect, onDelete }) {
         {load.status === "Completed" && load.completedAt && (
           <div className="text-sm text-green-600 flex items-center mb-3">
             <CheckCircleIcon size={14} className="mr-2" />
-            Completed on {new Date(load.completedAt).toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
+            Completed on {formatDateForDisplayMMDDYYYY(load.completedAt)}
           </div>
         )}
         

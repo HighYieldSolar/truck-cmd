@@ -5,17 +5,14 @@ import {
   Truck,
   Plus
 } from "lucide-react";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 // Format dates for display
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
   
   try {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    return formatDateForDisplayMMDDYYYY(dateString);
   } catch (error) {
     return dateString || "N/A";
   }

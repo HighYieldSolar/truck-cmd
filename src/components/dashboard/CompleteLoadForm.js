@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 // Helper to persist form data to localStorage
 const saveFormToStorage = (formData, loadId) => {
@@ -55,7 +56,7 @@ const recordFactoredEarnings = async (userId, loadId, amount, options = {}) => {
       load_id: loadId,
       amount: amount,
       source: 'Factoring',
-      date: options.date || new Date().toISOString().split('T')[0],
+      date: options.date || getCurrentDateLocal(),
       description: options.description || 'Factored load earnings',
       factoring_company: options.factoringCompany || null,
       created_at: new Date().toISOString()

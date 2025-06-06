@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }) {
   const [vehicleInfo, setVehicleInfo] = useState(null);
@@ -67,11 +68,10 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
     loadVehicleInfo();
   }, [expense.vehicle_id]);
   
-  // Format date for display
+  // Format date for display (fixed timezone issue)
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    return formatDateForDisplayMMDDYYYY(dateString);
   };
   
   // Format currency

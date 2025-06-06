@@ -24,6 +24,7 @@ import {
 import ExportMileageButton from "./ExportMileageButton";
 import { deleteTrip } from "@/lib/services/mileageService";
 import { importMileageTripToIFTA } from "@/lib/services/iftaMileageService";
+import { getCurrentDateLocal, formatDateForDisplayMMDDYYYY, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 // Helper function to get US states
 const getUSStates = () => {
@@ -103,7 +104,7 @@ function DeleteTripModal({
 
   const vehicleName = tripDetails.vehicleName || 'this vehicle';
   const tripDate = tripDetails.date
-    ? new Date(tripDetails.date).toLocaleDateString()
+    ? formatDateForDisplayMMDDYYYY(tripDetails.date)
     : 'unknown date';
 
   return (
@@ -225,8 +226,8 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
   const vehicle = vehicles.find(v => v.id === trip.vehicle_id);
   const vehicleName = vehicle ? vehicle.name : trip.vehicle_id;
 
-  // Format date for display
-  const tripDate = new Date(trip.start_date).toLocaleDateString();
+  // Format date for display (fixed timezone issue)
+  const tripDate = formatDateForDisplayMMDDYYYY(trip.start_date);
 
   return (
     <div
@@ -289,7 +290,7 @@ export default function StateMileageLogger() {
     vehicle_id: "",
     start_state: "",
     start_odometer: "",
-    date: new Date().toISOString().split('T')[0]
+    date: getCurrentDateLocal()
   });
 
   // Crossing form state
@@ -769,7 +770,7 @@ export default function StateMileageLogger() {
         vehicle_id: "",
         start_state: "",
         start_odometer: "",
-        date: new Date().toISOString().split('T')[0]
+        date: getCurrentDateLocal()
       });
 
       await loadActiveTrips(user.id);
@@ -898,7 +899,7 @@ export default function StateMileageLogger() {
         .from('driver_mileage_trips')
         .update({
           status: 'completed',
-          end_date: new Date().toISOString().split('T')[0],
+          end_date: getCurrentDateLocal(),
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedTrip.id);
@@ -1194,7 +1195,7 @@ export default function StateMileageLogger() {
                         </h2>
                         <div className="flex items-center text-sm text-gray-500 mt-1">
                           <Calendar className="h-4 w-4 mr-1.5" />
-                          Started on {new Date(selectedTrip.start_date).toLocaleDateString()}
+                          Started on {formatDateForDisplayMMDDYYYY(selectedTrip.start_date)}
                         </div>
                       </div>
                       <button
@@ -1442,9 +1443,9 @@ export default function StateMileageLogger() {
                       <div className="text-sm font-medium text-gray-700">Trip Duration</div>
                       <div className="text-lg font-medium flex items-center text-gray-900">
                         <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-                        {new Date(selectedPastTrip.start_date).toLocaleDateString()}
+                        {formatDateForDisplayMMDDYYYY(selectedPastTrip.start_date)}
                         <ArrowRight className="h-4 w-4 mx-2" />
-                        {new Date(selectedPastTrip.end_date).toLocaleDateString()}
+                        {formatDateForDisplayMMDDYYYY(selectedPastTrip.end_date)}
                       </div>
                     </div>
 

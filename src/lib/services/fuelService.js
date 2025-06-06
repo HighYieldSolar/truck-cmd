@@ -1,5 +1,6 @@
 // src/lib/services/fuelService.js
 import { supabase, formatError } from "../supabaseClient";
+import { formatDateLocal, getQuarterDateRange } from "../utils/dateUtils";
 
 /**
  * Fetch all fuel entries for the current user with optional filters
@@ -18,6 +19,11 @@ export async function fetchFuelEntries(userId, filters = {}) {
       .select('*')
       .eq('user_id', userId);
 
+    // Apply IFTA filter to only include Diesel and Gasoline
+    if (filters.iftaOnly) {
+      query = query.in('fuel_type', ['Diesel', 'Gasoline']);
+    }
+
     // Apply filters if provided
     if (filters.state && filters.state !== '') {
       query = query.eq('state', filters.state);
@@ -30,28 +36,29 @@ export async function fetchFuelEntries(userId, filters = {}) {
     // Date range filters
     if (filters.dateRange === 'This Quarter') {
       const now = new Date();
-      const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-      const quarterEnd = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0);
+      const quarter = Math.ceil((now.getMonth() + 1) / 3);
+      const quarterString = `${now.getFullYear()}-Q${quarter}`;
+      const { startDate, endDate } = getQuarterDateRange(quarterString);
       
       query = query
-        .gte('date', quarterStart.toISOString().split('T')[0])
-        .lte('date', quarterEnd.toISOString().split('T')[0]);
+        .gte('date', startDate)
+        .lte('date', endDate);
     } else if (filters.dateRange === 'Last Quarter') {
       const now = new Date();
-      let quarterStartMonth = Math.floor(now.getMonth() / 3) * 3 - 3;
+      let quarter = Math.ceil((now.getMonth() + 1) / 3) - 1;
       let year = now.getFullYear();
       
-      if (quarterStartMonth < 0) {
-        quarterStartMonth += 12;
+      if (quarter < 1) {
+        quarter = 4;
         year -= 1;
       }
       
-      const quarterStart = new Date(year, quarterStartMonth, 1);
-      const quarterEnd = new Date(year, quarterStartMonth + 3, 0);
+      const quarterString = `${year}-Q${quarter}`;
+      const { startDate, endDate } = getQuarterDateRange(quarterString);
       
       query = query
-        .gte('date', quarterStart.toISOString().split('T')[0])
-        .lte('date', quarterEnd.toISOString().split('T')[0]);
+        .gte('date', startDate)
+        .lte('date', endDate);
     } else if (filters.dateRange === 'Custom' && filters.startDate && filters.endDate) {
       query = query
         .gte('date', filters.startDate)

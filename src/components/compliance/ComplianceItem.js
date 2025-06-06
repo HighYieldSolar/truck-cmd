@@ -1,11 +1,12 @@
 "use client";
 
 import { Eye, Edit, Trash2 } from "lucide-react";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function ComplianceItem({ item, onEdit, onDelete, onView }) {
-  // Format dates for better display
-  const issueDate = item.issue_date ? new Date(item.issue_date).toLocaleDateString() : 'N/A';
-  const expirationDate = item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : 'N/A';
+  // Format dates for better display (fixed timezone issue)
+  const issueDate = item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : 'N/A';
+  const expirationDate = item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : 'N/A';
 
   // Determine status class based on status
   let statusClass = "";

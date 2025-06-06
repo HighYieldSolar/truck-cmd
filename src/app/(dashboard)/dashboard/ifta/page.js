@@ -46,6 +46,7 @@ import SimplifiedTripsList from "@/components/ifta/SimplifiedTripsList";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
+import { getQuarterDateRange } from "@/lib/utils/dateUtils";
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
@@ -179,25 +180,21 @@ export default function IFTACalculatorPage() {
     try {
       console.log("Loading fuel data for quarter:", activeQuarter);
 
-      // Parse the quarter into dateRange filter
-      const [year, quarter] = activeQuarter.split('-Q');
-      const quarterStartMonth = (parseInt(quarter) - 1) * 3;
-      const startDate = new Date(parseInt(year), quarterStartMonth, 1);
-      const endDate = new Date(parseInt(year), quarterStartMonth + 3, 0);
-
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
+      // Parse the quarter into dateRange filter using utility function
+      const { startDate: startDateStr, endDate: endDateStr } = getQuarterDateRange(activeQuarter);
 
       const filters = {
         dateRange: 'Custom',
         startDate: startDateStr,
-        endDate: endDateStr
+        endDate: endDateStr,
+        iftaOnly: true  // Only fetch Diesel and Gasoline fuel types for IFTA
       };
 
       const fuelEntries = await fetchFuelEntries(user.id, filters);
 
       if (fuelEntries && Array.isArray(fuelEntries)) {
-        console.log("Loaded fuel entries:", fuelEntries.length);
+        console.log(`Loaded IFTA-eligible fuel entries: ${fuelEntries.length} (Diesel/Gasoline only)`);
+        
         const processedEntries = fuelEntries.map(entry => ({
           ...entry,
           state: entry.state || 'Unknown',

@@ -15,6 +15,7 @@ import {
   Truck
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoading = false }) {
   const [vehicleDetails, setVehicleDetails] = useState({});
@@ -74,16 +75,12 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     fetchVehicleDetails();
   }, [trips]);
 
-  // Format date for display
+  // Format date for display (fixed timezone issue)
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
 
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateString || "N/A";

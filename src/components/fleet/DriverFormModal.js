@@ -6,6 +6,7 @@ import { X, RefreshCw, AlertCircle, CheckCircle, Upload, Calendar, User, Briefca
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createDriver, updateDriver, uploadDriverImage } from "@/lib/services/driverService";
+import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 export default function DriverFormModal({ isOpen, onClose, driver, userId, onSubmit }) {
   // Initialize with empty form data
@@ -19,7 +20,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
     license_expiry: '',
     medical_card_expiry: '',
     status: 'Active',
-    hire_date: '',
+    hire_date: getCurrentDateLocal(),
     city: '',
     state: '',
     emergency_contact: '',

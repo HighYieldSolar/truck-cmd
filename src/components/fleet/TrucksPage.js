@@ -20,6 +20,7 @@ import {
   FileText
 } from "lucide-react";
 import { fetchTrucks, deleteTruck } from "@/lib/services/truckService";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TruckFormModal from "@/components/fleet/TruckFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 
@@ -193,11 +194,7 @@ export default function TrucksPage() {
     if (!dateString) return "N/A";
     
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
       return dateString || "N/A";
     }

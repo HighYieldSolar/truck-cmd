@@ -25,6 +25,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { fetchDrivers, deleteDriver, checkDriverDocumentStatus } from "@/lib/services/driverService";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import DriverFormModal from "@/components/fleet/DriverFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 
@@ -240,11 +241,7 @@ export default function DriversPage() {
     if (!dateString) return "N/A";
     
     try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
       return dateString || "N/A";
     }

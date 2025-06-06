@@ -29,6 +29,7 @@ import {
   uploadComplianceDocument,
   deleteComplianceDocument
 } from "@/lib/services/complianceService";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 // Import components
 import ComplianceFilters from "@/components/compliance/ComplianceFilters";
@@ -883,10 +884,10 @@ export default function Page() {
                                 {item.entity_name}
                               </td>
                               <td className="text-black px-6 py-4 whitespace-nowrap">
-                                {item.issue_date ? new Date(item.issue_date).toLocaleDateString() : '-'}
+                                {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}
                               </td>
                               <td className="text-black px-6 py-4 whitespace-nowrap">
-                                {item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : '-'}
+                                {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>

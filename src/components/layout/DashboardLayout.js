@@ -349,7 +349,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className={`dashboard-theme flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Trial Banner */}
       <TrialBanner />
 

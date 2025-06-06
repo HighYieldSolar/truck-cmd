@@ -6,6 +6,7 @@ import { X, RefreshCw, AlertCircle, CheckCircle, Upload, Calendar, Truck, Tag, H
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
+import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit }) {
   // Initialize with empty form data
@@ -17,7 +18,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     vin: '',
     license_plate: '',
     status: 'Active',
-    purchase_date: '',
+    purchase_date: getCurrentDateLocal(),
     odometer: '',
     fuel_type: 'Diesel',
     image: null,

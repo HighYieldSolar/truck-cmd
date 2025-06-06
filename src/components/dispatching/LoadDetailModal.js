@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import DocumentViewerModal from './DocumentViewerModal';
+import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 export default function LoadDetailModal({ 
   load, 
@@ -48,12 +49,10 @@ export default function LoadDetailModal({
   const [loadingFleet, setLoadingFleet] = useState(false);
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
 
-  // Format dates for display
+  // Format dates for display (fixed timezone issue)
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    
-    const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return formatDateForDisplayMMDDYYYY(dateString);
   };
 
   const renderDetailsView = () => (
