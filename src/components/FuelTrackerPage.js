@@ -492,7 +492,7 @@ export default function FuelTrackerPage() {
                   <FuelFilterBar 
                     filters={filters} 
                     setFilters={setFilters} 
-                    vehicles={vehicles} 
+                    vehicles={vehicleData} 
                     onReset={handleResetFilters}
                   />
                 </div>
@@ -618,30 +618,6 @@ export default function FuelTrackerPage() {
                       fuelData={fuelEntries} 
                       onExportForIFTA={handleExportIFTA}
                     />
-                  </div>
-                </div>
-              )}
-              
-              {/* Fuel Chart */}
-              {fuelEntries.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                  <div className="px-5 py-4 border-b border-gray-200">
-                    <h3 className="font-medium flex items-center text-gray-700">
-                      <BarChart2 size={18} className="mr-2 text-blue-500" />
-                      Fuel Analysis
-                    </h3>
-                  </div>
-                  <div className="p-4">
-                    {loading ? (
-                      <div className="flex justify-center items-center py-12">
-                        <RefreshCw size={32} className="animate-spin text-blue-500" />
-                      </div>
-                    ) : (
-                      <FuelChart 
-                        data={generateStateCategories()} 
-                        period={filters.dateRange} 
-                      />
-                    )}
                   </div>
                 </div>
               )}

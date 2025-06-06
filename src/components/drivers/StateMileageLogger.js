@@ -179,6 +179,11 @@ function DeleteTripModal({
 
 // StateCrossing component for rendering individual state crossings
 const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
+  // Format the crossing date for display
+  const crossingDate = crossing.crossing_date 
+    ? formatDateForDisplayMMDDYYYY(crossing.crossing_date)
+    : 'No date';
+
   return (
     <div className="flex items-center mb-2">
       <div className="flex-shrink-0 mr-2">
@@ -199,8 +204,14 @@ const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
       <div className="flex-grow p-3 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <span className="font-medium text-gray-900">{crossing.state_name}</span>
-            <span className="ml-2 text-gray-500 text-sm">({crossing.state})</span>
+            <div className="flex items-center">
+              <span className="font-medium text-gray-900">{crossing.state_name}</span>
+              <span className="ml-2 text-gray-500 text-sm">({crossing.state})</span>
+            </div>
+            <div className="flex items-center mt-1 text-sm text-gray-600">
+              <Calendar size={12} className="mr-1" />
+              <span>{crossingDate}</span>
+            </div>
           </div>
           <div className="flex items-center">
             <div className="bg-gray-100 px-2 py-1 rounded-md mr-2">
@@ -224,7 +235,9 @@ const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
 // TripCard component for rendering active and completed trips
 const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
   const vehicle = vehicles.find(v => v.id === trip.vehicle_id);
-  const vehicleName = vehicle ? vehicle.name : trip.vehicle_id;
+  const vehicleName = vehicle 
+    ? `${vehicle.name}${vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}` 
+    : trip.vehicle_id;
 
   // Format date for display (fixed timezone issue)
   const tripDate = formatDateForDisplayMMDDYYYY(trip.start_date);
@@ -296,7 +309,8 @@ export default function StateMileageLogger() {
   // Crossing form state
   const [crossingForm, setCrossingForm] = useState({
     state: "",
-    odometer: ""
+    odometer: "",
+    date: getCurrentDateLocal()
   });
 
   // Selected trips
@@ -368,7 +382,8 @@ export default function StateMileageLogger() {
       // Important: Reset the crossing form when selecting a different trip
       setCrossingForm({
         state: "",
-        odometer: ""
+        odometer: "",
+        date: getCurrentDateLocal()
       });
 
       setSelectedTripData({
@@ -755,6 +770,7 @@ export default function StateMileageLogger() {
         state: newTripForm.start_state,
         state_name: states.find(s => s.code === newTripForm.start_state)?.name || newTripForm.start_state,
         odometer: parseInt(newTripForm.start_odometer),
+        crossing_date: newTripForm.date,
         timestamp: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
@@ -800,7 +816,7 @@ export default function StateMileageLogger() {
       setError(null);
 
       // Validate form
-      if (!crossingForm.state || !crossingForm.odometer) {
+      if (!crossingForm.state || !crossingForm.odometer || !crossingForm.date) {
         throw new Error('Please fill in all required fields.');
       }
 
@@ -818,6 +834,7 @@ export default function StateMileageLogger() {
         state: crossingForm.state,
         state_name: states.find(s => s.code === crossingForm.state)?.name || crossingForm.state,
         odometer: parseInt(crossingForm.odometer),
+        crossing_date: crossingForm.date,
         timestamp: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
@@ -832,7 +849,8 @@ export default function StateMileageLogger() {
       // Reset form
       setCrossingForm({
         state: "",
-        odometer: ""
+        odometer: "",
+        date: getCurrentDateLocal()
       });
 
       // Update the current trip data with the new crossing without a full reload
@@ -1054,7 +1072,8 @@ export default function StateMileageLogger() {
                     // Reset crossing form when switching to new trip
                     setCrossingForm({
                       state: "",
-                      odometer: ""
+                      odometer: "",
+                      date: getCurrentDateLocal()
                     });
                   }}
                   className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-medium rounded-md shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center"
@@ -1083,7 +1102,8 @@ export default function StateMileageLogger() {
                           // Reset crossing form when switching trips
                           setCrossingForm({
                             state: "",
-                            odometer: ""
+                            odometer: "",
+                            date: getCurrentDateLocal()
                           });
                         }}
                         isSelected={selectedTrip?.id === trip.id}
@@ -1116,7 +1136,9 @@ export default function StateMileageLogger() {
                       >
                         <option value="">Select Vehicle</option>
                         {vehicles.map(vehicle => (
-                          <option key={vehicle.id} value={vehicle.id}>{vehicle.name}</option>
+                          <option key={vehicle.id} value={vehicle.id}>
+                            {vehicle.name}{vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -1278,6 +1300,21 @@ export default function StateMileageLogger() {
                             onChange={handleCrossingChange}
                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Current reading"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex-grow min-w-[160px]">
+                          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <Calendar size={14} className="mr-1 text-gray-400" />
+                            Crossing Date
+                          </label>
+                          <input
+                            type="date"
+                            name="date"
+                            value={crossingForm.date}
+                            onChange={handleCrossingChange}
+                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                             required
                           />
                         </div>

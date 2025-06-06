@@ -142,7 +142,9 @@ export default function FuelFilterBar({
                 >
                   <option value="">All Vehicles</option>
                   {vehicles.map((vehicle) => (
-                    <option key={vehicle} value={vehicle}>{vehicle}</option>
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.name}{vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -196,7 +198,10 @@ export default function FuelFilterBar({
               )}
               {filters.vehicleId && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-1">
-                  Vehicle: {filters.vehicleId}
+                  Vehicle: {(() => {
+                    const vehicle = vehicles.find(v => v.id === filters.vehicleId);
+                    return vehicle ? `${vehicle.name}${vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}` : filters.vehicleId;
+                  })()}
                   <button 
                     onClick={() => setFilters({ ...filters, vehicleId: '' })}
                     className="ml-1 text-blue-500 hover:text-blue-700"
