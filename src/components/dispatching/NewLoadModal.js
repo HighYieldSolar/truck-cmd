@@ -260,8 +260,8 @@ export default function NewLoadForm({
     const pickupDateTime = new Date(formData.pickupDate);
     const deliveryDateTime = new Date(formData.deliveryDate);
 
-    if (deliveryDateTime <= pickupDateTime) {
-      setError("Delivery date must be after pickup date");
+    if (deliveryDateTime < pickupDateTime) {
+      setError("Delivery date cannot be before pickup date");
       return false;
     }
 
@@ -648,7 +648,7 @@ export default function NewLoadForm({
               </div>
 
               <div>
-                <label htmlFor="truck_id" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 mb-1">
                   Assign Truck
                 </label>
                 <div className="relative">
@@ -664,9 +664,9 @@ export default function NewLoadForm({
                     />
                   ) : (
                     <select
-                      id="truck_id"
-                      name="truck_id"
-                      value={formData.truck_id}
+                      id="vehicle_id"
+                      name="vehicle_id"
+                      value={formData.vehicle_id}
                       onChange={handleChange}
                       className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
@@ -683,7 +683,7 @@ export default function NewLoadForm({
             </div>
 
             {/* Info message for assignment */}
-            {(formData.driver_id || formData.truck_id) && (
+            {(formData.driver_id || formData.vehicle_id) && (
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex">
                   <Info size={16} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
