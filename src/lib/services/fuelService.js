@@ -235,7 +235,7 @@ export async function getFuelStats(userId, period = 'quarter') {
     // Calculate statistics
     const fuelData = data || [];
     
-    const totalGallons = fuelData.reduce((sum, entry) => sum + (parseFloat(entry.gallons) || 0), 0);
+    const totalGallons = fuelData.reduce((sum, entry) => sum + (Math.round(parseFloat(entry.gallons) || 0)), 0);
     const totalAmount = fuelData.reduce((sum, entry) => sum + (parseFloat(entry.total_amount) || 0), 0);
     const avgPricePerGallon = totalGallons > 0 ? totalAmount / totalGallons : 0;
     
@@ -249,7 +249,7 @@ export async function getFuelStats(userId, period = 'quarter') {
         };
       }
       
-      stateMap[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      stateMap[entry.state].gallons += Math.round(parseFloat(entry.gallons) || 0);
       stateMap[entry.state].amount += parseFloat(entry.total_amount) || 0;
       stateMap[entry.state].purchases += 1;
       
@@ -372,7 +372,7 @@ export async function exportFuelDataForIFTA(userId, filters = {}) {
         };
       }
       
-      acc[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      acc[entry.state].gallons += Math.round(parseFloat(entry.gallons) || 0);
       acc[entry.state].amount += parseFloat(entry.total_amount) || 0;
       acc[entry.state].purchases += 1;
       

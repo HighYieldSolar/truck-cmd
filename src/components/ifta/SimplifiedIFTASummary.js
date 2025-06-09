@@ -89,7 +89,7 @@ export default function SimplifiedIFTASummary({
             fuelGallons: 0
           };
         }
-        jurisdictionData[entry.state].fuelGallons += parseFloat(entry.gallons || 0);
+        jurisdictionData[entry.state].fuelGallons += Math.round(parseFloat(entry.gallons || 0));
       }
     });
 

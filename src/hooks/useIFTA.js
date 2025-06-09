@@ -33,7 +33,7 @@ export default function useIFTA(userId, activeQuarter) {
     try {
       // Calculate base statistics
       const totalMiles = tripsData.reduce((sum, trip) => sum + parseFloat(trip.miles || 0), 0);
-      const totalGallons = tripsData.reduce((sum, trip) => sum + parseFloat(trip.gallons || 0), 0);
+      const totalGallons = tripsData.reduce((sum, trip) => sum + Math.round(parseFloat(trip.gallons || 0)), 0);
       const totalFuelCost = tripsData.reduce((sum, trip) => sum + parseFloat(trip.fuelCost || 0), 0);
       
       // Calculate average MPG and cost per mile

@@ -67,12 +67,12 @@ export async function fetchFuelDataForIFTA(userId, quarter) {
         };
       }
       
-      fuelByState[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      fuelByState[entry.state].gallons += Math.round(parseFloat(entry.gallons) || 0);
       fuelByState[entry.state].amount += parseFloat(entry.total_amount) || 0;
       fuelByState[entry.state].entries.push({
         id: entry.id,
         date: entry.date,
-        gallons: parseFloat(entry.gallons) || 0,
+        gallons: Math.round(parseFloat(entry.gallons) || 0),
         amount: parseFloat(entry.total_amount) || 0,
         location: entry.location,
         vehicle: entry.vehicle_id
@@ -148,7 +148,7 @@ export async function syncFuelDataWithIFTA(userId, quarter) {
           if (!existingFuelByJurisdiction[trip.start_jurisdiction]) {
             existingFuelByJurisdiction[trip.start_jurisdiction] = 0;
           }
-          existingFuelByJurisdiction[trip.start_jurisdiction] += parseFloat(trip.gallons);
+          existingFuelByJurisdiction[trip.start_jurisdiction] += Math.round(parseFloat(trip.gallons));
         } 
         // If trip crosses jurisdictions, split fuel between them
         else if (trip.start_jurisdiction && trip.end_jurisdiction) {
@@ -160,7 +160,7 @@ export async function syncFuelDataWithIFTA(userId, quarter) {
           }
           
           // Split the gallons between jurisdictions (simplified approach)
-          const gallonsPerJurisdiction = parseFloat(trip.gallons) / 2;
+          const gallonsPerJurisdiction = Math.round(parseFloat(trip.gallons) / 2);
           existingFuelByJurisdiction[trip.start_jurisdiction] += gallonsPerJurisdiction;
           existingFuelByJurisdiction[trip.end_jurisdiction] += gallonsPerJurisdiction;
         }

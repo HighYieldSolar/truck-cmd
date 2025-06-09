@@ -94,7 +94,7 @@ export default function SimplifiedExportModal({
             gallons: 0
           };
         }
-        milesByJurisdiction[state].gallons += parseFloat(entry.gallons || 0);
+        milesByJurisdiction[state].gallons += Math.round(parseFloat(entry.gallons || 0));
       }
     });
 

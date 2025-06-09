@@ -77,7 +77,7 @@ export default function EnhancedIFTAFuelSync({
           };
         }
 
-        const gallons = parseFloat(entry.gallons || 0);
+        const gallons = Math.round(parseFloat(entry.gallons || 0));
         fuelStateMap[state].gallons += gallons;
         totalGallons += gallons;
         fuelStateMap[state].entries.push(entry);
