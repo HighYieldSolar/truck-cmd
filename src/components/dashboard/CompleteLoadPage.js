@@ -5,14 +5,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/lib/supabaseClient';
+import { AlertCircle } from 'lucide-react';
 
 // Import the form directly
 import CompleteLoadForm from '@/components/dashboard/CompleteLoadForm';
 
 // Loading spinner component
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen p-8">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+  <div className="flex items-center justify-center min-h-screen p-8 bg-gray-50">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p className="text-gray-600">Loading load details...</p>
+    </div>
   </div>
 );
 
@@ -108,22 +112,27 @@ export default function CompleteLoadPage({ params }) {
   if (error || !loadId) {
     return (
       <DashboardLayout activePage="dispatching">
-        <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-            <h2 className="text-lg font-medium text-yellow-800">
-              {!loadId ? "Missing Load ID" : "Error Loading Data"}
-            </h2>
-            <p className="mt-2 text-sm text-yellow-700">
-              {!loadId
-                ? "No load ID was provided. Please select a load from the dispatching dashboard."
-                : error || "An unexpected error occurred while loading the load details."}
-            </p>
-            <button
-              onClick={() => router.push('/dashboard/dispatching')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Return to Dispatching
-            </button>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-4">
+                <AlertCircle size={24} className="text-amber-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                {!loadId ? "Missing Load ID" : "Error Loading Data"}
+              </h2>
+              <p className="text-gray-600 text-center mb-6">
+                {!loadId
+                  ? "No load ID was provided. Please select a load from the dispatching dashboard."
+                  : error || "An unexpected error occurred while loading the load details."}
+              </p>
+              <button
+                onClick={() => router.push('/dashboard/dispatching')}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Return to Dispatching
+              </button>
+            </div>
           </div>
         </div>
       </DashboardLayout>

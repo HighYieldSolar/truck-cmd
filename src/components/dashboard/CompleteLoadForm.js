@@ -108,49 +108,108 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
 
 // Steps progress bar
 const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
-  const getStepColor = (step) => {
-    if (step < currentStep) return 'bg-green-500 text-white';
-    if (step === currentStep) return 'bg-blue-600 text-white';
-    return 'bg-gray-200 text-gray-500';
-  };
+  const steps = [
+    { 
+      number: 1, 
+      title: "Delivery Info", 
+      subtitle: "When & Who",
+      icon: MapPin,
+      description: "Enter delivery date, time, and receiver information"
+    },
+    { 
+      number: 2, 
+      title: "Proof of Delivery", 
+      subtitle: "Upload POD",
+      icon: Camera,
+      description: "Upload photos or documents confirming delivery"
+    },
+    { 
+      number: 3, 
+      title: "Review & Submit", 
+      subtitle: "Finalize Load",
+      icon: CheckCircle,
+      description: "Review charges and complete the load"
+    }
+  ];
 
-  const getStepConnectorColor = (step) => {
-    if (step < currentStep) return 'bg-green-500';
-    return 'bg-gray-200';
-  };
+  const currentStepData = steps.find(s => s.number === currentStep);
 
   return (
-    <div className="mb-8">
-      <div className="relative flex items-center justify-between">
-        {/* Connecting lines */}
-        <div className="absolute w-full h-1 top-6 left-0 flex">
-          {[...Array(totalSteps - 1)].map((_, i) => (
-            <div key={i} className={`h-full flex-1 ${getStepConnectorColor(i + 1)}`} />
-          ))}
+    <div className="w-full">
+      {/* Compact Progress Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <span className="text-xs font-medium text-gray-500">
+            Step {currentStep} of {totalSteps}
+          </span>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {currentStepData?.title}
+          </h3>
         </div>
+        <p className="text-xs text-gray-600 hidden md:block">
+          {currentStepData?.description}
+        </p>
+      </div>
 
-        {/* Step circles */}
-        {[...Array(totalSteps)].map((_, index) => {
-          const step = index + 1;
-          const isComplete = step < currentStep;
-          const isCurrent = step === currentStep;
+      {/* Compact Progress Steps */}
+      <div className="relative max-w-lg mx-auto">
+        {/* Progress Line Background */}
+        <div className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200" />
+        
+        {/* Active Progress Line */}
+        <div 
+          className="absolute top-5 left-8 h-0.5 bg-blue-600 transition-all duration-500"
+          style={{ 
+            width: `calc(${((currentStep - 1) / (totalSteps - 1)) * 100}% - 32px)`,
+            maxWidth: 'calc(100% - 64px)'
+          }}
+        />
 
-          return (
-            <div key={step} className="flex flex-col items-center relative z-10">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-medium transition-all duration-200 ${getStepColor(step)}`}>
-                {isComplete ? <CheckCircle size={20} /> : step}
-              </div>
+        {/* Steps */}
+        <div className="relative flex items-center justify-between">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const isActive = currentStep === step.number;
+            const isCompleted = currentStep > step.number;
+            
+            return (
+              <div key={step.number} className="flex flex-col items-center">
+                {/* Step Circle */}
+                <div className="relative">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                    ${isActive 
+                      ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' 
+                      : isCompleted
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }
+                  `}>
+                    {isCompleted ? (
+                      <Check size={16} className="text-white" />
+                    ) : isActive ? (
+                      <span className="text-sm font-bold">{step.number}</span>
+                    ) : (
+                      <span className="text-xs font-medium">{step.number}</span>
+                    )}
+                  </div>
+                  
+                  {/* Small pulse effect for active step */}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-full bg-blue-600 animate-ping opacity-20" />
+                  )}
+                </div>
 
-              <span className={`mt-3 text-sm font-medium ${isCurrent ? 'text-blue-600' :
-                isComplete ? 'text-green-600' : 'text-gray-500'
+                {/* Compact Step Label */}
+                <p className={`text-xs font-medium mt-2 ${
+                  isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
                 }`}>
-                {step === 1 && "Delivery Details"}
-                {step === 2 && "Documentation"}
-                {step === 3 && "Completion"}
-              </span>
-            </div>
-          );
-        })}
+                  {step.title}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -372,7 +431,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           rate: data.rate || 0,
           distance: data.distance || 0,
           description: data.description || '',
-          truckId: data.truck_id || null,
+          truckId: data.vehicle_id || data.truck_id || null,
           truckInfo: data.truck_info || ''
         };
 
@@ -585,9 +644,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
       const loadUpdateData = {
         status: 'Completed',
         completed_at: new Date().toISOString(),
-        completed_by: currentUserId, // Use currentUserId here
-        actual_delivery_date: formData.deliveryDate,
-        actual_delivery_time: formData.deliveryTime,
+        completed_by: currentUserId,
+        delivery_date: formData.deliveryDate, // Use delivery_date instead of actual_delivery_date
         received_by: formData.receivedBy,
         completion_notes: formData.notes,
         pod_documents: podUrls,
@@ -610,6 +668,10 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         loadUpdateData.factored_amount = totalRate;
       }
 
+      // Debug log
+      console.log('Updating load with data:', loadUpdateData);
+      console.log('Load ID:', loadId);
+
       // Update the load in Supabase
       const { data: updatedLoad, error: updateError } = await supabase
         .from('loads')
@@ -617,7 +679,10 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         .eq('id', loadId)
         .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw updateError;
+      }
 
       // Process factoring or create invoice
       let invoiceCreated = false;
@@ -651,7 +716,18 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
       }, 2500);
     } catch (err) {
       console.error('Error completing load:', err);
-      setError(err.message || 'Failed to complete load');
+      // Better error handling to show the actual error
+      let errorMessage = 'Failed to complete load';
+      if (err && err.message) {
+        errorMessage = err.message;
+      } else if (err && err.error) {
+        errorMessage = err.error;
+      } else if (err && err.details) {
+        errorMessage = err.details;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      setError(errorMessage);
       window.scrollTo(0, 0);
     } finally {
       setSubmitting(false);
@@ -700,45 +776,35 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen">
-      {/* Header with gradient background */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="bg-gray-50 min-h-screen">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-400">
+        <div className="max-w-5xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Link
                 href="/dashboard/dispatching"
-                className="mr-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+                className="mr-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <ChevronLeft size={20} className="text-white" />
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-white flex items-center">
-                  <CheckCircle size={24} className="mr-2" />
-                  Complete Load #{loadDetails.loadNumber}
+                <h1 className="text-xl font-semibold text-white">
+                  Complete Load #{loadDetails.loadNumber || loadDetails.load_number || 'N/A'}
                 </h1>
-                <p className="text-sm text-blue-100 mt-1">
-                  {loadDetails.origin} → {loadDetails.destination}
+                <p className="text-sm text-blue-100 mt-0.5">
+                  Mark this load as delivered and complete
                 </p>
               </div>
-            </div>
-            <div className="flex items-center">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium 
-                ${loadDetails.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                  loadDetails.status === 'Assigned' ? 'bg-purple-100 text-purple-800' :
-                    'bg-gray-100 text-gray-800'}`}
-              >
-                {loadDetails.status}
-              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto py-8 px-4">
-        {/* Error alert */}
-        {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+      {/* Error alert */}
+      {error && (
+        <div className="max-w-5xl mx-auto px-4 pt-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
             <div className="flex">
               <AlertCircle className="h-6 w-6 text-red-500 mr-3" />
               <div>
@@ -747,193 +813,159 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Load Summary Card */}
-        <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-          <div className="px-6 py-4 bg-blue-50 border-b border-blue-100">
-            <h2 className="text-lg font-medium text-blue-900">Load Summary</h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-4">Load Information</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Building size={16} className="text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Customer</p>
-                      <p className="text-sm text-gray-600">{loadDetails.customer}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <DollarSign size={16} className="text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Base Rate</p>
-                      <p className="text-sm text-gray-600">${loadDetails.rate.toLocaleString()}</p>
-                    </div>
-                  </div>
+        {/* Quick Load Info Bar */}
+        <div className="bg-blue-50 border-b border-blue-100">
+          <div className="max-w-5xl mx-auto px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <MapPin size={16} className="text-blue-600 mr-2" />
+                  <span className="text-gray-700">{loadDetails.origin} → {loadDetails.destination}</span>
+                </div>
+                <div className="flex items-center">
+                  <Building size={16} className="text-blue-600 mr-2" />
+                  <span className="text-gray-700">{loadDetails.customer}</span>
+                </div>
+                <div className="flex items-center">
+                  <DollarSign size={16} className="text-green-600 mr-2" />
+                  <span className="font-medium text-gray-900">${loadDetails.rate?.toLocaleString() || '0'}</span>
                 </div>
               </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-4">Route Details</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <MapPin size={16} className="text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Origin</p>
-                      <p className="text-sm text-gray-600">{loadDetails.origin}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin size={16} className="text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Destination</p>
-                      <p className="text-sm text-gray-600">{loadDetails.destination}</p>
-                    </div>
-                  </div>
+              {loadDetails.driver && (
+                <div className="flex items-center">
+                  <Users size={16} className="text-blue-600 mr-2" />
+                  <span className="text-gray-700">{loadDetails.driver}</span>
                 </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-4">Assignment</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Users size={16} className="text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Driver</p>
-                      <p className="text-sm text-gray-600">{loadDetails.driver || "Unassigned"}</p>
-                    </div>
-                  </div>
-                  {loadDetails.truckInfo && (
-                    <div className="flex items-center">
-                      <Truck size={16} className="text-gray-400 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Vehicle</p>
-                        <p className="text-sm text-gray-600">{loadDetails.truckInfo}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Steps Progress */}
-        <StepsProgress currentStep={currentStep} />
-
-        {/* Form Content */}
-        <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h2 className="text-xl font-medium text-gray-900">
-              {currentStep === 1 && "Delivery Details"}
-              {currentStep === 2 && "Proof of Delivery Documentation"}
-              {currentStep === 3 && "Billing & Completion"}
-            </h2>
+        <div className="max-w-5xl mx-auto px-4 pt-4">
+          {/* Steps Progress */}
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+            <StepsProgress currentStep={currentStep} />
           </div>
+
+          {/* Form Content */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
 
           <div className="p-6">
             {/* Step 1: Delivery Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Actual Delivery Date*
-                    </label>
-                    <input
-                      type="date"
-                      id="deliveryDate"
-                      name="deliveryDate"
-                      value={formData.deliveryDate}
-                      onChange={handleInputChange}
-                      className={`block w-full px-3 py-2.5 border ${errors.deliveryDate
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-lg shadow-sm text-sm`}
-                    />
-                    {errors.deliveryDate && (
-                      <p className="mt-1.5 text-sm text-red-600">{errors.deliveryDate}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Actual Delivery Time*
-                    </label>
-                    <input
-                      type="time"
-                      id="deliveryTime"
-                      name="deliveryTime"
-                      value={formData.deliveryTime}
-                      onChange={handleInputChange}
-                      className={`block w-full px-3 py-2.5 border ${errors.deliveryTime
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-lg shadow-sm text-sm`}
-                    />
-                    {errors.deliveryTime && (
-                      <p className="mt-1.5 text-sm text-red-600">{errors.deliveryTime}</p>
-                    )}
-                  </div>
+                <div className="bg-gradient-to-r from-blue-500 to-blue-400 p-6 text-white rounded-t-lg">
+                  <h2 className="text-xl font-semibold mb-2">When was the load delivered?</h2>
+                  <p className="text-blue-100">Enter the actual delivery date and time</p>
                 </div>
-
-                <div>
-                  <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Received By (Name)*
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={16} className="text-gray-400" />
+                
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-2">
+                        <Calendar size={16} className="inline mr-1" />
+                        Delivery Date
+                      </label>
+                      <input
+                        type="date"
+                        id="deliveryDate"
+                        name="deliveryDate"
+                        value={formData.deliveryDate}
+                        onChange={handleInputChange}
+                        className={`block w-full px-4 py-3 border ${errors.deliveryDate
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-lg text-base`}
+                      />
+                      {errors.deliveryDate && (
+                        <p className="mt-2 text-sm text-red-600 flex items-center">
+                          <AlertCircle size={14} className="mr-1" />
+                          {errors.deliveryDate}
+                        </p>
+                      )}
                     </div>
+
+                    <div>
+                      <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 mb-2">
+                        <Clock size={16} className="inline mr-1" />
+                        Delivery Time
+                      </label>
+                      <input
+                        type="time"
+                        id="deliveryTime"
+                        name="deliveryTime"
+                        value={formData.deliveryTime}
+                        onChange={handleInputChange}
+                        className={`block w-full px-4 py-3 border ${errors.deliveryTime
+                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-lg text-base`}
+                      />
+                      {errors.deliveryTime && (
+                        <p className="mt-2 text-sm text-red-600 flex items-center">
+                          <AlertCircle size={14} className="mr-1" />
+                          {errors.deliveryTime}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 mb-2">
+                      <User size={16} className="inline mr-1" />
+                      Who received the delivery?
+                    </label>
                     <input
                       type="text"
                       id="receivedBy"
                       name="receivedBy"
                       value={formData.receivedBy}
                       onChange={handleInputChange}
-                      placeholder="Enter receiver's name"
-                      className={`block w-full pl-10 pr-3 py-2.5 border ${errors.receivedBy
+                      placeholder="Enter receiver's full name"
+                      className={`block w-full px-4 py-3 border ${errors.receivedBy
                         ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-lg shadow-sm text-sm`}
+                        } rounded-lg text-base`}
                     />
+                    {errors.receivedBy && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <AlertCircle size={14} className="mr-1" />
+                        {errors.receivedBy}
+                      </p>
+                    )}
                   </div>
-                  {errors.receivedBy && (
-                    <p className="mt-1.5 text-sm text-red-600">{errors.receivedBy}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Delivery Notes
-                  </label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    rows="4"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    placeholder="Add any notes about the delivery (optional)"
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  ></textarea>
-                </div>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Star size={16} className="inline mr-1" />
+                        Rate the delivery experience
+                      </label>
+                      <StarRating
+                        rating={formData.deliveryRating}
+                        setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Delivery Rating
-                  </label>
-                  <div className="mt-1">
-                    <StarRating
-                      rating={formData.deliveryRating}
-                      setRating={(rating) => setFormData(prev => ({ ...prev, deliveryRating: rating }))}
-                    />
+                    <div>
+                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                        <FileText size={16} className="inline mr-1" />
+                        Additional notes (optional)
+                      </label>
+                      <textarea
+                        id="notes"
+                        name="notes"
+                        rows="3"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        placeholder="Any special circumstances or issues?"
+                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-base"
+                      ></textarea>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    How would you rate the overall delivery experience?
-                  </p>
                 </div>
               </div>
             )}
@@ -941,19 +973,24 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             {/* Step 2: Documentation */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Proof of Delivery Documents*
-                  </label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
-                    <div className="space-y-1 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" strokeWidth={1} />
-                      <div className="flex text-sm text-gray-600">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-400 p-6 text-white rounded-t-lg">
+                  <h2 className="text-xl font-semibold mb-2">Upload Proof of Delivery</h2>
+                  <p className="text-purple-100">Add photos or documents that confirm the delivery</p>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  <div className="flex justify-center px-6 pt-8 pb-8 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                       onClick={() => fileInputRef.current?.click()}>
+                    <div className="space-y-2 text-center">
+                      <div className="mx-auto h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
+                        <Camera className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="text-base">
                         <label
                           htmlFor="podFiles"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+                          className="relative cursor-pointer font-medium text-blue-600 hover:text-blue-500"
                         >
-                          <span>Upload file</span>
+                          <span>Click to upload</span>
                           <input
                             id="podFiles"
                             name="podFiles"
@@ -965,80 +1002,76 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                             ref={fileInputRef}
                           />
                         </label>
-                        <p className="pl-1">or drag and drop</p>
+                        <p className="text-gray-600">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        JPEG, PNG images up to 10MB each
+                      <p className="text-sm text-gray-500">
+                        PNG, JPG up to 10MB
                       </p>
                     </div>
                   </div>
                   {errors.podFiles && (
-                    <p className="mt-1.5 text-sm text-red-600">{errors.podFiles}</p>
+                    <p className="text-sm text-red-600 flex items-center justify-center">
+                      <AlertCircle size={14} className="mr-1" />
+                      {errors.podFiles}
+                    </p>
                   )}
-                </div>
 
-                {/* Display uploaded files */}
-                {formData.podFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Documents ({formData.podFiles.length})</h3>
-                    <ul className="border rounded-lg divide-y divide-gray-200">
-                      {formData.podFiles.map((file, index) => (
-                        <li key={index} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 rounded bg-blue-50 flex items-center justify-center">
-                              <FileText size={20} className="text-blue-600" />
+                  {/* Display uploaded files */}
+                  {formData.podFiles.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                        <CheckCircle size={16} className="text-green-500 mr-2" />
+                        Uploaded Documents ({formData.podFiles.length})
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {formData.podFiles.map((file, index) => (
+                          <div key={index} className="relative group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center flex-1 min-w-0">
+                                  <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-blue-50 flex items-center justify-center">
+                                    <FileText size={20} className="text-blue-600" />
+                                  </div>
+                                  <div className="ml-3 flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {typeof file === 'string' ? file.split('/').pop() : file.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : 'Uploaded'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                                {typeof file === 'string' ? file.split('/').pop() : file.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : ''}
-                              </p>
+                            <div className="bg-gray-50 px-4 py-2 flex justify-end space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => handleFilePreview(file)}
+                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                Preview
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFile(index)}
+                                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                              >
+                                Remove
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <button
-                              type="button"
-                              onClick={() => handleFilePreview(file)}
-                              className="text-blue-600 hover:text-blue-800 p-1 rounded"
-                              title="Preview"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(index)}
-                              className="text-red-600 hover:text-red-800 p-1 rounded"
-                              title="Remove"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-6">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Info size={20} className="text-blue-500" />
+                        ))}
+                      </div>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">Important</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>
-                          Proof of delivery documents are essential for invoicing and dispute resolution.
-                          Recommended documents include:
+                  )}
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex">
+                      <Info size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="ml-3">
+                        <p className="text-sm text-amber-800">
+                          <strong>Tip:</strong> Include signed BOL, delivery receipts, or photos of delivered cargo for best documentation.
                         </p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Signed delivery receipt</li>
-                          <li>Bill of lading (BOL)</li>
-                          <li>Photos of cargo at delivery</li>
-                          <li>Receiver signature capture</li>
-                        </ul>
                       </div>
                     </div>
                   </div>
@@ -1049,7 +1082,13 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             {/* Step 3: Billing & Completion */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-r from-green-500 to-green-400 p-6 text-white rounded-t-lg">
+                  <h2 className="text-xl font-semibold mb-2">Final Details & Billing</h2>
+                  <p className="text-green-100">Review charges and complete the load</p>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="additionalMileage" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Additional Mileage
@@ -1120,32 +1159,40 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                   )}
                 </div>
 
-                {/* Billing Summary */}
-                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Billing Summary</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-600">Base Rate:</span>
-                      <span className="font-medium">${loadDetails.rate.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-gray-600">Additional Charges:</span>
-                      <span className="font-medium">${parseFloat(formData.additionalCharges || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 text-lg font-bold">
-                      <span>Total:</span>
-                      <span>${(loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString()}</span>
+                  {/* Billing Summary Card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <DollarSign size={20} className="mr-2 text-gray-600" />
+                      Billing Summary
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Base Rate</span>
+                        <span className="font-medium text-gray-900">${loadDetails.rate.toLocaleString()}</span>
+                      </div>
+                      {parseFloat(formData.additionalCharges) > 0 && (
+                        <div className="flex justify-between py-2">
+                          <span className="text-gray-600">Additional Charges</span>
+                          <span className="font-medium text-gray-900">+${parseFloat(formData.additionalCharges).toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between py-3 border-t border-gray-300">
+                        <span className="text-lg font-semibold text-gray-900">Total Amount</span>
+                        <span className="text-lg font-bold text-green-600">
+                          ${(loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Invoice Options */}
-                <div className="mt-6">
-                  <fieldset className="space-y-5">
-                    <legend className="text-sm font-medium text-gray-900">Payment & Invoice Options</legend>
+                  {/* Invoice Options */}
+                  <div className="space-y-4">
+                    <h3 className="text-base font-medium text-gray-900">How should we handle payment?</h3>
 
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
+                    <div className="space-y-3">
+                      <label className={`relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        !formData.useFactoring ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                      }`}>
                         <input
                           type="radio"
                           id="useInvoiceSystem"
@@ -1153,17 +1200,17 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           value="invoiceSystem"
                           checked={!formData.useFactoring}
                           onChange={() => handleFactoringToggle(false)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          className="h-4 w-4 text-blue-600 mt-0.5"
                         />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="useInvoiceSystem" className="font-medium text-gray-700">Use Invoice System</label>
-                        <p className="text-gray-500">Generate and track invoices in Truck Command</p>
-                      </div>
-                    </div>
+                        <div className="ml-3">
+                          <span className="block font-medium text-gray-900">Generate Invoice</span>
+                          <span className="block text-sm text-gray-600 mt-0.5">Create and track invoice in system</span>
+                        </div>
+                      </label>
 
-                    <div className="relative flex items-start">
-                      <div className="flex items-center h-5">
+                      <label className={`relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        formData.useFactoring ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                      }`}>
                         <input
                           type="radio"
                           id="useFactoring"
@@ -1171,108 +1218,75 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           value="factoring"
                           checked={formData.useFactoring}
                           onChange={() => handleFactoringToggle(true)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          className="h-4 w-4 text-blue-600 mt-0.5"
                         />
-                      </div>
-                      <div className="ml-3 text-sm">
-                        <label htmlFor="useFactoring" className="font-medium text-gray-700">Use Factoring</label>
-                        <p className="text-gray-500">Record earnings without generating an invoice</p>
-                      </div>
+                        <div className="ml-3">
+                          <span className="block font-medium text-gray-900">Factoring Company</span>
+                          <span className="block text-sm text-gray-600 mt-0.5">Record payment through factoring</span>
+                        </div>
+                      </label>
                     </div>
 
-                    {!formData.useFactoring && (
-                      <div className="ml-7 pl-3 border-l-2 border-gray-100 space-y-4">
-                        <div className="relative flex items-start">
-                          <div className="flex items-center h-5">
-                            <input
-                              id="generateInvoice"
-                              name="generateInvoice"
-                              type="checkbox"
-                              checked={formData.generateInvoice}
-                              onChange={handleInputChange}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
+                    {!formData.useFactoring && formData.generateInvoice && (
+                      <div className="mt-4 ml-8 p-4 bg-gray-50 rounded-lg">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            id="markPaid"
+                            name="markPaid"
+                            type="checkbox"
+                            checked={formData.markPaid}
+                            onChange={handleInputChange}
+                            className="h-4 w-4 text-blue-600 rounded"
+                          />
+                          <div className="ml-3">
+                            <span className="text-sm font-medium text-gray-700">Mark as Paid (COD)</span>
+                            <span className="block text-xs text-gray-500">For cash on delivery payments</span>
                           </div>
-                          <div className="ml-3 text-sm">
-                            <label htmlFor="generateInvoice" className="font-medium text-gray-700">Generate Invoice</label>
-                            <p className="text-gray-500">Create an invoice immediately</p>
-                          </div>
-                        </div>
-
-                        {formData.generateInvoice && (
-                          <div className="relative flex items-start ml-6 pl-6 border-l-2 border-gray-100">
-                            <div className="flex items-center h-5">
-                              <input
-                                id="markPaid"
-                                name="markPaid"
-                                type="checkbox"
-                                checked={formData.markPaid}
-                                onChange={handleInputChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                            </div>
-                            <div className="ml-3 text-sm">
-                              <label htmlFor="markPaid" className="font-medium text-gray-700">Mark as Paid</label>
-                              <p className="text-gray-500">Use for COD (Cash on Delivery)</p>
-                            </div>
-                          </div>
-                        )}
+                        </label>
                       </div>
                     )}
 
                     {formData.useFactoring && (
-                      <div className="ml-7 pl-3 border-l-2 border-gray-100 space-y-4">
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <div className="flex">
-                            <div className="flex-shrink-0">
-                              <Info size={18} className="text-blue-600" />
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-sm text-blue-700">
-                                When using factoring, earnings are recorded without generating an invoice.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label htmlFor="factoringCompany" className="block text-sm font-medium text-gray-700 mb-1">
-                            Factoring Company
-                          </label>
-                          <input
-                            type="text"
-                            id="factoringCompany"
-                            name="factoringCompany"
-                            value={formData.factoringCompany}
-                            onChange={handleInputChange}
-                            placeholder="Enter factoring company name"
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </div>
+                      <div className="mt-4 ml-8">
+                        <label htmlFor="factoringCompany" className="block text-sm font-medium text-gray-700 mb-2">
+                          Factoring Company Name
+                        </label>
+                        <input
+                          type="text"
+                          id="factoringCompany"
+                          name="factoringCompany"
+                          value={formData.factoringCompany}
+                          onChange={handleInputChange}
+                          placeholder="e.g., ABC Factoring Inc."
+                          className={`block w-full px-4 py-3 border ${errors.factoringCompany
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                            : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                          } rounded-lg text-base`}
+                        />
+                        {errors.factoringCompany && (
+                          <p className="mt-2 text-sm text-red-600 flex items-center">
+                            <AlertCircle size={14} className="mr-1" />
+                            {errors.factoringCompany}
+                          </p>
+                        )}
                       </div>
                     )}
-                  </fieldset>
-                </div>
+                  </div>
 
-                {/* Final Confirmation */}
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200 mt-6">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <CheckCircle size={20} className="text-green-500" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">Ready to Complete</h3>
-                      <div className="mt-2 text-sm text-green-700">
-                        <p>
-                          You&#39;re about to mark this load as completed. This action will:
-                        </p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Update the load status to &quot;Completed&quot;</li>
-                          <li>Save all delivery documentation</li>
-                          {formData.generateInvoice && <li>Generate an invoice automatically</li>}
-                          {formData.useFactoring && <li>Record earnings from this factored load</li>}
-                          <li>Make this load available for reporting</li>
-                        </ul>
-                      </div>
+                  {/* Ready to Complete */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 mt-6">
+                    <h3 className="text-base font-medium text-green-900 mb-3 flex items-center">
+                      <CheckCircle size={20} className="mr-2 text-green-600" />
+                      Ready to Complete
+                    </h3>
+                    <div className="space-y-2 text-sm text-green-800">
+                      <p className="font-medium">This will:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Mark load #{loadDetails.loadNumber} as completed</li>
+                        <li>Save all delivery documentation</li>
+                        {formData.generateInvoice && !formData.useFactoring && <li>Generate invoice for ${(loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString()}</li>}
+                        {formData.useFactoring && <li>Record factored earnings</li>}
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -1281,11 +1295,11 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           </div>
 
           {/* Navigation Buttons */}
-          <div className="bg-gray-50 px-6 py-4 flex justify-between rounded-b-xl">
+          <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-between rounded-b-lg">
             <button
               type="button"
               onClick={currentStep > 1 ? handlePrevStep : () => router.push('/dashboard/dispatching')}
-              className="px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none flex items-center"
+              className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors inline-flex items-center"
               disabled={submitting}
             >
               <ChevronLeft size={16} className="mr-2" />
@@ -1296,9 +1310,9 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
               >
-                Next
+                Next Step
                 <ChevronRight size={16} className="ml-2" />
               </button>
             ) : (
@@ -1306,12 +1320,12 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none flex items-center"
+                className="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 inline-flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Processing...
+                    <RefreshCw size={16} className="mr-2 animate-spin" />
+                    Completing Load...
                   </>
                 ) : (
                   <>

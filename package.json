@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-storage": "node setup_storage_buckets.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.8",

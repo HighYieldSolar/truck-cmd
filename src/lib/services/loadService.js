@@ -363,6 +363,154 @@ export async function updateLoadStatus(loadId, status) {
 }
 
 /**
+ * Update earnings for a completed load when its rate changes
+ * @param {string} loadId - Load ID
+ * @param {number} oldRate - Previous rate amount
+ * @param {number} newRate - New rate amount
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
+  try {
+    console.log(`Updating earnings for load ${loadId}: oldRate=${oldRate}, newRate=${newRate}`);
+    
+    // First, check if there's an existing earnings record for this load
+    const { data: existingEarnings, error: fetchError } = await supabase
+      .from('earnings')
+      .select('*')
+      .eq('load_id', loadId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error('Error fetching existing earnings:', fetchError);
+      throw fetchError;
+    }
+
+    console.log('Existing earnings record:', existingEarnings);
+
+    if (existingEarnings) {
+      // For existing earnings, we should set the amount to the new rate, not add the difference
+      // This ensures the earnings always match the current load rate
+      
+      const { data: updatedEarnings, error: updateError } = await supabase
+        .from('earnings')
+        .update({ 
+          amount: newRate
+        })
+        .eq('id', existingEarnings.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      
+      console.log(`Updated earnings for load ${loadId}: ${existingEarnings.amount} -> ${newRate}`);
+      console.log('Updated earnings record:', updatedEarnings);
+    } else {
+      // Check if load is factored
+      const { data: load, error: loadError } = await supabase
+        .from('loads')
+        .select('factored, factoring_company, load_number, origin, destination, user_id')
+        .eq('id', loadId)
+        .single();
+
+      if (loadError) throw loadError;
+
+      if (load && load.factored) {
+        // Create new earnings record for factored load
+        const { data: newEarnings, error: insertError } = await supabase
+          .from('earnings')
+          .insert({
+            user_id: load.user_id,
+            load_id: loadId,
+            amount: newRate,
+            source: 'Factoring',
+            date: new Date().toISOString().split('T')[0],
+            description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
+            factoring_company: load.factoring_company
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        
+        console.log(`Created new earnings record for factored load ${loadId} with amount ${newRate}`);
+        console.log('New earnings record:', newEarnings);
+      } else {
+        console.log('Load is not factored, no earnings record to update');
+      }
+    }
+
+    // Also update the final_rate in the loads table
+    const { error: loadUpdateError } = await supabase
+      .from('loads')
+      .update({ 
+        final_rate: newRate,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', loadId);
+
+    if (loadUpdateError) throw loadUpdateError;
+
+    return true;
+  } catch (error) {
+    console.error('Error updating completed load earnings:', error);
+    return false;
+  }
+}
+
+/**
+ * Remove earnings for a load when its status changes from Completed to something else
+ * @param {string} loadId - Load ID
+ * @returns {Promise<boolean>} - Success status
+ */
+export async function removeCompletedLoadEarnings(loadId) {
+  try {
+    console.log(`Removing earnings for load ${loadId} (status changed from Completed)`);
+    
+    // First, check if there's an existing earnings record for this load
+    const { data: existingEarnings, error: fetchError } = await supabase
+      .from('earnings')
+      .select('*')
+      .eq('load_id', loadId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error('Error fetching existing earnings:', fetchError);
+      throw fetchError;
+    }
+
+    if (existingEarnings) {
+      // Delete the earnings record
+      const { error: deleteError } = await supabase
+        .from('earnings')
+        .delete()
+        .eq('id', existingEarnings.id);
+
+      if (deleteError) throw deleteError;
+      
+      console.log(`Deleted earnings record for load ${loadId} with amount ${existingEarnings.amount}`);
+    } else {
+      console.log(`No earnings record found for load ${loadId}`);
+    }
+
+    // Also clear the final_rate in the loads table
+    const { error: loadUpdateError } = await supabase
+      .from('loads')
+      .update({ 
+        final_rate: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', loadId);
+
+    if (loadUpdateError) throw loadUpdateError;
+
+    return true;
+  } catch (error) {
+    console.error('Error removing completed load earnings:', error);
+    return false;
+  }
+}
+
+/**
  * Get load statistics for dashboard
  * @param {string} userId - The authenticated user's ID
  * @returns {Promise<Object>} - Load statistics
