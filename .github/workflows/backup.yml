@@ -1,0 +1,159 @@
+name: Weekly Database Backup
+
+on:
+  schedule:
+    # Runs at 2:15 AM UTC every Monday
+    - cron: '15 2 * * 1'
+  workflow_dispatch: # Allows manual trigger
+    inputs:
+      backup_type:
+        description: 'Type of backup to perform'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - schema-only
+          - data-only
+
+env:
+  BACKUP_BRANCH: database-backups
+  RETENTION_DAYS: 28 # Keep backups for 4 weeks
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Create backup directory
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_DIR="backups/${TIMESTAMP}"
+          mkdir -p $BACKUP_DIR
+          echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      - name: Dump database roles
+        if: ${{ github.event.inputs.backup_type != 'data-only' }}
+        run: |
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --role-only > ${{ env.BACKUP_DIR }}/roles.sql
+          echo "✅ Roles backup completed"
+
+      - name: Dump database schema
+        if: ${{ github.event.inputs.backup_type != 'data-only' }}
+        run: |
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" > ${{ env.BACKUP_DIR }}/schema.sql
+          echo "✅ Schema backup completed"
+
+      - name: Dump database data
+        if: ${{ github.event.inputs.backup_type != 'schema-only' }}
+        run: |
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --data-only --use-copy > ${{ env.BACKUP_DIR }}/data.sql
+          echo "✅ Data backup completed"
+
+      - name: Create backup metadata
+        run: |
+          cat > ${{ env.BACKUP_DIR }}/backup_info.json << EOF
+          {
+            "timestamp": "${{ env.TIMESTAMP }}",
+            "date": "$(date -u +%Y-%m-%d)",
+            "time": "$(date -u +%H:%M:%S) UTC",
+            "type": "${{ github.event.inputs.backup_type || 'full' }}",
+            "trigger": "${{ github.event_name }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+
+      - name: Compress backup
+        run: |
+          cd backups
+          tar -czf ${{ env.TIMESTAMP }}.tar.gz ${{ env.TIMESTAMP }}/
+          rm -rf ${{ env.TIMESTAMP }}/
+          echo "✅ Backup compressed"
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Switch to backup branch
+        run: |
+          git fetch origin ${{ env.BACKUP_BRANCH }} || true
+          git checkout ${{ env.BACKUP_BRANCH }} || git checkout -b ${{ env.BACKUP_BRANCH }}
+
+      - name: Add backup files
+        run: |
+          git add backups/*.tar.gz
+          git commit -m "🗄️ Database backup - ${{ env.TIMESTAMP }}" || echo "No changes to commit"
+
+      - name: Clean old backups
+        run: |
+          # List all backup files sorted by date (oldest first)
+          BACKUPS=($(ls -1 backups/*.tar.gz 2>/dev/null | sort))
+          TOTAL_BACKUPS=${#BACKUPS[@]}
+          
+          # Calculate how many backups to keep based on retention days
+          KEEP_COUNT=$(( ${{ env.RETENTION_DAYS }} / 7 ))
+          
+          if [ $TOTAL_BACKUPS -gt $KEEP_COUNT ]; then
+            DELETE_COUNT=$(( $TOTAL_BACKUPS - $KEEP_COUNT ))
+            echo "🗑️ Removing $DELETE_COUNT old backup(s)"
+            
+            for ((i=0; i<$DELETE_COUNT; i++)); do
+              git rm "${BACKUPS[$i]}"
+              echo "Removed: ${BACKUPS[$i]}"
+            done
+            
+            git commit -m "🧹 Cleanup old backups (retention: ${{ env.RETENTION_DAYS }} days)"
+          else
+            echo "✅ No old backups to remove"
+          fi
+
+      - name: Push to backup branch
+        run: |
+          git push origin ${{ env.BACKUP_BRANCH }} --force-with-lease
+
+      - name: Create backup summary
+        if: success()
+        run: |
+          echo "## 🗄️ Database Backup Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date**: $(date -u +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u +%H:%M:%S) UTC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type**: ${{ github.event.inputs.backup_type || 'full' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backup File**: backups/${{ env.TIMESTAMP }}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ env.BACKUP_BRANCH }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Backups are stored in the \`${{ env.BACKUP_BRANCH }}\` branch" >> $GITHUB_STEP_SUMMARY
+          echo "2. To restore, download the backup file and use the restore script" >> $GITHUB_STEP_SUMMARY
+          echo "3. Retention period: ${{ env.RETENTION_DAYS }} days" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send notification on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Database Backup Failed',
+              body: `The weekly database backup failed on ${new Date().toUTCString()}.
+              
+              **Workflow Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+              
+              Please investigate and run the backup manually if needed.`,
+              labels: ['bug', 'backup']
+            });
