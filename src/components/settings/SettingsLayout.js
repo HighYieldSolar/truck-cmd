@@ -96,8 +96,23 @@ export default function SettingsLayout({ children }) {
             <div className="flex-1">
               <div className="bg-white rounded-lg shadow-sm">
                 <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-lg shadow-md p-6 text-white">
-                  <h1 className="text-2xl font-semibold text-white">{activeMenuItem.name}</h1>
-                  <p className="text-blue-100">Manage your {activeMenuItem.name.toLowerCase()} settings</p>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h1 className="text-2xl font-semibold text-white">{activeMenuItem.name}</h1>
+                      <p className="text-blue-100">Manage your {activeMenuItem.name.toLowerCase()} settings</p>
+                    </div>
+                    {pathname === "/dashboard/settings/billing" && (
+                      <div className="mt-3 md:mt-0">
+                        <Link
+                          href="/dashboard/billing"
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                          <CreditCard size={16} className="mr-2" />
+                          View All Plans
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="p-6">

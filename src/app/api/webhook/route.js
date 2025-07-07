@@ -79,24 +79,39 @@ async function handleSubscriptionUpdate(event) {
     const priceId = subscription.items.data[0]?.price?.id;
 
     if (priceId) {
-      // You might need to map Stripe price IDs to your plan names
-      // For demonstration, let's retrieve the product from Stripe
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-      const price = await stripe.prices.retrieve(priceId, {
-        expand: ['product']
-      });
+      // Map Stripe price IDs to plan names
+      const priceIdToPlanMap = {
+        [process.env.STRIPE_BASIC_MONTHLY_PRICE_ID]: 'basic',
+        [process.env.STRIPE_BASIC_YEARLY_PRICE_ID]: 'basic',
+        [process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID]: 'premium',
+        [process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID]: 'premium',
+        [process.env.STRIPE_FLEET_MONTHLY_PRICE_ID]: 'fleet',
+        [process.env.STRIPE_FLEET_YEARLY_PRICE_ID]: 'fleet'
+      };
 
-      // Get plan name from product metadata or name
-      const product = price.product;
-      if (product && typeof product !== 'string') {
-        planId = product.metadata?.plan_id || product.name?.toLowerCase()?.replace(/\s+/g, '_') || 'default_plan';
-        console.log(`Mapped to plan: ${planId}`);
+      planId = priceIdToPlanMap[priceId];
+
+      if (!planId) {
+        // If not found in mapping, try to retrieve from Stripe
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const price = await stripe.prices.retrieve(priceId, {
+          expand: ['product']
+        });
+
+        // Get plan name from product metadata or name
+        const product = price.product;
+        if (product && typeof product !== 'string') {
+          planId = product.metadata?.plan_id || product.name?.toLowerCase()?.replace(/\s+(plan|subscription)/gi, '').trim() || 'premium';
+          console.log(`Mapped to plan from product: ${planId}`);
+        }
+      } else {
+        console.log(`Mapped to plan from price ID: ${planId}`);
       }
     }
   } catch (error) {
     console.error(`Error getting plan info: ${error.message}`);
-    // Default to a plan if we can't determine it
-    planId = 'default_plan';
+    // Default to premium plan if we can't determine it
+    planId = 'premium';
   }
 
   // Find the user in Supabase
@@ -138,6 +153,8 @@ async function handleSubscriptionUpdate(event) {
     stripe_subscription_id: subscriptionId,
     stripe_customer_id: stripeCustomerId,
     current_period_ends_at: currentPeriodEnd,
+    current_period_starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
+    cancel_at_period_end: subscription.cancel_at_period_end || false,
     updated_at: new Date().toISOString()
   };
 
@@ -145,9 +162,19 @@ async function handleSubscriptionUpdate(event) {
   if (planId) updateData.plan = planId;
   if (billingCycle) updateData.billing_cycle = billingCycle;
 
+  // Add amount if available
+  if (subscription.items.data[0]?.price?.unit_amount) {
+    updateData.amount = subscription.items.data[0].price.unit_amount / 100; // Convert from cents to dollars
+  }
+
   // Clear trial_ends_at if subscription is active (no longer in trial)
   if (status === 'active') {
     updateData.trial_ends_at = null;
+  }
+
+  // If subscription is canceled, set canceled_at
+  if (subscription.canceled_at) {
+    updateData.canceled_at = new Date(subscription.canceled_at * 1000).toISOString();
   }
 
   const { error: updateError } = await supabase

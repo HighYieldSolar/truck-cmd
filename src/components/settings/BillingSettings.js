@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
 import Link from "next/link";
+import CancellationModal from "@/components/billing/CancellationModal";
 import {
   RefreshCw,
   CreditCard,
@@ -39,6 +40,7 @@ export default function BillingSettings() {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [expandedSection, setExpandedSection] = useState("subscription");
   const [canceling, setCanceling] = useState(false);
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
 
   // Get subscription context data
   const {
@@ -224,6 +226,10 @@ export default function BillingSettings() {
   // Get subscription status
   const getSubscriptionStatus = () => {
     if (subscription?.status === 'active' && isSubscriptionActive()) {
+      // Check if subscription is scheduled for cancellation
+      if (subscription?.cancel_at_period_end) {
+        return 'canceled';
+      }
       return 'active';
     } else if (subscription?.status === 'trial' && isTrialActive()) {
       return 'trial';
@@ -294,18 +300,19 @@ export default function BillingSettings() {
   };
 
   // Handle subscription cancellation
-  const handleCancelSubscription = async () => {
-    if (!window.confirm('Are you sure you want to cancel your subscription? You will still have access until the end of your current billing period.')) {
-      return;
-    }
-
+  const handleCancelSubscription = async (cancellationData) => {
     try {
       setCanceling(true);
+      setShowCancellationModal(false);
 
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ 
+          userId: user.id,
+          reason: cancellationData.reason,
+          feedback: cancellationData.feedback
+        }),
       });
 
       const result = await response.json();
@@ -359,30 +366,6 @@ export default function BillingSettings() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <h2 className="text-2xl font-bold text-white">Billing & Subscription</h2>
-
-          <div className="mt-3 md:mt-0 flex items-center space-x-3">
-            <button
-              onClick={handleRefreshSubscription}
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw size={16} className="mr-1.5" />
-              Refresh
-            </button>
-
-            <Link
-              href="/dashboard/billing"
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            >
-              <CreditCard size={16} className="mr-1.5" />
-              View All Plans
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* Current Subscription Section */}
       <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-6">
@@ -490,15 +473,11 @@ export default function BillingSettings() {
                     </button>
 
                     <button
-                      onClick={handleCancelSubscription}
+                      onClick={() => setShowCancellationModal(true)}
                       disabled={canceling}
                       className="inline-flex items-center justify-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 transition-colors w-full lg:w-auto disabled:opacity-50"
                     >
-                      {canceling ? (
-                        <RefreshCw size={18} className="mr-2 animate-spin" />
-                      ) : (
-                        <X size={18} className="mr-2" />
-                      )}
+                      <X size={18} className="mr-2" />
                       Cancel Subscription
                     </button>
 
@@ -876,6 +855,14 @@ export default function BillingSettings() {
           </div>
         </div>
       </div>
+
+      {/* Cancellation Modal */}
+      <CancellationModal
+        isOpen={showCancellationModal}
+        onClose={() => setShowCancellationModal(false)}
+        onConfirm={handleCancelSubscription}
+        endDate={formatDate(subscription?.current_period_ends_at)}
+      />
     </div>
   );
 }

@@ -74,8 +74,13 @@ export function SubscriptionProvider({ children }) {
           currentPeriodEndsAt: subscriptionData.current_period_ends_at,
           stripeCustomerId: subscriptionData.stripe_customer_id,
           stripeSubscriptionId: subscriptionData.stripe_subscription_id,
-          billingCycle: subscriptionData.billing_cycle,
-          amount: subscriptionData.amount
+          billing_cycle: subscriptionData.billing_cycle,
+          amount: subscriptionData.amount,
+          card_last_four: subscriptionData.card_last_four,
+          cancel_at_period_end: subscriptionData.cancel_at_period_end,
+          canceled_at: subscriptionData.canceled_at,
+          current_period_starts_at: subscriptionData.current_period_starts_at,
+          current_period_ends_at: subscriptionData.current_period_ends_at
         });
       } else {
         console.log("No subscription found, creating trial subscription");

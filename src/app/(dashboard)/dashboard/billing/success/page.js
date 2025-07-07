@@ -299,7 +299,7 @@ export default function SuccessPage() {
                   Go to Dashboard
                 </Link>
                 <Link
-                  href="/dashboard/billing"
+                  href="/dashboard/settings/billing"
                   className="w-full sm:w-auto flex-1 inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <FileText size={18} className="mr-2" />

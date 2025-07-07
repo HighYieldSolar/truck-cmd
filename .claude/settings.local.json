@@ -5,7 +5,8 @@
       "Bash(sudo npm install -g @anthropic-ai/claude-code)",
       "Bash(npx:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }

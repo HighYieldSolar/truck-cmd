@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(request) {
   try {
-    const { userId } = await request.json();
+    const { userId, reason, feedback } = await request.json();
 
     if (!userId) {
       return NextResponse.json({
@@ -46,7 +46,9 @@ export async function POST(request) {
           cancel_at_period_end: true,
           metadata: {
             canceled_by: 'user',
-            canceled_from: 'settings_page'
+            canceled_from: 'settings_page',
+            cancellation_reason: reason || 'not_specified',
+            cancellation_feedback: feedback || ''
           }
         }
       );
@@ -54,12 +56,16 @@ export async function POST(request) {
       console.log('Subscription canceled in Stripe:', canceledSubscription.id);
 
       // Update the subscription status in our database
+      // Note: We keep status as 'active' since they have access until period end
+      // The cancel_at_period_end flag indicates it's scheduled for cancellation
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update({
-          status: 'canceled',
+          status: 'active', // Keep as active since they still have access
           cancel_at_period_end: true,
           canceled_at: new Date().toISOString(),
+          cancellation_reason: reason || null,
+          cancellation_feedback: feedback || null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
