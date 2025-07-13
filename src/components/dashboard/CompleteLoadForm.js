@@ -13,6 +13,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { recordFactoredEarnings } from "@/lib/services/earningsService";
 
 // Helper to persist form data to localStorage
 const saveFormToStorage = (formData, loadId) => {
@@ -48,33 +49,6 @@ const loadFormFromStorage = (loadId) => {
   return null;
 };
 
-// Helper to record factored earnings
-const recordFactoredEarnings = async (userId, loadId, amount, options = {}) => {
-  try {
-    const earningData = {
-      user_id: userId,
-      load_id: loadId,
-      amount: amount,
-      source: 'Factoring',
-      date: options.date || getCurrentDateLocal(),
-      description: options.description || 'Factored load earnings',
-      factoring_company: options.factoringCompany || null,
-      created_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from('earnings')
-      .insert([earningData])
-      .select();
-
-    if (error) throw error;
-
-    return data && data.length > 0 ? data[0] : null;
-  } catch (error) {
-    console.error('Error recording factored earnings:', error);
-    throw error;
-  }
-};
 
 // Star Rating Component
 const StarRating = ({ rating, setRating, disabled = false }) => {

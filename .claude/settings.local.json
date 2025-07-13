@@ -6,7 +6,9 @@
       "Bash(npx:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

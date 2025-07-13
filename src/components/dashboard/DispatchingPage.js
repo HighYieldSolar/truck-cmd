@@ -112,6 +112,22 @@ const fetchLoads = async (userId, filters = {}) => {
       
       const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       
+      // Past date calculations
+      const lastWeekStart = new Date(today);
+      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+      
+      const lastWeekEnd = new Date(today);
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+      
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+      
+      const thisQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+      const thisQuarterEnd = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 + 3, 0);
+      
+      const lastQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 - 3, 1);
+      const lastQuarterEnd = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 0);
+      
       switch (filters.dateRange) {
         case 'today':
           query = query.eq('pickup_date', today.toISOString().split('T')[0]);
@@ -123,9 +139,25 @@ const fetchLoads = async (userId, filters = {}) => {
           query = query.gte('pickup_date', today.toISOString().split('T')[0])
                       .lte('pickup_date', nextWeekEnd.toISOString().split('T')[0]);
           break;
+        case 'lastWeek':
+          query = query.gte('pickup_date', lastWeekStart.toISOString().split('T')[0])
+                      .lte('pickup_date', lastWeekEnd.toISOString().split('T')[0]);
+          break;
         case 'thisMonth':
           query = query.gte('pickup_date', today.toISOString().split('T')[0])
                       .lte('pickup_date', monthEnd.toISOString().split('T')[0]);
+          break;
+        case 'lastMonth':
+          query = query.gte('pickup_date', lastMonthStart.toISOString().split('T')[0])
+                      .lte('pickup_date', lastMonthEnd.toISOString().split('T')[0]);
+          break;
+        case 'thisQuarter':
+          query = query.gte('pickup_date', thisQuarterStart.toISOString().split('T')[0])
+                      .lte('pickup_date', thisQuarterEnd.toISOString().split('T')[0]);
+          break;
+        case 'lastQuarter':
+          query = query.gte('pickup_date', lastQuarterStart.toISOString().split('T')[0])
+                      .lte('pickup_date', lastQuarterEnd.toISOString().split('T')[0]);
           break;
       }
     }

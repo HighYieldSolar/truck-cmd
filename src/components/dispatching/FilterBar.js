@@ -22,7 +22,11 @@ export default function FilterBar({ filters, setFilters }) {
     { value: "today", label: "Today" },
     { value: "tomorrow", label: "Tomorrow" },
     { value: "thisWeek", label: "This Week" },
+    { value: "lastWeek", label: "Last Week" },
     { value: "thisMonth", label: "This Month" },
+    { value: "lastMonth", label: "Last Month" },
+    { value: "thisQuarter", label: "This Quarter" },
+    { value: "lastQuarter", label: "Last Quarter" },
   ];
 
   const sortOptions = [
