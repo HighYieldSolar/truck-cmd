@@ -15,6 +15,23 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
     let startDate, endDate, previousStartDate, previousEndDate;
     
     switch (dateRange) {
+      case 'lastMonth':
+        // Last month
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+        
+        startDate = `${lastMonthYear}-${String(lastMonth + 1).padStart(2, '0')}-01`;
+        endDate = `${lastMonthYear}-${String(lastMonth + 1).padStart(2, '0')}-${String(lastDayOfLastMonth).padStart(2, '0')}`;
+        
+        // Previous to last month for comparison
+        const prevToLastMonth = lastMonth === 0 ? 11 : lastMonth - 1;
+        const prevToLastMonthYear = lastMonth === 0 ? lastMonthYear - 1 : lastMonthYear;
+        const lastDayPrevToLastMonth = new Date(lastMonthYear, lastMonth, 0).getDate();
+        
+        previousStartDate = `${prevToLastMonthYear}-${String(prevToLastMonth + 1).padStart(2, '0')}-01`;
+        previousEndDate = `${prevToLastMonthYear}-${String(prevToLastMonth + 1).padStart(2, '0')}-${String(lastDayPrevToLastMonth).padStart(2, '0')}`;
+        break;
       case 'quarter':
         // Current quarter
         const currentQuarter = Math.floor(now.getMonth() / 3);

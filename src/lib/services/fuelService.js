@@ -219,6 +219,15 @@ export async function getFuelStats(userId, period = 'quarter') {
       query = query
         .gte('date', monthStart.toISOString().split('T')[0])
         .lte('date', monthEnd.toISOString().split('T')[0]);
+    } else if (period === 'lastMonth') {
+      const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+      const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
+      const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
+      
+      query = query
+        .gte('date', lastMonthStart.toISOString().split('T')[0])
+        .lte('date', lastMonthEnd.toISOString().split('T')[0]);
     } else if (period === 'year') {
       const yearStart = new Date(now.getFullYear(), 0, 1);
       const yearEnd = new Date(now.getFullYear(), 11, 31);

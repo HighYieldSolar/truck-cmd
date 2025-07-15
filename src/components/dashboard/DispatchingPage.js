@@ -107,57 +107,70 @@ const fetchLoads = async (userId, filters = {}) => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      const nextWeekEnd = new Date(today);
-      nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
+      // This week calculation
+      const thisWeekStart = new Date(today);
+      thisWeekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      const thisWeekEnd = new Date(thisWeekStart);
+      thisWeekEnd.setDate(thisWeekStart.getDate() + 6); // End of week (Saturday)
       
-      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      
-      // Past date calculations
-      const lastWeekStart = new Date(today);
+      // Last week calculation
+      const lastWeekStart = new Date(thisWeekStart);
       lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-      
-      const lastWeekEnd = new Date(today);
+      const lastWeekEnd = new Date(thisWeekStart);
       lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
       
+      // This month calculation
+      const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      // Last month calculation
       const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
       
+      // Quarter calculations
       const thisQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
       const thisQuarterEnd = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 + 3, 0);
       
       const lastQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 - 3, 1);
       const lastQuarterEnd = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 0);
       
+      // Use pickup_date for filtering only when sorting by pickup date, otherwise use delivery_date
+      const dateField = filters.sortBy === 'pickupDate' ? 'pickup_date' : 'delivery_date';
+      
       switch (filters.dateRange) {
         case 'today':
-          query = query.eq('pickup_date', today.toISOString().split('T')[0]);
+          query = query.gte(dateField, today.toISOString().split('T')[0])
+                      .lt(dateField, tomorrow.toISOString().split('T')[0]);
           break;
         case 'tomorrow':
-          query = query.eq('pickup_date', tomorrow.toISOString().split('T')[0]);
+          const dayAfterTomorrow = new Date(tomorrow);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+          query = query.gte(dateField, tomorrow.toISOString().split('T')[0])
+                      .lt(dateField, dayAfterTomorrow.toISOString().split('T')[0]);
           break;
         case 'thisWeek':
-          query = query.gte('pickup_date', today.toISOString().split('T')[0])
-                      .lte('pickup_date', nextWeekEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, thisWeekStart.toISOString().split('T')[0])
+                      .lte(dateField, thisWeekEnd.toISOString().split('T')[0]);
           break;
         case 'lastWeek':
-          query = query.gte('pickup_date', lastWeekStart.toISOString().split('T')[0])
-                      .lte('pickup_date', lastWeekEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, lastWeekStart.toISOString().split('T')[0])
+                      .lte(dateField, lastWeekEnd.toISOString().split('T')[0]);
           break;
         case 'thisMonth':
-          query = query.gte('pickup_date', today.toISOString().split('T')[0])
-                      .lte('pickup_date', monthEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, thisMonthStart.toISOString().split('T')[0])
+                      .lte(dateField, thisMonthEnd.toISOString().split('T')[0]);
           break;
         case 'lastMonth':
-          query = query.gte('pickup_date', lastMonthStart.toISOString().split('T')[0])
-                      .lte('pickup_date', lastMonthEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, lastMonthStart.toISOString().split('T')[0])
+                      .lte(dateField, lastMonthEnd.toISOString().split('T')[0]);
           break;
         case 'thisQuarter':
-          query = query.gte('pickup_date', thisQuarterStart.toISOString().split('T')[0])
-                      .lte('pickup_date', thisQuarterEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, thisQuarterStart.toISOString().split('T')[0])
+                      .lte(dateField, thisQuarterEnd.toISOString().split('T')[0]);
           break;
         case 'lastQuarter':
-          query = query.gte('pickup_date', lastQuarterStart.toISOString().split('T')[0])
-                      .lte('pickup_date', lastQuarterEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, lastQuarterStart.toISOString().split('T')[0])
+                      .lte(dateField, lastQuarterEnd.toISOString().split('T')[0]);
           break;
       }
     }
@@ -169,6 +182,9 @@ const fetchLoads = async (userId, filters = {}) => {
           break;
         case 'deliveryDate':
           query = query.order('delivery_date', { ascending: true });
+          break;
+        case 'completedDate':
+          query = query.order('completed_at', { ascending: false });
           break;
         case 'status':
           query = query.order('status', { ascending: true });
@@ -257,7 +273,7 @@ export default function DispatchingPage() {
     search: "",
     status: "All",
     dateRange: "all",
-    sortBy: "pickupDate"
+    sortBy: "deliveryDate"
   });
   
   // State for modals
@@ -576,7 +592,7 @@ export default function DispatchingPage() {
                 </div>
                 {filters.status !== "All" || filters.search || filters.dateRange !== "all" ? (
                   <button 
-                    onClick={() => setFilters({search: "", status: "All", dateRange: "all", sortBy: "pickupDate"})}
+                    onClick={() => setFilters({search: "", status: "All", dateRange: "all", sortBy: "deliveryDate"})}
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                   >
                     <RefreshCw size={14} className="mr-1" />

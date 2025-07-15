@@ -30,11 +30,12 @@ export default function FilterBar({ filters, setFilters }) {
   ];
 
   const sortOptions = [
-    { value: "pickupDate", label: "Pickup Date" },
     { value: "deliveryDate", label: "Delivery Date" },
+    { value: "pickupDate", label: "Pickup Date" },
+    { value: "completedDate", label: "Completed Date" },
     { value: "status", label: "Status" },
     { value: "customer", label: "Customer" },
-    { value: "rate", label: "Rate" },
+    { value: "rate", label: "Rate (High to Low)" },
   ];
 
   return (

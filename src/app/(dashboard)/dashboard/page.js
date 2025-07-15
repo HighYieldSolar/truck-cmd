@@ -313,6 +313,14 @@ export default function Dashboard() {
                   This Month
                 </button>
                 <button 
+                  onClick={() => handleDateRangeChange('lastMonth')}
+                  className={`px-3 py-1.5 text-sm ${dateRange === 'lastMonth' ? 
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                >
+                  Last Month
+                </button>
+                <button 
                   onClick={() => handleDateRangeChange('quarter')}
                   className={`px-3 py-1.5 text-sm ${dateRange === 'quarter' ? 
                     'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
