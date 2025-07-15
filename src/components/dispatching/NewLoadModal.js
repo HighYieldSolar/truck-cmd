@@ -500,10 +500,21 @@ export default function NewLoadForm({
                   id="load_number"
                   name="load_number"
                   value={formData.load_number}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // If user starts typing and auto-generate is on, turn it off
+                    if (autoGenerateNumber && e.target.value.trim() !== "") {
+                      setAutoGenerateNumber(false);
+                    }
+                    handleChange(e);
+                  }}
+                  onFocus={() => {
+                    // When field is focused and auto-generate is on, provide visual feedback
+                    if (autoGenerateNumber) {
+                      // You could add a state here to show a tooltip or highlight
+                    }
+                  }}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                  placeholder={autoGenerateNumber ? "Will be auto-generated" : "Enter load number"}
-                  disabled={autoGenerateNumber}
+                  placeholder={autoGenerateNumber ? "Will be auto-generated (type to override)" : "Enter load number"}
                 />
               </div>
               
@@ -659,99 +670,158 @@ export default function NewLoadForm({
               <p className="mt-2 text-sm text-gray-500">Total amount for this load</p>
             </div>
 
-            {/* Optional fields toggle */}
-            <div className="border-t pt-6">
-              <button
-                type="button"
-                onClick={() => setShowOptionalFields(!showOptionalFields)}
-                className="flex items-center justify-between w-full text-left"
+            {/* Optional fields section with better UI */}
+            <div className="mt-6">
+              <div 
+                className={`
+                  border-2 rounded-lg transition-all duration-300
+                  ${showOptionalFields 
+                    ? 'border-blue-300 bg-blue-50' 
+                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }
+                `}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  Optional Fields (Assignment & Notes)
-                </span>
-                <ChevronRight 
-                  size={20} 
-                  className={`text-gray-400 transition-transform ${showOptionalFields ? 'rotate-90' : ''}`}
-                />
-              </button>
-
-              {showOptionalFields && (
-                <div className="mt-4 space-y-4 pt-4 border-t">
-                  {/* Assignment section */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign Driver
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Users size={18} className="text-gray-400" />
-                        </div>
-                        <select
-                          id="driver_id"
-                          name="driver_id"
-                          value={formData.driver_id}
-                          onChange={handleChange}
-                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                        >
-                          <option value="">Assign later</option>
-                          {drivers.map((driver) => (
-                            <option key={driver.id} value={driver.id}>
-                              {driver.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalFields(!showOptionalFields)}
+                  className={`
+                    w-full p-4 flex items-center justify-between rounded-lg transition-all
+                    ${showOptionalFields ? 'bg-blue-100' : 'hover:bg-gray-100'}
+                  `}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`
+                      w-10 h-10 rounded-full flex items-center justify-center transition-all
+                      ${showOptionalFields 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-300 text-gray-600'
+                      }
+                    `}>
+                      <Info size={20} />
                     </div>
-
-                    <div>
-                      <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign Truck
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Truck size={18} className="text-gray-400" />
-                        </div>
-                        <select
-                          id="vehicle_id"
-                          name="vehicle_id"
-                          value={formData.vehicle_id}
-                          onChange={handleChange}
-                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                        >
-                          <option value="">Assign later</option>
-                          {trucks.map((truck) => (
-                            <option key={truck.id} value={truck.id}>
-                              {truck.name} ({truck.license_plate})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className="text-left">
+                      <h4 className={`font-semibold ${showOptionalFields ? 'text-blue-900' : 'text-gray-900'}`}>
+                        Optional Information
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Assign driver, truck, or add special notes
+                      </p>
                     </div>
                   </div>
-
-                  {/* Description */}
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes / Special Instructions
-                    </label>
-                    <div className="relative">
-                      <div className="absolute top-3 left-0 pl-3 pointer-events-none">
-                        <FileText size={18} className="text-gray-400" />
-                      </div>
-                      <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows="3"
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                        placeholder="Any special instructions or notes about this load..."
-                      ></textarea>
+                  <div className={`
+                    flex items-center space-x-2 transition-all
+                    ${showOptionalFields ? 'text-blue-600' : 'text-gray-400'}
+                  `}>
+                    <span className="text-sm font-medium">
+                      {showOptionalFields ? 'Hide' : 'Show'}
+                    </span>
+                    <div className={`
+                      w-8 h-8 rounded-full flex items-center justify-center transition-all
+                      ${showOptionalFields 
+                        ? 'bg-blue-200 rotate-180' 
+                        : 'bg-gray-200'
+                      }
+                    `}>
+                      <ChevronRight size={16} className="transform rotate-90" />
                     </div>
                   </div>
-                </div>
-              )}
+                </button>
+
+                {showOptionalFields && (
+                  <div className="p-4 pt-0 space-y-4">
+                    {/* Assignment section with better layout */}
+                    <div className="bg-white rounded-lg p-4 space-y-4">
+                      <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+                        <Users size={18} className="mr-2 text-blue-500" />
+                        Resource Assignment
+                      </h5>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Driver
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Users size={18} className="text-gray-400" />
+                            </div>
+                            <select
+                              id="driver_id"
+                              name="driver_id"
+                              value={formData.driver_id}
+                              onChange={handleChange}
+                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                            >
+                              <option value="">Assign later</option>
+                              {drivers.map((driver) => (
+                                <option key={driver.id} value={driver.id}>
+                                  {driver.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Truck
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Truck size={18} className="text-gray-400" />
+                            </div>
+                            <select
+                              id="vehicle_id"
+                              name="vehicle_id"
+                              value={formData.vehicle_id}
+                              onChange={handleChange}
+                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                            >
+                              <option value="">Assign later</option>
+                              {trucks.map((truck) => (
+                                <option key={truck.id} value={truck.id}>
+                                  {truck.name} ({truck.license_plate})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {(formData.driver_id || formData.vehicle_id) && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            <CheckCircle size={16} className="inline mr-1" />
+                            Load will be marked as "Assigned" when created
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notes section */}
+                    <div className="bg-white rounded-lg p-4">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                        <FileText size={18} className="inline mr-2 text-blue-500" />
+                        Notes / Special Instructions
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                          rows="3"
+                          className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                          placeholder="Any special instructions or notes about this load..."
+                        ></textarea>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Add any delivery instructions, special requirements, or other important information
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Load Summary */}
@@ -790,50 +860,99 @@ export default function NewLoadForm({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 p-5 rounded-t-xl text-white z-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center">
-              <Route size={20} className="mr-2" />
-              Create New Load
-            </h2>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-blue-500 rounded-full transition-colors"
-              disabled={saving}
-            >
-              <X size={20} />
-            </button>
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-xl text-white z-10">
+          <div className="p-5">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold flex items-center">
+                <Route size={20} className="mr-2" />
+                Create New Load
+              </h2>
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-blue-500 rounded-full transition-colors"
+                disabled={saving}
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1">
-                <div className="flex items-center">
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
-                    ${currentStep === step.number 
-                      ? 'bg-white text-blue-600 scale-110' 
-                      : currentStep > step.number 
-                        ? 'bg-blue-700 text-white' 
-                        : 'bg-blue-500 text-blue-200'
-                    }
-                  `}>
-                    {currentStep > step.number ? <Check size={20} /> : step.number}
-                  </div>
-                  <span className={`ml-2 text-sm hidden sm:inline ${
-                    currentStep === step.number ? 'text-white font-semibold' : 'text-blue-200'
-                  }`}>
-                    {step.title}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`flex-1 h-1 mx-4 rounded ${
-                    currentStep > step.number ? 'bg-blue-700' : 'bg-blue-500'
-                  }`} />
-                )}
+          {/* Progress indicator - separated with its own container */}
+          <div className="px-5 pb-5">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/40 shadow-xl">
+              <div className="flex items-center justify-between">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isActive = currentStep === step.number;
+                  const isCompleted = currentStep > step.number;
+                  
+                  return (
+                    <div key={step.number} className="flex items-center flex-1">
+                      <div className="flex items-center relative">
+                        {/* Step circle with icon */}
+                        <div className={`
+                          w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-xl
+                          ${isActive 
+                            ? 'bg-white text-blue-600 scale-110 ring-4 ring-white/60' 
+                            : isCompleted 
+                              ? 'bg-green-500 text-white ring-2 ring-green-400/50' 
+                              : 'bg-blue-800/50 text-white/70 border-2 border-white/30'
+                          }
+                        `}>
+                          {isCompleted ? (
+                            <Check size={24} className="animate-in fade-in duration-300" />
+                          ) : (
+                            <Icon size={24} className={isActive ? 'animate-pulse' : ''} />
+                          )}
+                        </div>
+                        
+                        {/* Step details */}
+                        <div className="ml-3">
+                          <div className={`text-xs font-medium transition-all ${
+                            isActive 
+                              ? 'text-white/90' 
+                              : isCompleted
+                                ? 'text-white/80'
+                                : 'text-white/60'
+                          }`}>
+                            Step {step.number}
+                          </div>
+                          <div className={`text-sm font-semibold transition-all ${
+                            isActive 
+                              ? 'text-white' 
+                              : isCompleted
+                                ? 'text-white/90'
+                                : 'text-white/70'
+                          }`}>
+                            {step.title}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Progress bar between steps */}
+                      {index < steps.length - 1 && (
+                        <div className="flex-1 mx-4">
+                          <div className="h-3 bg-blue-800/30 rounded-full overflow-hidden relative">
+                            <div className="absolute inset-0 bg-white/10"></div>
+                            <div className={`h-full transition-all duration-700 ease-out relative ${
+                              isCompleted 
+                                ? 'bg-gradient-to-r from-green-400 to-green-500' 
+                                : 'bg-gradient-to-r from-blue-400/40 to-blue-500/40'
+                            }`} style={{
+                              width: isCompleted ? '100%' : isActive ? '50%' : '0%'
+                            }}>
+                              {isCompleted && (
+                                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
