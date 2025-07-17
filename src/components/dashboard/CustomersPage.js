@@ -25,12 +25,15 @@ import {
   FileText,
   Building,
   User,
-  X
+  X,
+  Package,
+  Briefcase,
+  Truck
 } from "lucide-react";
 import { fetchCustomers, deleteCustomer } from "@/lib/services/customerService";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import EmptyState from "@/components/common/EmptyState";
-import CustomerFormModal from "@/lib/services/CustomerFormModal";
+import NewCustomerModal from "@/components/customers/NewCustomerModal";
 import StatusBadge from "@/components/compliance/StatusBadge";
 
 // Customer Summary Component (like ComplianceSummary)
@@ -63,7 +66,7 @@ const CustomerSummary = ({ stats }) => {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Current customers</span>
+          <span className="text-xs text-gray-500">Currently active</span>
         </div>
       </div>
 
@@ -78,41 +81,37 @@ const CustomerSummary = ({ stats }) => {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Added in last 30 days</span>
+          <span className="text-xs text-gray-500">Added this month</span>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Businesses</p>
-            <p className="text-2xl font-bold text-orange-600 mt-1">
-              {stats.businessCustomers || Math.round(stats.totalCustomers * 0.7)}
-            </p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Brokers</p>
+            <p className="text-2xl font-bold text-orange-600 mt-1">{stats.brokerCustomers}</p>
           </div>
           <div className="bg-orange-100 p-3 rounded-xl">
-            <Building size={20} className="text-orange-600" />
+            <Briefcase size={20} className="text-orange-600" />
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Business customers</span>
+          <span className="text-xs text-gray-500">Broker customers</span>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Individuals</p>
-            <p className="text-2xl font-bold text-cyan-600 mt-1">
-              {stats.individualCustomers || Math.round(stats.totalCustomers * 0.3)}
-            </p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Shippers</p>
+            <p className="text-2xl font-bold text-cyan-600 mt-1">{stats.shipperCustomers}</p>
           </div>
           <div className="bg-cyan-100 p-3 rounded-xl">
-            <User size={20} className="text-cyan-600" />
+            <Package size={20} className="text-cyan-600" />
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Individual customers</span>
+          <span className="text-xs text-gray-500">Shipper customers</span>
         </div>
       </div>
     </div>
@@ -137,12 +136,12 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="status"
               value={filters.status}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="Pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="pending">Pending Approval</option>
             </select>
           </div>
 
@@ -152,11 +151,16 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="type"
               value={filters.type}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All Types</option>
-              <option value="Business">Business</option>
-              <option value="Individual">Individual</option>
+              <option value="direct">Direct Customer</option>
+              <option value="broker">Broker</option>
+              <option value="freight-forwarder">Freight Forwarder</option>
+              <option value="3pl">3PL</option>
+              <option value="shipper">Shipper</option>
+              <option value="business">Business</option>
+              <option value="other">Other</option>
             </select>
           </div>
 
@@ -166,7 +170,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
               name="state"
               value={filters.state}
               onChange={onFilterChange}
-              className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All States</option>
               {filters.availableStates.map(state => (
@@ -185,7 +189,7 @@ const CustomerFilters = ({ filters, onFilterChange, onSearch }) => {
                 type="text"
                 value={filters.search}
                 onChange={onSearch}
-                className="block w-full pl-10 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="block w-full pl-10 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 bg-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Search customers..."
               />
             </div>
@@ -370,122 +374,161 @@ const CustomerTable = ({ customers, onEdit, onDelete, onView, onAddNew }) => {
   );
 };
 
-// View Customer Modal (like ViewComplianceModal)
+// View Customer Modal with modern UI
 const ViewCustomerModal = ({ isOpen, onClose, customer }) => {
   if (!isOpen || !customer) return null;
 
+  const getCustomerTypeIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'shipper':
+        return <Package size={20} />;
+      case 'broker':
+        return <Briefcase size={20} />;
+      case 'business':
+        return <Building size={20} />;
+      default:
+        return <Users size={20} />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-medium text-gray-900 flex items-center">
-            <div className="mr-2 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-              {customer.customer_type === "Individual" ? (
-                <User size={18} className="text-blue-600" />
-              ) : (
-                <Building size={18} className="text-blue-600" />
-              )}
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Customer Details</h2>
+              <p className="text-blue-100 text-sm">{customer.company_name}</p>
             </div>
-            <span className="truncate max-w-md">{customer.company_name}</span>
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100"
-          >
-            <X size={20} />
-          </button>
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         <div className="p-6">
-          {/* Status */}
-          <div className="mb-6 flex flex-wrap items-center gap-3">
-            <StatusBadge status={customer.status || "Active"} />
-            {customer.customer_type && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {customer.customer_type}
-              </span>
+          {/* Status and Type Badges */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(customer.status)}`}>
+              {customer.status || "Active"}
+            </span>
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              {getCustomerTypeIcon(customer.customer_type)}
+              {customer.customer_type ? customer.customer_type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) : "Business"}
+            </span>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="space-y-6">
+            {/* Contact Information Card */}
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Phone size={20} className="mr-2 text-gray-600" />
+                Contact Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Contact Name</p>
+                  <p className="text-base font-medium text-gray-900">{customer.contact_name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Email</p>
+                  <p className="text-base font-medium text-gray-900">
+                    {customer.email ? (
+                      <a href={`mailto:${customer.email}`} className="text-blue-600 hover:text-blue-800">
+                        {customer.email}
+                      </a>
+                    ) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Phone</p>
+                  <p className="text-base font-medium text-gray-900">
+                    {customer.phone ? (
+                      <a href={`tel:${customer.phone}`} className="text-blue-600 hover:text-blue-800">
+                        {customer.phone}
+                      </a>
+                    ) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Customer Since</p>
+                  <p className="text-base font-medium text-gray-900">
+                    {customer.created_at
+                      ? new Date(customer.created_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Information Card */}
+            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <MapPin size={20} className="mr-2 text-gray-600" />
+                Location Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600 mb-1">Address</p>
+                  <p className="text-base font-medium text-gray-900">{customer.address || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">City</p>
+                  <p className="text-base font-medium text-gray-900">{customer.city || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">State</p>
+                  <p className="text-base font-medium text-gray-900">{customer.state || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">ZIP Code</p>
+                  <p className="text-base font-medium text-gray-900">{customer.zip || "—"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            {customer.notes && (
+              <div className="bg-blue-50 rounded-lg p-5 border border-blue-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <FileText size={20} className="mr-2 text-blue-600" />
+                  Notes
+                </h3>
+                <p className="text-base text-gray-700 whitespace-pre-wrap">{customer.notes}</p>
+              </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="block mb-4">
-              <h3 className="text-sm font-medium mb-1">Customer Information</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Company:</span>{" "}
-                  <span className="text-gray-500">{customer.company_name || "N/A"}</span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Contact:</span>{" "}
-                  <span className="text-gray-500">{customer.contact_name || "N/A"}</span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Type:</span>{" "}
-                  <span className="text-gray-500">{customer.customer_type || "Business"}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="block mb-4">
-              <h3 className="text-sm font-medium mb-1">Contact Information</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Email:</span>{" "}
-                  <span className="text-gray-500">{customer.email || "N/A"}</span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Phone:</span>{" "}
-                  <span className="text-gray-500">{customer.phone || "N/A"}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="block mb-4">
-              <h3 className="text-sm font-medium mb-1">Location</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Address:</span>{" "}
-                  <span className="text-gray-500">{customer.address || "N/A"}</span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">City, State:</span>{" "}
-                  <span className="text-gray-500">
-                    {customer.city ? `${customer.city}, ${customer.state}` : customer.state || "N/A"}
-                  </span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Zip Code:</span>{" "}
-                  <span className="text-gray-500">{customer.zip || "N/A"}</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="block mb-4">
-              <h3 className="text-sm font-medium mb-1">Account Details</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Status:</span>{" "}
-                  <span className="text-gray-500">{customer.status || "Active"}</span>
-                </p>
-                <p className="text-sm mb-1">
-                  <span className="font-medium">Customer Since:</span>{" "}
-                  <span className="text-gray-500">
-                    {customer.created_at
-                      ? new Date(customer.created_at).toLocaleDateString()
-                      : "N/A"}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            <div className="md:col-span-2 block mb-4">
-              <h3 className="text-sm font-medium mb-1">Notes</h3>
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                  {customer.notes || "No notes available."}
-                </p>
-              </div>
-            </div>
+          {/* Action Buttons */}
+          <div className="mt-8 flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -520,8 +563,8 @@ export default function CustomersPage() {
     totalCustomers: 0,
     activeCustomers: 0,
     newCustomers: 0,
-    businessCustomers: 0,
-    individualCustomers: 0
+    brokerCustomers: 0,
+    shipperCustomers: 0
   });
 
   // Load customers function
@@ -534,18 +577,20 @@ export default function CustomersPage() {
 
       // Calculate stats
       if (data) {
+        // Get the first day of current month
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         setStats({
           totalCustomers: data.length,
-          activeCustomers: data.filter(c => c.status === 'Active').length,
+          activeCustomers: data.filter(c => c.status === 'active' || c.status === 'Active').length,
           newCustomers: data.filter(c => {
-            // Consider customers added in the last 30 days as "new"
+            // Consider customers added this month as "new"
             const createdDate = new Date(c.created_at);
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return createdDate >= thirtyDaysAgo;
+            return createdDate >= firstDayOfMonth;
           }).length,
-          businessCustomers: data.filter(c => c.customer_type === 'Business').length,
-          individualCustomers: data.filter(c => c.customer_type === 'Individual').length
+          brokerCustomers: data.filter(c => c.customer_type === 'broker' || c.customer_type === 'Broker').length,
+          shipperCustomers: data.filter(c => c.customer_type === 'shipper' || c.customer_type === 'Shipper').length
         });
       }
 
@@ -592,46 +637,6 @@ export default function CustomersPage() {
     checkUserAndLoadData();
   }, [loadCustomers]);
 
-  // Handle saving a customer (for both add and edit)
-  const handleSaveCustomer = async (customerData) => {
-    try {
-      if (user) {
-        // If this is an edit (customerData has an id), update the customer in database
-        if (customerData.id) {
-          const { data, error } = await supabase
-            .from('customers')
-            .update({
-              company_name: customerData.company_name,
-              contact_name: customerData.contact_name,
-              email: customerData.email,
-              phone: customerData.phone,
-              address: customerData.address,
-              city: customerData.city,
-              state: customerData.state,
-              zip: customerData.zip,
-              customer_type: customerData.customer_type,
-              status: customerData.status,
-              notes: customerData.notes,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', customerData.id);
-
-          if (error) throw error;
-        }
-        // If this is a new customer, it will be handled by the CustomerFormModal
-
-        // Reload customers after save
-        await loadCustomers(user.id);
-
-        // Close the modal
-        setFormModalOpen(false);
-        setCurrentCustomer(null);
-      }
-    } catch (error) {
-      console.error('Error saving customer:', error);
-      setError('Something went wrong. Please try again.');
-    }
-  };
 
   // Handle customer edit
   const handleEditCustomer = (customer) => {
@@ -697,9 +702,9 @@ export default function CustomersPage() {
       return true;
     })
     .filter(customer => {
-      // Apply status filter
+      // Apply status filter (handle case insensitive)
       if (statusFilter && statusFilter !== 'all') {
-        return customer.status === statusFilter;
+        return customer.status?.toLowerCase() === statusFilter.toLowerCase();
       }
       return true;
     })
@@ -813,37 +818,79 @@ export default function CustomersPage() {
                 <div className="bg-blue-500 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <Building size={18} className="mr-2" />
-                    Customer Categories
+                    Customer Types
                   </h3>
                 </div>
                 <div className="p-4">
-                  <div
-                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${typeFilter === 'Business' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                      }`}
-                    onClick={() => setTypeFilter(typeFilter === 'Business' ? 'all' : 'Business')}
-                  >
-                    <div className="flex items-center">
-                      <Building size={16} className="text-blue-600 mr-2" />
-                      <span className="text-sm font-medium text-gray-700">Business</span>
-                    </div>
-                    <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
-                      {stats.businessCustomers || Math.round(stats.totalCustomers * 0.7)}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${typeFilter === 'Individual' ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                      }`}
-                    onClick={() => setTypeFilter(typeFilter === 'Individual' ? 'all' : 'Individual')}
-                  >
-                    <div className="flex items-center">
-                      <User size={16} className="text-blue-600 mr-2" />
-                      <span className="text-sm font-medium text-gray-700">Individual</span>
-                    </div>
-                    <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
-                      {stats.individualCustomers || Math.round(stats.totalCustomers * 0.3)}
-                    </span>
-                  </div>
+                  {(() => {
+                    // Get unique customer types that are actually in use
+                    const usedTypes = [...new Set(customers.map(c => c.customer_type).filter(Boolean))];
+                    
+                    // Map to display data
+                    const typeMap = {
+                      'direct': { label: 'Direct Customer', icon: Building },
+                      'broker': { label: 'Broker', icon: Briefcase },
+                      'freight-forwarder': { label: 'Freight Forwarder', icon: Truck },
+                      '3pl': { label: '3PL', icon: Package },
+                      'shipper': { label: 'Shipper', icon: Package },
+                      'business': { label: 'Business', icon: Building },
+                      'other': { label: 'Other', icon: Users }
+                    };
+                    
+                    // Only show types that are in use
+                    const typesToShow = usedTypes
+                      .filter(type => type) // Filter out null/undefined
+                      .map(type => {
+                        const typeKey = type.toLowerCase();
+                        const typeInfo = typeMap[typeKey] || { label: type, icon: Users };
+                        const count = customers.filter(c => 
+                          c.customer_type === type || 
+                          c.customer_type?.toLowerCase() === typeKey
+                        ).length;
+                        
+                        return {
+                          value: typeKey,
+                          label: typeInfo.label,
+                          icon: typeInfo.icon,
+                          count
+                        };
+                      })
+                      .sort((a, b) => b.count - a.count); // Sort by count descending
+                    
+                    if (typesToShow.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <Users size={36} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm">No customer types in use yet</p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <>
+                        {typesToShow.map(type => {
+                          const Icon = type.icon;
+                          return (
+                            <div
+                              key={type.value}
+                              className={`mb-2 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                                typeFilter === type.value ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
+                              }`}
+                              onClick={() => setTypeFilter(typeFilter === type.value ? 'all' : type.value)}
+                            >
+                              <div className="flex items-center">
+                                <Icon size={16} className="text-blue-600 mr-2" />
+                                <span className="text-sm font-medium text-gray-700">{type.label}</span>
+                              </div>
+                              <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                                {type.count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
 
                   <div className="mt-2 pt-2 border-t border-gray-200 text-center">
                     <button
@@ -949,19 +996,19 @@ export default function CustomersPage() {
         </div>
 
         {/* Modals */}
-        {formModalOpen && (
-          <CustomerFormModal
-            isOpen={formModalOpen}
-            onClose={() => {
-              setFormModalOpen(false);
-              setCurrentCustomer(null);
-            }}
-            userId={user?.id}
-            existingCustomer={currentCustomer}
-            onSave={handleSaveCustomer}
-            isSubmitting={customersLoading}
-          />
-        )}
+        <NewCustomerModal
+          isOpen={formModalOpen}
+          onClose={() => {
+            setFormModalOpen(false);
+            setCurrentCustomer(null);
+          }}
+          onCustomerCreated={() => {
+            if (user) {
+              loadCustomers(user.id);
+            }
+          }}
+          initialData={currentCustomer}
+        />
 
         <ViewCustomerModal
           isOpen={viewModalOpen}
