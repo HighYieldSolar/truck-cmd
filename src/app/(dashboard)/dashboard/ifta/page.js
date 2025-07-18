@@ -26,7 +26,9 @@ import {
   Route,
   Gauge,
   FileText,
-  StickyNote
+  StickyNote,
+  ChevronRight,
+  BarChart2
 } from "lucide-react";
 
 // Import components
@@ -540,38 +542,66 @@ export default function IFTACalculatorPage() {
 
   return (
     <DashboardLayout activePage="ifta">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          {/* Header with gradient background */}
-          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold mb-1">IFTA Mileage & Fuel Tracker</h1>
-                <p className="text-blue-100">Track mileage and fuel by state for IFTA reporting</p>
+          {/* Enhanced Header with Workflow Steps */}
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div className="mb-4 lg:mb-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white/20 p-2 rounded-lg">
+                      <Calculator size={28} />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
+                      <p className="text-blue-100 text-sm md:text-base">Track mileage and fuel by jurisdiction for quarterly reporting</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link
+                    href="/dashboard/fuel"
+                    className="px-4 py-2.5 bg-white/10 backdrop-blur text-white rounded-lg hover:bg-white/20 transition-all duration-200 flex items-center justify-center font-medium border border-white/20"
+                  >
+                    <Fuel size={18} className="mr-2" />
+                    Fuel Tracker
+                  </Link>
+                  <button
+                    onClick={handleExportData}
+                    className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-md flex items-center justify-center font-medium"
+                    disabled={trips.length === 0}
+                  >
+                    <FileDown size={18} className="mr-2" />
+                    Export Report
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={forceFuelSync}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
-                >
-                  <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Sync Fuel Data
-                </button>
-                <button
-                  onClick={handleExportData}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
-                  disabled={trips.length === 0}
-                >
-                  <FileDown size={18} className="mr-2" />
-                  Export for IFTA
-                </button>
-                <Link
-                  href="/dashboard/fuel"
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
-                >
-                  <Fuel size={18} className="mr-2" />
-                  Fuel Tracker
-                </Link>
+            </div>
+            
+            {/* Workflow Steps Indicator */}
+            <div className="bg-white rounded-b-xl shadow-sm px-6 py-4 -mt-1">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">1</div>
+                    <span className="ml-2 font-medium text-gray-700">Select Period</span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400 mx-2" />
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">2</div>
+                    <span className="ml-2 font-medium text-gray-700">Add/Import Trips</span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400 mx-2" />
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">3</div>
+                    <span className="ml-2 font-medium text-gray-700">Review & Export</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Info size={16} className="text-gray-400" />
+                  <span className="text-sm text-gray-500">Need help? <a href="#" className="text-blue-600 hover:underline">View IFTA Guide</a></span>
+                </div>
               </div>
             </div>
           </div>
@@ -629,327 +659,269 @@ export default function IFTACalculatorPage() {
             </div>
           )}
 
-          {/* Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total Trips</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalTrips}</p>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-xl">
-                  <Route size={20} className="text-blue-600" />
+          {/* Enhanced Statistics Cards with Better Visual Hierarchy */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <BarChart2 size={20} className="mr-2 text-gray-600" />
+              Quarter Overview
+              {activeQuarter && <span className="ml-2 text-sm font-normal text-gray-500">({activeQuarter})</span>}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-blue-50 p-2 rounded-lg group-hover:bg-blue-100 transition-colors">
+                      <Route size={18} className="text-blue-600" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">TRIPS</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalTrips}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total records</p>
                 </div>
               </div>
-              <div className="px-4 py-2 bg-gray-50">
-                <span className="text-xs text-gray-500">Trip records</span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total Miles</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">{Math.round(stats.totalMiles).toLocaleString()}</p>
-                </div>
-                <div className="bg-green-100 p-3 rounded-xl">
-                  <Truck size={20} className="text-green-600" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-green-50 p-2 rounded-lg group-hover:bg-green-100 transition-colors">
+                      <Truck size={18} className="text-green-600" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">MILES</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{Math.round(stats.totalMiles).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total driven</p>
                 </div>
               </div>
-              <div className="px-4 py-2 bg-gray-50">
-                <span className="text-xs text-gray-500">Miles driven</span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total Gallons</p>
-                  <p className="text-2xl font-bold text-orange-500 mt-1">{Math.round(stats.totalGallons).toLocaleString()}</p>
-                </div>
-                <div className="bg-orange-100 p-3 rounded-xl">
-                  <Fuel size={20} className="text-orange-600" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-orange-50 p-2 rounded-lg group-hover:bg-orange-100 transition-colors">
+                      <Fuel size={18} className="text-orange-600" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">FUEL</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{Math.round(stats.totalGallons).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Gallons used</p>
                 </div>
               </div>
-              <div className="px-4 py-2 bg-gray-50">
-                <span className="text-xs text-gray-500">Fuel consumed</span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Average MPG</p>
-                  <p className="text-2xl font-bold text-red-600 mt-1">{stats.avgMpg.toFixed(2)}</p>
-                </div>
-                <div className="bg-red-100 p-3 rounded-xl">
-                  <Gauge size={20} className="text-red-600" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-red-50 p-2 rounded-lg group-hover:bg-red-100 transition-colors">
+                      <Gauge size={18} className="text-red-600" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">MPG</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{stats.avgMpg.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Average</p>
                 </div>
               </div>
-              <div className="px-4 py-2 bg-gray-50">
-                <span className="text-xs text-gray-500">Fleet efficiency</span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Jurisdictions</p>
-                  <p className="text-2xl font-bold text-purple-600 mt-1">{stats.uniqueJurisdictions}</p>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-purple-50 p-2 rounded-lg group-hover:bg-purple-100 transition-colors">
+                      <MapPin size={18} className="text-purple-600" />
+                    </div>
+                    <span className="text-xs text-gray-500 font-medium">STATES</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{stats.uniqueJurisdictions}</p>
+                  <p className="text-xs text-gray-500 mt-1">Jurisdictions</p>
                 </div>
-                <div className="bg-purple-100 p-3 rounded-xl">
-                  <MapPin size={20} className="text-purple-600" />
-                </div>
-              </div>
-              <div className="px-4 py-2 bg-gray-50">
-                <span className="text-xs text-gray-500">States/provinces</span>
               </div>
             </div>
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Sidebar */}
-            <div className="lg:col-span-1">
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-blue-500 px-5 py-4 text-white">
-                  <h3 className="font-semibold flex items-center">
-                    <Calculator size={18} className="mr-2" />
-                    Quick Actions
-                  </h3>
-                </div>
-                <div className="p-4">
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleShowMileageImporter}
-                      className="w-full p-3 bg-gray-50 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <FileText size={16} className="text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-700">Import Trips</span>
-                      </div>
-                      <ArrowRight size={14} className="text-gray-400" />
-                    </button>
-
-                    <Link
-                      href="/dashboard/fuel"
-                      className="w-full p-3 bg-gray-50 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <Fuel size={16} className="text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-700">Fuel Tracker</span>
-                      </div>
-                      <ArrowRight size={14} className="text-gray-400" />
-                    </Link>
-
-                    <button
-                      onClick={handleExportData}
-                      disabled={trips.length === 0}
-                      className="w-full p-3 bg-gray-50 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <div className="flex items-center">
-                        <Download size={16} className="text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-700">Export Report</span>
-                      </div>
-                      <ArrowRight size={14} className="text-gray-400" />
-                    </button>
-                  </div>
+          {/* Simplified Main Content - No Sidebar */}
+          <div className="space-y-6">
+            {/* Step 1: Period Selection with Integrated Actions */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">1</div>
+                    Select Reporting Period & Vehicle
+                  </h2>
+                  <button
+                    onClick={forceFuelSync}
+                    className="text-sm px-3 py-1.5 bg-white text-gray-600 rounded-lg hover:bg-gray-50 transition-colors shadow-sm flex items-center font-medium border border-gray-200"
+                  >
+                    <RefreshCw size={14} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                    Sync Data
+                  </button>
                 </div>
               </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      IFTA Quarter <span className="text-red-500">*</span>
+                    </label>
+                    <QuarterSelector
+                      activeQuarter={activeQuarter}
+                      setActiveQuarter={setActiveQuarter}
+                      isLoading={loading}
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Select the quarter for your IFTA reporting
+                    </p>
+                  </div>
 
-              {/* Recent Trips */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-green-500 px-5 py-4 text-white">
-                  <h3 className="font-semibold flex items-center">
-                    <Clock size={18} className="mr-2" />
-                    Recent Trips
-                  </h3>
-                </div>
-                <div className="p-4">
-                  {trips.slice(0, 5).length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Route size={36} className="mx-auto mb-2 text-gray-400" />
-                      <p>No trips recorded yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {trips.slice(0, 5).map(trip => {
-                        const tripDate = new Date(trip.start_date).toLocaleDateString();
-
-                        return (
-                          <div
-                            key={trip.id}
-                            className="p-3 bg-gray-50 rounded-lg hover:bg-green-50 cursor-pointer transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 text-sm">
-                                  {trip.start_jurisdiction} → {trip.end_jurisdiction}
-                                </p>
-                                <p className="text-sm text-gray-500">{tripDate}</p>
-                              </div>
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {trip.total_miles} mi
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-center">
-                        <button
-                          onClick={() => { }}
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
-                        >
-                          View all trips
-                          <ArrowRight size={14} className="ml-1" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vehicle Filter
+                    </label>
+                    <VehicleSelector
+                      selectedVehicle={selectedVehicle}
+                      setSelectedVehicle={setSelectedVehicle}
+                      vehicles={uniqueVehicles}
+                      isLoading={loading && !isDataLoaded}
+                      userId={user?.id}
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Filter data by specific vehicle or view all
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Main Content */}
-            <div className="lg:col-span-3">
-              {/* Period Selection - Updated with gradient header */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-5 py-4 text-white">
-                  <h3 className="font-semibold flex items-center">
-                    <Calendar size={18} className="mr-2" />
-                    Reporting Period
-                  </h3>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        IFTA Quarter
-                      </label>
-                      <QuarterSelector
-                        activeQuarter={activeQuarter}
-                        setActiveQuarter={setActiveQuarter}
-                        isLoading={loading}
-                      />
-                      <p className="mt-2 text-xs text-gray-500">
-                        Select the quarter for your IFTA reporting
-                      </p>
-                    </div>
+            {/* Navigation Toggle */}
+            <div className="flex justify-center">
+              <IFTAFuelToggle
+                currentPage="ifta"
+                currentQuarter={activeQuarter}
+              />
+            </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Vehicle Filter
-                      </label>
-                      <VehicleSelector
-                        selectedVehicle={selectedVehicle}
-                        setSelectedVehicle={setSelectedVehicle}
-                        vehicles={uniqueVehicles}
-                        isLoading={loading && !isDataLoaded}
-                        userId={user?.id}
-                      />
-                      <p className="mt-2 text-xs text-gray-500">
-                        Filter data by specific vehicle or view all
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {/* Enhanced IFTA Summary */}
+            {!databaseError && (
+              <SimplifiedIFTASummary
+                userId={user?.id}
+                quarter={activeQuarter}
+                trips={trips}
+                fuelData={fuelData}
+                selectedVehicle={selectedVehicle}
+                isLoading={loading && !isDataLoaded}
+              />
+            )}
+
+            {/* Step 2: Add or Import Trips */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">2</div>
+                  Add or Import Trip Data
+                </h2>
               </div>
-
-              {/* IFTA/Fuel Toggle */}
-              <div className="mb-6">
-                <IFTAFuelToggle
-                  currentPage="ifta"
-                  currentQuarter={activeQuarter}
-                />
-              </div>
-
-              {/* Enhanced IFTA Fuel Sync */}
-              {!databaseError && (
-                <div className="mb-6">
-                  {loading && !isDataLoaded ? (
-                    <div className="p-4 bg-white shadow rounded-lg mb-6">
-                      <div className="animate-pulse flex space-x-4">
-                        <div className="flex-1 space-y-4 py-1">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded"></div>
-                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <EnhancedIFTAFuelSync
-                      userId={user?.id}
-                      quarter={activeQuarter}
-                      fuelData={fuelData}
-                      trips={trips}
-                      selectedVehicle={selectedVehicle}
-                      onSyncComplete={handleSyncComplete}
-                      onError={(error) => setError(error.message)}
-                    />
-                  )}
+              <div className="p-6">
+                {/* Tab Navigation */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <button
+                    onClick={() => setShowMileageImporter(false)}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                      !showMileageImporter
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Plus size={18} />
+                    Manual Entry
+                  </button>
+                  <button
+                    onClick={() => setShowMileageImporter(true)}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                      showMileageImporter
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FileText size={18} />
+                    Import from Mileage Tracker
+                  </button>
                 </div>
-              )}
 
-              {/* State Mileage Importer */}
-              {!databaseError && showMileageImporter && (
-                <div className="mb-6" ref={mileageImporterRef}>
-                  {loading && !isDataLoaded ? (
-                    <div className="p-4 bg-white shadow rounded-lg mb-6">
-                      <div className="animate-pulse flex space-x-4">
-                        <div className="flex-1 space-y-4 py-1">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded"></div>
-                            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <StateMileageImporter
-                      userId={user?.id}
-                      quarter={activeQuarter}
-                      onImportComplete={handleImportComplete}
-                      showImportedTrips={true}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Simplified IFTA Summary */}
-              {!databaseError && (
-                <div className="mb-6">
-                  <SimplifiedIFTASummary
-                    userId={user?.id}
-                    quarter={activeQuarter}
-                    trips={trips}
-                    fuelData={fuelData}
-                    selectedVehicle={selectedVehicle}
-                    isLoading={loading && !isDataLoaded}
+                {/* Content based on selection */}
+                {!showMileageImporter ? (
+                  <SimplifiedTripEntryForm
+                    onAddTrip={handleAddTrip}
+                    isLoading={loading}
+                    vehicles={uniqueVehicles}
                   />
-                </div>
-              )}
-
-              {/* Simplified Trip Entry Form */}
-              <div className="mb-6">
-                <SimplifiedTripEntryForm
-                  onAddTrip={handleAddTrip}
-                  isLoading={loading}
-                  vehicles={uniqueVehicles}
-                />
+                ) : (
+                  <div ref={mileageImporterRef}>
+                    {loading && !isDataLoaded ? (
+                      <div className="animate-pulse space-y-4">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                      </div>
+                    ) : (
+                      <StateMileageImporter
+                        userId={user?.id}
+                        quarter={activeQuarter}
+                        onImportComplete={handleImportComplete}
+                        showImportedTrips={true}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Simplified Trips List */}
-              <div className="mb-6">
+            {/* Step 3: Review Trips & Export */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">3</div>
+                    Review Trip Records
+                  </h2>
+                  {trips.length > 0 && (
+                    <span className="text-sm text-gray-500">
+                      {trips.length} trip{trips.length !== 1 ? 's' : ''} recorded
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="p-6">
                 <SimplifiedTripsList
                   trips={selectedVehicle === "all" ? trips : trips.filter(trip => trip.vehicle_id === selectedVehicle)}
                   onDeleteTrip={handleDeleteTrip}
                   isLoading={loading && !isDataLoaded}
                 />
+              </div>
+            </div>
+            
+            {/* Quick Help Section */}
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+              <div className="flex items-start gap-4">
+                <div className="bg-blue-100 rounded-lg p-2">
+                  <Info size={20} className="text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">IFTA Reporting Tips</h3>
+                  <ul className="space-y-2 text-sm text-blue-800">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span>Record all trips that cross state or provincial borders</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span>Keep fuel receipts and upload them to the Fuel Tracker for accurate calculations</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span>Export your data at the end of each quarter for filing</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span>Use the import feature to quickly add trips from your mileage tracker</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -978,6 +950,13 @@ export default function IFTACalculatorPage() {
             quarter={activeQuarter}
             fuelData={fuelData}
             selectedVehicle={selectedVehicle}
+            companyInfo={{
+              name: 'Truck Command',
+              phone: '(951) 505-1147',
+              email: 'support@truckcommand.com',
+              website: 'www.truckcommand.com',
+              logo: '/images/tc-name-tp-bg.png'
+            }}
           />
         )}
       </main>

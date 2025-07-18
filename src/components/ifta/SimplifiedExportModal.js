@@ -1,4 +1,4 @@
-// src/components/ifta/SimplifiedExportModal.js - Updated with vehicle filtering
+// src/components/ifta/SimplifiedExportModal.js - Enhanced with PDF export and branding
 import { useState } from "react";
 import {
   Download,
@@ -9,7 +9,8 @@ import {
   Check,
   FileSpreadsheet,
   File,
-  Truck
+  Truck,
+  Building2
 } from "lucide-react";
 
 export default function SimplifiedExportModal({
@@ -18,11 +19,21 @@ export default function SimplifiedExportModal({
   trips = [],
   quarter,
   fuelData = [],
-  selectedVehicle = "all" // Add selectedVehicle prop
+  selectedVehicle = "all", // Add selectedVehicle prop
+  companyInfo = null // Add company info for branding
 }) {
-  const [exportFormat, setExportFormat] = useState('csv');
+  const [exportFormat, setExportFormat] = useState('pdf'); // Default to PDF for professional export
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
   const [error, setError] = useState(null);
+
+  // Default company info if not provided
+  const company = companyInfo || {
+    name: 'Truck Command',
+    phone: '(951) 505-1147',
+    email: 'support@truckcommand.com',
+    website: 'www.truckcommand.com',
+    logo: '/images/tc-name-tp-bg.png'
+  };
 
   if (!isOpen) return null;
 
@@ -220,19 +231,263 @@ export default function SimplifiedExportModal({
     }
   };
 
+  // Handle PDF export with professional formatting
+  const exportToPdf = async () => {
+    try {
+      setExportState('loading');
+      setError(null);
+
+      console.log("Starting PDF generation for IFTA summary");
+
+      // Dynamically import jsPDF and jsPDF-AutoTable
+      const [jsPDFModule, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ]);
+
+      const jsPDF = jsPDFModule.default;
+      const autoTable = autoTableModule.default;
+
+      // Create new PDF document
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Add company logo
+      try {
+        // Convert logo path to full URL
+        const logoUrl = window.location.origin + company.logo;
+
+        // Create a promise to load the image
+        const loadImage = new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Failed to load logo'));
+          img.src = logoUrl;
+        });
+
+        try {
+          const img = await loadImage;
+          // Add logo to PDF - small size in top left corner
+          // Parameters: image, format, x, y, width, height
+          doc.addImage(img, 'PNG', 15, 15, 40, 10); // 40mm wide, 10mm tall (reduced height)
+        } catch (imgError) {
+          console.log('Could not load logo, using text fallback');
+          // Fallback to text if image fails
+          doc.setFillColor(30, 144, 255);
+          doc.rect(15, 15, 40, 10, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          doc.text('TRUCK COMMAND', 35, 21, { align: 'center' });
+        }
+      } catch (logoError) {
+        console.log('Logo error:', logoError);
+      }
+
+      // Add company info below the logo (simplified without address)
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Phone: ${company.phone}`, 15, 30);
+      doc.text(`Email: ${company.email}`, 15, 34);
+      if (company.website) {
+        doc.text(`Web: ${company.website}`, 15, 38);
+      }
+
+      // Add report title (moved down to avoid overlap with company info)
+      doc.setFontSize(20);
+      doc.setTextColor(0);
+      doc.setFont(undefined, 'bold');
+      doc.text('IFTA QUARTERLY FUEL TAX REPORT', 105, 55, { align: 'center' });
+
+      // Add quarter and date info
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Reporting Period: ${quarter}`, 105, 65, { align: 'center' });
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 71, { align: 'center' });
+
+      // Add vehicle info box
+      if (selectedVehicle !== "all") {
+        doc.setFillColor(240, 240, 240);
+        doc.rect(140, 15, 55, 20, 'F');
+        doc.setTextColor(0);
+        doc.setFontSize(10);
+        doc.text('Vehicle Information', 167.5, 22, { align: 'center' });
+        doc.setFont(undefined, 'bold');
+        doc.text(selectedVehicle, 167.5, 29, { align: 'center' });
+        doc.setFont(undefined, 'normal');
+      }
+
+      // Prepare jurisdiction data
+      const jurisdictionData = prepareJurisdictionData();
+      const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
+      const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
+      const avgMpg = totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : 'N/A';
+
+      // Add summary statistics box
+      let yPos = 85;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(15, yPos, 180, 30, 'F');
+      doc.setTextColor(0);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('SUMMARY STATISTICS', 105, yPos + 7, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      const statsY = yPos + 15;
+
+      // Left column stats
+      doc.text(`Total Miles: ${formatNumber(totalMiles, 1)}`, 25, statsY);
+      doc.text(`Total Fuel Purchased: ${formatNumber(totalGallons, 0)} gallons`, 25, statsY + 6);
+
+      // Right column stats
+      doc.text(`Average MPG: ${avgMpg}`, 120, statsY);
+      doc.text(`Reporting Jurisdictions: ${jurisdictionData.length}`, 120, statsY + 6);
+
+      // Add jurisdiction breakdown table
+      yPos = 125;
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('JURISDICTION BREAKDOWN', 15, yPos);
+
+      // Create table for jurisdiction data
+      const tableColumns = [
+        { header: 'Jurisdiction', dataKey: 'jurisdiction' },
+        { header: 'State Name', dataKey: 'stateName' },
+        { header: 'Miles Traveled', dataKey: 'miles' },
+        { header: 'Fuel Purchased (Gal)', dataKey: 'gallons' },
+        { header: 'Taxable Gallons', dataKey: 'taxableGallons' },
+        { header: 'Net Taxable', dataKey: 'netTaxable' }
+      ];
+
+      // Calculate taxable gallons for each jurisdiction
+      const tableData = jurisdictionData.map(state => ({
+        jurisdiction: state.state,
+        stateName: state.state,
+        miles: formatNumber(state.miles, 1),
+        gallons: formatNumber(state.gallons, 0),
+        taxableGallons: totalGallons > 0 ? formatNumber((state.miles / totalMiles) * totalGallons, 1) : '0',
+        netTaxable: totalGallons > 0 ? formatNumber(((state.miles / totalMiles) * totalGallons) - state.gallons, 1) : '0'
+      }));
+
+      // Add totals row
+      tableData.push({
+        jurisdiction: 'TOTAL',
+        stateName: '',
+        miles: formatNumber(totalMiles, 1),
+        gallons: formatNumber(totalGallons, 0),
+        taxableGallons: formatNumber(totalGallons, 0),
+        netTaxable: '0.0'
+      });
+
+      autoTable(doc, {
+        startY: yPos + 5,
+        columns: tableColumns,
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [30, 144, 255],
+          textColor: 255,
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          fontSize: 9
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        footStyles: {
+          fillColor: [220, 220, 220],
+          textColor: 0,
+          fontStyle: 'bold'
+        },
+        // Highlight the total row
+        didParseCell: function (data) {
+          if (data.row.index === tableData.length - 1) {
+            data.cell.styles.fillColor = [220, 220, 220];
+            data.cell.styles.textColor = 0;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      });
+
+      // Get final Y position after table
+      const finalY = doc.lastAutoTable.finalY || 200;
+
+      // Add additional information section
+      if (finalY < 240) {
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(80);
+
+        let infoY = finalY + 15;
+
+        // Add trip and fuel record counts
+        doc.text(`Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchase records`, 15, infoY);
+
+        // Add notes section
+        infoY += 10;
+        doc.setFont(undefined, 'italic');
+        doc.text('Note: Taxable gallons are calculated based on miles traveled in each jurisdiction as a', 15, infoY);
+        doc.text('percentage of total miles, multiplied by total fuel consumed.', 15, infoY + 5);
+      }
+
+      // Add footer with page numbers and timestamp
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.setFont(undefined, 'normal');
+
+        // Add page footer
+        doc.text(
+          `IFTA Report - ${quarter} | Generated on ${new Date().toLocaleString()} | Page ${i} of ${pageCount}`,
+          105, 285, { align: 'center' }
+        );
+
+        // Add confidentiality notice
+        doc.setFont(undefined, 'italic');
+        doc.text(
+          'This document contains confidential tax information. Handle accordingly.',
+          105, 290, { align: 'center' }
+        );
+      }
+
+      // Save the PDF
+      const filename = `IFTA_Report_${quarter}_${selectedVehicle === "all" ? "All_Vehicles" : selectedVehicle}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+
+      console.log(`IFTA PDF saved as: ${filename}`);
+
+      setExportState('success');
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setExportState('error');
+      setError('Failed to generate PDF. Please try again.');
+    }
+  };
+
   // Handle print view
   const printSummary = () => {
     try {
       setExportState('loading');
 
-      // Close the modal before printing to avoid it being included
-      onClose();
-
-      // Slight delay to ensure modal is closed
-      setTimeout(() => {
-        window.print();
-        setExportState('idle');
-      }, 100);
+      // Generate PDF and print it instead of printing the page
+      exportToPdf().then(() => {
+        // After PDF is generated, trigger print
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      });
     } catch (error) {
       console.error('Error printing:', error);
       setExportState('error');
@@ -243,6 +498,9 @@ export default function SimplifiedExportModal({
   // Handle export based on selected format
   const handleExport = () => {
     switch (exportFormat) {
+      case 'pdf':
+        exportToPdf();
+        break;
       case 'csv':
         exportToCsv();
         break;
@@ -253,7 +511,7 @@ export default function SimplifiedExportModal({
         printSummary();
         break;
       default:
-        exportToCsv();
+        exportToPdf();
     }
   };
 
@@ -309,7 +567,22 @@ export default function SimplifiedExportModal({
               <label className="text-sm font-medium text-gray-700 block mb-2">
                 Export Format
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                  }`}>
+                  <input
+                    type="radio"
+                    name="exportFormat"
+                    value="pdf"
+                    checked={exportFormat === 'pdf'}
+                    onChange={() => setExportFormat('pdf')}
+                    className="sr-only"
+                  />
+                  <FileText size={32} className={exportFormat === 'pdf' ? 'text-blue-500' : 'text-gray-400'} />
+                  <span className="mt-2 text-sm font-medium text-gray-900">PDF Report</span>
+                  <span className="text-xs text-gray-500">Professional format</span>
+                </label>
+
                 <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
@@ -324,7 +597,9 @@ export default function SimplifiedExportModal({
                   <span className="mt-2 text-sm font-medium text-gray-900">CSV</span>
                   <span className="text-xs text-gray-500">For Excel</span>
                 </label>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
@@ -352,7 +627,7 @@ export default function SimplifiedExportModal({
                   />
                   <Printer size={32} className={exportFormat === 'print' ? 'text-blue-500' : 'text-gray-400'} />
                   <span className="mt-2 text-sm font-medium text-gray-900">Print</span>
-                  <span className="text-xs text-gray-500">For hard copy</span>
+                  <span className="text-xs text-gray-500">Hard copy</span>
                 </label>
               </div>
             </div>

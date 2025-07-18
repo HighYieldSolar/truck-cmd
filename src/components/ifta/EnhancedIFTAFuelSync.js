@@ -147,7 +147,7 @@ export default function EnhancedIFTAFuelSync({
     }
 
     // Only run if not run before or if props changed
-    if (!hasRun.current && userId && quarter && (filteredFuelData.length > 0)) {
+    if (!hasRun.current && userId && quarter) {
       runAnalysis();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -358,7 +358,7 @@ export default function EnhancedIFTAFuelSync({
     );
   }
 
-  // Default loading or no data state
+  // Default loading state - only show when actually loading
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
       <div className="bg-gradient-to-r from-orange-600 to-orange-500 px-5 py-4 text-white">
@@ -374,9 +374,7 @@ export default function EnhancedIFTAFuelSync({
             <p className="text-lg font-medium text-gray-900">
               {!userId || !quarter
                 ? "Waiting for quarter selection..."
-                : filteredFuelData.length === 0
-                  ? "No fuel data available for this quarter."
-                  : "Analyzing fuel data..."}
+                : "Initializing fuel data analysis..."}
             </p>
             <p className="text-sm text-gray-500 mt-1">
               This may take a few moments
