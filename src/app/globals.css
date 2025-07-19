@@ -40,6 +40,23 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Touch event improvements for mobile devices */
+.touch-manipulation {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Fix for iOS Safari modal issues */
+@supports (-webkit-touch-callout: none) {
+  /* CSS specific to iOS devices */ 
+  .fixed {
+    -webkit-backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
 /* Dark theme specific improvements */
 .dark {
   color-scheme: dark;

@@ -569,8 +569,9 @@ export default function IFTACalculatorPage() {
                   </Link>
                   <button
                     onClick={handleExportData}
-                    className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-md flex items-center justify-center font-medium"
+                    className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 shadow-md flex items-center justify-center font-medium touch-manipulation"
                     disabled={trips.length === 0}
+                    type="button"
                   >
                     <FileDown size={18} className="mr-2" />
                     Export Report
