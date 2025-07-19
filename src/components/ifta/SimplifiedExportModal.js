@@ -1,6 +1,5 @@
 // src/components/ifta/SimplifiedExportModal.js - Enhanced with PDF export and branding
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import {
   Download,
   X,
@@ -26,21 +25,6 @@ export default function SimplifiedExportModal({
   const [exportFormat, setExportFormat] = useState('pdf'); // Default to PDF for professional export
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
   const [error, setError] = useState(null);
-  const [mounted, setMounted] = useState(false);
-
-  // Use portal for better mobile rendering
-  useEffect(() => {
-    setMounted(true);
-    
-    // Prevent body scroll when modal is open
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
 
   // Default company info if not provided
   const company = companyInfo || {
@@ -51,7 +35,7 @@ export default function SimplifiedExportModal({
     logo: '/images/tc-name-tp-bg.png'
   };
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   // Format numbers for CSV export
   const formatNumber = (value, decimals = 1) => {
@@ -288,42 +272,44 @@ export default function SimplifiedExportModal({
           const img = await loadImage;
           // Add logo to PDF - small size in top left corner
           // Parameters: image, format, x, y, width, height
-          doc.addImage(img, 'PNG', 15, 15, 40, 10); // 40mm wide, 10mm tall (reduced height)
+          doc.addImage(img, 'PNG', 15, 15, 40, 15); // 40mm wide, 15mm tall
         } catch (imgError) {
           console.log('Could not load logo, using text fallback');
           // Fallback to text if image fails
           doc.setFillColor(30, 144, 255);
-          doc.rect(15, 15, 40, 10, 'F');
+          doc.rect(15, 15, 40, 15, 'F');
           doc.setTextColor(255, 255, 255);
-          doc.setFontSize(10);
+          doc.setFontSize(12);
           doc.setFont(undefined, 'bold');
-          doc.text('TRUCK COMMAND', 35, 21, { align: 'center' });
+          doc.text('TRUCK COMMAND', 35, 24, { align: 'center' });
         }
       } catch (logoError) {
         console.log('Logo error:', logoError);
       }
 
-      // Add company info below the logo (simplified without address)
+      // Add company info below the logo
       doc.setFontSize(9);
       doc.setTextColor(80);
       doc.setFont(undefined, 'normal');
-      doc.text(`Phone: ${company.phone}`, 15, 30);
-      doc.text(`Email: ${company.email}`, 15, 34);
+      doc.text(company.address, 15, 35);
+      doc.text(`${company.city}, ${company.state} ${company.zip}`, 15, 39);
+      doc.text(`Phone: ${company.phone}`, 15, 43);
+      doc.text(`Email: ${company.email}`, 15, 47);
       if (company.website) {
-        doc.text(`Web: ${company.website}`, 15, 38);
+        doc.text(`Web: ${company.website}`, 15, 51);
       }
 
-      // Add report title (moved down to avoid overlap with company info)
+      // Add report title
       doc.setFontSize(20);
       doc.setTextColor(0);
       doc.setFont(undefined, 'bold');
-      doc.text('IFTA QUARTERLY FUEL TAX REPORT', 105, 55, { align: 'center' });
+      doc.text('IFTA QUARTERLY FUEL TAX REPORT', 105, 25, { align: 'center' });
 
       // Add quarter and date info
       doc.setFontSize(12);
       doc.setFont(undefined, 'normal');
-      doc.text(`Reporting Period: ${quarter}`, 105, 65, { align: 'center' });
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 71, { align: 'center' });
+      doc.text(`Reporting Period: ${quarter}`, 105, 35, { align: 'center' });
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 41, { align: 'center' });
 
       // Add vehicle info box
       if (selectedVehicle !== "all") {
@@ -344,7 +330,7 @@ export default function SimplifiedExportModal({
       const avgMpg = totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : 'N/A';
 
       // Add summary statistics box
-      let yPos = 85;
+      let yPos = 60;
       doc.setFillColor(245, 245, 245);
       doc.rect(15, yPos, 180, 30, 'F');
       doc.setTextColor(0);
@@ -365,7 +351,7 @@ export default function SimplifiedExportModal({
       doc.text(`Reporting Jurisdictions: ${jurisdictionData.length}`, 120, statsY + 6);
 
       // Add jurisdiction breakdown table
-      yPos = 125;
+      yPos = 100;
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('JURISDICTION BREAKDOWN', 15, yPos);
@@ -531,16 +517,9 @@ export default function SimplifiedExportModal({
     }
   };
 
-  const modalContent = (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 overflow-y-auto"
-         onClick={(e) => {
-           // Close modal when clicking backdrop
-           if (e.target === e.currentTarget && exportState !== 'loading') {
-             onClose();
-           }
-         }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto my-8 relative"
-           onClick={(e) => e.stopPropagation()}>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
         <div className="flex justify-between items-center border-b p-4">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -548,9 +527,8 @@ export default function SimplifiedExportModal({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-gray-500 hover:text-gray-700"
             disabled={exportState === 'loading'}
-            aria-label="Close modal"
           >
             <X size={24} />
           </button>
@@ -591,8 +569,8 @@ export default function SimplifiedExportModal({
               <label className="text-sm font-medium text-gray-700 block mb-2">
                 Export Format
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -607,7 +585,7 @@ export default function SimplifiedExportModal({
                   <span className="text-xs text-gray-500">Professional format</span>
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -623,8 +601,8 @@ export default function SimplifiedExportModal({
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+              <div className="grid grid-cols-2 gap-4">
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -639,7 +617,7 @@ export default function SimplifiedExportModal({
                   <span className="text-xs text-gray-500">Plain text</span>
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -708,11 +686,4 @@ export default function SimplifiedExportModal({
       </div>
     </div>
   );
-
-  // Use portal to render modal at document root level
-  if (typeof document !== 'undefined') {
-    return createPortal(modalContent, document.body);
-  }
-  
-  return modalContent;
 }
