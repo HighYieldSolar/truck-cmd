@@ -479,6 +479,8 @@ export default function IFTACalculatorPage() {
 
   // Handle exporting data
   const handleExportData = useCallback(() => {
+    console.log("Export button clicked - trips:", trips?.length);
+    
     if (!trips || trips.length === 0) {
       setError("No trip data available to export. Please add trips first.");
       return;
@@ -492,6 +494,7 @@ export default function IFTACalculatorPage() {
       }
     }
 
+    console.log("Opening export modal");
     setExportModalOpen(true);
   }, [trips, selectedVehicle]);
 
@@ -568,7 +571,16 @@ export default function IFTACalculatorPage() {
                     Fuel Tracker
                   </Link>
                   <button
-                    onClick={handleExportData}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleExportData();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleExportData();
+                    }}
                     className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 shadow-md flex items-center justify-center font-medium touch-manipulation"
                     disabled={trips.length === 0}
                     type="button"
@@ -941,6 +953,14 @@ export default function IFTACalculatorPage() {
           itemName={tripToDelete ? `Trip from ${tripToDelete.start_jurisdiction} to ${tripToDelete.end_jurisdiction}` : ""}
           isDeleting={loading && deleteModalOpen}
         />
+
+        {/* Test button for mobile debugging */}
+        <button
+          onClick={() => alert("Test button clicked!")}
+          className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-[10000] sm:hidden"
+        >
+          Test Click
+        </button>
 
         {/* Export Modal */}
         {exportModalOpen && (

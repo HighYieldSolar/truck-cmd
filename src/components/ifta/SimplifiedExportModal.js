@@ -1,5 +1,6 @@
 // src/components/ifta/SimplifiedExportModal.js - Enhanced with PDF export and branding
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Download,
   X,
@@ -25,6 +26,22 @@ export default function SimplifiedExportModal({
   const [exportFormat, setExportFormat] = useState('pdf'); // Default to PDF for professional export
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Use effect for better mobile handling
+  useEffect(() => {
+    setMounted(true);
+    
+    // Prevent body scroll when modal is open on mobile
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
 
   // Default company info if not provided
   const company = companyInfo || {
@@ -35,7 +52,7 @@ export default function SimplifiedExportModal({
     logo: '/images/tc-name-tp-bg.png'
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   // Format numbers for CSV export
   const formatNumber = (value, decimals = 1) => {
@@ -517,9 +534,20 @@ export default function SimplifiedExportModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 overflow-y-auto"
+      onClick={(e) => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget && exportState !== 'loading') {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto my-8 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-center border-b p-4">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -527,8 +555,10 @@ export default function SimplifiedExportModal({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation"
             disabled={exportState === 'loading'}
+            type="button"
+            aria-label="Close modal"
           >
             <X size={24} />
           </button>
@@ -569,8 +599,8 @@ export default function SimplifiedExportModal({
               <label className="text-sm font-medium text-gray-700 block mb-2">
                 Export Format
               </label>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -585,7 +615,7 @@ export default function SimplifiedExportModal({
                   <span className="text-xs text-gray-500">Professional format</span>
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -601,8 +631,8 @@ export default function SimplifiedExportModal({
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -617,7 +647,7 @@ export default function SimplifiedExportModal({
                   <span className="text-xs text-gray-500">Plain text</span>
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
+                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
                   }`}>
                   <input
                     type="radio"
@@ -686,4 +716,11 @@ export default function SimplifiedExportModal({
       </div>
     </div>
   );
+
+  // Use portal to render modal at document root level for better mobile support
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  
+  return modalContent;
 }
