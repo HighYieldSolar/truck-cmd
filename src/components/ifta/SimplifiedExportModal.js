@@ -536,7 +536,7 @@ export default function SimplifiedExportModal({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[9999] overflow-y-auto"
       onClick={(e) => {
         // Close modal when clicking backdrop
         if (e.target === e.currentTarget && exportState !== 'loading') {
@@ -545,63 +545,74 @@ export default function SimplifiedExportModal({
       }}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto my-8 relative"
+        className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md mx-auto sm:my-8 relative max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Export IFTA Summary
-          </h2>
+        {/* Mobile-friendly Header */}
+        <div className="flex justify-between items-center border-b p-4 sm:p-5">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FileDown size={20} className="text-blue-600" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              Export IFTA Report
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation"
+            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation"
             disabled={exportState === 'loading'}
             type="button"
             aria-label="Close modal"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          <p className="text-gray-600 mb-4">
-            Export your IFTA summary to share with your accountant or paperwork handler.
-            This will include miles and gallons by jurisdiction for {quarter}
-            {selectedVehicle !== "all" ? ` for vehicle ${selectedVehicle}` : " for all vehicles"}.
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {/* Mobile-optimized description */}
+          <p className="text-gray-600 mb-4 text-sm sm:text-base">
+            Choose how to export your IFTA report for {quarter}
+            {selectedVehicle !== "all" ? ` (${selectedVehicle})` : ""}.
           </p>
 
-          {/* Summary info */}
-          <div className="bg-blue-50 p-4 rounded-lg mb-4">
-            <div className="flex items-start">
-              <Truck size={20} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+          {/* Compact Summary info */}
+          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg mb-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <h4 className="font-medium text-blue-800">Export Details</h4>
-                <p className="text-sm text-blue-700">
-                  <strong>Quarter:</strong> {quarter}
-                </p>
-                <p className="text-sm text-blue-700">
-                  <strong>Vehicle:</strong> {selectedVehicle === "all" ? "All Vehicles" : selectedVehicle}
-                </p>
-                <p className="text-sm text-blue-700">
-                  <strong>Trip Records:</strong> {filteredTrips.length}
-                </p>
-                <p className="text-sm text-blue-700">
-                  <strong>Fuel Records:</strong> {filteredFuelData.length}
-                </p>
+                <span className="text-gray-600">Quarter:</span>
+                <p className="font-medium text-gray-900">{quarter}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Vehicle:</span>
+                <p className="font-medium text-gray-900">{selectedVehicle === "all" ? "All" : selectedVehicle}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Trips:</span>
+                <p className="font-medium text-gray-900">{filteredTrips.length}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Fuel Records:</span>
+                <p className="font-medium text-gray-900">{filteredFuelData.length}</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
-                Export Format
+              <label className="text-sm font-medium text-gray-700 block mb-3">
+                Select Export Format
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'pdf' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                  }`}>
+              
+              {/* Mobile-optimized format selection */}
+              <div className="space-y-3">
+                {/* PDF Option */}
+                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                  exportFormat === 'pdf' 
+                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -610,13 +621,24 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('pdf')}
                     className="sr-only"
                   />
-                  <FileText size={32} className={exportFormat === 'pdf' ? 'text-blue-500' : 'text-gray-400'} />
-                  <span className="mt-2 text-sm font-medium text-gray-900">PDF Report</span>
-                  <span className="text-xs text-gray-500">Professional format</span>
+                  <div className={`p-2 rounded-lg ${exportFormat === 'pdf' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <FileText size={24} className={exportFormat === 'pdf' ? 'text-blue-600' : 'text-gray-500'} />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="font-medium text-gray-900">PDF Report</div>
+                    <div className="text-sm text-gray-500">Professional format with branding</div>
+                  </div>
+                  {exportFormat === 'pdf' && (
+                    <Check size={20} className="text-blue-600 ml-2" />
+                  )}
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'csv' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                  }`}>
+                {/* CSV Option */}
+                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                  exportFormat === 'csv' 
+                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -625,15 +647,24 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('csv')}
                     className="sr-only"
                   />
-                  <FileSpreadsheet size={32} className={exportFormat === 'csv' ? 'text-blue-500' : 'text-gray-400'} />
-                  <span className="mt-2 text-sm font-medium text-gray-900">CSV</span>
-                  <span className="text-xs text-gray-500">For Excel</span>
+                  <div className={`p-2 rounded-lg ${exportFormat === 'csv' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-blue-600' : 'text-gray-500'} />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="font-medium text-gray-900">Spreadsheet (CSV)</div>
+                    <div className="text-sm text-gray-500">For Excel or Google Sheets</div>
+                  </div>
+                  {exportFormat === 'csv' && (
+                    <Check size={20} className="text-blue-600 ml-2" />
+                  )}
                 </label>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'txt' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                  }`}>
+                {/* Text Option */}
+                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                  exportFormat === 'txt' 
+                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -642,13 +673,24 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('txt')}
                     className="sr-only"
                   />
-                  <FileText size={32} className={exportFormat === 'txt' ? 'text-blue-500' : 'text-gray-400'} />
-                  <span className="mt-2 text-sm font-medium text-gray-900">Text</span>
-                  <span className="text-xs text-gray-500">Plain text</span>
+                  <div className={`p-2 rounded-lg ${exportFormat === 'txt' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <File size={24} className={exportFormat === 'txt' ? 'text-blue-600' : 'text-gray-500'} />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="font-medium text-gray-900">Plain Text</div>
+                    <div className="text-sm text-gray-500">Simple format for email</div>
+                  </div>
+                  {exportFormat === 'txt' && (
+                    <Check size={20} className="text-blue-600 ml-2" />
+                  )}
                 </label>
 
-                <label className={`flex flex-col items-center justify-center p-3 sm:p-4 border rounded-lg cursor-pointer transition-all touch-manipulation ${exportFormat === 'print' ? 'bg-blue-50 border-blue-300' : 'border-gray-300 hover:bg-gray-50'
-                  }`}>
+                {/* Print Option */}
+                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                  exportFormat === 'print' 
+                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}>
                   <input
                     type="radio"
                     name="exportFormat"
@@ -657,9 +699,16 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('print')}
                     className="sr-only"
                   />
-                  <Printer size={32} className={exportFormat === 'print' ? 'text-blue-500' : 'text-gray-400'} />
-                  <span className="mt-2 text-sm font-medium text-gray-900">Print</span>
-                  <span className="text-xs text-gray-500">Hard copy</span>
+                  <div className={`p-2 rounded-lg ${exportFormat === 'print' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <Printer size={24} className={exportFormat === 'print' ? 'text-blue-600' : 'text-gray-500'} />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="font-medium text-gray-900">Print</div>
+                    <div className="text-sm text-gray-500">Send to printer</div>
+                  </div>
+                  {exportFormat === 'print' && (
+                    <Check size={20} className="text-blue-600 ml-2" />
+                  )}
                 </label>
               </div>
             </div>
@@ -679,12 +728,12 @@ export default function SimplifiedExportModal({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
+        {/* Mobile-friendly Actions */}
+        <div className="border-t bg-gray-50 px-4 py-4 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 touch-manipulation"
             disabled={exportState === 'loading'}
           >
             Cancel
@@ -692,23 +741,23 @@ export default function SimplifiedExportModal({
           <button
             type="button"
             onClick={handleExport}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center justify-center touch-manipulation"
             disabled={exportState === 'loading' || exportState === 'success' || filteredTrips.length === 0}
           >
             {exportState === 'loading' ? (
               <>
-                <Download size={16} className="animate-bounce mr-2" />
+                <Download size={18} className="animate-bounce mr-2" />
                 Exporting...
               </>
             ) : exportState === 'success' ? (
               <>
-                <Check size={16} className="mr-2" />
+                <Check size={18} className="mr-2" />
                 Exported
               </>
             ) : (
               <>
-                <FileDown size={16} className="mr-2" />
-                Export Summary
+                <FileDown size={18} className="mr-2" />
+                Export Report
               </>
             )}
           </button>
