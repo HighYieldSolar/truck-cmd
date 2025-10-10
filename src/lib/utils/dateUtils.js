@@ -24,7 +24,7 @@ export function getCurrentDateLocal() {
  */
 export function formatDateLocal(date) {
   if (!date) return '';
-  
+
   let dateObj;
   if (typeof date === 'string') {
     // If it's already in YYYY-MM-DD format, return as is
@@ -35,12 +35,12 @@ export function formatDateLocal(date) {
   } else {
     dateObj = date;
   }
-  
+
   if (isNaN(dateObj.getTime())) {
     console.warn('Invalid date provided to formatDateLocal:', date);
     return '';
   }
-  
+
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const day = String(dateObj.getDate()).padStart(2, '0');
@@ -55,17 +55,17 @@ export function formatDateLocal(date) {
  */
 export function createLocalDate(dateString) {
   if (!dateString) return new Date();
-  
+
   const parts = dateString.split('-');
   if (parts.length !== 3) {
     console.warn('Invalid date format provided to createLocalDate:', dateString);
     return new Date();
   }
-  
+
   const year = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10) - 1; // months are 0-indexed
   const day = parseInt(parts[2], 10);
-  
+
   return new Date(year, month, day);
 }
 
@@ -77,12 +77,12 @@ export function createLocalDate(dateString) {
  */
 export function prepareDateForDB(dateString) {
   if (!dateString) return null;
-  
+
   // If it's already in YYYY-MM-DD format, return as is
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
-  
+
   // Otherwise format it properly
   return formatDateLocal(dateString);
 }
@@ -94,12 +94,12 @@ export function prepareDateForDB(dateString) {
  */
 export function parseDateFromDB(dbDateString) {
   if (!dbDateString) return '';
-  
+
   // If it's a full timestamp, extract just the date part
   if (dbDateString.includes('T')) {
     return dbDateString.split('T')[0];
   }
-  
+
   return formatDateLocal(dbDateString);
 }
 
@@ -110,7 +110,7 @@ export function parseDateFromDB(dbDateString) {
  */
 export function formatDateForDisplay(dateString) {
   if (!dateString) return '';
-  
+
   try {
     // If it's already in YYYY-MM-DD format, parse it safely
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -118,18 +118,18 @@ export function formatDateForDisplay(dateString) {
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1; // months are 0-indexed  
       const day = parseInt(parts[2], 10);
-      
+
       // Create date in local timezone
       const date = new Date(year, month, day);
       return date.toLocaleDateString();
     }
-    
+
     // If it's a timestamp, extract date part first
     if (dateString.includes('T')) {
       const datePart = dateString.split('T')[0];
       return formatDateForDisplay(datePart);
     }
-    
+
     // Fallback for other formats
     const date = new Date(dateString + 'T00:00:00'); // Add time to prevent timezone issues
     return date.toLocaleDateString();
@@ -146,7 +146,7 @@ export function formatDateForDisplay(dateString) {
  */
 export function formatDateForDisplayMMDDYYYY(dateString) {
   if (!dateString) return '';
-  
+
   try {
     // If it's already in YYYY-MM-DD format, parse it safely
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -154,16 +154,16 @@ export function formatDateForDisplayMMDDYYYY(dateString) {
       const year = parts[0];
       const month = parts[1];
       const day = parts[2];
-      
+
       return `${month}/${day}/${year}`;
     }
-    
+
     // If it's a timestamp, extract date part first
     if (dateString.includes('T')) {
       const datePart = dateString.split('T')[0];
       return formatDateForDisplayMMDDYYYY(datePart);
     }
-    
+
     // Fallback
     return formatDateForDisplay(dateString);
   } catch (error) {
@@ -180,13 +180,62 @@ export function formatDateForDisplayMMDDYYYY(dateString) {
 export function getQuarterDateRange(quarter) {
   const [year, qPart] = quarter.split('-Q');
   const quarterNum = parseInt(qPart);
-  
+
   const startMonth = (quarterNum - 1) * 3;
   const startDate = new Date(parseInt(year), startMonth, 1);
   const endDate = new Date(parseInt(year), startMonth + 3, 0);
-  
+
   return {
     startDate: formatDateLocal(startDate),
     endDate: formatDateLocal(endDate)
   };
+}
+
+/**
+ * Get quarter string from a date
+ * @param {string|Date} date - Date string in YYYY-MM-DD format or Date object
+ * @returns {string} - Quarter string like "2025-Q3"
+ */
+export function getQuarterFromDate(date) {
+  if (!date) return null;
+
+  let dateObj;
+  if (typeof date === 'string') {
+    // If it's already in YYYY-MM-DD format, parse it safely
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const parts = date.split('-');
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // months are 0-indexed
+      const day = parseInt(parts[2], 10);
+      dateObj = new Date(year, month, day);
+    } else {
+      dateObj = new Date(date);
+    }
+  } else {
+    dateObj = date;
+  }
+
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date provided to getQuarterFromDate:', date);
+    return null;
+  }
+
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth(); // 0-indexed
+  const quarter = Math.floor(month / 3) + 1;
+
+  return `${year}-Q${quarter}`;
+}
+
+/**
+ * Validate that a trip date falls within the specified quarter
+ * @param {string} tripDate - Trip date in YYYY-MM-DD format
+ * @param {string} quarter - Quarter string like "2025-Q3"
+ * @returns {boolean} - True if the trip date falls within the quarter
+ */
+export function validateTripQuarter(tripDate, quarter) {
+  if (!tripDate || !quarter) return false;
+
+  const tripQuarter = getQuarterFromDate(tripDate);
+  return tripQuarter === quarter;
 }

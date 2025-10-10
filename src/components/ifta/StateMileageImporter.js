@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { getQuarterFromDate, validateTripQuarter } from "@/lib/utils/dateUtils";
 import {
   Upload,
   CheckCircle,
@@ -116,12 +117,20 @@ export default function StateMileageImporter({
           // Calculate mileage by state
           const mileageByState = calculateMileageByState(crossings || []);
 
+          // Determine the correct quarter for this trip
+          const tripEndDate = trip.end_date || trip.start_date;
+          const correctQuarter = getQuarterFromDate(tripEndDate);
+          const isCorrectQuarter = validateTripQuarter(tripEndDate, quarter);
+
           return {
             ...trip,
             vehicleName: vehicleNames[trip.vehicle_id]?.name || trip.vehicle_id,
             vehicleLicensePlate: vehicleNames[trip.vehicle_id]?.licensePlate || '',
             crossings: crossings || [],
-            mileageByState
+            mileageByState,
+            correctQuarter,
+            isCorrectQuarter,
+            quarterWarning: !isCorrectQuarter ? `This trip (${tripEndDate}) belongs to ${correctQuarter}, not ${quarter}` : null
           };
         })
       );
@@ -189,11 +198,15 @@ export default function StateMileageImporter({
 
         if (!mileageByState || mileageByState.length === 0) continue;
 
+        // Determine the correct quarter for this trip
+        const tripEndDate = trip.end_date || trip.start_date;
+        const correctQuarter = getQuarterFromDate(tripEndDate);
+
         for (const stateMileage of mileageByState) {
           if (stateMileage.miles > 0) {
             tripsToInsert.push({
               user_id: userId,
-              quarter: quarter,
+              quarter: correctQuarter, // Use the quarter determined from trip date
               start_date: trip.start_date,
               end_date: trip.end_date || trip.start_date,
               vehicle_id: trip.vehicle_id,
@@ -441,9 +454,19 @@ export default function StateMileageImporter({
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
                             <Calendar size={16} className="text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-600">
-                              {new Date(trip.start_date).toLocaleDateString()}
-                            </span>
+                            <div>
+                              <span className="text-sm text-gray-600">
+                                {new Date(trip.start_date).toLocaleDateString()}
+                              </span>
+                              {trip.quarterWarning && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <AlertTriangle size={12} className="mr-1" />
+                                    {trip.quarterWarning}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -522,9 +545,19 @@ export default function StateMileageImporter({
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
                             <Calendar size={16} className="text-gray-400 mr-2" />
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(trip.start_date).toLocaleDateString()}
-                            </span>
+                            <div>
+                              <span className="text-sm font-medium text-gray-900">
+                                {new Date(trip.start_date).toLocaleDateString()}
+                              </span>
+                              {trip.quarterWarning && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <AlertTriangle size={12} className="mr-1" />
+                                    {trip.quarterWarning}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
