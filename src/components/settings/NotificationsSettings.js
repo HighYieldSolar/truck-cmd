@@ -9,7 +9,6 @@ import {
   AlertCircle,
   Bell,
   Mail,
-  MessageSquare,
   Smartphone
 } from "lucide-react";
 
@@ -72,7 +71,6 @@ export default function NotificationsSettings() {
         }
 
       } catch (error) {
-        console.error('Error loading user data:', error);
         setErrorMessage('Failed to load your notification settings. Please try again later.');
       } finally {
         setLoading(false);
@@ -103,7 +101,7 @@ export default function NotificationsSettings() {
       setErrorMessage(null);
 
       // Check if notification preferences record exists
-      const { data: existingPrefs, error: checkError } = await supabase
+      const { data: existingPrefs } = await supabase
         .from('notification_preferences')
         .select('id')
         .eq('user_id', user.id)
@@ -143,7 +141,6 @@ export default function NotificationsSettings() {
       }, 5000);
 
     } catch (error) {
-      console.error('Error saving notification preferences:', error);
       setErrorMessage(`Failed to update notification preferences: ${error.message}`);
     } finally {
       setSaving(false);
@@ -153,8 +150,8 @@ export default function NotificationsSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw size={32} className="animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-700">Loading notification settings...</span>
+        <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
+        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading notification settings...</span>
       </div>
     );
   }
@@ -163,7 +160,7 @@ export default function NotificationsSettings() {
   const ToggleSwitch = ({ enabled, onChange }) => (
     <button
       type="button"
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${enabled ? 'bg-blue-600' : 'bg-gray-200'
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${enabled ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'
         }`}
       onClick={onChange}
     >
@@ -174,238 +171,135 @@ export default function NotificationsSettings() {
     </button>
   );
 
+  // Notification section component
+  const NotificationSection = ({ title, icon: Icon, iconColor, channel, description }) => (
+    <div className="bg-white dark:bg-gray-700/30 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden">
+      <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
+        <h3 className="flex items-center text-lg font-medium text-white">
+          <Icon size={20} className="mr-2 text-blue-100" />
+          {title}
+        </h3>
+      </div>
+
+      <div className="p-6">
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
+          {description}
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-white">Invoice notifications</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Receive {channel === 'email' ? 'emails' : channel === 'sms' ? 'SMS alerts' : 'in-app notifications'} about invoice status changes
+              </p>
+            </div>
+            <div className="flex-shrink-0 pt-0.5">
+              <ToggleSwitch
+                enabled={notificationSettings[channel].invoices}
+                onChange={() => handleToggle(channel, 'invoices')}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-white">Expense notifications</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Receive {channel === 'email' ? 'emails' : channel === 'sms' ? 'SMS alerts' : 'in-app notifications'} about expense activities
+              </p>
+            </div>
+            <div className="flex-shrink-0 pt-0.5">
+              <ToggleSwitch
+                enabled={notificationSettings[channel].expenses}
+                onChange={() => handleToggle(channel, 'expenses')}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-white">Load notifications</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Receive {channel === 'email' ? 'emails' : channel === 'sms' ? 'SMS alerts' : 'in-app notifications'} about load statuses and updates
+              </p>
+            </div>
+            <div className="flex-shrink-0 pt-0.5">
+              <ToggleSwitch
+                enabled={notificationSettings[channel].loads}
+                onChange={() => handleToggle(channel, 'loads')}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 dark:text-white">Reminders</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Receive {channel === 'email' ? 'email' : channel === 'sms' ? 'SMS' : 'in-app'} reminders for upcoming tasks and deadlines
+              </p>
+            </div>
+            <div className="flex-shrink-0 pt-0.5">
+              <ToggleSwitch
+                enabled={notificationSettings[channel].reminders}
+                onChange={() => handleToggle(channel, 'reminders')}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div>
+    <div className="dark:text-white">
       {/* Success/Error Messages */}
       {successMessage && (
-        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-md">
+        <div className="mb-6 bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-4 rounded-md">
           <div className="flex items-start">
             <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
-            <span className="text-green-800">{successMessage}</span>
+            <span className="text-green-800 dark:text-green-300">{successMessage}</span>
           </div>
         </div>
       )}
 
       {errorMessage && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+        <div className="mb-6 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-md">
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
-            <span className="text-red-800">{errorMessage}</span>
+            <span className="text-red-800 dark:text-red-300">{errorMessage}</span>
           </div>
         </div>
       )}
 
       <form onSubmit={saveNotificationSettings}>
-        <div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 gap-6">
           {/* Email Notifications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-lg">
-              <h3 className="flex items-center text-lg font-medium text-white">
-                <Mail size={20} className="mr-2 text-blue-100" />
-                Email Notifications
-              </h3>
-            </div>
-
-            <div className="p-6">
-              <p className="text-gray-600 mb-6">
-                Control which email notifications you receive from Truck Command.
-              </p>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Invoice notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive notifications about invoice status changes
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.email.invoices}
-                    onChange={() => handleToggle('email', 'invoices')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Expense notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive notifications about expense activities
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.email.expenses}
-                    onChange={() => handleToggle('email', 'expenses')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Load notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive notifications about load statuses and updates
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.email.loads}
-                    onChange={() => handleToggle('email', 'loads')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Reminders</div>
-                    <p className="text-sm text-gray-500">
-                      Receive reminders for upcoming tasks and deadlines
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.email.reminders}
-                    onChange={() => handleToggle('email', 'reminders')}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <NotificationSection
+            title="Email Notifications"
+            icon={Mail}
+            iconColor="blue"
+            channel="email"
+            description="Control which email notifications you receive from Truck Command."
+          />
 
           {/* SMS Notifications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-lg">
-              <h3 className="flex items-center text-lg font-medium text-white">
-                <Smartphone size={20} className="mr-2 text-blue-100" />
-                SMS Notifications
-              </h3>
-            </div>
-
-            <div className="p-6">
-              <p className="text-gray-600 mb-6">
-                Control which SMS notifications you receive from Truck Command.
-              </p>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Invoice notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive SMS alerts about invoice status changes
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.sms.invoices}
-                    onChange={() => handleToggle('sms', 'invoices')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Expense notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive SMS alerts about expense activities
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.sms.expenses}
-                    onChange={() => handleToggle('sms', 'expenses')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Load notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive SMS alerts about load statuses and updates
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.sms.loads}
-                    onChange={() => handleToggle('sms', 'loads')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Reminders</div>
-                    <p className="text-sm text-gray-500">
-                      Receive SMS reminders for upcoming tasks and deadlines
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.sms.reminders}
-                    onChange={() => handleToggle('sms', 'reminders')}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <NotificationSection
+            title="SMS Notifications"
+            icon={Smartphone}
+            iconColor="green"
+            channel="sms"
+            description="Control which SMS notifications you receive from Truck Command."
+          />
 
           {/* Push Notifications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-lg">
-              <h3 className="flex items-center text-lg font-medium text-white">
-                <Bell size={20} className="mr-2 text-blue-100" />
-                In-App Notifications
-              </h3>
-            </div>
-
-            <div className="p-6">
-              <p className="text-gray-600 mb-6">
-                Control which in-app notifications you receive from Truck Command.
-              </p>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Invoice notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive in-app notifications about invoice status changes
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.push.invoices}
-                    onChange={() => handleToggle('push', 'invoices')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Expense notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive in-app notifications about expense activities
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.push.expenses}
-                    onChange={() => handleToggle('push', 'expenses')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Load notifications</div>
-                    <p className="text-sm text-gray-500">
-                      Receive in-app notifications about load statuses and updates
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.push.loads}
-                    onChange={() => handleToggle('push', 'loads')}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">Reminders</div>
-                    <p className="text-sm text-gray-500">
-                      Receive in-app reminders for upcoming tasks and deadlines
-                    </p>
-                  </div>
-                  <ToggleSwitch
-                    enabled={notificationSettings.push.reminders}
-                    onChange={() => handleToggle('push', 'reminders')}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <NotificationSection
+            title="In-App Notifications"
+            icon={Bell}
+            iconColor="purple"
+            channel="push"
+            description="Control which in-app notifications you receive from Truck Command."
+          />
         </div>
 
         {/* Save Button */}
@@ -413,7 +307,7 @@ export default function NotificationsSettings() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving ? (
               <>

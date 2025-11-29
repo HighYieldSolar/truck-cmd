@@ -52,7 +52,6 @@ export default function AppearanceSettings() {
       }, 5000);
 
     } catch (error) {
-      console.error('Error saving appearance:', error);
       setErrorMessage(`Failed to update appearance settings: ${error.message}`);
     } finally {
       setSaving(false);
@@ -118,7 +117,7 @@ export default function AppearanceSettings() {
       <form onSubmit={saveAppearance}>
         {/* Theme Settings */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-lg shadow-sm p-4 mb-6">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-6">
             <h3 className="text-lg font-medium text-white">Theme Preference</h3>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Choose between light and dark theme for your dashboard</p>

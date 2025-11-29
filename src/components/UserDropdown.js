@@ -123,13 +123,13 @@ export default function UserDropdown() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        className="flex items-center space-x-1 focus:outline-none"
+        className="flex items-center space-x-1 focus:outline-none group"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-400 font-semibold">
+        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-400 font-semibold ring-2 ring-transparent group-hover:ring-blue-400 dark:group-hover:ring-blue-500 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-all duration-200 ease-in-out">
           {user?.email?.[0]?.toUpperCase() || 'U'}
         </div>
-        <ChevronDown size={16} className="text-gray-500 dark:text-gray-400 ml-1" />
+        <ChevronDown size={16} className="text-gray-500 dark:text-gray-400 ml-1 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
       </button>
       
       {isOpen && (
@@ -148,14 +148,14 @@ export default function UserDropdown() {
           <div className="py-1">
             <Link
               href="/dashboard/settings"
-              className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
               <span>Settings</span>
             </Link>
 
             <button
-              className={`w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${showLanguageMenu ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out ${showLanguageMenu ? 'bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : ''}`}
               onMouseEnter={handleLanguageMenuEnter}
               onMouseLeave={handleLanguageMenuLeave}
               onClick={() => {
@@ -181,7 +181,7 @@ export default function UserDropdown() {
 
             <Link
               href="/help"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
               <span>Get help</span>
@@ -191,14 +191,14 @@ export default function UserDropdown() {
           <div className="border-t border-gray-200 dark:border-gray-700 py-1">
             <Link
               href="/dashboard/billing"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
               <span>View all plans</span>
             </Link>
 
             <button
-              className={`w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 ${showLearnMoreMenu ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out ${showLearnMoreMenu ? 'bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400' : ''}`}
               onMouseEnter={handleLearnMoreMenuEnter}
               onMouseLeave={handleLearnMoreMenuLeave}
               onClick={() => {
@@ -226,7 +226,7 @@ export default function UserDropdown() {
                 setIsOpen(false);
                 handleLogout();
               }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-150 ease-in-out"
             >
               Log out
             </button>
@@ -241,7 +241,7 @@ export default function UserDropdown() {
             onMouseLeave={handleLanguageMenuLeave}
           >
             <button
-              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setSelectedLanguage("en");
                 setShowLanguageMenu(false);
@@ -254,7 +254,7 @@ export default function UserDropdown() {
             </button>
             <div className="border-t border-gray-200 dark:border-gray-700"></div>
             <button
-              className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setSelectedLanguage("es");
                 setShowLanguageMenu(false);
@@ -277,7 +277,7 @@ export default function UserDropdown() {
           >
             <Link
               href="/about"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setIsOpen(false);
                 setShowLearnMoreMenu(false);
@@ -288,7 +288,7 @@ export default function UserDropdown() {
             </Link>
             <Link
               href="/feedback"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setIsOpen(false);
                 setShowLearnMoreMenu(false);
@@ -300,7 +300,7 @@ export default function UserDropdown() {
             <div className="border-t border-gray-200 dark:border-gray-700"></div>
             <Link
               href="/terms"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setIsOpen(false);
                 setShowLearnMoreMenu(false);
@@ -311,7 +311,7 @@ export default function UserDropdown() {
             </Link>
             <Link
               href="/privacy"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => {
                 setIsOpen(false);
                 setShowLearnMoreMenu(false);
