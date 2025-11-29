@@ -319,12 +319,12 @@ async function handleCheckoutCompleted(event, stripe) {
 
     console.log(`Subscription status from Stripe: ${status}`);
 
-    // Calculate amount based on plan and billing cycle
+    // Calculate amount based on plan and billing cycle (in cents)
     const calculateAmount = (plan, billingCycle) => {
       const pricing = {
-        basic: { monthly: 2000, yearly: 1600 },
-        premium: { monthly: 3500, yearly: 2800 },
-        fleet: { monthly: 7500, yearly: 6000 }
+        basic: { monthly: 2000, yearly: 19200 },    // $20/month or $192/year
+        premium: { monthly: 3500, yearly: 33600 },  // $35/month or $336/year
+        fleet: { monthly: 7500, yearly: 72000 }     // $75/month or $720/year
       };
       return pricing[plan]?.[billingCycle] || pricing.premium[billingCycle] || 3500;
     };

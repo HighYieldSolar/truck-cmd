@@ -5,9 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(request) {
   try {
-    // Log incoming request data
     const body = await request.json();
-    console.log('Create checkout session request:', body);
 
     // Check for required fields
     if (!body.userId || !body.plan || !body.billingCycle) {
@@ -19,7 +17,6 @@ export async function POST(request) {
 
     // Initialize Stripe
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    console.log('Stripe initialized with key ending in:', process.env.STRIPE_SECRET_KEY?.slice(-4));
 
     // Get user email for checkout
     let userEmail;
@@ -40,8 +37,7 @@ export async function POST(request) {
         }
       }
     } catch (err) {
-      console.log('Error fetching user email:', err);
-      // Continue without email
+      // Continue without email - non-critical
     }
 
     // Map plan and billing cycle to price IDs
@@ -72,9 +68,6 @@ export async function POST(request) {
       : `${process.env.NEXT_PUBLIC_URL}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/billing?canceled=true`;
 
-    console.log('Success URL:', successUrl);
-    console.log('Cancel URL:', cancelUrl);
-
     // Create the checkout session
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail, // Add this if available
@@ -91,10 +84,10 @@ export async function POST(request) {
               },
               unit_amount:
                 plan === 'basic'
-                  ? (billingCycle === 'yearly' ? 1600 : 2000) // $16/mo yearly, $20/mo monthly
+                  ? (billingCycle === 'yearly' ? 19200 : 2000) // $192/year or $20/month
                   : plan === 'premium'
-                    ? (billingCycle === 'yearly' ? 2800 : 3500) // $28/mo yearly, $35/mo monthly 
-                    : (billingCycle === 'yearly' ? 6000 : 7500), // $60/mo yearly, $75/mo monthly
+                    ? (billingCycle === 'yearly' ? 33600 : 3500) // $336/year or $35/month
+                    : (billingCycle === 'yearly' ? 72000 : 7500), // $720/year or $75/month
               recurring: {
                 interval: billingCycle === 'yearly' ? 'year' : 'month',
               },
@@ -116,8 +109,6 @@ export async function POST(request) {
       }
     });
 
-    console.log('Session created:', session.id);
-
     // Update the subscription record to indicate checkout was initiated
     try {
       await supabase
@@ -131,18 +122,14 @@ export async function POST(request) {
           updated_at: new Date().toISOString()
         });
     } catch (err) {
-      console.log('Error updating subscription record:', err);
-      // Continue despite error
+      // Continue despite error - non-critical
     }
 
     // Return success with URL
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
     return NextResponse.json({
-      error: error.message,
-      stack: error.stack,
-      details: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      error: error.message || 'An error occurred while creating checkout session'
     }, { status: 500 });
   }
 }

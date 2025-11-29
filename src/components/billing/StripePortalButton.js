@@ -5,12 +5,6 @@ import { Settings, RefreshCw } from 'lucide-react';
 
 /**
  * A button that redirects to the Stripe Customer Portal for subscription management
- * 
- * @param {Object} props
- * @param {string} props.userId - ID of the current user
- * @param {boolean} props.disabled - Whether the button is disabled
- * @param {string} props.buttonText - Text to display on the button
- * @param {string} props.className - Additional CSS classes
  */
 export default function StripePortalButton({
   userId,
@@ -23,11 +17,11 @@ export default function StripePortalButton({
 
   const handlePortalRedirect = async () => {
     if (disabled || loading || !userId) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       // Create a portal session
       const response = await fetch('/api/create-portal-session', {
         method: 'POST',
@@ -39,18 +33,17 @@ export default function StripePortalButton({
           returnUrl: window.location.href
         }),
       });
-      
+
       const { url, error: responseError } = await response.json();
-      
+
       if (responseError) {
         throw new Error(responseError);
       }
-      
+
       // Redirect to Stripe Customer Portal
       window.location.href = url;
-      
+
     } catch (err) {
-      console.error('Error redirecting to customer portal:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -62,7 +55,7 @@ export default function StripePortalButton({
       <button
         onClick={handlePortalRedirect}
         disabled={disabled || loading || !userId}
-        className={`flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+        className={`flex items-center justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         } ${className}`}
       >
@@ -78,9 +71,9 @@ export default function StripePortalButton({
           </>
         )}
       </button>
-      
+
       {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
     </div>
   );
