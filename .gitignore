@@ -40,4 +40,25 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# Claude Code
+.claude/
+
+# MCP configurations
+.mcp.json
+.mcp/
+.playwright-mcp/
+
+# Supabase local config (keep migrations if needed)
+supabase/.branches
+supabase/.temp
+supabase/config.toml
+supabase/.env
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db

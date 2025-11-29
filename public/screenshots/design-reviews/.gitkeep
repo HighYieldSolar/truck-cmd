@@ -1,0 +1,10 @@
+# Design Review Screenshots
+
+This directory stores screenshots captured during design reviews.
+
+## Naming Convention
+{YYYY-MM-DD}_{page-name}_{viewport}_{state}.png
+
+## Examples
+- 2025-01-15_dashboard_desktop_loaded.png
+- 2025-01-15_invoices_mobile_empty-state.png

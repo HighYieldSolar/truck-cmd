@@ -140,17 +140,25 @@ body {
   background-color: #f3f4f6 !important;
 }
 
-/* Dashboard-specific date picker calendar icon */
+/* Dashboard-specific date picker calendar icon - light mode */
 .dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator,
 .dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator,
 .dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
+  cursor: pointer;
+}
+
+/* Dashboard-specific date picker calendar icon - dark mode */
+.dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
 }
 
 /* Dashboard dark mode overrides */
 .dashboard-theme.dark input[type="text"],
-.dashboard-theme.dark input[type="email"], 
+.dashboard-theme.dark input[type="email"],
 .dashboard-theme.dark input[type="password"],
 .dashboard-theme.dark input[type="number"],
 .dashboard-theme.dark input[type="tel"],
@@ -160,11 +168,46 @@ body {
 .dashboard-theme.dark input[type="time"],
 .dashboard-theme.dark input[type="datetime-local"],
 .dashboard-theme.dark textarea,
-.dashboard-theme.dark select {
+.dashboard-theme.dark select,
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="tel"],
+.dark input[type="url"],
+.dark input[type="search"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"],
+.dark textarea,
+.dark select {
   color: #e5e7eb !important;
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
 }
 
-.dashboard-theme.dark select option {
+/* Dashboard dark mode placeholder text */
+.dashboard-theme.dark input[type="text"]::placeholder,
+.dashboard-theme.dark input[type="email"]::placeholder,
+.dashboard-theme.dark input[type="password"]::placeholder,
+.dashboard-theme.dark input[type="number"]::placeholder,
+.dashboard-theme.dark input[type="tel"]::placeholder,
+.dashboard-theme.dark input[type="url"]::placeholder,
+.dashboard-theme.dark input[type="search"]::placeholder,
+.dashboard-theme.dark textarea::placeholder,
+.dark input[type="text"]::placeholder,
+.dark input[type="email"]::placeholder,
+.dark input[type="password"]::placeholder,
+.dark input[type="number"]::placeholder,
+.dark input[type="tel"]::placeholder,
+.dark input[type="url"]::placeholder,
+.dark input[type="search"]::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.dashboard-theme.dark select option,
+.dark select option {
   color: #e5e7eb !important;
   background-color: #1f2937 !important;
 }

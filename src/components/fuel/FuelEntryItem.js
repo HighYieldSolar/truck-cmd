@@ -80,25 +80,25 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
       if (vehicleInfo.name && vehicleInfo.license_plate) {
         return (
           <>
-            <div className="text-sm font-medium text-gray-900">{vehicleInfo.name}</div>
-            <div className="text-xs text-gray-500">{vehicleInfo.license_plate}</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{vehicleInfo.name}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{vehicleInfo.license_plate}</div>
           </>
         );
       } else if (vehicleInfo.name) {
-        return <div className="text-sm font-medium text-gray-900">{vehicleInfo.name}</div>;
+        return <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{vehicleInfo.name}</div>;
       } else if (vehicleInfo.license_plate) {
-        return <div className="text-sm font-medium text-gray-900">{vehicleInfo.license_plate}</div>;
+        return <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{vehicleInfo.license_plate}</div>;
       }
     }
-    
+
     // Fallback to just showing the ID (shortened)
-    const shortId = fuelEntry.vehicle_id ? 
-      (fuelEntry.vehicle_id.length > 8 ? 
-        `${fuelEntry.vehicle_id.substring(0, 8)}...` : 
-        fuelEntry.vehicle_id) : 
+    const shortId = fuelEntry.vehicle_id ?
+      (fuelEntry.vehicle_id.length > 8 ?
+        `${fuelEntry.vehicle_id.substring(0, 8)}...` :
+        fuelEntry.vehicle_id) :
       'N/A';
-      
-    return <div className="text-sm font-medium text-gray-500">{shortId}</div>;
+
+    return <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{shortId}</div>;
   };
   
   // Update to pass vehicle info to receipt viewer
@@ -107,120 +107,102 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
   };
   
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
+    <tr className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors duration-150">
+      {/* Location */}
+      <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="flex-shrink-0 bg-blue-100 rounded-full h-10 w-10 flex items-center justify-center text-blue-700">
-            <Fuel size={18} />
+          <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/50 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
+            <Fuel size={16} className="text-blue-600 dark:text-blue-400" />
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{fuelEntry.location}</div>
-            <div className="text-sm text-gray-500 flex items-center">
-              <MapPin size={14} className="text-gray-400 mr-1" />
-              {fuelEntry.state_name} ({fuelEntry.state})
-              
-              {/* Add IFTA link */}
-              <Link 
-                href={`/dashboard/ifta?quarter=${iftaQuarter}`}
-                className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center"
-                onMouseEnter={() => setIftaLinkHovered(true)}
-                onMouseLeave={() => setIftaLinkHovered(false)}
-              >
-                <Calculator size={14} className="mr-1" />
-                <span className={iftaLinkHovered ? "underline" : ""}>IFTA</span>
-              </Link>
+          <div className="ml-2.5">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 max-w-[160px] truncate">{fuelEntry.location}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-0.5">
+              <MapPin size={10} className="text-gray-400 dark:text-gray-500 mr-0.5" />
+              {fuelEntry.state}
             </div>
           </div>
         </div>
       </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{formatDate(fuelEntry.date)}</div>
-        <div className="text-sm text-gray-500 flex items-center">
-          <Calendar size={14} className="text-gray-400 mr-1" />
-          {fuelEntry.payment_method || 'Credit Card'}
-        </div>
+
+      {/* Date */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(fuelEntry.date)}</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{fuelEntry.fuel_type || 'Diesel'}</div>
       </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{fuelEntry.gallons.toFixed(3)} gal</div>
-        <div className="text-sm text-gray-500 flex items-center">
-          <DollarSign size={14} className="text-gray-400 mr-1" />
-          ${formatPrice(fuelEntry.price_per_gallon)}/gal
-        </div>
+
+      {/* Gallons & Price */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{fuelEntry.gallons.toFixed(2)} gal</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">${formatPrice(fuelEntry.price_per_gallon)}/gal</div>
       </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">${formatAmount(fuelEntry.total_amount)}</div>
-        <div className="text-sm text-gray-500">
-          {fuelEntry.fuel_type || 'Diesel'}
-        </div>
+
+      {/* Amount */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">${formatAmount(fuelEntry.total_amount)}</div>
       </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap">
+
+      {/* Vehicle */}
+      <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center">
-          <Truck size={14} className="text-gray-400 mr-2 flex-shrink-0" />
-          <div>
+          <div className="w-7 h-7 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center mr-2">
+            <Truck size={12} className="text-gray-500 dark:text-gray-400" />
+          </div>
+          <div className="max-w-[100px]">
             {formatVehicleDisplay()}
           </div>
         </div>
-        {fuelEntry.odometer && (
-          <div className="text-sm text-gray-500 ml-6">{fuelEntry.odometer.toLocaleString()} mi</div>
-        )}
-      </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap">
-        {fuelEntry.receipt_image ? (
-          <button 
-            onClick={handleViewReceipt} 
-            className="flex items-center text-blue-600 hover:text-blue-900"
-          >
-            <FileImage size={16} className="mr-1" />
-            <span>View</span>
-          </button>
-        ) : (
-          <span className="inline-flex items-center text-sm text-gray-500">
-            <FileImage size={14} className="text-gray-400 mr-1" />
-            No receipt
-          </span>
-        )}
-      </td>
-      
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button 
-          onClick={() => onEdit(fuelEntry)} 
-          className="text-blue-600 hover:text-blue-900 mr-3"
-          aria-label="Edit fuel entry"
-        >
-          <Edit size={16} />
-        </button>
-        <button 
-          onClick={() => onDelete(fuelEntry)} 
-          className="text-red-600 hover:text-red-900"
-          aria-label="Delete fuel entry"
-        >
-          <Trash2 size={16} />
-        </button>
       </td>
 
-      <td className="px-6 py-4 whitespace-nowrap text-sm">
-        {fuelEntry.expense_id ? (
-          <div className="flex items-center text-green-600">
-            <CheckCircle size={16} className="mr-1" />
-            <span>Added to expenses</span>
-            <Link 
-              href={`/dashboard/expenses?id=${fuelEntry.expense_id}`}
-              className="ml-2 text-blue-600 hover:text-blue-800 inline-flex items-center"
+      {/* Receipt & Status Combined */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <div className="flex items-center space-x-1.5">
+          {fuelEntry.receipt_image ? (
+            <button
+              onClick={handleViewReceipt}
+              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
             >
-              <ExternalLink size={14} className="mr-1" />
+              <FileImage size={12} className="mr-1" />
               View
-            </Link>
-          </div>
-        ) : (
-          <span className="text-gray-500">
-            Processing...
-          </span>
-        )}
+            </button>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md">
+              <FileImage size={12} className="mr-1 opacity-50" />
+              N/A
+            </span>
+          )}
+          {fuelEntry.expense_id ? (
+            <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 rounded-full">
+              <CheckCircle size={10} className="mr-0.5" />
+              Synced
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/40 rounded-full">
+              Pending
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Actions - Always visible */}
+      <td className="px-4 py-3 whitespace-nowrap text-right">
+        <div className="flex items-center justify-end space-x-0.5">
+          <button
+            onClick={() => onEdit(fuelEntry)}
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors"
+            aria-label="Edit fuel entry"
+            title="Edit"
+          >
+            <Edit size={15} />
+          </button>
+          <button
+            onClick={() => onDelete(fuelEntry)}
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-md transition-colors"
+            aria-label="Delete fuel entry"
+            title="Delete"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </td>
     </tr>
   );

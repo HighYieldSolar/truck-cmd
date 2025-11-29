@@ -16,7 +16,6 @@ import {
   Info
 } from "lucide-react";
 import SupabaseImage from "./SupabaseImage";
-import { updated_at, created_at } from "@/lib/supabaseClient";
 
 export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleInfo }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -164,54 +163,54 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
   };
 
   return (
-    <div className={`fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 ${fullScreen ? 'p-0' : 'p-4'}`}>
-      <div className={`bg-white rounded-lg shadow-2xl flex flex-col ${fullScreen ? 'w-full h-full rounded-none' : 'max-w-5xl w-full max-h-[90vh]'}`}>
+    <div className={`fixed inset-0 bg-gray-900/95 dark:bg-black/95 flex items-center justify-center z-50 ${fullScreen ? 'p-0' : 'p-4'}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col ${fullScreen ? 'w-full h-full rounded-none' : 'max-w-5xl w-full max-h-[90vh]'}`}>
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
-          <h2 className="font-bold text-xl text-gray-900 flex items-center">
-            <Fuel size={20} className="text-blue-600 mr-2" />
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="font-bold text-xl text-gray-900 dark:text-gray-100 flex items-center">
+            <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
             Fuel Receipt - {receipt.location}
           </h2>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             aria-label="Close"
           >
             <X size={24} />
           </button>
         </div>
-        
+
         {/* Toolbar */}
-        <div className="bg-gray-100 p-2 border-b border-gray-200 flex flex-wrap items-center justify-end">
+        <div className="bg-gray-100 dark:bg-gray-700/50 p-2 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-end">
           <div className="flex items-center space-x-1">
-            <button 
+            <button
               onClick={handleDownload}
-              className="p-2 rounded hover:bg-blue-100 text-blue-600 tooltip-wrapper"
+              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
               title="Download"
               disabled={isDownloading}
             >
               <Download size={20} className={isDownloading ? "animate-pulse" : ""} />
               <span className="tooltip">Download</span>
             </button>
-            <button 
+            <button
               onClick={handlePrint}
-              className="p-2 rounded hover:bg-blue-100 text-blue-600 tooltip-wrapper"
+              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
               title="Print"
             >
               <Printer size={20} />
               <span className="tooltip">Print</span>
             </button>
-            <button 
+            <button
               onClick={handleShare}
-              className="p-2 rounded hover:bg-blue-100 text-blue-600 tooltip-wrapper"
+              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
               title="Share"
             >
               <Share2 size={20} />
               <span className="tooltip">Share</span>
             </button>
-            <button 
+            <button
               onClick={toggleFullScreen}
-              className="p-2 rounded hover:bg-blue-100 text-blue-600 tooltip-wrapper"
+              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
               title="Toggle Fullscreen"
             >
               <Maximize2 size={20} />
@@ -221,12 +220,12 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
         </div>
         
         {/* Image Viewer */}
-        <div className="flex-1 overflow-auto bg-gray-800 flex items-center justify-center">
+        <div className="flex-1 overflow-auto bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
           {receipt.receipt_image ? (
             <div className="flex items-center justify-center" style={{ height: '60vh' }}>
               <SupabaseImage
                 src={receipt.receipt_image}
-                alt="Fuel receipt" 
+                alt="Fuel receipt"
                 className="max-w-full max-h-full object-contain"
                 style={{ maxHeight: '100%', maxWidth: '100%' }}
                 timestamp={
@@ -237,109 +236,109 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
               />
             </div>
           ) : (
-            <div className="w-full aspect-[3/4] bg-gray-200 flex items-center justify-center text-gray-400">
+            <div className="w-full aspect-[3/4] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
               No receipt image available
             </div>
           )}
         </div>
-        
+
         {/* Receipt Details */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                <Calendar size={16} className="text-blue-600 mr-2" />
+            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                <Calendar size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                 Date
               </div>
-              <div className="text-black text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
             </div>
-            
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                <MapPin size={16} className="text-blue-600 mr-2" />
+
+            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                <MapPin size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                 State
               </div>
-              <div className="text-black text-lg font-semibold">{receipt.state_name} ({receipt.state})</div>
+              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.state_name} ({receipt.state})</div>
             </div>
-            
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                <Fuel size={16} className="text-blue-600 mr-2" />
+
+            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                <Fuel size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                 Gallons
               </div>
-              <div className="text-black text-lg font-semibold">{receipt.gallons.toFixed(3)}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.gallons.toFixed(3)}</div>
             </div>
-            
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                <DollarSign size={16} className="text-blue-600 mr-2" />
+
+            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                 Total
               </div>
-              <div className="text-black text-lg font-semibold">${receipt.total_amount.toFixed(2)}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">${receipt.total_amount.toFixed(2)}</div>
             </div>
           </div>
           
           {/* Additional details if available */}
           {(vehicleInfo || receipt.vehicle_id || receipt.odometer || receipt.notes) && (
-            <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="mt-4 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex flex-wrap gap-4">
                 {(vehicleInfo || receipt.vehicle_id) && (
                   <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                      <Truck size={16} className="text-blue-600 mr-2" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                      <Truck size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                       Vehicle
                     </div>
-                    <div className="text-gray-900">
+                    <div className="text-gray-900 dark:text-gray-100">
                       {vehicleInfo ? (
                         <>
                           {vehicleInfo.name && <span className="font-medium">{vehicleInfo.name}</span>}
                           {vehicleInfo.name && vehicleInfo.license_plate && <span className="mx-1">-</span>}
-                          {vehicleInfo.license_plate && <span className="text-gray-700">{vehicleInfo.license_plate}</span>}
+                          {vehicleInfo.license_plate && <span className="text-gray-700 dark:text-gray-300">{vehicleInfo.license_plate}</span>}
                         </>
                       ) : receipt.vehicle_id}
                     </div>
                   </div>
                 )}
-                
+
                 {receipt.odometer && (
                   <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                      <Info size={16} className="text-blue-600 mr-2" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                      <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                       Odometer
                     </div>
-                    <div className="text-gray-900">{receipt.odometer.toLocaleString()} mi</div>
+                    <div className="text-gray-900 dark:text-gray-100">{receipt.odometer.toLocaleString()} mi</div>
                   </div>
                 )}
-                
+
                 {receipt.price_per_gallon && (
                   <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                      <DollarSign size={16} className="text-blue-600 mr-2" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                      <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                       Price Per Gallon
                     </div>
-                    <div className="text-gray-900">${receipt.price_per_gallon.toFixed(3)}</div>
+                    <div className="text-gray-900 dark:text-gray-100">${receipt.price_per_gallon.toFixed(3)}</div>
                   </div>
                 )}
               </div>
-              
+
               {receipt.notes && (
                 <div className="mt-3">
-                  <div className="flex items-center text-gray-700 mb-1 text-sm font-medium">
-                    <Info size={16} className="text-blue-600 mr-2" />
+                  <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
+                    <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
                     Notes
                   </div>
-                  <div className="text-gray-900 bg-gray-50 p-2 rounded border border-gray-100">
+                  <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-600 p-2 rounded border border-gray-100 dark:border-gray-500">
                     {receipt.notes}
                   </div>
                 </div>
               )}
             </div>
           )}
-          
+
           <div className="mt-4 flex justify-end">
-            <button 
+            <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
             >
               Close
             </button>

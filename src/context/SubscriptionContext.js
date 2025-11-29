@@ -59,13 +59,10 @@ export function SubscriptionProvider({ children }) {
         .single();
 
       if (subError && subError.code !== 'PGRST116') {
-        // Log the error but continue 
-        console.error('Error fetching subscription:', subError);
+        // Continue without throwing error
       }
 
       if (subscriptionData) {
-        console.log("Found subscription data:", subscriptionData);
-
         // Subscription exists - set data
         setSubscription({
           status: subscriptionData.status,
@@ -83,8 +80,6 @@ export function SubscriptionProvider({ children }) {
           current_period_ends_at: subscriptionData.current_period_ends_at
         });
       } else {
-        console.log("No subscription found, creating trial subscription");
-
         // No subscription record found - create a trial subscription
         const createdAt = new Date(user.created_at || Date.now());
         const trialEndDate = new Date(createdAt);
@@ -109,7 +104,6 @@ export function SubscriptionProvider({ children }) {
             currentPeriodEndsAt: null
           });
         } catch (insertError) {
-          console.error('Error creating trial subscription:', insertError);
           // Set default trial data anyway
           setSubscription({
             status: 'trial',
@@ -120,7 +114,6 @@ export function SubscriptionProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error('Error in subscription context:', error);
       // Set fallback state
       setSubscription({
         status: 'error',
@@ -176,8 +169,6 @@ export function SubscriptionProvider({ children }) {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          console.log("Subscription data changed:", payload);
-
           // Clear any existing timeout
           if (refreshTimeoutRef.current) {
             clearTimeout(refreshTimeoutRef.current);
@@ -195,16 +186,7 @@ export function SubscriptionProvider({ children }) {
             const isExternalChange = currentTime - payloadTime > 5000;
 
             if (isExternalChange || isStatusChangeToActive) {
-              console.log("External subscription change or activation detected, refreshing...", {
-                isStatusChangeToActive,
-                isExternalChange,
-                timeDiff: currentTime - payloadTime
-              });
               checkUserAndSubscription();
-            } else {
-              console.log("Recent subscription change detected, likely from current session, skipping refresh", {
-                timeDiff: currentTime - payloadTime
-              });
             }
           }, 2000); // Increased to 2 seconds for more stability
         })
@@ -262,7 +244,6 @@ export function SubscriptionProvider({ children }) {
 
       return { success: true };
     } catch (error) {
-      console.error('Error updating subscription:', error);
       return { success: false, error: error.message };
     }
   };
@@ -288,7 +269,6 @@ export function SubscriptionProvider({ children }) {
 
     // Debounce the refresh
     refreshTimeoutRef.current = setTimeout(() => {
-      console.log("Manual refresh triggered");
       checkUserAndSubscription();
     }, 500);
   };

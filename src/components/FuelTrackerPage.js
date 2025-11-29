@@ -3,26 +3,23 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  Plus, 
-  FileDown, 
-  Download, 
-  Fuel, 
+import {
+  Plus,
+  Fuel,
   RefreshCw,
-  AlertCircle,
-  CheckCircle,
   BarChart2,
   Filter,
-  FileText
+  FileText,
+  Calculator
 } from "lucide-react";
 
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
-import { exportFuelDataForIFTA } from "@/lib/services/fuelService";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FuelStats from "@/components/fuel/FuelStats";
 import StateSummary from "@/components/fuel/StateSummary";
 import FuelEntryItem from "@/components/fuel/FuelEntryItem";
+import FuelEntryCard from "@/components/fuel/FuelEntryCard";
 import FuelEntryForm from "@/components/fuel/FuelEntryForm";
 import ReceiptViewerModal from "@/components/fuel/ReceiptViewerModal";
 import FuelDeletionModal from "@/components/fuel/FuelDeletionModal";
@@ -275,54 +272,9 @@ export default function FuelTrackerPage() {
     });
   };
   
-  // Export IFTA data
-  const handleExportIFTA = async () => {
-    try {
-      if (!user) return;
-      
-      const iftaData = await exportFuelDataForIFTA(user.id, filters);
-      
-      // Create a CSV from the data
-      const headers = ['State', 'State Name', 'Gallons', 'Amount', 'Purchases', 'Average Price'];
-      const csvRows = [
-        headers.join(','), // Header row
-        ...iftaData.map(state => [
-          state.state,
-          `"${state.state_name}"`, // Ensure state names with commas are quoted
-          state.gallons.toFixed(3),
-          state.amount.toFixed(2),
-          state.purchases,
-          state.average_price.toFixed(3)
-        ].join(','))
-      ];
-      const csvContent = csvRows.join('\n');
-
-      // Create a download link
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `fuel_ifta_data_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setOperationMessage({
-        type: 'success',
-        text: 'IFTA data exported successfully.'
-      });
-      
-      setTimeout(() => setOperationMessage(null), 3000);
-    } catch (error) {
-      console.error('Error exporting IFTA data:', error);
-      
-      setOperationMessage({
-        type: 'error',
-        text: `Error exporting IFTA data: ${error.message}`
-      });
-      
-      setTimeout(() => setOperationMessage(null), 5000);
-    }
+  // Navigate to IFTA Calculator page
+  const handleGoToIFTA = () => {
+    router.push('/dashboard/ifta');
   };
   
   // Format currency 
@@ -368,30 +320,29 @@ export default function FuelTrackerPage() {
 
   return (
     <DashboardLayout activePage="fuel">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
         <div className="max-w-7xl mx-auto">
           {/* Header with background */}
-          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-3xl font-bold mb-1">Fuel Tracker</h1>
-                <p className="text-blue-100">Track fuel purchases and generate IFTA reports by state</p>
+                <p className="text-blue-100 dark:text-blue-200">Track fuel purchases and generate IFTA reports by state</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                  className="px-4 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-md hover:shadow-lg flex items-center font-semibold"
                 >
                   <Plus size={18} className="mr-2" />
                   Add Fuel Purchase
                 </button>
-                <button 
-                  onClick={handleExportIFTA}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
-                  disabled={fuelEntries.length === 0}
+                <button
+                  onClick={handleGoToIFTA}
+                  className="px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 shadow-md flex items-center font-semibold"
                 >
-                  <Download size={18} className="mr-2" />
-                  Export IFTA
+                  <Calculator size={18} className="mr-2" />
+                  IFTA Calculator
                 </button>
               </div>
             </div>
@@ -430,19 +381,21 @@ export default function FuelTrackerPage() {
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Left Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
               {/* Top 3 Fuel Purchases Card */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-green-500 px-5 py-4 text-white">
-                  <h3 className="font-semibold flex items-center">
-                    <Fuel size={18} className="mr-2" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mr-3">
+                      <Fuel size={16} className="text-amber-600 dark:text-amber-400" />
+                    </div>
                     Top Fuel Purchases
                   </h3>
                 </div>
                 <div className="p-4">
                   {loading ? (
-                    <div className="flex justify-center items-center py-4">
-                      <RefreshCw size={24} className="animate-spin text-gray-400" />
+                    <div className="flex justify-center items-center py-8">
+                      <RefreshCw size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
                     </div>
                   ) : (
                     <TopFuelEntries
@@ -453,23 +406,25 @@ export default function FuelTrackerPage() {
                   )}
                 </div>
               </div>
-              
+
               {/* States Categories */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-blue-500 px-5 py-4 text-white">
-                  <h3 className="font-semibold flex items-center">
-                    <BarChart2 size={18} className="mr-2" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3">
+                      <BarChart2 size={16} className="text-purple-600 dark:text-purple-400" />
+                    </div>
                     States
                   </h3>
                 </div>
                 <div className="p-4">
                   {loading ? (
-                    <div className="flex justify-center items-center py-4">
-                      <RefreshCw size={24} className="animate-spin text-gray-400" />
+                    <div className="flex justify-center items-center py-8">
+                      <RefreshCw size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
                     </div>
                   ) : (
-                    <FuelCategories 
-                      categories={generateStateCategories()} 
+                    <FuelCategories
+                      categories={generateStateCategories()}
                       onCategorySelect={handleStateSelect}
                       selectedCategory={filters.state || 'All'}
                     />
@@ -481,142 +436,174 @@ export default function FuelTrackerPage() {
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
-                  <h3 className="font-medium flex items-center text-gray-700">
-                    <Filter size={18} className="mr-2 text-gray-500" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
+                    <Filter size={18} className="mr-2 text-gray-500 dark:text-gray-400" />
                     Filter Fuel Purchases
                   </h3>
                 </div>
                 <div className="p-4">
-                  <FuelFilterBar 
-                    filters={filters} 
-                    setFilters={setFilters} 
-                    vehicles={vehicleData} 
+                  <FuelFilterBar
+                    filters={filters}
+                    setFilters={setFilters}
+                    vehicles={vehicleData}
                     onReset={handleResetFilters}
                   />
                 </div>
               </div>
               
               {/* Fuel Entries Records */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="font-medium text-gray-700 flex items-center">
-                    <FileText size={18} className="mr-2 text-blue-500" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
+                    <FileText size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
                     Fuel Purchase Records
                   </h3>
                   <button
                     onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
-                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                    className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Plus size={16} className="mr-1" />
                     Add New
                   </button>
                 </div>
                 
-                <div className="overflow-x-auto">
-                  {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                      <RefreshCw size={32} className="animate-spin text-blue-500" />
+                {/* Loading State */}
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <RefreshCw size={32} className="animate-spin text-blue-500" />
+                  </div>
+                ) : fuelEntries.length === 0 ? (
+                  <EmptyState
+                    message="No fuel entries found"
+                    description={
+                      filters.search || filters.state || filters.vehicleId || filters.dateRange !== 'This Quarter'
+                        ? "Try adjusting your search or filters."
+                        : "Start tracking your fuel purchases by adding your first entry."
+                    }
+                    icon={<Fuel size={28} className="text-gray-400" />}
+                    actionText="Add Fuel Purchase"
+                    onAction={() => {
+                      setCurrentFuelEntry(null);
+                      setFormModalOpen(true);
+                    }}
+                  />
+                ) : (
+                  <>
+                    {/* Mobile Card View - Hidden on lg screens */}
+                    <div className="lg:hidden p-4 space-y-3">
+                      {fuelEntries.map(entry => (
+                        <FuelEntryCard
+                          key={entry.id}
+                          fuelEntry={entry}
+                          onEdit={handleEditFuelEntry}
+                          onDelete={handleDeleteFuelEntry}
+                          onViewReceipt={handleViewReceipt}
+                        />
+                      ))}
+                      {/* Mobile Total Summary */}
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-4 text-white">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="text-blue-100 text-sm">Total ({fuelEntries.length} entries)</div>
+                            <div className="text-2xl font-bold">
+                              {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-blue-100 text-sm">Gallons</div>
+                            <div className="text-xl font-semibold">
+                              {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(1)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ) : fuelEntries.length === 0 ? (
-                    <EmptyState 
-                      message="No fuel entries found"
-                      description={
-                        filters.search || filters.state || filters.vehicleId || filters.dateRange !== 'This Quarter'
-                          ? "Try adjusting your search or filters."
-                          : "Start tracking your fuel purchases by adding your first entry."
-                      }
-                      icon={<Fuel size={28} className="text-gray-400" />}
-                      actionText="Add Fuel Purchase"
-                      onAction={() => {
-                        setCurrentFuelEntry(null);
-                        setFormModalOpen(true);
-                      }}
-                    />
-                  ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Location
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Gallons
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Vehicle
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Receipt
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Expense Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {fuelEntries.map(entry => (
-                          <FuelEntryItem 
-                            key={entry.id} 
-                            fuelEntry={entry} 
-                            onEdit={handleEditFuelEntry} 
-                            onDelete={handleDeleteFuelEntry} 
-                            onViewReceipt={handleViewReceipt} 
-                          />
-                        ))}
-                      </tbody>
-                      <tfoot className="bg-gray-50">
-                        <tr>
-                          <td colSpan="2" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                            Total
-                          </td>
-                          <td className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                            {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
-                          </td>
-                          <td colSpan="5" className="px-6 py-4 text-left text-sm font-medium text-gray-900">
-                            {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  )}
-                </div>
+
+                    {/* Desktop Table View - Hidden on mobile */}
+                    <div className="hidden lg:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+                        <thead>
+                          <tr className="bg-gray-50/80 dark:bg-gray-700/50">
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Location
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Gallons
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Vehicle
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Receipt / Status
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {fuelEntries.map(entry => (
+                            <FuelEntryItem
+                              key={entry.id}
+                              fuelEntry={entry}
+                              onEdit={handleEditFuelEntry}
+                              onDelete={handleDeleteFuelEntry}
+                              onViewReceipt={handleViewReceipt}
+                            />
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gray-50 dark:bg-gray-700/50">
+                          <tr>
+                            <td colSpan="2" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                              Total
+                            </td>
+                            <td className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
+                            </td>
+                            <td colSpan="4" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </>
+                )}
                 
+                {/* Desktop Footer - Hidden on mobile since we have summary card */}
                 {fuelEntries.length > 0 && (
-                  <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
+                  <div className="hidden lg:flex px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 items-center justify-between">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Showing {fuelEntries.length} entries
                     </div>
-                    <div className="text-sm font-medium text-gray-700">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
                       Total: {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
                     </div>
                   </div>
                 )}
               </div>
-              
+
               {/* State Summary */}
               {fuelEntries.length > 0 && (
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                  <div className="px-5 py-4 border-b border-gray-200">
-                    <h3 className="font-medium flex items-center text-gray-700">
-                      <BarChart2 size={18} className="mr-2 text-blue-500" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                  <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
+                      <BarChart2 size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
                       IFTA State Summary
                     </h3>
                   </div>
                   <div className="p-0">
-                    <StateSummary 
-                      fuelData={fuelEntries} 
-                      onExportForIFTA={handleExportIFTA}
+                    <StateSummary
+                      fuelData={fuelEntries}
+                      onExportForIFTA={handleGoToIFTA}
                     />
                   </div>
                 </div>
