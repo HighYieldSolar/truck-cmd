@@ -52,6 +52,26 @@ export default function SimplifiedExportModal({
     logo: '/images/tc-name-tp-bg.png'
   };
 
+  // State name mapping for professional reports
+  const STATE_NAMES = {
+    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+    'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+    'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+    'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+    'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+    'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+    'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+    'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+    'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+    'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+    'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+    'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+    'WI': 'Wisconsin', 'WY': 'Wyoming',
+    'AB': 'Alberta', 'BC': 'British Columbia', 'MB': 'Manitoba', 'NB': 'New Brunswick',
+    'NL': 'Newfoundland', 'NS': 'Nova Scotia', 'ON': 'Ontario', 'PE': 'Prince Edward Island',
+    'QC': 'Quebec', 'SK': 'Saskatchewan'
+  };
+
   if (!isOpen || !mounted) return null;
 
   // Format numbers for CSV export
@@ -265,6 +285,13 @@ export default function SimplifiedExportModal({
       const jsPDF = jsPDFModule.default;
       const autoTable = autoTableModule.default;
 
+      // Brand colors
+      const brandBlue = [37, 99, 235]; // #2563EB
+      const brandDarkBlue = [30, 64, 175]; // #1E40AF
+      const lightGray = [248, 250, 252]; // #F8FAFC
+      const mediumGray = [100, 116, 139]; // #64748B
+      const darkGray = [30, 41, 59]; // #1E293B
+
       // Create new PDF document
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -272,14 +299,21 @@ export default function SimplifiedExportModal({
         format: 'a4'
       });
 
-      // Add company logo
-      try {
-        // Convert logo path to full URL
-        const logoUrl = window.location.origin + company.logo;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
 
-        // Create a promise to load the image
+      // ========== HEADER SECTION ==========
+      // Blue header banner (compact)
+      doc.setFillColor(...brandBlue);
+      doc.rect(0, 0, pageWidth, 28, 'F');
+
+      // Add logo
+      try {
+        const logoUrl = window.location.origin + '/images/tc-name-tp-bg.png';
         const loadImage = new Promise((resolve, reject) => {
           const img = new Image();
+          img.crossOrigin = 'anonymous';
           img.onload = () => resolve(img);
           img.onerror = () => reject(new Error('Failed to load logo'));
           img.src = logoUrl;
@@ -287,194 +321,251 @@ export default function SimplifiedExportModal({
 
         try {
           const img = await loadImage;
-          // Add logo to PDF - small size in top left corner
-          // Parameters: image, format, x, y, width, height
-          doc.addImage(img, 'PNG', 15, 15, 40, 15); // 40mm wide, 15mm tall
+          // White background box for logo
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(margin, 5, 48, 14, 2, 2, 'F');
+          doc.addImage(img, 'PNG', margin + 2, 6, 44, 12);
         } catch (imgError) {
-          console.log('Could not load logo, using text fallback');
-          // Fallback to text if image fails
-          doc.setFillColor(30, 144, 255);
-          doc.rect(15, 15, 40, 15, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(12);
+          // Fallback: Text logo
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(margin, 5, 48, 14, 2, 2, 'F');
+          doc.setTextColor(...brandBlue);
+          doc.setFontSize(11);
           doc.setFont(undefined, 'bold');
-          doc.text('TRUCK COMMAND', 35, 24, { align: 'center' });
+          doc.text('TRUCK COMMAND', margin + 24, 14, { align: 'center' });
         }
       } catch (logoError) {
         console.log('Logo error:', logoError);
       }
 
-      // Add company info below the logo
-      doc.setFontSize(9);
-      doc.setTextColor(80);
-      doc.setFont(undefined, 'normal');
-      doc.text(company.address, 15, 35);
-      doc.text(`${company.city}, ${company.state} ${company.zip}`, 15, 39);
-      doc.text(`Phone: ${company.phone}`, 15, 43);
-      doc.text(`Email: ${company.email}`, 15, 47);
-      if (company.website) {
-        doc.text(`Web: ${company.website}`, 15, 51);
-      }
-
-      // Add report title
-      doc.setFontSize(20);
-      doc.setTextColor(0);
+      // Report title on header
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
-      doc.text('IFTA QUARTERLY FUEL TAX REPORT', 105, 25, { align: 'center' });
+      const [year, q] = quarter.split('-');
+      const quarterLabel = `${q} ${year}`;
+      doc.text(`IFTA QUARTERLY REPORT  •  ${quarterLabel}`, pageWidth - margin, 13, { align: 'right' });
 
-      // Add quarter and date info
-      doc.setFontSize(12);
+      // Generation date and vehicle
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.text(`Reporting Period: ${quarter}`, 105, 35, { align: 'center' });
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 41, { align: 'center' });
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      const vehicleStr = selectedVehicle !== "all" ? `  •  Vehicle: ${selectedVehicle}` : '';
+      doc.text(`Generated: ${dateStr}${vehicleStr}`, pageWidth - margin, 21, { align: 'right' });
 
-      // Add vehicle info box
-      if (selectedVehicle !== "all") {
-        doc.setFillColor(240, 240, 240);
-        doc.rect(140, 15, 55, 20, 'F');
-        doc.setTextColor(0);
-        doc.setFontSize(10);
-        doc.text('Vehicle Information', 167.5, 22, { align: 'center' });
-        doc.setFont(undefined, 'bold');
-        doc.text(selectedVehicle, 167.5, 29, { align: 'center' });
-        doc.setFont(undefined, 'normal');
-      }
+      // ========== SUMMARY STATISTICS SECTION ==========
+      let yPos = 36;
 
       // Prepare jurisdiction data
       const jurisdictionData = prepareJurisdictionData();
       const totalMiles = jurisdictionData.reduce((sum, state) => sum + state.miles, 0);
       const totalGallons = jurisdictionData.reduce((sum, state) => sum + state.gallons, 0);
-      const avgMpg = totalGallons > 0 ? (totalMiles / totalGallons).toFixed(2) : 'N/A';
+      const avgMpg = totalGallons > 0 ? (totalMiles / totalGallons) : 0;
 
-      // Add summary statistics box
-      let yPos = 60;
-      doc.setFillColor(245, 245, 245);
-      doc.rect(15, yPos, 180, 30, 'F');
-      doc.setTextColor(0);
+      // Section title with accent bar on left
+      doc.setDrawColor(...brandBlue);
+      doc.setFillColor(...brandBlue);
+      doc.rect(margin, yPos - 4, 2, 6, 'F');
+      doc.setTextColor(...darkGray);
       doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('SUMMARY STATISTICS', 105, yPos + 7, { align: 'center' });
+      doc.text('SUMMARY', margin + 5, yPos);
 
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      const statsY = yPos + 15;
+      yPos += 6;
 
-      // Left column stats
-      doc.text(`Total Miles: ${formatNumber(totalMiles, 1)}`, 25, statsY);
-      doc.text(`Total Fuel Purchased: ${formatNumber(totalGallons, 0)} gallons`, 25, statsY + 6);
+      // Stats boxes (compact)
+      const boxWidth = (pageWidth - (margin * 2) - 9) / 4;
+      const boxHeight = 18;
+      const stats = [
+        { label: 'Total Miles', value: totalMiles.toLocaleString('en-US', { maximumFractionDigits: 1 }) },
+        { label: 'Fuel Purchased', value: `${totalGallons.toLocaleString('en-US', { maximumFractionDigits: 0 })} gal` },
+        { label: 'Average MPG', value: avgMpg.toFixed(2) },
+        { label: 'Jurisdictions', value: jurisdictionData.length.toString() }
+      ];
 
-      // Right column stats
-      doc.text(`Average MPG: ${avgMpg}`, 120, statsY);
-      doc.text(`Reporting Jurisdictions: ${jurisdictionData.length}`, 120, statsY + 6);
+      stats.forEach((stat, index) => {
+        const boxX = margin + (index * (boxWidth + 3));
 
-      // Add jurisdiction breakdown table
-      yPos = 100;
-      doc.setFontSize(12);
+        // Box background
+        doc.setFillColor(...lightGray);
+        doc.roundedRect(boxX, yPos, boxWidth, boxHeight, 2, 2, 'F');
+
+        // Box border
+        doc.setDrawColor(...brandBlue);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(boxX, yPos, boxWidth, boxHeight, 2, 2, 'S');
+
+        // Value
+        doc.setTextColor(...darkGray);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(stat.value, boxX + boxWidth / 2, yPos + 8, { align: 'center' });
+
+        // Label
+        doc.setTextColor(...mediumGray);
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'normal');
+        doc.text(stat.label, boxX + boxWidth / 2, yPos + 14, { align: 'center' });
+      });
+
+      // ========== JURISDICTION BREAKDOWN TABLE ==========
+      yPos += boxHeight + 8;
+
+      // Section title with accent bar on left
+      doc.setDrawColor(...brandBlue);
+      doc.setFillColor(...brandBlue);
+      doc.rect(margin, yPos - 4, 2, 6, 'F');
+      doc.setTextColor(...darkGray);
+      doc.setFontSize(11);
       doc.setFont(undefined, 'bold');
-      doc.text('JURISDICTION BREAKDOWN', 15, yPos);
+      doc.text('JURISDICTION BREAKDOWN', margin + 5, yPos);
 
-      // Create table for jurisdiction data
+      yPos += 5;
+
+      // Table columns
       const tableColumns = [
+        { header: 'ST', dataKey: 'code' },
         { header: 'Jurisdiction', dataKey: 'jurisdiction' },
-        { header: 'State Name', dataKey: 'stateName' },
-        { header: 'Miles Traveled', dataKey: 'miles' },
-        { header: 'Fuel Purchased (Gal)', dataKey: 'gallons' },
-        { header: 'Taxable Gallons', dataKey: 'taxableGallons' },
-        { header: 'Net Taxable', dataKey: 'netTaxable' }
+        { header: 'Miles', dataKey: 'miles' },
+        { header: 'Fuel (gal)', dataKey: 'gallons' },
+        { header: 'Taxable', dataKey: 'taxableGallons' },
+        { header: 'Net (+/-)', dataKey: 'netTaxable' }
       ];
 
       // Calculate taxable gallons for each jurisdiction
-      const tableData = jurisdictionData.map(state => ({
-        jurisdiction: state.state,
-        stateName: state.state,
-        miles: formatNumber(state.miles, 1),
-        gallons: formatNumber(state.gallons, 0),
-        taxableGallons: totalGallons > 0 ? formatNumber((state.miles / totalMiles) * totalGallons, 1) : '0',
-        netTaxable: totalGallons > 0 ? formatNumber(((state.miles / totalMiles) * totalGallons) - state.gallons, 1) : '0'
-      }));
+      const tableData = jurisdictionData.map(state => {
+        const taxableGallons = totalMiles > 0 ? (state.miles / totalMiles) * totalGallons : 0;
+        const netTaxable = taxableGallons - state.gallons;
+        return {
+          code: state.state,
+          jurisdiction: STATE_NAMES[state.state] || state.state,
+          miles: state.miles.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+          gallons: state.gallons.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+          taxableGallons: taxableGallons.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+          netTaxable: (netTaxable >= 0 ? '+' : '') + netTaxable.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        };
+      });
 
       // Add totals row
       tableData.push({
+        code: '',
         jurisdiction: 'TOTAL',
-        stateName: '',
-        miles: formatNumber(totalMiles, 1),
-        gallons: formatNumber(totalGallons, 0),
-        taxableGallons: formatNumber(totalGallons, 0),
+        miles: totalMiles.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+        gallons: totalGallons.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+        taxableGallons: totalGallons.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
         netTaxable: '0.0'
       });
 
       autoTable(doc, {
-        startY: yPos + 5,
+        startY: yPos,
         columns: tableColumns,
         body: tableData,
-        theme: 'grid',
+        theme: 'striped',
         headStyles: {
-          fillColor: [30, 144, 255],
+          fillColor: brandBlue,
           textColor: 255,
-          fontSize: 10,
-          fontStyle: 'bold'
+          fontSize: 9,
+          fontStyle: 'bold',
+          halign: 'center',
+          cellPadding: 3
         },
         bodyStyles: {
-          fontSize: 9
+          fontSize: 9,
+          cellPadding: 2.5,
+          textColor: darkGray
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 245]
+          fillColor: [245, 247, 250]
         },
-        footStyles: {
-          fillColor: [220, 220, 220],
-          textColor: 0,
-          fontStyle: 'bold'
+        columnStyles: {
+          code: { halign: 'center', fontStyle: 'bold' },
+          jurisdiction: { halign: 'left' },
+          miles: { halign: 'right' },
+          gallons: { halign: 'right' },
+          taxableGallons: { halign: 'right' },
+          netTaxable: { halign: 'right' }
         },
-        // Highlight the total row
+        tableWidth: 'auto',
         didParseCell: function (data) {
+          // Style the total row
           if (data.row.index === tableData.length - 1) {
-            data.cell.styles.fillColor = [220, 220, 220];
-            data.cell.styles.textColor = 0;
+            data.cell.styles.fillColor = brandDarkBlue;
+            data.cell.styles.textColor = [255, 255, 255];
             data.cell.styles.fontStyle = 'bold';
           }
-        }
+          // Color code net taxable values
+          if (data.column.dataKey === 'netTaxable' && data.row.index < tableData.length - 1) {
+            const value = parseFloat(data.cell.raw.replace(/[+,]/g, ''));
+            if (value > 0) {
+              data.cell.styles.textColor = [220, 38, 38]; // Red for tax owed
+            } else if (value < 0) {
+              data.cell.styles.textColor = [22, 163, 74]; // Green for credit
+            }
+          }
+        },
+        margin: { left: margin, right: margin }
       });
 
       // Get final Y position after table
       const finalY = doc.lastAutoTable.finalY || 200;
 
-      // Add additional information section
-      if (finalY < 240) {
-        doc.setFontSize(10);
+      // ========== NOTES SECTION ==========
+      if (finalY < pageHeight - 60) {
+        let notesY = finalY + 12;
+
+        // Notes box
+        doc.setFillColor(255, 251, 235); // Light yellow
+        doc.setDrawColor(245, 158, 11); // Amber border
+        doc.setLineWidth(0.3);
+        doc.roundedRect(margin, notesY, pageWidth - (margin * 2), 28, 2, 2, 'FD');
+
+        notesY += 6;
+        doc.setTextColor(146, 64, 14); // Amber text
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('CALCULATION NOTES', margin + 4, notesY);
+
+        notesY += 5;
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(80);
-
-        let infoY = finalY + 15;
-
-        // Add trip and fuel record counts
-        doc.text(`Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchase records`, 15, infoY);
-
-        // Add notes section
-        infoY += 10;
-        doc.setFont(undefined, 'italic');
-        doc.text('Note: Taxable gallons are calculated based on miles traveled in each jurisdiction as a', 15, infoY);
-        doc.text('percentage of total miles, multiplied by total fuel consumed.', 15, infoY + 5);
+        doc.setFontSize(8);
+        doc.text('• Taxable gallons = (Miles in jurisdiction ÷ Total miles) × Total fuel purchased', margin + 4, notesY);
+        notesY += 4;
+        doc.text('• Net Taxable shows fuel tax credit (negative/green) or tax owed (positive/red) per jurisdiction', margin + 4, notesY);
+        notesY += 4;
+        doc.text(`• Based on ${filteredTrips.length} trip records and ${filteredFuelData.length} fuel purchase records for ${quarterLabel}`, margin + 4, notesY);
       }
 
-      // Add footer with page numbers and timestamp
+      // ========== FOOTER ==========
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.setFont(undefined, 'normal');
 
-        // Add page footer
+        // Footer line
+        doc.setDrawColor(...mediumGray);
+        doc.setLineWidth(0.2);
+        doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+
+        // Company info
+        doc.setTextColor(...mediumGray);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.text(`${company.name} | ${company.website}`, margin, pageHeight - 13);
+
+        // Contact
+        doc.text(`${company.phone} | ${company.email}`, margin, pageHeight - 9);
+
+        // Page number and timestamp
         doc.text(
-          `IFTA Report - ${quarter} | Generated on ${new Date().toLocaleString()} | Page ${i} of ${pageCount}`,
-          105, 285, { align: 'center' }
+          `Page ${i} of ${pageCount} | Generated ${new Date().toLocaleString()}`,
+          pageWidth - margin, pageHeight - 13, { align: 'right' }
         );
 
-        // Add confidentiality notice
+        // Confidentiality notice
+        doc.setFontSize(7);
         doc.setFont(undefined, 'italic');
         doc.text(
-          'This document contains confidential tax information. Handle accordingly.',
-          105, 290, { align: 'center' }
+          'This document contains confidential IFTA tax information. Retain for your records.',
+          pageWidth - margin, pageHeight - 9, { align: 'right' }
         );
       }
 
@@ -544,23 +635,23 @@ export default function SimplifiedExportModal({
         }
       }}
     >
-      <div 
-        className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md mx-auto sm:my-8 relative max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none"
+      <div
+        className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md mx-auto sm:my-8 relative max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile-friendly Header */}
-        <div className="flex justify-between items-center border-b p-4 sm:p-5">
+        <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 sm:p-5">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileDown size={20} className="text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+              <FileDown size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
               Export IFTA Report
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
             disabled={exportState === 'loading'}
             type="button"
             aria-label="Close modal"
@@ -572,46 +663,46 @@ export default function SimplifiedExportModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Mobile-optimized description */}
-          <p className="text-gray-600 mb-4 text-sm sm:text-base">
+          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
             Choose how to export your IFTA report for {quarter}
             {selectedVehicle !== "all" ? ` (${selectedVehicle})` : ""}.
           </p>
 
           {/* Compact Summary info */}
-          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg mb-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg mb-4 border border-blue-100 dark:border-blue-800">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-gray-600">Quarter:</span>
-                <p className="font-medium text-gray-900">{quarter}</p>
+                <span className="text-gray-600 dark:text-gray-400">Quarter:</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{quarter}</p>
               </div>
               <div>
-                <span className="text-gray-600">Vehicle:</span>
-                <p className="font-medium text-gray-900">{selectedVehicle === "all" ? "All" : selectedVehicle}</p>
+                <span className="text-gray-600 dark:text-gray-400">Vehicle:</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{selectedVehicle === "all" ? "All" : selectedVehicle}</p>
               </div>
               <div>
-                <span className="text-gray-600">Trips:</span>
-                <p className="font-medium text-gray-900">{filteredTrips.length}</p>
+                <span className="text-gray-600 dark:text-gray-400">Trips:</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{filteredTrips.length}</p>
               </div>
               <div>
-                <span className="text-gray-600">Fuel Records:</span>
-                <p className="font-medium text-gray-900">{filteredFuelData.length}</p>
+                <span className="text-gray-600 dark:text-gray-400">Fuel Records:</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{filteredFuelData.length}</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">
                 Select Export Format
               </label>
-              
+
               {/* Mobile-optimized format selection */}
               <div className="space-y-3">
                 {/* PDF Option */}
                 <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                  exportFormat === 'pdf' 
-                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  exportFormat === 'pdf'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -621,23 +712,23 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('pdf')}
                     className="sr-only"
                   />
-                  <div className={`p-2 rounded-lg ${exportFormat === 'pdf' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                    <FileText size={24} className={exportFormat === 'pdf' ? 'text-blue-600' : 'text-gray-500'} />
+                  <div className={`p-2 rounded-lg ${exportFormat === 'pdf' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <FileText size={24} className={exportFormat === 'pdf' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900">PDF Report</div>
-                    <div className="text-sm text-gray-500">Professional format with branding</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">PDF Report</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Professional format with branding</div>
                   </div>
                   {exportFormat === 'pdf' && (
-                    <Check size={20} className="text-blue-600 ml-2" />
+                    <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
                   )}
                 </label>
 
                 {/* CSV Option */}
                 <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                  exportFormat === 'csv' 
-                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  exportFormat === 'csv'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -647,23 +738,23 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('csv')}
                     className="sr-only"
                   />
-                  <div className={`p-2 rounded-lg ${exportFormat === 'csv' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                    <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-blue-600' : 'text-gray-500'} />
+                  <div className={`p-2 rounded-lg ${exportFormat === 'csv' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900">Spreadsheet (CSV)</div>
-                    <div className="text-sm text-gray-500">For Excel or Google Sheets</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">Spreadsheet (CSV)</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">For Excel or Google Sheets</div>
                   </div>
                   {exportFormat === 'csv' && (
-                    <Check size={20} className="text-blue-600 ml-2" />
+                    <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
                   )}
                 </label>
 
                 {/* Text Option */}
                 <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                  exportFormat === 'txt' 
-                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  exportFormat === 'txt'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -673,23 +764,23 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('txt')}
                     className="sr-only"
                   />
-                  <div className={`p-2 rounded-lg ${exportFormat === 'txt' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                    <File size={24} className={exportFormat === 'txt' ? 'text-blue-600' : 'text-gray-500'} />
+                  <div className={`p-2 rounded-lg ${exportFormat === 'txt' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <File size={24} className={exportFormat === 'txt' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900">Plain Text</div>
-                    <div className="text-sm text-gray-500">Simple format for email</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">Plain Text</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Simple format for email</div>
                   </div>
                   {exportFormat === 'txt' && (
-                    <Check size={20} className="text-blue-600 ml-2" />
+                    <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
                   )}
                 </label>
 
                 {/* Print Option */}
                 <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                  exportFormat === 'print' 
-                    ? 'bg-blue-50 border-blue-500 shadow-sm' 
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  exportFormat === 'print'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
@@ -699,41 +790,41 @@ export default function SimplifiedExportModal({
                     onChange={() => setExportFormat('print')}
                     className="sr-only"
                   />
-                  <div className={`p-2 rounded-lg ${exportFormat === 'print' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                    <Printer size={24} className={exportFormat === 'print' ? 'text-blue-600' : 'text-gray-500'} />
+                  <div className={`p-2 rounded-lg ${exportFormat === 'print' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    <Printer size={24} className={exportFormat === 'print' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900">Print</div>
-                    <div className="text-sm text-gray-500">Send to printer</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">Print</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Send to printer</div>
                   </div>
                   {exportFormat === 'print' && (
-                    <Check size={20} className="text-blue-600 ml-2" />
+                    <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
                   )}
                 </label>
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 p-3 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
             )}
 
             {exportState === 'success' && (
-              <div className="bg-green-50 p-3 rounded-md flex items-center">
-                <Check size={16} className="text-green-500 mr-2" />
-                <p className="text-sm text-green-700">Export successful!</p>
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md flex items-center border border-green-200 dark:border-green-800">
+                <Check size={16} className="text-green-500 dark:text-green-400 mr-2" />
+                <p className="text-sm text-green-700 dark:text-green-300">Export successful!</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Mobile-friendly Actions */}
-        <div className="border-t bg-gray-50 px-4 py-4 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 px-4 py-4 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 touch-manipulation"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 touch-manipulation transition-colors"
             disabled={exportState === 'loading'}
           >
             Cancel
@@ -741,7 +832,7 @@ export default function SimplifiedExportModal({
           <button
             type="button"
             onClick={handleExport}
-            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center justify-center touch-manipulation"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 focus:outline-none flex items-center justify-center touch-manipulation transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={exportState === 'loading' || exportState === 'success' || filteredTrips.length === 0}
           >
             {exportState === 'loading' ? (

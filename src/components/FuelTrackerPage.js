@@ -1,5 +1,5 @@
 // src/components/FuelTrackerPage.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import {
 
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
+import { usePagination, Pagination, SimplePagination } from "@/hooks/usePagination";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FuelStats from "@/components/fuel/FuelStats";
 import StateSummary from "@/components/fuel/StateSummary";
@@ -77,7 +78,32 @@ export default function FuelTrackerPage() {
     updateFuelEntry,
     deleteFuelEntry
   } = useFuel(user?.id);
-  
+
+  // Filter fuel entries based on search
+  const filteredFuelEntries = useMemo(() => {
+    if (!filters.search) return fuelEntries;
+
+    const searchLower = filters.search.toLowerCase();
+    return fuelEntries.filter(entry =>
+      (entry.location && entry.location.toLowerCase().includes(searchLower)) ||
+      (entry.state && entry.state.toLowerCase().includes(searchLower)) ||
+      (entry.vehicle_name && entry.vehicle_name.toLowerCase().includes(searchLower))
+    );
+  }, [fuelEntries, filters.search]);
+
+  // Pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    goToPage,
+    hasNextPage,
+    hasPrevPage,
+    showingText,
+    pageNumbers,
+    totalItems
+  } = usePagination(filteredFuelEntries, { itemsPerPage: 10 });
+
   // Check if the user is authenticated
   useEffect(() => {
     async function checkAuth() {
@@ -300,20 +326,20 @@ export default function FuelTrackerPage() {
   const generateStateCategories = () => {
     // Group by state and calculate total per state
     const stateCategories = {};
-    
-    fuelEntries.forEach(entry => {
+
+    filteredFuelEntries.forEach(entry => {
       if (!stateCategories[entry.state]) {
         stateCategories[entry.state] = 0;
       }
       stateCategories[entry.state] += parseFloat(entry.total_amount);
     });
-    
+
     return stateCategories;
   };
-  
+
   // Get the top 3 most expensive fuel entries
   const getTopFuelEntries = () => {
-    return [...fuelEntries]
+    return [...filteredFuelEntries]
       .sort((a, b) => parseFloat(b.total_amount) - parseFloat(a.total_amount))
       .slice(0, 3);
   };
@@ -474,7 +500,7 @@ export default function FuelTrackerPage() {
                   <div className="flex justify-center items-center py-12">
                     <RefreshCw size={32} className="animate-spin text-blue-500" />
                   </div>
-                ) : fuelEntries.length === 0 ? (
+                ) : filteredFuelEntries.length === 0 ? (
                   <EmptyState
                     message="No fuel entries found"
                     description={
@@ -491,11 +517,10 @@ export default function FuelTrackerPage() {
                   />
                 ) : (
                   <>
-                    {/* Mobile Card View - Hidden on lg screens */}
-                    <div className="lg:hidden p-4">
-                      {/* Scrollable cards container */}
-                      <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '500px' }}>
-                        {fuelEntries.map(entry => (
+                    {/* Mobile Card View */}
+                    <div className="lg:hidden p-4 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {paginatedData.map(entry => (
                           <FuelEntryCard
                             key={entry.id}
                             fuelEntry={entry}
@@ -505,63 +530,49 @@ export default function FuelTrackerPage() {
                           />
                         ))}
                       </div>
-                      {/* Mobile Total Summary - Fixed at bottom */}
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-4 text-white mt-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="text-blue-100 text-sm">Total ({fuelEntries.length} entries)</div>
-                            <div className="text-2xl font-bold">
-                              {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-blue-100 text-sm">Gallons</div>
-                            <div className="text-xl font-semibold">
-                              {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(1)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+
+                      {/* Mobile Pagination */}
+                      <SimplePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={goToPage}
+                        hasNextPage={hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        className="mt-4"
+                      />
                     </div>
 
-                    {/* Desktop Table View - Hidden on mobile */}
+                    {/* Desktop Table View */}
                     <div className="hidden lg:block">
-                      {/* Fixed Header */}
                       <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead className="bg-gray-50/80 dark:bg-gray-700/50">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[200px]">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Location
                               </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[100px]">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Date
                               </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[120px]">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Gallons
                               </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[100px]">
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Amount
                               </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[140px]">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Vehicle
                               </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[140px]">
-                                Receipt / Status
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                                Receipt
                               </th>
-                              <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[80px]">
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 Actions
                               </th>
                             </tr>
                           </thead>
-                        </table>
-                      </div>
-
-                      {/* Scrollable Body - Max height for ~10 rows */}
-                      <div className="overflow-y-auto overflow-x-auto" style={{ maxHeight: '480px' }}>
-                        <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
-                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {fuelEntries.map(entry => (
+                          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {paginatedData.map(entry => (
                               <FuelEntryItem
                                 key={entry.id}
                                 fuelEntry={entry}
@@ -574,43 +585,37 @@ export default function FuelTrackerPage() {
                         </table>
                       </div>
 
-                      {/* Fixed Footer */}
-                      <div className="overflow-x-auto border-t border-gray-200 dark:border-gray-700">
-                        <table className="min-w-full">
-                          <tfoot className="bg-gray-50 dark:bg-gray-700/50">
-                            <tr>
-                              <td colSpan="2" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100" style={{ width: '300px' }}>
-                                Total
-                              </td>
-                              <td className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100" style={{ width: '120px' }}>
-                                {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
-                              </td>
-                              <td colSpan="4" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
-                              </td>
-                            </tr>
-                          </tfoot>
-                        </table>
+                      {/* Table Footer with Pagination */}
+                      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          pageNumbers={pageNumbers}
+                          onPageChange={goToPage}
+                          hasNextPage={hasNextPage}
+                          hasPrevPage={hasPrevPage}
+                          showingText={showingText}
+                        />
                       </div>
                     </div>
                   </>
                 )}
-                
-                {/* Desktop Footer - Hidden on mobile since we have summary card */}
-                {fuelEntries.length > 0 && (
-                  <div className="hidden lg:flex px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 items-center justify-between">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Showing {fuelEntries.length} entries
-                    </div>
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                      Total: {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
-                    </div>
+
+                {/* Total Summary - Mobile Only */}
+                {filteredFuelEntries.length > 0 && (
+                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between lg:hidden">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {totalItems} fuel entries
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Total: {formatCurrency(filteredFuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* State Summary */}
-              {fuelEntries.length > 0 && (
+              {filteredFuelEntries.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
                   <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
@@ -620,7 +625,7 @@ export default function FuelTrackerPage() {
                   </div>
                   <div className="p-0">
                     <StateSummary
-                      fuelData={fuelEntries}
+                      fuelData={filteredFuelEntries}
                       onExportForIFTA={handleGoToIFTA}
                     />
                   </div>

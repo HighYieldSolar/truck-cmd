@@ -15,7 +15,8 @@ export default function ExportMileageButton({
   vehicleName = 'Vehicle',
   startDate = '',
   endDate = '',
-  mileageData = []
+  mileageData = [],
+  compact = false
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -55,15 +56,18 @@ export default function ExportMileageButton({
   return (
     <button
       onClick={handleExport}
-      className="w-full px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 flex items-center justify-center transition-colors"
+      className={compact
+        ? "px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        : "w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      }
       disabled={loading || !tripId || mileageData.length === 0}
     >
       {loading ? (
-        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+        <RefreshCw className={compact ? "h-4 w-4 mr-1.5 animate-spin" : "h-4 w-4 mr-2 animate-spin"} />
       ) : (
-        <FileDown className="h-4 w-4 mr-2" />
+        <FileDown className={compact ? "h-4 w-4 mr-1.5" : "h-4 w-4 mr-2"} />
       )}
-      Export Mileage Report
+      {compact ? "Export" : "Export Mileage Report"}
     </button>
   );
 }

@@ -1,100 +1,94 @@
 // src/app/(dashboard)/dashboard/ifta/page.js
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Calculator,
   FileDown,
-  Plus,
   Trash2,
   AlertTriangle,
   Info,
-  Download,
   Truck,
-  Calendar,
   MapPin,
   Fuel,
-  DollarSign,
-  Clock,
-  Database,
   RefreshCw,
-  ArrowRight,
   CheckCircle,
   Route,
   Gauge,
-  FileText,
-  StickyNote,
-  ChevronRight,
-  BarChart2
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  ArrowRight,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 // Import components
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
-import IFTAFuelToggle from "@/components/ifta/IFTAFuelToggle";
-import StateMileageImporter from "@/components/ifta/StateMileageImporter";
-import EnhancedIFTAFuelSync from "@/components/ifta/EnhancedIFTAFuelSync";
 import VehicleSelector from "@/components/ifta/VehicleSelector";
-
-// Import simplified components for IFTA
-import SimplifiedIFTASummary from "@/components/ifta/SimplifiedIFTASummary";
 import SimplifiedExportModal from "@/components/ifta/SimplifiedExportModal";
-import SimplifiedTripEntryForm from "@/components/ifta/SimplifiedTripEntryForm";
-import SimplifiedTripsList from "@/components/ifta/SimplifiedTripsList";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
 import { getQuarterDateRange } from "@/lib/utils/dateUtils";
 
+// State name mapping
+const STATE_NAMES = {
+  'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+  'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+  'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+  'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+  'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+  'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+  'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+  'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+  'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+  'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+  'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+  'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+  'WI': 'Wisconsin', 'WY': 'Wyoming',
+  'AB': 'Alberta', 'BC': 'British Columbia', 'MB': 'Manitoba', 'NB': 'New Brunswick',
+  'NL': 'Newfoundland', 'NS': 'Nova Scotia', 'ON': 'Ontario', 'PE': 'Prince Edward Island',
+  'QC': 'Quebec', 'SK': 'Saskatchewan'
+};
+
 export default function IFTACalculatorPage() {
   const router = useRouter();
 
-  // Component state for authentication and loading
+  // Core state
   const [user, setUser] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Data state
   const [activeQuarter, setActiveQuarter] = useState("");
   const [trips, setTrips] = useState([]);
   const [fuelData, setFuelData] = useState([]);
-
-  // Add selected vehicle state
   const [selectedVehicle, setSelectedVehicle] = useState("all");
 
   // UI state
-  const [loading, setLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [dataFetchKey, setDataFetchKey] = useState(0);
-
-  // Modal state
+  const [showTripDetails, setShowTripDetails] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
-  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const tripsPerPage = 10;
 
-  // Error and message state
+  // Messages
   const [error, setError] = useState(null);
-  const [databaseError, setDatabaseError] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
-
-  // Feature toggles
-  const [showMileageImporter, setShowMileageImporter] = useState(true);
-  const [debugMode, setDebugMode] = useState(false);
-
-  // Add ref for the state mileage importer section
-  const mileageImporterRef = useRef(null);
 
   // Load trips for the selected quarter
   const loadTrips = useCallback(async () => {
     if (!user?.id || !activeQuarter) return [];
 
     try {
-      console.log("Loading trips for user", user.id, "and quarter", activeQuarter);
-
-      // Get trips without attempting to join the vehicles table first
       const { data, error: tripsError } = await supabase
         .from('ifta_trip_records')
         .select('*')
@@ -104,118 +98,70 @@ export default function IFTACalculatorPage() {
 
       if (tripsError) {
         if (tripsError.code === '42P01') {
-          console.error("ifta_trip_records table doesn't exist:", tripsError);
-          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support to set up your database.");
+          setError("The IFTA database table doesn't exist. Please contact support.");
           return [];
-        } else {
-          throw tripsError;
         }
+        throw tripsError;
       }
 
-      // Now that we have the trips, try to fetch vehicle information separately
-      const trips = data || [];
-      const vehicleIds = [...new Set(trips.map(trip => trip.vehicle_id))].filter(Boolean);
+      // Fetch vehicle info
+      const vehicleIds = [...new Set((data || []).map(trip => trip.vehicle_id))].filter(Boolean);
       const vehicleInfo = {};
 
       if (vehicleIds.length > 0) {
         try {
-          // Try vehicles table first
           const { data: vehicleData } = await supabase
             .from('vehicles')
             .select('id, name, license_plate')
             .in('id', vehicleIds);
 
-          if (vehicleData && vehicleData.length > 0) {
-            vehicleData.forEach(vehicle => {
-              vehicleInfo[vehicle.id] = {
-                name: vehicle.name,
-                license_plate: vehicle.license_plate
-              };
+          if (vehicleData?.length > 0) {
+            vehicleData.forEach(v => {
+              vehicleInfo[v.id] = { name: v.name, license_plate: v.license_plate };
             });
-          } else {
-            // Try trucks table as fallback
-            const { data: trucksData } = await supabase
-              .from('trucks')
-              .select('id, name, license_plate')
-              .in('id', vehicleIds);
-
-            if (trucksData && trucksData.length > 0) {
-              trucksData.forEach(truck => {
-                vehicleInfo[truck.id] = {
-                  name: truck.name,
-                  license_plate: truck.license_plate
-                };
-              });
-            }
           }
-        } catch (vehicleError) {
-          console.warn("Could not fetch vehicle details:", vehicleError);
-          // Non-fatal error, continue with basic trip data
+        } catch {
+          // Non-fatal, continue without vehicle names
         }
       }
 
-      // Process data to add helpful fields
-      const processedTrips = trips.map(trip => {
-        // Add vehicle name if available
-        const vehicleDetails = vehicleInfo[trip.vehicle_id] || {};
-
-        return {
-          ...trip,
-          vehicle_name: vehicleDetails.name || null,
-          license_plate: vehicleDetails.license_plate || null
-        };
-      });
-
-      console.log("Loaded trips:", processedTrips.length);
-      return processedTrips;
-    } catch (error) {
-      console.error('Error loading trips:', error);
-      setError('Failed to load trip records. ' + (error.message || 'Unknown error'));
+      return (data || []).map(trip => ({
+        ...trip,
+        vehicle_name: vehicleInfo[trip.vehicle_id]?.name || null,
+        license_plate: vehicleInfo[trip.vehicle_id]?.license_plate || null
+      }));
+    } catch (err) {
+      setError('Failed to load trip records.');
       return [];
     }
   }, [user?.id, activeQuarter]);
 
-  // Load fuel data from fuel tracker
+  // Load fuel data
   const loadFuelData = useCallback(async () => {
     if (!user?.id || !activeQuarter) return [];
 
     try {
-      console.log("Loading fuel data for quarter:", activeQuarter);
-
-      // Parse the quarter into dateRange filter using utility function
-      const { startDate: startDateStr, endDate: endDateStr } = getQuarterDateRange(activeQuarter);
-
+      const { startDate, endDate } = getQuarterDateRange(activeQuarter);
       const filters = {
         dateRange: 'Custom',
-        startDate: startDateStr,
-        endDate: endDateStr,
-        iftaOnly: true  // Only fetch Diesel and Gasoline fuel types for IFTA
+        startDate,
+        endDate,
+        iftaOnly: true
       };
 
       const fuelEntries = await fetchFuelEntries(user.id, filters);
-
-      if (fuelEntries && Array.isArray(fuelEntries)) {
-        console.log(`Loaded IFTA-eligible fuel entries: ${fuelEntries.length} (Diesel/Gasoline only)`);
-        
-        const processedEntries = fuelEntries.map(entry => ({
-          ...entry,
-          state: entry.state || 'Unknown',
-          gallons: parseFloat(entry.gallons) || 0
-        }));
-
-        return processedEntries;
-      } else {
-        console.warn("No fuel entries returned or invalid format");
-        return [];
-      }
-    } catch (error) {
-      console.error('Error loading fuel data:', error);
-      setError('Failed to load fuel data. Your calculations may be incomplete.');
+      return (fuelEntries || []).map(entry => ({
+        ...entry,
+        state: entry.state || 'Unknown',
+        gallons: parseFloat(entry.gallons) || 0
+      }));
+    } catch {
+      setError('Failed to load fuel data.');
       return [];
     }
   }, [user?.id, activeQuarter]);
 
-  // Extract unique vehicles from trips and fuel data
+  // Get unique vehicles from data
   const getUniqueVehicles = useCallback(() => {
     const vehicleMap = new Map();
 
@@ -242,40 +188,88 @@ export default function IFTACalculatorPage() {
     return Array.from(vehicleMap.values());
   }, [trips, fuelData]);
 
-  // Get summary statistics
+  // Calculate jurisdiction summary (THE MAIN IFTA DATA)
+  const getJurisdictionSummary = useCallback(() => {
+    const jurisdictionData = {};
+
+    // Filter by vehicle if needed
+    const filteredTrips = selectedVehicle === "all"
+      ? trips
+      : trips.filter(t => t.vehicle_id === selectedVehicle);
+
+    const filteredFuel = selectedVehicle === "all"
+      ? fuelData
+      : fuelData.filter(f => f.vehicle_id === selectedVehicle);
+
+    // Add miles from trips
+    filteredTrips.forEach(trip => {
+      const miles = parseFloat(trip.total_miles) || 0;
+
+      if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
+        if (!jurisdictionData[trip.start_jurisdiction]) {
+          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0 };
+        }
+        jurisdictionData[trip.start_jurisdiction].miles += miles;
+      } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
+        const halfMiles = miles / 2;
+
+        if (!jurisdictionData[trip.start_jurisdiction]) {
+          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0 };
+        }
+        if (!jurisdictionData[trip.end_jurisdiction]) {
+          jurisdictionData[trip.end_jurisdiction] = { miles: 0, gallons: 0 };
+        }
+
+        jurisdictionData[trip.start_jurisdiction].miles += halfMiles;
+        jurisdictionData[trip.end_jurisdiction].miles += halfMiles;
+      }
+    });
+
+    // Add fuel from fuel tracker
+    filteredFuel.forEach(entry => {
+      if (entry.state) {
+        if (!jurisdictionData[entry.state]) {
+          jurisdictionData[entry.state] = { miles: 0, gallons: 0 };
+        }
+        jurisdictionData[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      }
+    });
+
+    // Convert to array, filter out empty/invalid codes, and sort by miles
+    return Object.entries(jurisdictionData)
+      .filter(([code]) => code && code.trim() && code !== 'Unknown' && code !== 'null' && code !== 'undefined')
+      .map(([code, data]) => ({
+        code,
+        name: STATE_NAMES[code] || code,
+        miles: data.miles,
+        gallons: data.gallons
+      }))
+      .sort((a, b) => b.miles - a.miles);
+  }, [trips, fuelData, selectedVehicle]);
+
+  // Calculate summary stats
   const getStats = useCallback(() => {
-    const totalTrips = trips.length;
-    const totalMiles = trips.reduce((sum, trip) => sum + (parseFloat(trip.total_miles) || 0), 0);
-    const totalGallons = fuelData.reduce((sum, entry) => sum + (parseFloat(entry.gallons) || 0), 0);
+    const summary = getJurisdictionSummary();
+    const totalMiles = summary.reduce((sum, j) => sum + j.miles, 0);
+    const totalGallons = summary.reduce((sum, j) => sum + j.gallons, 0);
     const avgMpg = totalGallons > 0 ? totalMiles / totalGallons : 0;
-    const uniqueJurisdictions = [...new Set([
-      ...trips.map(t => t.start_jurisdiction),
-      ...trips.map(t => t.end_jurisdiction),
-      ...fuelData.map(f => f.state)
-    ])].filter(Boolean).length;
 
     return {
-      totalTrips,
+      totalTrips: trips.length,
       totalMiles,
       totalGallons,
       avgMpg,
-      uniqueJurisdictions
+      jurisdictionCount: summary.length
     };
-  }, [trips, fuelData]);
+  }, [trips, getJurisdictionSummary]);
 
-  // Initialize data and check authentication
+  // Initialize
   useEffect(() => {
-    async function initializeData() {
+    async function init() {
       try {
         setInitialLoading(true);
-
         const savedQuarter = localStorage.getItem('ifta-selected-quarter');
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          throw sessionError;
-        }
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
           router.push('/login');
@@ -291,40 +285,35 @@ export default function IFTACalculatorPage() {
           const quarter = Math.ceil((now.getMonth() + 1) / 3);
           setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
         }
-      } catch (err) {
-        console.error('Error checking authentication:', err);
+      } catch {
         setError('Authentication error. Please try logging in again.');
       } finally {
         setInitialLoading(false);
       }
     }
 
-    initializeData();
+    init();
   }, [router]);
 
-  // Save active quarter to local storage when it changes
+  // Load data when quarter changes
   useEffect(() => {
     if (activeQuarter) {
       localStorage.setItem('ifta-selected-quarter', activeQuarter);
-
-      if (!initialLoading) {
-        setIsDataLoaded(false);
-        setDataFetchKey(prev => prev + 1);
-      }
     }
-  }, [activeQuarter, initialLoading]);
+  }, [activeQuarter]);
 
-  // Load data when user, quarter, or dataFetchKey changes
+  // Reset pagination when filters change
   useEffect(() => {
-    async function loadAllData() {
+    setCurrentPage(1);
+  }, [selectedVehicle, activeQuarter]);
+
+  useEffect(() => {
+    async function loadData() {
       if (!user?.id || !activeQuarter || initialLoading) return;
 
       try {
         setLoading(true);
         setError(null);
-        setDatabaseError(null);
-
-        console.log(`Loading all data for quarter: ${activeQuarter}, data fetch key: ${dataFetchKey}`);
 
         const [tripsData, fuelEntries] = await Promise.all([
           loadTrips(),
@@ -333,122 +322,42 @@ export default function IFTACalculatorPage() {
 
         setTrips(tripsData);
         setFuelData(fuelEntries);
-        setIsDataLoaded(true);
-
-        console.log(`Data loaded: ${tripsData.length} trips, ${fuelEntries.length} fuel entries`);
-      } catch (error) {
-        console.error("Error loading data:", error);
+      } catch {
+        setError('Failed to load data.');
       } finally {
         setLoading(false);
       }
     }
 
-    loadAllData();
-  }, [user?.id, activeQuarter, dataFetchKey, initialLoading, loadTrips, loadFuelData]);
+    loadData();
+  }, [user?.id, activeQuarter, initialLoading, loadTrips, loadFuelData]);
 
-  // Force refresh of fuel data
-  const forceFuelSync = useCallback(() => {
-    setDataFetchKey(prev => prev + 1);
+  // Refresh data
+  const handleRefresh = async () => {
+    setLoading(true);
+    const [tripsData, fuelEntries] = await Promise.all([
+      loadTrips(),
+      loadFuelData()
+    ]);
+    setTrips(tripsData);
+    setFuelData(fuelEntries);
+    setLoading(false);
 
-    setStatusMessage({
-      type: 'success',
-      text: 'Refreshing fuel data...'
-    });
-
+    setStatusMessage({ type: 'success', text: 'Data refreshed successfully!' });
     setTimeout(() => setStatusMessage(null), 3000);
-  }, []);
-
-  // Handle sync completion from IFTA Fuel Sync component
-  const handleSyncComplete = useCallback((results) => {
-    console.log("Sync completed successfully:", results);
-    if (results && !results.isBalanced) {
-      setStatusMessage({
-        type: 'warning',
-        text: `Found ${results.discrepancies ? results.discrepancies.length : 0} discrepancies between fuel and IFTA data`
-      });
-    } else {
-      setStatusMessage({
-        type: 'success',
-        text: 'Fuel and IFTA data are in sync!'
-      });
-    }
-    setTimeout(() => setStatusMessage(null), 3000);
-  }, []);
-
-  // Handle adding a new trip
-  const handleAddTrip = async (tripData) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const newTrip = {
-        user_id: user.id,
-        quarter: activeQuarter,
-        start_date: tripData.date,
-        end_date: tripData.date,
-        vehicle_id: tripData.vehicleId,
-        driver_id: tripData.driverId || null,
-        start_jurisdiction: tripData.startJurisdiction,
-        end_jurisdiction: tripData.endJurisdiction,
-        total_miles: parseFloat(tripData.miles),
-        gallons: parseFloat(tripData.gallons || 0),
-        fuel_cost: parseFloat(tripData.fuelCost || 0),
-        notes: tripData.notes || "",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      const { data, error: insertError } = await supabase
-        .from('ifta_trip_records')
-        .insert([newTrip])
-        .select();
-
-      if (insertError) {
-        if (insertError.code === '42P01') {
-          setDatabaseError("The IFTA trips database table doesn't exist. Please contact support.");
-          throw new Error("Database table doesn't exist");
-        } else {
-          throw insertError;
-        }
-      }
-
-      setStatusMessage({
-        type: 'success',
-        text: 'Trip added successfully!'
-      });
-
-      setTimeout(() => setStatusMessage(null), 3000);
-
-      if (data && data.length > 0) {
-        setTrips(prevTrips => [data[0], ...prevTrips]);
-      }
-
-      setDataFetchKey(prev => prev + 1);
-
-      return true;
-    } catch (error) {
-      console.error('Error adding trip:', error);
-      setError('Failed to add trip: ' + (error.message || "Unknown error"));
-      return false;
-    } finally {
-      setLoading(false);
-    }
   };
 
-  // Handle deleting a trip
-  const handleDeleteTrip = useCallback((trip) => {
+  // Delete trip
+  const handleDeleteTrip = (trip) => {
     setTripToDelete(trip);
     setDeleteModalOpen(true);
-  }, []);
+  };
 
-  // Confirm deletion of a trip
   const confirmDeleteTrip = async () => {
     if (!tripToDelete) return;
 
     try {
       setLoading(true);
-      setError(null);
-
       const { error: deleteError } = await supabase
         .from('ifta_trip_records')
         .delete()
@@ -456,88 +365,39 @@ export default function IFTACalculatorPage() {
 
       if (deleteError) throw deleteError;
 
-      setTrips(prevTrips => prevTrips.filter(trip => trip.id !== tripToDelete.id));
-
-      setStatusMessage({
-        type: 'success',
-        text: 'Trip deleted successfully!'
-      });
-
+      setTrips(prev => prev.filter(t => t.id !== tripToDelete.id));
+      setStatusMessage({ type: 'success', text: 'Trip deleted successfully!' });
       setTimeout(() => setStatusMessage(null), 3000);
-
-      setDeleteModalOpen(false);
-      setTripToDelete(null);
-
-      setDataFetchKey(prev => prev + 1);
-    } catch (error) {
-      console.error('Error deleting trip:', error);
-      setError('Failed to delete trip: ' + (error.message || "Unknown error"));
+    } catch {
+      setError('Failed to delete trip.');
     } finally {
       setLoading(false);
+      setDeleteModalOpen(false);
+      setTripToDelete(null);
     }
   };
 
-  // Handle exporting data
-  const handleExportData = useCallback(() => {
-    console.log("Export button clicked - trips:", trips?.length);
-    
-    if (!trips || trips.length === 0) {
-      setError("No trip data available to export. Please add trips first.");
+  // Export handler
+  const handleExport = () => {
+    if (!trips.length) {
+      setError("No trip data available to export.");
       return;
     }
-
-    if (selectedVehicle !== "all") {
-      const hasVehicleData = trips.some(trip => trip.vehicle_id === selectedVehicle);
-      if (!hasVehicleData) {
-        setError(`No trip data available for vehicle ${selectedVehicle}. Please select a different vehicle or add trips for this vehicle.`);
-        return;
-      }
-    }
-
-    console.log("Opening export modal");
     setExportModalOpen(true);
-  }, [trips, selectedVehicle]);
-
-  // Handle trips import completion
-  const handleImportComplete = useCallback(() => {
-    setStatusMessage({
-      type: 'success',
-      text: 'Trips imported successfully!'
-    });
-
-    setTimeout(() => setStatusMessage(null), 3000);
-
-    setDataFetchKey(prev => prev + 1);
-  }, []);
-
-  // Updated to scroll to importer and toggle it open if needed
-  const handleShowMileageImporter = () => {
-    // Make sure importer is visible
-    setShowMileageImporter(true);
-
-    // Scroll to the importer section with some offset
-    setTimeout(() => {
-      if (mileageImporterRef.current) {
-        // Scroll to element with offset
-        const yOffset = -100; // 100px offset from the top
-        const element = mileageImporterRef.current;
-        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-        window.scrollTo({
-          top: y,
-          behavior: 'smooth'
-        });
-      }
-    }, 100);
   };
 
-  // Get list of unique vehicles
-  const uniqueVehicles = getUniqueVehicles();
   const stats = getStats();
+  const jurisdictionSummary = getJurisdictionSummary();
+  const uniqueVehicles = getUniqueVehicles();
+
+  // Filter trips for display
+  const displayTrips = selectedVehicle === "all"
+    ? trips
+    : trips.filter(t => t.vehicle_id === selectedVehicle);
 
   if (initialLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -545,402 +405,465 @@ export default function IFTACalculatorPage() {
 
   return (
     <DashboardLayout activePage="ifta">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
         <div className="max-w-7xl mx-auto">
-          {/* Enhanced Header with Workflow Steps */}
-          <div className="mb-6">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-lg p-6 text-white">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                <div className="mb-4 lg:mb-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-white/20 p-2 rounded-lg">
-                      <Calculator size={28} />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
-                      <p className="text-blue-100 text-sm md:text-base">Track mileage and fuel by jurisdiction for quarterly reporting</p>
-                    </div>
+
+          {/* Header */}
+          <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-4 md:mb-0">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2.5 rounded-xl">
+                    <Calculator size={28} />
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Link
-                    href="/dashboard/fuel"
-                    className="px-4 py-2.5 bg-white/10 backdrop-blur text-white rounded-lg hover:bg-white/20 transition-all duration-200 flex items-center justify-center font-medium border border-white/20"
-                  >
-                    <Fuel size={18} className="mr-2" />
-                    Fuel Tracker
-                  </Link>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleExportData();
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleExportData();
-                    }}
-                    className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 shadow-md flex items-center justify-center font-medium touch-manipulation"
-                    disabled={trips.length === 0}
-                    type="button"
-                  >
-                    <FileDown size={18} className="mr-2" />
-                    Export Report
-                  </button>
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
+                    <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
+                      Generate your quarterly IFTA tax report
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Workflow Steps Indicator */}
-            <div className="bg-white rounded-b-xl shadow-sm px-6 py-4 -mt-1">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">1</div>
-                    <span className="ml-2 font-medium text-gray-700">Select Period</span>
-                  </div>
-                  <ChevronRight size={16} className="text-gray-400 mx-2" />
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">2</div>
-                    <span className="ml-2 font-medium text-gray-700">Add/Import Trips</span>
-                  </div>
-                  <ChevronRight size={16} className="text-gray-400 mx-2" />
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs">3</div>
-                    <span className="ml-2 font-medium text-gray-700">Review & Export</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Info size={16} className="text-gray-400" />
-                  <span className="text-sm text-gray-500">Need help? <a href="#" className="text-blue-600 hover:underline">View IFTA Guide</a></span>
-                </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard/fuel"
+                  className="px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 flex items-center font-medium"
+                >
+                  <Fuel size={18} className="mr-2" />
+                  Fuel Tracker
+                </Link>
+                <button
+                  onClick={handleExport}
+                  disabled={!trips.length}
+                  className="px-4 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-md flex items-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FileDown size={18} className="mr-2" />
+                  Export Report
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Success/error messages */}
+          {/* Status Messages */}
           {statusMessage && (
-            <div className={`mb-6 ${statusMessage.type === 'success'
-              ? 'bg-green-50 border-l-4 border-green-400'
-              : 'bg-yellow-50 border-l-4 border-yellow-400'
-              } p-4 rounded-md`}>
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  {statusMessage.type === 'success' ? (
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Info className="h-5 w-5 text-yellow-400" />
-                  )}
-                </div>
-                <div className="ml-3">
-                  <p className={`text-sm ${statusMessage.type === 'success' ? 'text-green-700' : 'text-yellow-700'
-                    }`}>
-                    {statusMessage.text}
-                  </p>
-                </div>
-              </div>
+            <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
+              statusMessage.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
+                : 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800'
+            }`}>
+              <CheckCircle className={`h-5 w-5 ${
+                statusMessage.type === 'success' ? 'text-green-500' : 'text-yellow-500'
+              }`} />
+              <p className={`text-sm font-medium ${
+                statusMessage.type === 'success'
+                  ? 'text-green-700 dark:text-green-300'
+                  : 'text-yellow-700 dark:text-yellow-300'
+              }`}>
+                {statusMessage.text}
+              </p>
             </div>
           )}
 
-          {/* Show database errors if present */}
-          {databaseError && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Database className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-medium text-red-800">Database Configuration Error</h3>
-                  <p className="text-sm text-red-700">{databaseError}</p>
-                </div>
-              </div>
+          {error && (
+            <div className="mb-6 p-4 rounded-xl flex items-center gap-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-500 hover:text-red-700"
+              >
+                &times;
+              </button>
             </div>
           )}
 
-          {/* Show other errors if present */}
-          {error && !databaseError && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Enhanced Statistics Cards with Better Visual Hierarchy */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <BarChart2 size={20} className="mr-2 text-gray-600" />
-              Quarter Overview
-              {activeQuarter && <span className="ml-2 text-sm font-normal text-gray-500">({activeQuarter})</span>}
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-blue-50 p-2 rounded-lg group-hover:bg-blue-100 transition-colors">
-                      <Route size={18} className="text-blue-600" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">TRIPS</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalTrips}</p>
-                  <p className="text-xs text-gray-500 mt-1">Total records</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-green-50 p-2 rounded-lg group-hover:bg-green-100 transition-colors">
-                      <Truck size={18} className="text-green-600" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">MILES</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{Math.round(stats.totalMiles).toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">Total driven</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-orange-50 p-2 rounded-lg group-hover:bg-orange-100 transition-colors">
-                      <Fuel size={18} className="text-orange-600" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">FUEL</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{Math.round(stats.totalGallons).toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1">Gallons used</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-red-50 p-2 rounded-lg group-hover:bg-red-100 transition-colors">
-                      <Gauge size={18} className="text-red-600" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">MPG</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.avgMpg.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Average</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 group">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-purple-50 p-2 rounded-lg group-hover:bg-purple-100 transition-colors">
-                      <MapPin size={18} className="text-purple-600" />
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">STATES</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.uniqueJurisdictions}</p>
-                  <p className="text-xs text-gray-500 mt-1">Jurisdictions</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Simplified Main Content - No Sidebar */}
-          <div className="space-y-6">
-            {/* Step 1: Period Selection with Integrated Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">1</div>
-                    Select Reporting Period & Vehicle
-                  </h2>
-                  <button
-                    onClick={forceFuelSync}
-                    className="text-sm px-3 py-1.5 bg-white text-gray-600 rounded-lg hover:bg-gray-50 transition-colors shadow-sm flex items-center font-medium border border-gray-200"
-                  >
-                    <RefreshCw size={14} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-                    Sync Data
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      IFTA Quarter <span className="text-red-500">*</span>
-                    </label>
-                    <QuarterSelector
-                      activeQuarter={activeQuarter}
-                      setActiveQuarter={setActiveQuarter}
-                      isLoading={loading}
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      Select the quarter for your IFTA reporting
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vehicle Filter
-                    </label>
-                    <VehicleSelector
-                      selectedVehicle={selectedVehicle}
-                      setSelectedVehicle={setSelectedVehicle}
-                      vehicles={uniqueVehicles}
-                      isLoading={loading && !isDataLoaded}
-                      userId={user?.id}
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      Filter data by specific vehicle or view all
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation Toggle */}
-            <div className="flex justify-center">
-              <IFTAFuelToggle
-                currentPage="ifta"
-                currentQuarter={activeQuarter}
-              />
-            </div>
-
-            {/* Enhanced IFTA Summary */}
-            {!databaseError && (
-              <SimplifiedIFTASummary
-                userId={user?.id}
-                quarter={activeQuarter}
-                trips={trips}
-                fuelData={fuelData}
-                selectedVehicle={selectedVehicle}
-                isLoading={loading && !isDataLoaded}
-              />
-            )}
-
-            {/* Step 2: Add or Import Trips */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">2</div>
-                  Add or Import Trip Data
-                </h2>
-              </div>
-              <div className="p-6">
-                {/* Tab Navigation */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <button
-                    onClick={() => setShowMileageImporter(false)}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                      !showMileageImporter
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Plus size={18} />
-                    Manual Entry
-                  </button>
-                  <button
-                    onClick={() => setShowMileageImporter(true)}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                      showMileageImporter
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <FileText size={18} />
-                    Import from Mileage Tracker
-                  </button>
-                </div>
-
-                {/* Content based on selection */}
-                {!showMileageImporter ? (
-                  <SimplifiedTripEntryForm
-                    onAddTrip={handleAddTrip}
-                    isLoading={loading}
-                    vehicles={uniqueVehicles}
-                  />
-                ) : (
-                  <div ref={mileageImporterRef}>
-                    {loading && !isDataLoaded ? (
-                      <div className="animate-pulse space-y-4">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                      </div>
-                    ) : (
-                      <StateMileageImporter
-                        userId={user?.id}
-                        quarter={activeQuarter}
-                        onImportComplete={handleImportComplete}
-                        showImportedTrips={true}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Step 3: Review Trips & Export */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm mr-3">3</div>
-                    Review Trip Records
-                  </h2>
-                  {trips.length > 0 && (
-                    <span className="text-sm text-gray-500">
-                      {trips.length} trip{trips.length !== 1 ? 's' : ''} recorded
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="p-6">
-                <SimplifiedTripsList
-                  trips={selectedVehicle === "all" ? trips : trips.filter(trip => trip.vehicle_id === selectedVehicle)}
-                  onDeleteTrip={handleDeleteTrip}
-                  isLoading={loading && !isDataLoaded}
+          {/* Quarter & Vehicle Selection */}
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  IFTA Quarter
+                </label>
+                <QuarterSelector
+                  activeQuarter={activeQuarter}
+                  setActiveQuarter={setActiveQuarter}
+                  isLoading={loading}
                 />
               </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Vehicle Filter
+                </label>
+                <VehicleSelector
+                  selectedVehicle={selectedVehicle}
+                  setSelectedVehicle={setSelectedVehicle}
+                  vehicles={uniqueVehicles}
+                  isLoading={loading}
+                  userId={user?.id}
+                />
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center font-medium"
+              >
+                <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
-            
-            {/* Quick Help Section */}
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-              <div className="flex items-start gap-4">
-                <div className="bg-blue-100 rounded-lg p-2">
-                  <Info size={20} className="text-blue-600" />
+          </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+                  <Route size={20} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">IFTA Reporting Tips</h3>
-                  <ul className="space-y-2 text-sm text-blue-800">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span>Record all trips that cross state or provincial borders</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span>Keep fuel receipts and upload them to the Fuel Tracker for accurate calculations</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span>Export your data at the end of each quarter for filing</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span>Use the import feature to quickly add trips from your mileage tracker</span>
-                    </li>
-                  </ul>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Miles</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {Math.round(stats.totalMiles).toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total driven</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                  <Fuel size={20} className="text-green-600 dark:text-green-400" />
                 </div>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fuel</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {Math.round(stats.totalGallons).toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Gallons purchased</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                  <Gauge size={20} className="text-orange-600 dark:text-orange-400" />
+                </div>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MPG</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats.avgMpg.toFixed(2)}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Average efficiency</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                  <MapPin size={20} className="text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">States</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats.jurisdictionCount}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Jurisdictions</p>
+            </div>
+          </div>
+
+          {/* MAIN CONTENT: Jurisdiction Summary Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <MapPin size={20} className="mr-2 text-blue-500" />
+                IFTA Jurisdiction Summary
+              </h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {activeQuarter}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center items-center py-16">
+                <RefreshCw size={32} className="animate-spin text-blue-500" />
+              </div>
+            ) : jurisdictionSummary.length === 0 ? (
+              <div className="text-center py-16 px-6">
+                <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                  <MapPin size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  No IFTA Data Yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  Start by recording trips in the State Mileage Tracker and fuel purchases in the Fuel Tracker.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/dashboard/mileage"
+                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center font-medium"
+                  >
+                    <Route size={18} className="mr-2" />
+                    Go to State Mileage
+                  </Link>
+                  <Link
+                    href="/dashboard/fuel"
+                    className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center font-medium"
+                  >
+                    <Fuel size={18} className="mr-2" />
+                    Go to Fuel Tracker
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                      <tr>
+                        <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                          Jurisdiction
+                        </th>
+                        <th className="px-5 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                          Miles Driven
+                        </th>
+                        <th className="px-5 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                          Fuel Purchased (gal)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {jurisdictionSummary.map((j, idx) => (
+                        <tr key={j.code} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/30'}>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-600/20 flex items-center justify-center mr-3">
+                                <span className="text-xs font-bold text-blue-600 dark:text-blue-300">{j.code}</span>
+                              </div>
+                              <span className="font-medium text-gray-900 dark:text-gray-100">{j.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-right">
+                            <span className="text-gray-900 dark:text-gray-100 font-medium">
+                              {j.miles.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-right">
+                            <span className="text-gray-900 dark:text-gray-100 font-medium">
+                              {j.gallons.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-100 dark:bg-gray-700">
+                      <tr>
+                        <td className="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                          Total
+                        </td>
+                        <td className="px-5 py-4 text-right font-bold text-gray-900 dark:text-gray-100">
+                          {stats.totalMiles.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                        </td>
+                        <td className="px-5 py-4 text-right font-bold text-gray-900 dark:text-gray-100">
+                          {stats.totalGallons.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden p-4 space-y-3">
+                  {jurisdictionSummary.map((j) => (
+                    <div key={j.code} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-600/20 flex items-center justify-center mr-3">
+                            <span className="text-sm font-bold text-blue-600 dark:text-blue-300">{j.code}</span>
+                          </div>
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{j.name}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Miles</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {j.miles.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Gallons</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {j.gallons.toLocaleString(undefined, { maximumFractionDigits: 3 })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Mobile Total */}
+                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">Total</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">Miles</p>
+                        <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                          {stats.totalMiles.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">Gallons</p>
+                        <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                          {stats.totalGallons.toLocaleString(undefined, { maximumFractionDigits: 3 })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Trip Records (Collapsible) */}
+          {displayTrips.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+              <button
+                onClick={() => setShowTripDetails(!showTripDetails)}
+                className="w-full px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                  <Truck size={20} className="mr-2 text-gray-500" />
+                  Trip Records
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({displayTrips.length} trips)
+                  </span>
+                </h2>
+                {showTripDetails ? (
+                  <ChevronUp size={20} className="text-gray-500" />
+                ) : (
+                  <ChevronDown size={20} className="text-gray-500" />
+                )}
+              </button>
+
+              {showTripDetails && (
+                <>
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {displayTrips
+                      .slice((currentPage - 1) * tripsPerPage, currentPage * tripsPerPage)
+                      .map((trip) => (
+                      <div key={trip.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center text-gray-600 dark:text-gray-400">
+                              <Calendar size={16} className="mr-1" />
+                              <span className="text-sm">
+                                {new Date(trip.start_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
+                                {trip.start_jurisdiction}
+                              </span>
+                              <ArrowRight size={16} className="mx-2 text-gray-400" />
+                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
+                                {trip.end_jurisdiction}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {parseFloat(trip.total_miles).toLocaleString()} mi
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteTrip(trip)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        {trip.vehicle_name && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center">
+                            <Truck size={12} className="mr-1" />
+                            {trip.vehicle_name}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {displayTrips.length > tripsPerPage && (
+                    <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/30">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Showing {((currentPage - 1) * tripsPerPage) + 1} - {Math.min(currentPage * tripsPerPage, displayTrips.length)} of {displayTrips.length} trips
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        <span className="px-3 py-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {currentPage} / {Math.ceil(displayTrips.length / tripsPerPage)}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(Math.ceil(displayTrips.length / tripsPerPage), prev + 1))}
+                          disabled={currentPage >= Math.ceil(displayTrips.length / tripsPerPage)}
+                          className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Help Section */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                <Info size={20} className="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  How to use IFTA Calculator
+                </h3>
+                <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Track mileage</strong> in the{" "}
+                      <Link href="/dashboard/mileage" className="underline hover:text-blue-600">
+                        State Mileage Tracker
+                      </Link>
+                      {" "}by recording state border crossings
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Log fuel purchases</strong> in the{" "}
+                      <Link href="/dashboard/fuel" className="underline hover:text-blue-600">
+                        Fuel Tracker
+                      </Link>
+                      {" "}with the state where fuel was purchased
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Export your report</strong> at the end of each quarter for IFTA filing
+                    </span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Modal */}
         <DeleteConfirmationModal
           isOpen={deleteModalOpen}
           onClose={() => {
