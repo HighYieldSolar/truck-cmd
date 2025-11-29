@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 export default function NotificationIcon({ onIconClick, hasUnread }) {
   return (
     <button
-      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none relative"
+      className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none relative"
       onClick={onIconClick}
       aria-label="Notifications"
     >

@@ -1,0 +1,78 @@
+Rebuild my [customers] page and its supporting forms/components to match the Fuel Tracker design pattern.
+
+### Reference Files:
+
+- Design spec: `docs/FUEL_TRACKER_DESIGN_SPEC.md`
+- Reference component: `src/components/FuelTrackerPage.js`
+- Current page: `src/app/(dashboard)/dashboard/[PAGE_ROUTE]/page.js`
+- Current components: `src/components/[PAGE_FOLDER]/`
+
+### Design Patterns to Apply:
+
+1. **Header**: Blue gradient (`from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600`) with
+   title, subtitle, and action buttons
+2. **Layout**: 4-column grid (1 sidebar + 3 main content)
+3. **Stat Cards**: Match `FuelStats.js` - icon RIGHT side, border-left accent, text-2xl value
+4. **Filter Bar**: Search input + dropdowns (category, date range, sort)
+5. **Sidebar Widgets**: Top items list + categories filter
+
+### Required Utilities:
+
+- Error handling: `import { getUserFriendlyError } from '@/lib/utils/errorMessages'`
+- Pagination: `import { usePagination } from '@/hooks/usePagination'` (10 items per page)
+- Feedback: `import { OperationMessage, EmptyState } from '@/components/ui/OperationMessage'`
+
+### Features to Include:
+
+- Full dark mode support (all `dark:` variants)
+- Real-time Supabase subscriptions
+- localStorage form persistence
+- Mobile responsive (card view on mobile, table on desktop)
+- CSV export functionality
+- Loading skeletons
+
+### After Building:
+
+1. Use BrowserMCP to compare with Fuel Tracker page visually
+2. Use shadcn MCP to find better UI components if needed
+3. Run Semgrep security scan on new code
+4. Remove any console.log statements
+5. Verify no console errors in browser
+
+---
+
+Quick Version (Copy & Paste Ready)
+
+Rebuild my [customers] page to match the Fuel Tracker design:
+
+**References:**
+
+- Design spec: `docs/FUEL_TRACKER_DESIGN_SPEC.md`
+- Reference: `src/components/FuelTrackerPage.js`
+- Stats pattern: `src/components/fuel/FuelStats.js`
+
+**Apply these patterns:**
+
+- Header gradient, 4-column grid, filter bar
+- Stat cards with icon on RIGHT, border-left accent
+- Sidebar widgets (top items + categories)
+- Full dark mode support
+
+**Use these utilities:**
+
+- `import { getUserFriendlyError } from '@/lib/utils/errorMessages'`
+- `import { usePagination } from '@/hooks/usePagination'` (10 items/page)
+- `import { OperationMessage, EmptyState } from '@/components/ui/OperationMessage'`
+
+**Verify with MCPs:**
+
+- BrowserMCP: Visual comparison with Fuel Tracker
+- shadcn MCP: Better components if needed
+- Semgrep MCP: Security scan
+- Remove console.logs, check for errors
+
+---
+
+Example Usage:
+Rebuild my invoices page to match the Fuel Tracker design:
+...
