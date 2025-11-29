@@ -492,18 +492,21 @@ export default function FuelTrackerPage() {
                 ) : (
                   <>
                     {/* Mobile Card View - Hidden on lg screens */}
-                    <div className="lg:hidden p-4 space-y-3">
-                      {fuelEntries.map(entry => (
-                        <FuelEntryCard
-                          key={entry.id}
-                          fuelEntry={entry}
-                          onEdit={handleEditFuelEntry}
-                          onDelete={handleDeleteFuelEntry}
-                          onViewReceipt={handleViewReceipt}
-                        />
-                      ))}
-                      {/* Mobile Total Summary */}
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-4 text-white">
+                    <div className="lg:hidden p-4">
+                      {/* Scrollable cards container */}
+                      <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '500px' }}>
+                        {fuelEntries.map(entry => (
+                          <FuelEntryCard
+                            key={entry.id}
+                            fuelEntry={entry}
+                            onEdit={handleEditFuelEntry}
+                            onDelete={handleDeleteFuelEntry}
+                            onViewReceipt={handleViewReceipt}
+                          />
+                        ))}
+                      </div>
+                      {/* Mobile Total Summary - Fixed at bottom */}
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-4 text-white mt-3">
                         <div className="flex justify-between items-center">
                           <div>
                             <div className="text-blue-100 text-sm">Total ({fuelEntries.length} entries)</div>
@@ -522,58 +525,73 @@ export default function FuelTrackerPage() {
                     </div>
 
                     {/* Desktop Table View - Hidden on mobile */}
-                    <div className="hidden lg:block overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
-                        <thead>
-                          <tr className="bg-gray-50/80 dark:bg-gray-700/50">
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Location
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Gallons
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Amount
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Vehicle
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Receipt / Status
-                            </th>
-                            <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                          {fuelEntries.map(entry => (
-                            <FuelEntryItem
-                              key={entry.id}
-                              fuelEntry={entry}
-                              onEdit={handleEditFuelEntry}
-                              onDelete={handleDeleteFuelEntry}
-                              onViewReceipt={handleViewReceipt}
-                            />
-                          ))}
-                        </tbody>
-                        <tfoot className="bg-gray-50 dark:bg-gray-700/50">
-                          <tr>
-                            <td colSpan="2" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
-                              Total
-                            </td>
-                            <td className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
-                            </td>
-                            <td colSpan="4" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                    <div className="hidden lg:block">
+                      {/* Fixed Header */}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead className="bg-gray-50/80 dark:bg-gray-700/50">
+                            <tr>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[200px]">
+                                Location
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[100px]">
+                                Date
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[120px]">
+                                Gallons
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[100px]">
+                                Amount
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[140px]">
+                                Vehicle
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[140px]">
+                                Receipt / Status
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider w-[80px]">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                        </table>
+                      </div>
+
+                      {/* Scrollable Body - Max height for ~10 rows */}
+                      <div className="overflow-y-auto overflow-x-auto" style={{ maxHeight: '480px' }}>
+                        <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {fuelEntries.map(entry => (
+                              <FuelEntryItem
+                                key={entry.id}
+                                fuelEntry={entry}
+                                onEdit={handleEditFuelEntry}
+                                onDelete={handleDeleteFuelEntry}
+                                onViewReceipt={handleViewReceipt}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Fixed Footer */}
+                      <div className="overflow-x-auto border-t border-gray-200 dark:border-gray-700">
+                        <table className="min-w-full">
+                          <tfoot className="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                              <td colSpan="2" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100" style={{ width: '300px' }}>
+                                Total
+                              </td>
+                              <td className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100" style={{ width: '120px' }}>
+                                {fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.gallons), 0).toFixed(3)} gal
+                              </td>
+                              <td colSpan="4" className="px-4 py-4 text-left text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {formatCurrency(fuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
                     </div>
                   </>
                 )}
