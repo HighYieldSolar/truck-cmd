@@ -153,8 +153,6 @@ export async function createExpense(expenseData) {
       date: formatDateForStorage(expenseData.date)
     };
     
-    console.log("Creating expense with formatted date:", formattedData.date);
-    
     const { data, error } = await supabase
       .from('expenses')
       .insert([formattedData])
@@ -182,8 +180,6 @@ export async function updateExpense(id, expenseData) {
       ...expenseData,
       date: formatDateForStorage(expenseData.date)
     };
-    
-    console.log("Updating expense with formatted date:", formattedData.date);
     
     const { data, error } = await supabase
       .from('expenses')

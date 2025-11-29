@@ -1,19 +1,24 @@
-// src/components/expenses/ExpenseCategories.js
-"use client";
+'use client';
 
-import { 
-  Fuel, 
-  Wrench, 
-  Shield, 
-  MapPin, 
-  Briefcase, 
+import {
+  Fuel,
+  Wrench,
+  Shield,
+  MapPin,
+  Briefcase,
   FileCheck,
   Coffee,
   Tag
-} from "lucide-react";
+} from 'lucide-react';
 
-export default function ExpenseCategories({ 
-  categories, 
+/**
+ * Expense Categories Sidebar Widget
+ *
+ * Displays expense categories with amounts and allows filtering.
+ * Supports dark mode.
+ */
+export default function ExpenseCategories({
+  categories,
   onCategorySelect,
   selectedCategory
 }) {
@@ -22,86 +27,94 @@ export default function ExpenseCategories({
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value || 0);
   };
 
-  // Get category icon
+  // Get category icon with dark mode support
   const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'Fuel':
-        return <Fuel size={16} className="text-yellow-600" />;
-      case 'Maintenance':
-        return <Wrench size={16} className="text-blue-600" />;
-      case 'Insurance':
-        return <Shield size={16} className="text-green-600" />;
-      case 'Tolls':
-        return <MapPin size={16} className="text-purple-600" />;
-      case 'Office':
-        return <Briefcase size={16} className="text-gray-600" />;
-      case 'Permits':
-        return <FileCheck size={16} className="text-indigo-600" />;
-      case 'Meals':
-        return <Coffee size={16} className="text-red-600" />;
-      default:
-        return <Tag size={16} className="text-gray-600" />;
-    }
+    const iconClass = 'h-4 w-4';
+    const icons = {
+      Fuel: <Fuel className={`${iconClass} text-amber-600 dark:text-amber-400`} />,
+      Maintenance: <Wrench className={`${iconClass} text-blue-600 dark:text-blue-400`} />,
+      Insurance: <Shield className={`${iconClass} text-green-600 dark:text-green-400`} />,
+      Tolls: <MapPin className={`${iconClass} text-purple-600 dark:text-purple-400`} />,
+      Office: <Briefcase className={`${iconClass} text-gray-600 dark:text-gray-400`} />,
+      Permits: <FileCheck className={`${iconClass} text-indigo-600 dark:text-indigo-400`} />,
+      Meals: <Coffee className={`${iconClass} text-red-600 dark:text-red-400`} />,
+      Other: <Tag className={`${iconClass} text-gray-600 dark:text-gray-400`} />
+    };
+    return icons[category] || icons.Other;
   };
 
-  // Filter out categories with no expenses
-  const activeCategories = Object.entries(categories)
+  // Filter and sort categories
+  const activeCategories = Object.entries(categories || {})
     .filter(([_, amount]) => amount > 0)
     .sort(([_, amountA], [__, amountB]) => amountB - amountA);
 
+  // Empty state
   if (activeCategories.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        <Tag size={36} className="mx-auto mb-2 text-gray-400" />
-        <p>No expense categories found</p>
+      <div className="text-center py-8">
+        <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Tag className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No expense categories yet
+        </p>
       </div>
     );
   }
 
+  // Total amount
+  const totalAmount = Object.values(categories || {}).reduce((sum, amount) => sum + amount, 0);
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      {/* Category Items */}
       {activeCategories.map(([category, amount]) => (
-        <div
+        <button
           key={category}
-          className={`p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-            selectedCategory === category 
-              ? 'bg-blue-50 border-blue-200 border' 
-              : 'bg-gray-50 hover:bg-blue-50'
-          }`}
           onClick={() => onCategorySelect(category)}
+          className={`w-full p-3 rounded-lg flex items-center justify-between transition-colors ${
+            selectedCategory === category
+              ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
+              : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent'
+          }`}
         >
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             {getCategoryIcon(category)}
-            <span className="ml-2 text-sm font-medium text-gray-700">{category}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              {category}
+            </span>
           </div>
-          <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+          <span className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 shadow-sm">
             {formatCurrency(amount)}
           </span>
-        </div>
+        </button>
       ))}
-      
-      <div className="pt-2 mt-2 border-t border-gray-200">
-        <div
-          className={`p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-            selectedCategory === 'All' 
-              ? 'bg-blue-50 border-blue-200 border' 
-              : 'bg-gray-50 hover:bg-blue-50'
-          }`}
+
+      {/* All Categories Option */}
+      <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+        <button
           onClick={() => onCategorySelect('All')}
+          className={`w-full p-3 rounded-lg flex items-center justify-between transition-colors ${
+            selectedCategory === 'All'
+              ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
+              : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-transparent'
+          }`}
         >
-          <div className="flex items-center">
-            <Tag size={16} className="text-blue-600" />
-            <span className="ml-2 text-sm font-medium text-gray-700">All Categories</span>
+          <div className="flex items-center gap-2">
+            <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              All Categories
+            </span>
           </div>
-          <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
-            {formatCurrency(Object.values(categories).reduce((sum, amount) => sum + amount, 0))}
+          <span className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 shadow-sm">
+            {formatCurrency(totalAmount)}
           </span>
-        </div>
+        </button>
       </div>
     </div>
   );
