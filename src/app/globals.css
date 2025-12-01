@@ -156,7 +156,7 @@ body {
   cursor: pointer;
 }
 
-/* Dashboard dark mode overrides */
+/* Dashboard dark mode overrides - ONLY applies within dashboard-theme context */
 .dashboard-theme.dark input[type="text"],
 .dashboard-theme.dark input[type="email"],
 .dashboard-theme.dark input[type="password"],
@@ -168,19 +168,7 @@ body {
 .dashboard-theme.dark input[type="time"],
 .dashboard-theme.dark input[type="datetime-local"],
 .dashboard-theme.dark textarea,
-.dashboard-theme.dark select,
-.dark input[type="text"],
-.dark input[type="email"],
-.dark input[type="password"],
-.dark input[type="number"],
-.dark input[type="tel"],
-.dark input[type="url"],
-.dark input[type="search"],
-.dark input[type="date"],
-.dark input[type="time"],
-.dark input[type="datetime-local"],
-.dark textarea,
-.dark select {
+.dashboard-theme.dark select {
   color: #e5e7eb !important;
   background-color: #374151 !important;
   border-color: #4b5563 !important;
@@ -194,28 +182,19 @@ body {
 .dashboard-theme.dark input[type="tel"]::placeholder,
 .dashboard-theme.dark input[type="url"]::placeholder,
 .dashboard-theme.dark input[type="search"]::placeholder,
-.dashboard-theme.dark textarea::placeholder,
-.dark input[type="text"]::placeholder,
-.dark input[type="email"]::placeholder,
-.dark input[type="password"]::placeholder,
-.dark input[type="number"]::placeholder,
-.dark input[type="tel"]::placeholder,
-.dark input[type="url"]::placeholder,
-.dark input[type="search"]::placeholder,
-.dark textarea::placeholder {
+.dashboard-theme.dark textarea::placeholder {
   color: #9ca3af !important;
 }
 
-.dashboard-theme.dark select option,
-.dark select option {
+.dashboard-theme.dark select option {
   color: #e5e7eb !important;
   background-color: #1f2937 !important;
 }
 
-/* Ensure auth forms (login/signup) have proper styling */
-/* Override any conflicting global styles for non-dashboard pages */
+/* Ensure auth forms (login/signup) have proper light styling */
+/* These styles ensure public pages always show light inputs regardless of dark mode preference */
 body:not(.dashboard-theme) input[type="text"],
-body:not(.dashboard-theme) input[type="email"], 
+body:not(.dashboard-theme) input[type="email"],
 body:not(.dashboard-theme) input[type="password"],
 body:not(.dashboard-theme) input[type="number"],
 body:not(.dashboard-theme) input[type="tel"],
@@ -226,19 +205,21 @@ body:not(.dashboard-theme) input[type="time"],
 body:not(.dashboard-theme) input[type="datetime-local"],
 body:not(.dashboard-theme) textarea,
 body:not(.dashboard-theme) select {
-  color: #111827 !important; /* Ensure dark text for auth forms */
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
 }
 
 /* Ensure proper placeholder colors for auth forms */
 body:not(.dashboard-theme) input[type="text"]::placeholder,
 body:not(.dashboard-theme) input[type="email"]::placeholder,
-body:not(.dashboard-theme) input[type="password"]::placeholder, 
+body:not(.dashboard-theme) input[type="password"]::placeholder,
 body:not(.dashboard-theme) input[type="number"]::placeholder,
 body:not(.dashboard-theme) input[type="tel"]::placeholder,
 body:not(.dashboard-theme) input[type="url"]::placeholder,
 body:not(.dashboard-theme) input[type="search"]::placeholder,
 body:not(.dashboard-theme) textarea::placeholder {
-  color: #6b7280 !important; /* Gray placeholder text */
+  color: #6b7280 !important;
 }
 
 /* Ensure dropdown options are properly styled for auth forms */
