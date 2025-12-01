@@ -21,6 +21,7 @@ import NotificationDropdown from "@/components/notifications/NotificationDropdow
 export default function DashboardLayout({ activePage = "dashboard", children, pageTitle }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,6 +45,23 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   const [notificationsData, setNotificationsData] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationError, setNotificationError] = useState(null);
+
+  // Handle mounting to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   // Fetch initial notifications summary
   useEffect(() => {
@@ -467,17 +485,23 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-gray-700/60 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)}></div>
+        {/* Mobile Menu Overlay - Only render after mount to prevent hydration issues */}
+        {mounted && (
+          <div
+            className={`fixed inset-0 bg-gray-700 z-40 lg:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-60' : 'opacity-0 pointer-events-none'}`}
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden={!mobileMenuOpen}
+          />
         )}
 
-        {/* Mobile Sidebar */}
-        <div
-          ref={mobileMenuRef}
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl -translate-x-full transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : ''
-            }`}
-        >
+        {/* Mobile Sidebar - Only render after mount to prevent hydration issues */}
+        {mounted && (
+          <div
+            ref={mobileMenuRef}
+            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            style={{ visibility: mobileMenuOpen ? 'visible' : 'hidden' }}
+            aria-hidden={!mobileMenuOpen}
+          >
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
               <Image
@@ -489,7 +513,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
               />
             </Link>
             <button
-              className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+              className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none touch-manipulation"
               onClick={() => setMobileMenuOpen(false)}
               aria-label="Close menu"
             >
@@ -632,6 +656,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             )}
           </div>
         </div>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
@@ -641,9 +666,10 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
               {/* Left side: Mobile menu button and page title */}
               <div className="flex items-center space-x-3">
                 <button
-                  className="lg:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none mobile-menu-button"
+                  className="lg:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none mobile-menu-button touch-manipulation"
                   onClick={() => setMobileMenuOpen(true)}
                   aria-label="Open menu"
+                  aria-expanded={mobileMenuOpen}
                 >
                   <Menu size={24} />
                 </button>
