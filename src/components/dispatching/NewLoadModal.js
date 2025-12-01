@@ -409,14 +409,14 @@ export default function NewLoadForm({
       case 1:
         return (
           <div className="space-y-6">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">Basic Information</h3>
-              <p className="text-sm text-blue-700">Let's start with the customer and load details</p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Basic Information</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">Let's start with the customer and load details</p>
             </div>
 
             {/* Customer section */}
             <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Customer Name <span className="text-red-500">*</span>
               </label>
               <div className="flex space-x-2">
@@ -424,12 +424,12 @@ export default function NewLoadForm({
                   <div className="flex-1 relative">
                     <input
                       type="text"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                      className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Loading customers..."
                       disabled
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <RefreshCw size={18} className="animate-spin text-gray-400" />
+                      <RefreshCw size={18} className="animate-spin text-gray-400 dark:text-gray-500" />
                     </div>
                   </div>
                 ) : customers.length > 0 ? (
@@ -438,7 +438,7 @@ export default function NewLoadForm({
                     name="customer"
                     value={formData.customer}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                     autoFocus
                   >
@@ -456,20 +456,20 @@ export default function NewLoadForm({
                     name="customer"
                     value={formData.customer}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Enter customer name"
                     required
                     autoFocus
                   />
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-500">Select an existing customer or type a new name</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Select an existing customer or type a new name</p>
             </div>
 
             {/* Load Number section - now optional */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <label htmlFor="load_number" className="text-sm font-medium text-gray-700">
+                <label htmlFor="load_number" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Load Number (Optional)
                 </label>
                 <div className="flex items-center">
@@ -483,17 +483,17 @@ export default function NewLoadForm({
                         setFormData(prev => ({ ...prev, load_number: "" }));
                       }
                     }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
-                  <label htmlFor="autoGenerate" className="ml-2 text-sm text-gray-600">
+                  <label htmlFor="autoGenerate" className="ml-2 text-sm text-gray-600 dark:text-gray-400">
                     Auto-generate
                   </label>
                 </div>
               </div>
-              
+
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Package size={18} className="text-gray-400" />
+                  <Package size={18} className="text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="text"
@@ -513,13 +513,13 @@ export default function NewLoadForm({
                       // You could add a state here to show a tooltip or highlight
                     }
                   }}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder={autoGenerateNumber ? "Will be auto-generated (type to override)" : "Enter load number"}
                 />
               </div>
-              
+
               {autoGenerateNumber && (
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                   Format: LC-YYYYMMDD-XXXX (e.g., {generateLoadNumber()})
                 </p>
               )}
@@ -530,19 +530,19 @@ export default function NewLoadForm({
       case 2:
         return (
           <div className="space-y-6">
-            <div className="bg-green-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-green-900 mb-2">Route Details</h3>
-              <p className="text-sm text-green-700">Where and when will the load be picked up and delivered?</p>
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">Route Details</h3>
+              <p className="text-sm text-green-700 dark:text-green-300">Where and when will the load be picked up and delivered?</p>
             </div>
 
             {/* Pickup Location */}
             <div>
-              <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="origin" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Pickup Location <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin size={18} className="text-green-500" />
+                  <MapPin size={18} className="text-green-500 dark:text-green-400" />
                 </div>
                 <input
                   type="text"
@@ -550,7 +550,7 @@ export default function NewLoadForm({
                   name="origin"
                   value={formData.origin}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="City, State (e.g., Denver, CO)"
                   required
                   autoFocus
@@ -560,12 +560,12 @@ export default function NewLoadForm({
 
             {/* Delivery Location */}
             <div>
-              <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Delivery Location <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin size={18} className="text-red-500" />
+                  <MapPin size={18} className="text-red-500 dark:text-red-400" />
                 </div>
                 <input
                   type="text"
@@ -573,7 +573,7 @@ export default function NewLoadForm({
                   name="destination"
                   value={formData.destination}
                   onChange={handleChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="City, State (e.g., Chicago, IL)"
                   required
                 />
@@ -584,12 +584,12 @@ export default function NewLoadForm({
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Pickup Date <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Calendar size={18} className="text-gray-400" />
+                      <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <input
                       type="date"
@@ -597,19 +597,19 @@ export default function NewLoadForm({
                       name="pickupDate"
                       value={formData.pickupDate}
                       onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Delivery Date <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Calendar size={18} className="text-gray-400" />
+                      <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <input
                       type="date"
@@ -617,7 +617,7 @@ export default function NewLoadForm({
                       name="deliveryDate"
                       value={formData.deliveryDate}
                       onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
                   </div>
@@ -625,8 +625,8 @@ export default function NewLoadForm({
               </div>
 
               {formData.pickupDate && formData.deliveryDate && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <p className="text-sm text-blue-700">
+                <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
                     <Clock size={16} className="inline mr-1" />
                     Transit time: {Math.ceil((new Date(formData.deliveryDate) - new Date(formData.pickupDate)) / (1000 * 60 * 60 * 24))} days
                   </p>
@@ -639,19 +639,19 @@ export default function NewLoadForm({
       case 3:
         return (
           <div className="space-y-6">
-            <div className="bg-purple-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">Pricing & Assignment</h3>
-              <p className="text-sm text-purple-700">Set the rate and optionally assign resources</p>
+            <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">Pricing & Assignment</h3>
+              <p className="text-sm text-purple-700 dark:text-purple-300">Set the rate and optionally assign resources</p>
             </div>
 
             {/* Rate section */}
             <div>
-              <label htmlFor="rate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="rate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Load Rate <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <DollarSign size={18} className="text-gray-400" />
+                  <DollarSign size={18} className="text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="number"
@@ -661,23 +661,23 @@ export default function NewLoadForm({
                   onChange={handleChange}
                   step="0.01"
                   min="0"
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="0.00"
                   required
                   autoFocus
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500">Total amount for this load</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Total amount for this load</p>
             </div>
 
             {/* Optional fields section with better UI */}
             <div className="mt-6">
-              <div 
+              <div
                 className={`
                   border-2 rounded-lg transition-all duration-300
-                  ${showOptionalFields 
-                    ? 'border-blue-300 bg-blue-50' 
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  ${showOptionalFields
+                    ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                    : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-300 dark:hover:border-gray-500'
                   }
                 `}
               >
@@ -686,40 +686,40 @@ export default function NewLoadForm({
                   onClick={() => setShowOptionalFields(!showOptionalFields)}
                   className={`
                     w-full p-4 flex items-center justify-between rounded-lg transition-all
-                    ${showOptionalFields ? 'bg-blue-100' : 'hover:bg-gray-100'}
+                    ${showOptionalFields ? 'bg-blue-100 dark:bg-blue-900/50' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
                   `}
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`
                       w-10 h-10 rounded-full flex items-center justify-center transition-all
-                      ${showOptionalFields 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-300 text-gray-600'
+                      ${showOptionalFields
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                       }
                     `}>
                       <Info size={20} />
                     </div>
                     <div className="text-left">
-                      <h4 className={`font-semibold ${showOptionalFields ? 'text-blue-900' : 'text-gray-900'}`}>
+                      <h4 className={`font-semibold ${showOptionalFields ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}>
                         Optional Information
                       </h4>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Assign driver, truck, or add special notes
                       </p>
                     </div>
                   </div>
                   <div className={`
                     flex items-center space-x-2 transition-all
-                    ${showOptionalFields ? 'text-blue-600' : 'text-gray-400'}
+                    ${showOptionalFields ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}
                   `}>
                     <span className="text-sm font-medium">
                       {showOptionalFields ? 'Hide' : 'Show'}
                     </span>
                     <div className={`
                       w-8 h-8 rounded-full flex items-center justify-center transition-all
-                      ${showOptionalFields 
-                        ? 'bg-blue-200 rotate-180' 
-                        : 'bg-gray-200'
+                      ${showOptionalFields
+                        ? 'bg-blue-200 dark:bg-blue-800 rotate-180'
+                        : 'bg-gray-200 dark:bg-gray-600'
                       }
                     `}>
                       <ChevronRight size={16} className="transform rotate-90" />
@@ -730,27 +730,27 @@ export default function NewLoadForm({
                 {showOptionalFields && (
                   <div className="p-4 pt-0 space-y-4">
                     {/* Assignment section with better layout */}
-                    <div className="bg-white rounded-lg p-4 space-y-4">
-                      <h5 className="font-medium text-gray-900 mb-3 flex items-center">
-                        <Users size={18} className="mr-2 text-blue-500" />
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-4">
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                        <Users size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
                         Resource Assignment
                       </h5>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 mb-2">
+                          <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Assign Driver
                           </label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <Users size={18} className="text-gray-400" />
+                              <Users size={18} className="text-gray-400 dark:text-gray-500" />
                             </div>
                             <select
                               id="driver_id"
                               name="driver_id"
                               value={formData.driver_id}
                               onChange={handleChange}
-                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
                               <option value="">Assign later</option>
                               {drivers.map((driver) => (
@@ -763,19 +763,19 @@ export default function NewLoadForm({
                         </div>
 
                         <div>
-                          <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 mb-2">
+                          <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Assign Truck
                           </label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <Truck size={18} className="text-gray-400" />
+                              <Truck size={18} className="text-gray-400 dark:text-gray-500" />
                             </div>
                             <select
                               id="vehicle_id"
                               name="vehicle_id"
                               value={formData.vehicle_id}
                               onChange={handleChange}
-                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
                               <option value="">Assign later</option>
                               {trucks.map((truck) => (
@@ -787,10 +787,10 @@ export default function NewLoadForm({
                           </div>
                         </div>
                       </div>
-                      
+
                       {(formData.driver_id || formData.vehicle_id) && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                          <p className="text-sm text-blue-700">
+                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
                             <CheckCircle size={16} className="inline mr-1" />
                             Load will be marked as "Assigned" when created
                           </p>
@@ -799,9 +799,9 @@ export default function NewLoadForm({
                     </div>
 
                     {/* Notes section */}
-                    <div className="bg-white rounded-lg p-4">
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                        <FileText size={18} className="inline mr-2 text-blue-500" />
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <FileText size={18} className="inline mr-2 text-blue-500 dark:text-blue-400" />
                         Notes / Special Instructions
                       </label>
                       <div className="relative">
@@ -811,11 +811,11 @@ export default function NewLoadForm({
                           value={formData.description}
                           onChange={handleChange}
                           rows="3"
-                          className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                          className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                           placeholder="Any special instructions or notes about this load..."
                         ></textarea>
                       </div>
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         Add any delivery instructions, special requirements, or other important information
                       </p>
                     </div>
@@ -825,27 +825,27 @@ export default function NewLoadForm({
             </div>
 
             {/* Load Summary */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Load Summary</h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Load Summary</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Customer:</span>
-                  <span className="font-medium">{formData.customer || '-'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Customer:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formData.customer || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Route:</span>
-                  <span className="font-medium">{formData.origin || '-'} → {formData.destination || '-'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Route:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formData.origin || '-'} → {formData.destination || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Dates:</span>
-                  <span className="font-medium">
-                    {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString() : '-'} → 
+                  <span className="text-gray-600 dark:text-gray-400">Dates:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString() : '-'} →
                     {formData.deliveryDate ? new Date(formData.deliveryDate).toLocaleDateString() : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Rate:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="text-gray-600 dark:text-gray-400">Rate:</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">
                     ${formData.rate || '0.00'}
                   </span>
                 </div>
@@ -857,10 +857,10 @@ export default function NewLoadForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-t-xl text-white z-10">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl text-white z-10">
           <div className="p-5">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold flex items-center">
@@ -957,23 +957,23 @@ export default function NewLoadForm({
         </div>
 
         {/* Form content */}
-        <div className="p-6">
+        <div className="p-6 bg-white dark:bg-gray-800">
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500 p-4 rounded-md flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
           {hasRestoredData && currentStep === 1 && (
-            <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md flex items-start justify-between">
+            <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-md flex items-start justify-between">
               <div className="flex items-start">
-                <Info className="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
-                <p className="text-sm text-blue-700">Your previous form data has been restored.</p>
+                <Info className="h-5 w-5 text-blue-400 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">Your previous form data has been restored.</p>
               </div>
               <button
                 onClick={handleClearForm}
-                className="ml-4 text-sm text-blue-600 hover:text-blue-800 underline"
+                className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
               >
                 Clear all
               </button>
@@ -984,11 +984,11 @@ export default function NewLoadForm({
             {renderStepContent()}
 
             {/* Action buttons */}
-            <div className="border-t border-gray-200 pt-6 mt-8 flex justify-between">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-8 flex justify-between">
               <button
                 type="button"
                 onClick={currentStep === 1 ? handleClose : handlePrevious}
-                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors inline-flex items-center"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors inline-flex items-center"
                 disabled={saving}
               >
                 <ChevronLeft size={16} className="mr-2" />
@@ -999,7 +999,7 @@ export default function NewLoadForm({
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
+                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
                 >
                   Next
                   <ChevronRight size={16} className="ml-2" />
@@ -1008,7 +1008,7 @@ export default function NewLoadForm({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 inline-flex items-center transition-colors"
+                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 inline-flex items-center transition-colors"
                 >
                   {saving ? (
                     <>

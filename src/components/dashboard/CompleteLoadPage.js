@@ -12,10 +12,10 @@ import CompleteLoadForm from '@/components/dashboard/CompleteLoadForm';
 
 // Loading spinner component
 const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen p-8 bg-gray-50">
+  <div className="flex items-center justify-center min-h-screen p-8 bg-gray-50 dark:bg-gray-900">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
-      <p className="text-gray-600">Loading load details...</p>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+      <p className="text-gray-600 dark:text-gray-400">Loading load details...</p>
     </div>
   </div>
 );
@@ -112,23 +112,23 @@ export default function CompleteLoadPage({ params }) {
   if (error || !loadId) {
     return (
       <DashboardLayout activePage="dispatching">
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
           <div className="max-w-md w-full">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-4">
-                <AlertCircle size={24} className="text-amber-600" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 mx-auto mb-4">
+                <AlertCircle size={24} className="text-amber-600 dark:text-amber-400" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 text-center mb-2">
                 {!loadId ? "Missing Load ID" : "Error Loading Data"}
               </h2>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 {!loadId
                   ? "No load ID was provided. Please select a load from the dispatching dashboard."
                   : error || "An unexpected error occurred while loading the load details."}
               </p>
               <button
                 onClick={() => router.push('/dashboard/dispatching')}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
               >
                 Return to Dispatching
               </button>

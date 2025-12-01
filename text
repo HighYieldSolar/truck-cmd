@@ -1,4 +1,4 @@
-Rebuild my [main dashboard] page and its supporting pages/forms/components to match the Fuel Tracker design pattern. I dont really want you to change anything with the current layout though I like how its setup already i just need your help getting everything functional like dark mode and just making sure theres no console logs or any problems with mobile resposiveness and also that the quick actions component funtions work properly and direct them to the proper input form
+Rebuild my [load managemnt] page and its supporting pages/forms/components to match the Fuel Tracker design pattern. I dont really want you to change anything with the current layout though just update and fix everything else and make sure everything on the page is fully functional and ready for public use
 
 ### Reference Files:
 
@@ -29,7 +29,6 @@ Rebuild my [main dashboard] page and its supporting pages/forms/components to ma
 - Real-time Supabase subscriptions
 - localStorage form persistence
 - Mobile responsive (card view on mobile, table on desktop)
-- CSV export functionality
 - Loading skeletons
 
 ### After Building:

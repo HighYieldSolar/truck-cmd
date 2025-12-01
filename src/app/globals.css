@@ -76,6 +76,37 @@ body {
   color-scheme: dark;
 }
 
+/* Force dark color scheme on inputs in dark mode */
+.dark input,
+.dark select,
+.dark textarea {
+  color-scheme: dark;
+}
+
+/* Dark mode calendar and spinner icons - global fix */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2) !important;
+  opacity: 1 !important;
+}
+
+.dark input[type="number"]::-webkit-inner-spin-button,
+.dark input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) !important;
+  background: transparent !important;
+  opacity: 0.8;
+}
+
 /* Fix for any problematic background overrides */
 .content-wrapper {
   min-height: calc(100vh - 64px);
@@ -144,16 +175,79 @@ body {
 .dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator,
 .dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator,
 .dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(0);
+  filter: invert(0.4);
   cursor: pointer;
+  opacity: 0.7;
+}
+
+.dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Dashboard-specific number input spinners - light mode */
+.dashboard-theme input[type="number"]::-webkit-inner-spin-button,
+.dashboard-theme input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.5;
+  cursor: pointer;
+  background: transparent;
+  -webkit-appearance: inner-spin-button;
+}
+
+.dashboard-theme input[type="number"]:hover::-webkit-inner-spin-button,
+.dashboard-theme input[type="number"]:hover::-webkit-outer-spin-button {
+  opacity: 0.8;
 }
 
 /* Dashboard-specific date picker calendar icon - dark mode */
 .dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator,
 .dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator,
-.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark .dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator,
+.dark .dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator,
+.dark .dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5) !important;
   cursor: pointer;
+  opacity: 0.8 !important;
+}
+
+.dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+.dark .dashboard-theme input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark .dashboard-theme input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dark .dashboard-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
+}
+
+/* Dashboard-specific number input spinners - dark mode */
+.dashboard-theme.dark input[type="number"]::-webkit-inner-spin-button,
+.dashboard-theme.dark input[type="number"]::-webkit-outer-spin-button,
+.dark .dashboard-theme input[type="number"]::-webkit-inner-spin-button,
+.dark .dashboard-theme input[type="number"]::-webkit-outer-spin-button,
+.dark input[type="number"]::-webkit-inner-spin-button,
+.dark input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) brightness(2) !important;
+  opacity: 0.7 !important;
+  cursor: pointer;
+  background: transparent !important;
+  -webkit-appearance: inner-spin-button !important;
+}
+
+.dashboard-theme.dark input[type="number"]:hover::-webkit-inner-spin-button,
+.dashboard-theme.dark input[type="number"]:hover::-webkit-outer-spin-button,
+.dark .dashboard-theme input[type="number"]:hover::-webkit-inner-spin-button,
+.dark .dashboard-theme input[type="number"]:hover::-webkit-outer-spin-button,
+.dark input[type="number"]:hover::-webkit-inner-spin-button,
+.dark input[type="number"]:hover::-webkit-outer-spin-button {
+  opacity: 1 !important;
 }
 
 /* Dashboard dark mode overrides - ONLY applies within dashboard-theme context */
@@ -226,4 +320,43 @@ body:not(.dashboard-theme) textarea::placeholder {
 body:not(.dashboard-theme) select option {
   color: #111827 !important;
   background-color: #ffffff !important;
+}
+
+/* ===========================================
+   FINAL OVERRIDES - Dark Mode Input Icons
+   These must be at the end for highest priority
+   =========================================== */
+
+/* Dark mode: Calendar picker icon - make it white/light */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dashboard-theme.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) !important;
+  opacity: 0.7 !important;
+  cursor: pointer !important;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="time"]::-webkit-calendar-picker-indicator:hover,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
+}
+
+/* Dark mode: Number spinner arrows - make them white/light */
+.dark input[type="number"]::-webkit-inner-spin-button,
+.dark input[type="number"]::-webkit-outer-spin-button,
+.dashboard-theme.dark input[type="number"]::-webkit-inner-spin-button,
+.dashboard-theme.dark input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) !important;
+  opacity: 0.7 !important;
+  cursor: pointer !important;
+  background: transparent !important;
+}
+
+.dark input[type="number"]::-webkit-inner-spin-button:hover,
+.dark input[type="number"]::-webkit-outer-spin-button:hover {
+  opacity: 1 !important;
 }

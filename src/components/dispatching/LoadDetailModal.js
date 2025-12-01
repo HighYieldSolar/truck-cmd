@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import DocumentViewerModal from './DocumentViewerModal';
+import PODUploadModal from './PODUploadModal';
 import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 
 export default function LoadDetailModal({ 
@@ -59,6 +60,7 @@ export default function LoadDetailModal({
   const [availableDrivers, setAvailableDrivers] = useState([]);
   const [loadingFleet, setLoadingFleet] = useState(false);
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [showPodUpload, setShowPodUpload] = useState(false);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -152,7 +154,6 @@ export default function LoadDetailModal({
       if (statusChanged) {
         if (wasCompleted && !isNowCompleted) {
           // Status changed from Completed to something else - remove earnings
-          console.log(`Removing earnings for load ${load.id} (status changed from Completed to ${updatedLoad.status})`);
           const earningsRemoved = await removeCompletedLoadEarnings(load.id);
           
           if (!earningsRemoved) {
@@ -170,7 +171,6 @@ export default function LoadDetailModal({
         }
       } else if (wasCompleted && isNowCompleted && rateChanged) {
         // Status is still Completed but rate changed - update earnings
-        console.log(`Updating earnings for completed load ${load.id}: ${oldRate} -> ${newRate}`);
         const earningsUpdated = await updateCompletedLoadEarnings(load.id, oldRate, newRate);
         
         if (!earningsUpdated) {
@@ -280,19 +280,19 @@ export default function LoadDetailModal({
   };
 
   const renderDetailsView = () => (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900">
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
-          <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 mr-2 flex-shrink-0" />
-          <p className="text-sm text-green-700">{success}</p>
+        <div className="mb-4 bg-green-50 dark:bg-green-900/30 border-l-4 border-green-400 dark:border-green-500 p-4 rounded-md flex items-start">
+          <CheckCircle className="h-5 w-5 text-green-400 dark:text-green-500 mt-0.5 mr-2 flex-shrink-0" />
+          <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
         </div>
       )}
-      
+
       {error && (
-        <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
-          <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 dark:border-red-500 p-4 rounded-md flex items-start">
+          <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
@@ -300,13 +300,13 @@ export default function LoadDetailModal({
         {/* Left Column */}
         <div className="space-y-6">
           {/* Load Information Card */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Load Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Load Information</h3>
               {!editMode && (
                 <button
                   onClick={() => setEditMode(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   <Edit size={16} className="inline mr-1" />
                   Edit
@@ -318,20 +318,20 @@ export default function LoadDetailModal({
               <div className="space-y-4">
                 {load.status === "Completed" && (
                   <div className="space-y-3 mb-4">
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 rounded-md">
                       <div className="flex">
-                        <AlertCircle className="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0" />
-                        <div className="text-sm text-yellow-700">
+                        <AlertCircle className="h-5 w-5 text-yellow-400 dark:text-yellow-500 mr-2 flex-shrink-0" />
+                        <div className="text-sm text-yellow-700 dark:text-yellow-300">
                           <p className="font-medium">Editing Completed Load</p>
                           <p>Changes to the rate will automatically update earnings records.</p>
                         </div>
                       </div>
                     </div>
                     {updatedLoad.status !== "Completed" && (
-                      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+                      <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 dark:border-red-500 p-4 rounded-md">
                         <div className="flex">
-                          <AlertCircle className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
-                          <div className="text-sm text-red-700">
+                          <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500 mr-2 flex-shrink-0" />
+                          <div className="text-sm text-red-700 dark:text-red-300">
                             <p className="font-medium">Warning: Status Change</p>
                             <p>Changing status from "Completed" to "{updatedLoad.status}" will remove the earnings record for this load.</p>
                           </div>
@@ -341,11 +341,11 @@ export default function LoadDetailModal({
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                   <select
                     value={updatedLoad.status}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, status: e.target.value})}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Assigned">Assigned</option>
@@ -358,82 +358,82 @@ export default function LoadDetailModal({
                     <option value="Delayed">Delayed</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer</label>
                   <input
                     type="text"
                     value={updatedLoad.customer}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, customer: e.target.value})}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pickup Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pickup Date</label>
                     <input
                       type="date"
                       value={updatedLoad.pickup_date}
                       onChange={(e) => setUpdatedLoad({...updatedLoad, pickup_date: e.target.value})}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Date</label>
                     <input
                       type="date"
                       value={updatedLoad.delivery_date}
                       onChange={(e) => setUpdatedLoad({...updatedLoad, delivery_date: e.target.value})}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Origin</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Origin</label>
                   <input
                     type="text"
                     value={updatedLoad.origin}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, origin: e.target.value})}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destination</label>
                   <input
                     type="text"
                     value={updatedLoad.destination}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, destination: e.target.value})}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rate ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rate ($)</label>
                   <input
                     type="number"
                     value={updatedLoad.rate}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, rate: parseFloat(e.target.value)})}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => {
                       setEditMode(false);
                       setUpdatedLoad({...load});
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     disabled={isSubmitting}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -453,19 +453,19 @@ export default function LoadDetailModal({
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Load Number</span>
-                  <span className="text-sm font-medium text-gray-900">{load.load_number || load.loadNumber}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Load Number</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{load.load_number || load.loadNumber}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Customer</span>
-                  <span className="text-sm font-medium text-gray-900">{load.customer}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Customer</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{load.customer}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Rate</span>
-                  <span className="text-sm font-medium text-green-600">${load.rate?.toLocaleString()}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Rate</span>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">${load.rate?.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Status</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
                   <StatusBadge status={load.status} />
                 </div>
               </div>
@@ -473,13 +473,13 @@ export default function LoadDetailModal({
           </div>
 
           {/* Assignment Card */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Assignment</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Assignment</h3>
               {!showAssignmentForm && (
                 <button
                   onClick={() => setShowAssignmentForm(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   <UserPlus size={16} className="inline mr-1" />
                   {(load.driver_id || load.driverId) ? 'Change' : 'Assign'}
@@ -490,11 +490,11 @@ export default function LoadDetailModal({
             {showAssignmentForm ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Driver</label>
                   <select
                     value={selectedDriver}
                     onChange={(e) => setSelectedDriver(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     disabled={loadingFleet}
                   >
                     <option value="">No driver assigned</option>
@@ -507,11 +507,11 @@ export default function LoadDetailModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Truck</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Truck</label>
                   <select
                     value={selectedTruck}
                     onChange={(e) => setSelectedTruck(e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     disabled={loadingFleet}
                   >
                     <option value="">No truck assigned</option>
@@ -523,21 +523,21 @@ export default function LoadDetailModal({
                   </select>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => {
                       setShowAssignmentForm(false);
                       setSelectedDriver(load.driver_id || load.driverId || "");
                       setSelectedTruck(load.vehicle_id || load.vehicleId || load.truckId || "");
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     disabled={isSubmitting}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAssignment}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
                     disabled={isSubmitting || loadingFleet}
                   >
                     {isSubmitting ? (
@@ -557,17 +557,17 @@ export default function LoadDetailModal({
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center">
-                  <Users size={16} className="text-gray-400 mr-3" />
+                  <Users size={16} className="text-gray-400 dark:text-gray-500 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Driver</p>
-                    <p className="text-sm text-gray-600">{load.driver || "Not assigned"}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Driver</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.driver || "Not assigned"}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <TruckIcon size={16} className="text-gray-400 mr-3" />
+                  <TruckIcon size={16} className="text-gray-400 dark:text-gray-500 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Truck</p>
-                    <p className="text-sm text-gray-600">{load.truck_info || load.truckInfo || "Not assigned"}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Truck</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.truck_info || load.truckInfo || "Not assigned"}</p>
                   </div>
                 </div>
               </div>
@@ -578,54 +578,54 @@ export default function LoadDetailModal({
         {/* Right Column */}
         <div className="space-y-6">
           {/* Route Information Card */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Route Details</h3>
-            
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Route Details</h3>
+
             <div className="space-y-4">
               <div className="flex items-start">
-                <MapPin size={20} className="text-green-500 mr-3 mt-0.5" />
+                <MapPin size={20} className="text-green-500 dark:text-green-400 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Pickup</p>
-                  <p className="text-sm text-gray-600">{load.origin}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Pickup</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{load.origin}</p>
                   <div className="flex items-center mt-1">
-                    <Calendar size={14} className="text-gray-400 mr-1" />
-                    <p className="text-xs text-gray-500">{formatDate(load.pickup_date || load.pickupDate)}</p>
+                    <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-1" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(load.pickup_date || load.pickupDate)}</p>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center">
-                <div className="w-0.5 h-8 bg-gray-300 ml-2.5"></div>
+                <div className="w-0.5 h-8 bg-gray-300 dark:bg-gray-600 ml-2.5"></div>
               </div>
 
               <div className="flex items-start">
-                <MapPin size={20} className="text-red-500 mr-3 mt-0.5" />
+                <MapPin size={20} className="text-red-500 dark:text-red-400 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Delivery</p>
-                  <p className="text-sm text-gray-600">{load.destination}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Delivery</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{load.destination}</p>
                   <div className="flex items-center mt-1">
-                    <Calendar size={14} className="text-gray-400 mr-1" />
-                    <p className="text-xs text-gray-500">{formatDate(load.delivery_date || load.deliveryDate)}</p>
+                    <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-1" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(load.delivery_date || load.deliveryDate)}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Map Placeholder */}
-            <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 h-48 rounded-lg border border-gray-200 flex items-center justify-center">
+            <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 h-48 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
               <div className="text-center">
-                <Map size={40} className="text-blue-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 font-medium">Route Map</p>
-                <p className="text-xs text-gray-500">Interactive map coming soon</p>
+                <Map size={40} className="text-blue-500 dark:text-blue-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Route Map</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Interactive map coming soon</p>
               </div>
             </div>
           </div>
 
           {/* Notes Section */}
           {load.description && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
-              <p className="text-sm text-gray-600">{load.description}</p>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notes</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{load.description}</p>
             </div>
           )}
         </div>
@@ -634,9 +634,9 @@ export default function LoadDetailModal({
   );
 
   const renderActionsView = () => (
-    <div className="p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-6">Quick Actions</h3>
-      
+    <div className="p-6 bg-gray-50 dark:bg-gray-900">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">Quick Actions</h3>
+
       {/* Primary Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         {/* Assign Resources */}
@@ -646,7 +646,7 @@ export default function LoadDetailModal({
               setLoadView('details');
               setShowAssignmentForm(true);
             }}
-            className="flex items-center justify-center px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center px-6 py-4 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <UserPlus size={20} className="mr-2" />
             Assign Driver & Truck
@@ -659,7 +659,7 @@ export default function LoadDetailModal({
             setLoadView('details');
             setEditMode(true);
           }}
-          className="flex items-center justify-center px-6 py-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          className="flex items-center justify-center px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           <RefreshCw size={20} className="mr-2" />
           {load.status === "Completed" ? "Edit Details" : "Update Status"}
@@ -670,8 +670,8 @@ export default function LoadDetailModal({
           href={`/dashboard/dispatching/complete/${load.id}`}
           className={`flex items-center justify-center px-6 py-4 rounded-lg font-medium transition-colors ${
             load.status === "Completed" || load.status === "Cancelled"
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-green-600 text-white hover:bg-green-700'
+              ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              : 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600'
           }`}
           onClick={(e) => {
             if (load.status === "Completed" || load.status === "Cancelled") {
@@ -682,8 +682,8 @@ export default function LoadDetailModal({
           }}
         >
           <CheckCircle size={20} className="mr-2" />
-          {load.status === "Completed" 
-            ? "Already Completed" 
+          {load.status === "Completed"
+            ? "Already Completed"
             : load.status === "Cancelled"
               ? "Load Cancelled"
               : "Mark as Complete"
@@ -692,7 +692,7 @@ export default function LoadDetailModal({
       </div>
 
       {/* Communication Actions */}
-      <h4 className="text-sm font-medium text-gray-700 mb-3">Communication</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Communication</h4>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         <ActionButton
           icon={<MessageSquare size={20} />}
@@ -717,13 +717,14 @@ export default function LoadDetailModal({
       </div>
 
       {/* Document Actions */}
-      <h4 className="text-sm font-medium text-gray-700 mb-3">Documents</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Documents</h4>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ActionButton
           icon={<Upload size={20} />}
           title="Upload POD"
           description="Add proof of delivery"
           color="blue"
+          onClick={() => setShowPodUpload(true)}
         />
         <ActionButton
           icon={<FileText size={20} />}
@@ -736,8 +737,8 @@ export default function LoadDetailModal({
 
       {/* Status Note */}
       {(load.status === "Completed" || load.status === "Cancelled") && (
-        <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">
+        <div className="mt-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             <AlertCircle size={16} className="inline mr-2" />
             Some actions are unavailable for {load.status.toLowerCase()} loads.
           </p>
@@ -747,27 +748,27 @@ export default function LoadDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10 rounded-t-xl">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-xl">
           <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               Load #{load.load_number || load.loadNumber}
             </h2>
             <StatusBadge status={editMode ? updatedLoad.status : load.status} className="ml-3" />
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-colors"
             disabled={isSubmitting}
           >
             <X size={20} />
           </button>
         </div>
-        
+
         {/* Tab Navigation */}
-        <div className="px-6 pt-4 border-b border-gray-200">
+        <div className="px-6 pt-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex space-x-8">
             <TabButton
               label="Details"
@@ -790,6 +791,21 @@ export default function LoadDetailModal({
       {showDocumentViewer && (
         <DocumentViewerModal loadId={load.id} onClose={() => setShowDocumentViewer(false)} />
       )}
+
+      {showPodUpload && (
+        <PODUploadModal
+          loadId={load.id}
+          loadNumber={load.load_number || load.loadNumber}
+          onClose={() => setShowPodUpload(false)}
+          onSuccess={() => {
+            setSuccess("Documents uploaded successfully");
+            // Refresh the page after a delay
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -799,13 +815,13 @@ function TabButton({ label, isActive, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`pb-4 relative ${isActive 
-        ? 'text-blue-600 font-medium' 
-        : 'text-gray-500 hover:text-gray-700'}`}
+      className={`pb-4 relative ${isActive
+        ? 'text-blue-600 dark:text-blue-400 font-medium'
+        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
     >
       {label}
       {isActive && (
-        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-full"></span>
+        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full"></span>
       )}
     </button>
   );
@@ -813,22 +829,22 @@ function TabButton({ label, isActive, onClick }) {
 
 function ActionButton({ icon, title, description, color = 'blue', onClick, disabled = false }) {
   const colorClasses = disabled
-    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-    : color === 'red' 
-      ? 'hover:bg-red-50 hover:border-red-200 text-red-600 cursor-pointer' 
-      : 'hover:bg-blue-50 hover:border-blue-200 text-blue-600 cursor-pointer';
+    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+    : color === 'red'
+      ? 'hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-200 dark:hover:border-red-700 text-red-600 dark:text-red-400 cursor-pointer'
+      : 'hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-200 dark:hover:border-blue-700 text-blue-600 dark:text-blue-400 cursor-pointer';
 
   return (
-    <button 
-      className={`flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200 transition-colors ${colorClasses}`}
+    <button
+      className={`flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors ${colorClasses}`}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
     >
       <div className="mb-2">{icon}</div>
-      <span className={`text-sm font-medium ${disabled ? 'text-gray-400' : 'text-gray-900'}`}>
+      <span className={`text-sm font-medium ${disabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
         {title}
       </span>
-      <span className="text-xs text-gray-500 mt-1">{description}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</span>
     </button>
   );
 }
