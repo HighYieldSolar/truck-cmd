@@ -13,23 +13,48 @@ export default function Navigation() {
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const featuresRef = useRef(null);
   const supportRef = useRef(null);
 
+  // Handle mounting to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen && isMobile) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen, isMobile]);
+
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      // Close menu when switching from mobile to desktop
+      if (!mobile) {
+        setMenuOpen(false);
+        setFeaturesOpen(false);
+        setSupportOpen(false);
+      }
     };
-    
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
-    
+
     handleResize();
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll);
-    
+
     // Close dropdowns when clicking outside
     const handleClickOutside = (event) => {
       if (featuresRef.current && !featuresRef.current.contains(event.target)) {
@@ -39,9 +64,9 @@ export default function Navigation() {
         setSupportOpen(false);
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
@@ -82,16 +107,17 @@ export default function Navigation() {
         </Link>
       </div>
 
-      {isMobile ? (
+      {mounted && isMobile ? (
         <div className="flex items-center space-x-4">
           <Link href="/login" className="text-gray-600 hover:text-[#00D9FF] border border-gray-300 rounded px-2 py-1 transition-colors">Login</Link>
           <Link href="/signup" className="px-1 py-2 bg-[#007BFF] text-white rounded-md hover:bg-[#00D9FF] transition-colors">
             Get Started
           </Link>
-          <button 
-            onClick={() => setMenuOpen(!menuOpen)} 
-            className="p-2 text-gray-600 focus:outline-none"
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-2 text-gray-600 focus:outline-none touch-manipulation"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
           >
             {menuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
@@ -197,16 +223,21 @@ export default function Navigation() {
         </div>
       )}
 
-      {/* Mobile Menu Slide-In */}
-      {isMobile && (
-        <div 
-          className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${menuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      {/* Mobile Menu Slide-In - Only render after mount to prevent hydration issues */}
+      {mounted && isMobile && (
+        <div
+          className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${menuOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'}`}
           onClick={() => setMenuOpen(false)}
+          aria-hidden={!menuOpen}
         />
       )}
-      
-      {isMobile && (
-        <div className={`fixed top-0 right-0 w-72 h-full bg-white shadow-lg z-50 p-6 flex flex-col space-y-6 transition-transform duration-300 transform ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+
+      {mounted && isMobile && (
+        <div
+          className={`fixed top-0 right-0 w-72 h-full bg-white shadow-lg z-50 p-6 flex flex-col space-y-6 transition-transform duration-300 transform ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ visibility: menuOpen ? 'visible' : 'hidden' }}
+          aria-hidden={!menuOpen}
+        >
           <div className="flex justify-between items-center">
             <Image
               src="/images/tc-name-tp-bg.png"
