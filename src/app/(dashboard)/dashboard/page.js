@@ -99,7 +99,6 @@ export default function Dashboard() {
       
       return true;
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
       setError('Failed to load dashboard data. Please try again later.');
       return false;
     } finally {
@@ -177,7 +176,6 @@ export default function Dashboard() {
           await loadDashboardData(user.id);
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
         if (isMounted) {
           setError('Authentication error. Please try logging in again.');
           setLoading(false);
@@ -203,10 +201,9 @@ export default function Dashboard() {
     // Earnings changes channel
     const earningsChannel = supabase
       .channel(`earnings-changes-${user.id}`)
-      .on('postgres_changes', 
+      .on('postgres_changes',
           { event: '*', schema: 'public', table: 'earnings', filter: `user_id=eq.${user.id}` },
-          payload => {
-            console.log("Earnings change detected:", payload);
+          () => {
             loadDashboardData(user.id);
           })
       .subscribe();
@@ -217,10 +214,9 @@ export default function Dashboard() {
       .channel(`loads-${user.id}`)
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'loads', filter: `user_id=eq.${user.id}` },
-          payload => {
-            console.log("Load change detected:", payload);
+          (payload) => {
             // Refresh if it's a completion or factored change
-            if (payload.new?.status === 'Completed' || 
+            if (payload.new?.status === 'Completed' ||
                 payload.new?.factored !== payload.old?.factored) {
               loadDashboardData(user.id);
             }
@@ -234,8 +230,7 @@ export default function Dashboard() {
       .channel(`expenses-${user.id}`)
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'expenses', filter: `user_id=eq.${user.id}` },
-          payload => {
-            console.log("Expense change detected:", payload);
+          () => {
             // Throttle to max once per 10 seconds
             const now = Date.now();
             if (now - lastExpenseUpdate > 10000) {
@@ -252,8 +247,7 @@ export default function Dashboard() {
       .channel(`invoices-${user.id}`)
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` },
-          payload => {
-            console.log("Invoice change detected:", payload);
+          () => {
             // Throttle to max once per 10 seconds
             const now = Date.now();
             if (now - lastInvoiceUpdate > 10000) {
@@ -349,9 +343,10 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Overview */}
-          <DashboardStats 
-            stats={stats} 
-            isLoading={dataLoading} 
+          <DashboardStats
+            stats={stats}
+            isLoading={dataLoading}
+            dateRange={dateRange}
           />
 
           {/* Earnings Breakdown */}

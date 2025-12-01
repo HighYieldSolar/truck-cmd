@@ -4,12 +4,13 @@ import { BarChart2, DollarSign, Wallet, TrendingUp, TrendingDown } from "lucide-
 /**
  * Dashboard Stats Component
  * Displays the primary statistics (earnings, expenses, profit)
- * 
+ *
  * @param {Object} props Component props
  * @param {Object} props.stats Dashboard statistics
  * @param {boolean} props.isLoading Whether data is loading
+ * @param {string} props.dateRange Current date range selection
  */
-export default function DashboardStats({ stats, isLoading }) {
+export default function DashboardStats({ stats, isLoading, dateRange = 'month' }) {
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -44,6 +45,7 @@ export default function DashboardStats({ stats, isLoading }) {
             positive={stats.earningsPositive}
             icon={<DollarSign size={22} className="text-green-600" />}
             color="green"
+            dateRange={dateRange}
           />
           <StatCard
             title="Total Expenses (MTD)"
@@ -52,6 +54,7 @@ export default function DashboardStats({ stats, isLoading }) {
             positive={stats.expensesPositive}
             icon={<Wallet size={22} className="text-red-600" />}
             color="red"
+            dateRange={dateRange}
           />
           <StatCard
             title="Net Profit"
@@ -60,6 +63,7 @@ export default function DashboardStats({ stats, isLoading }) {
             positive={stats.profitPositive}
             icon={<BarChart2 size={22} className="text-blue-600" />}
             color="blue"
+            dateRange={dateRange}
           />
         </>
       )}
@@ -71,7 +75,7 @@ export default function DashboardStats({ stats, isLoading }) {
  * Stat Card Component
  * Individual statistic card with trend indicator
  */
-function StatCard({ title, value, change, positive, icon, color = "blue" }) {
+function StatCard({ title, value, change, positive, icon, color = "blue", dateRange = 'month' }) {
   // Define color classes based on the color prop
   const getColorClasses = () => {
     switch (color) {
@@ -85,6 +89,24 @@ function StatCard({ title, value, change, positive, icon, color = "blue" }) {
         return { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400', icon: 'text-yellow-500' };
       default:
         return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500' };
+    }
+  };
+
+  // Get comparison period text based on date range
+  const getComparisonText = () => {
+    switch (dateRange) {
+      case 'month':
+        return 'vs last month';
+      case 'lastMonth':
+        return 'vs prior month';
+      case 'quarter':
+        return 'vs last quarter';
+      case 'year':
+        return 'vs last year';
+      case 'all':
+        return 'vs prior 30 days';
+      default:
+        return 'vs last month';
     }
   };
 
@@ -109,7 +131,7 @@ function StatCard({ title, value, change, positive, icon, color = "blue" }) {
             ) : (
               <TrendingDown size={16} className="mr-1" />
             )}
-            <span>{change}% from last month</span>
+            <span>{Math.abs(change)}% {getComparisonText()}</span>
           </p>
         </div>
       )}

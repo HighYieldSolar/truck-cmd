@@ -8,8 +8,6 @@ import { supabase } from "../supabaseClient";
  */
 export async function fetchDashboardStats(userId, dateRange = 'month') {
   try {
-    console.log("Fetching dashboard stats for user:", userId, "dateRange:", dateRange);
-    
     // Get date range for calculations based on the dateRange parameter
     const now = new Date();
     let startDate, endDate, previousStartDate, previousEndDate;
@@ -94,31 +92,11 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
         
         previousStartDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
         previousEndDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(lastDayPrevMonth).padStart(2, '0')}`;
-        
-        console.log("Month filter dates:", {
-          currentMonth: month + 1,
-          year: year,
-          startDate,
-          endDate,
-          previousStartDate,
-          previousEndDate
-        });
         break;
     }
-    
-    console.log("Date ranges:", { 
-      startDate, 
-      endDate, 
-      previousStartDate, 
-      previousEndDate,
-      currentDate: new Date().toISOString().split('T')[0],
-      currentMonth: now.getMonth() + 1,
-      currentYear: now.getFullYear()
-    });
-    
+
     // Validate dates
     if (!startDate || !endDate) {
-      console.error("Invalid date range calculated");
       throw new Error("Invalid date range");
     }
     
@@ -230,42 +208,7 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
     if (activeLoadsError) throw activeLoadsError;
     if (pendingInvoicesError) throw pendingInvoicesError;
     if (deliveryError) throw deliveryError;
-    
-    // Log loads data for debugging
-    console.log("Dashboard Service Debug:", {
-      dateRange,
-      startDate,
-      endDate,
-      completedLoadsCount: currentLoads?.length || 0,
-      completedLoads: currentLoads?.map(l => ({
-        load_number: l.load_number,
-        rate: l.rate,
-        final_rate: l.final_rate,
-        factored: l.factored,
-        factored_type: typeof l.factored,
-        factored_value: `"${l.factored}"`,
-        delivery_date: l.delivery_date,
-        customer: l.customer
-      })),
-      standaloneInvoicesCount: standaloneInvoices?.length || 0,
-      standaloneInvoices: standaloneInvoices?.map(i => ({ 
-        date: i.invoice_date, 
-        status: i.status, 
-        total: i.total, 
-        paid: i.amount_paid 
-      }))
-    });
-    
-    // Check factored values
-    if (currentLoads?.length > 0) {
-      const factoredTypes = new Set(currentLoads.map(l => typeof l.factored));
-      const factoredValues = new Set(currentLoads.map(l => String(l.factored)));
-      console.log("Factored field analysis:", {
-        types: Array.from(factoredTypes),
-        uniqueValues: Array.from(factoredValues)
-      });
-    }
-    
+
     // Calculate current period totals
     // Calculate earnings from completed loads (primary source)
     const currentLoadEarnings = currentLoads
@@ -274,9 +217,7 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
           const finalRate = load.final_rate !== null && load.final_rate !== undefined ? parseFloat(load.final_rate) : null;
           const baseRate = load.rate !== null && load.rate !== undefined ? parseFloat(load.rate) : 0;
           const amount = finalRate !== null ? finalRate : baseRate;
-          
-          console.log(`Load ${load.load_number}: base rate=${load.rate}, final rate=${load.final_rate}, using=${amount}`);
-          
+
           return sum + amount;
         }, 0)
       : 0;
@@ -320,20 +261,7 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
             return sum + amount;
           }, 0)
       : 0;
-    
-    console.log("Calculated earnings:", {
-      loadEarnings: currentLoadEarnings,
-      standaloneInvoiceEarnings: currentStandaloneInvoiceEarnings,
-      factoredEarnings: currentFactoredEarningsTotal,
-      invoicedLoadEarnings: currentInvoicedLoadEarnings,
-      totalEarnings: currentLoadEarnings + currentStandaloneInvoiceEarnings,
-      dateRange,
-      startDate,
-      endDate,
-      completedLoadsCount: currentLoads?.length || 0,
-      standaloneInvoiceStatuses: standaloneInvoices?.map(i => i.status) || []
-    });
-    
+
     // Total earnings = completed loads earnings + standalone invoice earnings
     const currentEarnings = currentLoadEarnings + currentStandaloneInvoiceEarnings;
     
@@ -389,19 +317,7 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
     const profitChange = previousProfit > 0 
       ? ((currentProfit - previousProfit) / previousProfit * 100).toFixed(1)
       : null;
-    
-    // Log final stats for debugging
-    console.log("Final dashboard stats:", {
-      earnings: currentEarnings,
-      loadEarnings: currentLoadEarnings,
-      standaloneInvoiceEarnings: currentStandaloneInvoiceEarnings,
-      factoredEarnings: currentFactoredEarningsTotal,
-      invoicedLoadEarnings: currentInvoicedLoadEarnings,
-      expenses: currentExpensesTotal,
-      profit: currentProfit,
-      dateRange
-    });
-    
+
     return {
       earnings: currentEarnings,
       earningsChange: earningsChange,
@@ -422,7 +338,6 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
       invoicedLoadEarnings: currentInvoicedLoadEarnings
     };
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
     // Return default values in case of error
     return {
       earnings: 0,
@@ -547,7 +462,6 @@ export async function fetchRecentActivity(userId, limit = 5) {
     
     return sortedActivities;
   } catch (error) {
-    console.error('Error fetching recent activity:', error);
     return [];
   }
 }
@@ -582,7 +496,6 @@ export async function fetchUpcomingDeliveries(userId, limit = 3) {
       status: item.status
     }));
   } catch (error) {
-    console.error('Error fetching upcoming deliveries:', error);
     return [];
   }
 }
@@ -614,7 +527,6 @@ export async function fetchRecentInvoices(userId, limit = 5) {
       status: item.status
     }));
   } catch (error) {
-    console.error('Error fetching recent invoices:', error);
     return [];
   }
 }

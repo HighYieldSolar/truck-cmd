@@ -1,8 +1,9 @@
-Rebuild my [billing] page and its supporting pages/forms/components to match the Fuel Tracker design pattern. I dont really want you to change anything with the current settings layout though I like how its setup already i just need your help getting everything functional like dark mode and just making sure theres no console logs or any problems with mobile resposiveness and also with the pricing i want to make sure it matches up with stripe you can also use the stripe mcp as need to make any changes.
+Rebuild my [main dashboard] page and its supporting pages/forms/components to match the Fuel Tracker design pattern. I dont really want you to change anything with the current layout though I like how its setup already i just need your help getting everything functional like dark mode and just making sure theres no console logs or any problems with mobile resposiveness and also that the quick actions component funtions work properly and direct them to the proper input form
 
 ### Reference Files:
 
 - Design spec: `docs/FUEL_TRACKER_DESIGN_SPEC.md`
+- Useable Tools/Mcps: `truck cmd\CLAUDE.md`
 - Reference component: `src/components/FuelTrackerPage.js`
 - Current page: `src/app/(dashboard)/dashboard/[PAGE_ROUTE]/page.js`
 - Current components: `src/components/[PAGE_FOLDER]/`

@@ -148,11 +148,10 @@ export default function FuelTrackerPage() {
             setVehicleData(data);
           }
         } catch (vehicleError) {
-          console.error("Error loading vehicles:", vehicleError);
-          // Continue without vehicle data
+          // Continue without vehicle data - silently handle error
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
+        // Authentication error - will redirect to login
       } finally {
         setInitialLoading(false);
       }
@@ -181,13 +180,11 @@ export default function FuelTrackerPage() {
       setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
-      console.error('Error adding fuel entry:', error);
-      
       setOperationMessage({
         type: 'error',
-        text: `Error adding fuel entry: ${error.message}`
+        text: error.message || 'Failed to add fuel entry. Please try again.'
       });
-      
+
       setTimeout(() => setOperationMessage(null), 5000);
       return false;
     }
@@ -206,13 +203,11 @@ export default function FuelTrackerPage() {
       setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
-      console.error('Error updating fuel entry:', error);
-      
       setOperationMessage({
         type: 'error',
-        text: `Error updating fuel entry: ${error.message}`
+        text: error.message || 'Failed to update fuel entry. Please try again.'
       });
-      
+
       setTimeout(() => setOperationMessage(null), 5000);
       return false;
     }
@@ -261,10 +256,9 @@ export default function FuelTrackerPage() {
       // Clear the message after a few seconds
       setTimeout(() => setOperationMessage(null), 3000);
     } catch (error) {
-      console.error('Error deleting fuel entry:', error);
       setOperationMessage({
         type: 'error',
-        text: `Error deleting fuel entry: ${error.message}`
+        text: error.message || 'Failed to delete fuel entry. Please try again.'
       });
     } finally {
       setDeleteLoading(false);
