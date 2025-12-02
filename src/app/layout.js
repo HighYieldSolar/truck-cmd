@@ -87,12 +87,10 @@ export const metadata = {
     canonical: '/',
   },
 
-  // Verification (add your codes when you have them)
-  // verification: {
-  //   google: 'your-google-verification-code',
-  //   yandex: 'your-yandex-verification-code',
-  //   yahoo: 'your-yahoo-verification-code',
-  // },
+  // Verification
+  verification: {
+    google: 'j0nlELrKJMR3F1Ol3dbZIaBCiOZXINJ8cWlAdrutDnU',
+  },
 
   // App-specific
   applicationName: 'Truck Command',
@@ -115,7 +113,7 @@ const structuredData = {
         height: 512,
       },
       description: 'All-in-one trucking business management software for invoicing, dispatching, expense tracking, IFTA calculations, and fleet management.',
-      foundingDate: '2024',
+      foundingDate: '2025',
       sameAs: [
         // Add your social media URLs here
         // 'https://twitter.com/truckcommand',
