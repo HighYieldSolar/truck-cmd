@@ -69,22 +69,27 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       const fetchNotifications = async () => {
         try {
           setNotificationError(null);
-          const { data, error } = await supabase.rpc('get_unread_notifications_summary', {
-            p_user_id: user.id
-          });
 
-          if (error) {
-            console.error("Error fetching notifications summary:", error);
+          // Always use direct query for reliability (RPC may not exist)
+          const { data: directData, error: directError } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (directError) {
+            console.error("Error fetching notifications:", directError);
             setNotificationError("Failed to load notifications.");
             setNotificationsData([]);
             setUnreadNotificationCount(0);
             return;
           }
 
-          if (data) {
-            setNotificationsData(data.recent_notifications || []);
-            setUnreadNotificationCount(data.unread_count || 0);
-          }
+          const notifications = directData || [];
+          const unreadCount = notifications.filter(n => !n.is_read).length;
+          setNotificationsData(notifications);
+          setUnreadNotificationCount(unreadCount);
         } catch (e) {
           console.error("Client-side error fetching notifications summary:", e);
           setNotificationError("An unexpected error occurred.");
@@ -285,7 +290,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     }
   ];
 
-  // Placeholder functions for notification interactions
+  // Notification interaction handlers
   const handleMarkAllRead = async () => {
     if (!user || !user.id) {
       console.error("User not available for marking all notifications read.");
@@ -293,16 +298,20 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       return;
     }
     try {
-      const { error } = await supabase.rpc('mark_all_notifications_as_read', {
-        p_user_id: user.id
-      });
+      // Use direct update instead of RPC (RPC has schema mismatch)
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
       if (error) {
         console.error("Error marking all notifications as read:", error);
         setNotificationError("Failed to mark all as read.");
       } else {
         setNotificationsData(notificationsData.map(n => ({ ...n, is_read: true })));
         setUnreadNotificationCount(0);
-        setNotificationError(null); // Clear error on success
+        setNotificationError(null);
       }
     } catch (e) {
       console.error("Client-side error marking all read:", e);
@@ -317,17 +326,18 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       return;
     }
     try {
-      // Mark as read optimistically or after RPC success
+      // Mark as read if not already
       if (!notification.is_read) {
-        const { error } = await supabase.rpc('mark_notification_as_read', {
-          p_notification_id: notification.id,
-          p_user_id: user.id
-        });
+        // Use direct update instead of RPC (RPC has schema mismatch)
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('id', notification.id)
+          .eq('user_id', user.id);
 
         if (error) {
           console.error("Error marking notification as read:", error);
           setNotificationError("Failed to mark notification as read.");
-          // Optionally revert optimistic update here if implemented
         } else {
           setNotificationsData(
             notificationsData.map(n =>
@@ -335,7 +345,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             )
           );
           setUnreadNotificationCount(prevCount => Math.max(0, prevCount - 1));
-          setNotificationError(null); // Clear error on success
+          setNotificationError(null);
         }
       }
 
@@ -343,7 +353,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       if (notification.link_to) {
         router.push(notification.link_to);
       }
-      setNotificationsOpen(false); // Close dropdown after click
+      setNotificationsOpen(false);
     } catch (e) {
       console.error("Client-side error handling notification click:", e);
       setNotificationError("An unexpected error occurred.");
@@ -753,6 +763,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   {notificationsOpen && (
                     <NotificationDropdown
                       notifications={notificationsData}
+                      unreadCount={unreadNotificationCount}
                       onMarkAllReadClick={handleMarkAllRead}
                       onViewAllClick={handleViewAllNotifications}
                       onNotificationItemClick={handleNotificationClick}

@@ -15,7 +15,6 @@ export class NotificationService {
         return { success: false, error: error.message };
       }
 
-      console.log(`Generated ${data} compliance notifications`);
       return { success: true, count: data };
     } catch (err) {
       console.error('Service error generating compliance notifications:', err);
@@ -36,7 +35,6 @@ export class NotificationService {
         return { success: false, error: error.message };
       }
 
-      console.log(`Cleaned up ${data} old notifications`);
       return { success: true, count: data };
     } catch (err) {
       console.error('Service error cleaning up notifications:', err);
@@ -219,8 +217,6 @@ export class NotificationService {
    */
   static async runAutomatedChecks() {
     try {
-      console.log('Running automated notification checks...');
-
       // Generate compliance notifications
       const complianceResult = await this.generateComplianceNotifications();
 
@@ -232,8 +228,6 @@ export class NotificationService {
         cleanup: cleanupResult,
         timestamp: new Date().toISOString()
       };
-
-      console.log('Automated notification checks completed:', results);
 
       return { success: true, results };
     } catch (err) {
