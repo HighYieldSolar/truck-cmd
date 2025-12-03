@@ -654,14 +654,16 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
       if (formData.useFactoring) {
         try {
-          // Use currentUserId instead of user.id
-          await recordFactoredEarnings(currentUserId, loadId, totalRate, {
-            date: formData.deliveryDate,
-            description: `Factored load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`,
-            factoringCompany: formData.factoringCompany || null
-          });
+          const loadNum = loadDetails.loadNumber || loadDetails.load_number;
+          await recordFactoredEarnings(
+            currentUserId,
+            loadId,
+            totalRate,
+            formData.factoringCompany || null,
+            loadNum
+          );
         } catch (factoringError) {
-          console.error("Error recording factored earnings:", factoringError);
+          // Silently handle - earnings may already exist
         }
       } else if (formData.generateInvoice) {
         // Generate invoice from the completed load

@@ -12,24 +12,31 @@ import { supabase } from "../supabaseClient";
  */
 export async function recordFactoredEarnings(userId, loadId, amount, factoringCompany, loadNumber) {
   try {
+    const insertData = {
+      user_id: userId,
+      load_id: loadId,
+      amount: amount,
+      date: new Date().toISOString().split('T')[0],
+      source: 'Factoring',
+      description: `Factored earnings for Load #${loadNumber}`,
+      factoring_company: factoringCompany
+    };
+
     const { data, error } = await supabase
       .from('earnings')
-      .insert([{
-        user_id: userId,
-        load_id: loadId,
-        amount: amount,
-        date: new Date().toISOString().split('T')[0],
-        source: 'Factoring',
-        description: `Factored earnings for Load #${loadNumber}`,
-        factoring_company: factoringCompany
-      }])
+      .insert([insertData])
       .select();
-      
-    if (error) throw error;
-    
+
+    if (error) {
+      // Handle duplicate key error gracefully - earnings already exist for this load
+      if (error.code === '23505') {
+        return { success: true, alreadyExists: true };
+      }
+      throw error;
+    }
+
     return { success: true, data };
   } catch (error) {
-    console.error('Error recording factored earnings:', error);
     return { success: false, error };
   }
 }

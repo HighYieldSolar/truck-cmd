@@ -9,6 +9,18 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals"),
+  {
+    languageOptions: {
+      parserOptions: {
+        requireConfigFile: false,
+        babelOptions: {
+          presets: [["next/babel", { "transform-runtime": { useESModules: true } }]],
+        },
+      },
+    },
+  },
+];
 
 export default eslintConfig;
