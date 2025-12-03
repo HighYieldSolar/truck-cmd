@@ -662,57 +662,56 @@ export async function emailInvoice(invoiceId, emailDetails) {
 }
 
 /**
- * Duplicate an existing invoice
+ * Get invoice data formatted for duplication (does NOT create a new invoice)
+ * Returns the data pre-filled for a new invoice form
  * @param {string} invoiceId - ID of the invoice to duplicate
  * @param {Object} overrides - Fields to override in the new invoice
- * @returns {Promise<Object|null>} - New invoice object or null
+ * @returns {Promise<Object|null>} - Invoice data for form pre-fill
  */
 export async function duplicateInvoice(invoiceId, overrides = {}) {
   try {
     // Get the original invoice
     const originalInvoice = await getInvoiceById(invoiceId);
     if (!originalInvoice) throw new Error('Invoice not found');
-    
-    // Generate a new invoice number
-    const newInvoiceNumber = await generateInvoiceNumber(originalInvoice.user_id);
-    
-    // Create data for the new invoice
+
+    // Create data for the new invoice form (without saving to database)
     const newInvoiceData = {
-      ...originalInvoice,
-      invoice_number: newInvoiceNumber,
+      customer: originalInvoice.customer,
+      customer_email: originalInvoice.customer_email,
+      customer_address: originalInvoice.customer_address,
       invoice_date: new Date().toISOString().split('T')[0],
       due_date: (() => {
         const date = new Date();
         date.setDate(date.getDate() + 15); // Default to Net 15
         return date.toISOString().split('T')[0];
       })(),
-      status: 'Draft',
-      amount_paid: 0,
-      payment_date: null,
-      last_sent: null,
+      payment_terms: originalInvoice.payment_terms || 'Net 15',
+      po_number: '', // Clear PO number for new invoice
+      subtotal: originalInvoice.subtotal || 0,
+      tax_rate: originalInvoice.tax_rate || 0,
+      tax_amount: originalInvoice.tax_amount || 0,
+      total: originalInvoice.total || 0,
+      notes: originalInvoice.notes || '',
+      terms: originalInvoice.terms || '',
+      load_id: '', // Clear load association for new invoice
       ...overrides
     };
-    
-    // Remove properties that shouldn't be duplicated
-    delete newInvoiceData.id;
-    delete newInvoiceData.created_at;
-    delete newInvoiceData.updated_at;
-    
-    // Format items correctly
-    const items = originalInvoice.items.map(item => {
-      const newItem = { ...item };
-      delete newItem.id;
-      delete newItem.invoice_id;
-      return newItem;
-    });
-    
-    // Create the new invoice
-    return await createInvoice({
+
+    // Format items correctly (without IDs so they'll be created as new)
+    const items = originalInvoice.items && originalInvoice.items.length > 0
+      ? originalInvoice.items.map(item => ({
+          description: item.description || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0
+        }))
+      : [{ description: '', quantity: 1, unit_price: 0 }];
+
+    return {
       ...newInvoiceData,
       items
-    });
+    };
   } catch (error) {
-    console.error('Error duplicating invoice:', error);
+    console.error('Error preparing invoice for duplication:', error);
     throw error;
   }
 }

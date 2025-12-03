@@ -1,5 +1,6 @@
 // src/lib/services/loadInvoiceService.js
 import { supabase } from "../supabaseClient";
+import { generateInvoiceNumber } from "./invoiceService";
 
 /**
  * Creates an invoice from a completed load
@@ -30,9 +31,9 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
     
     // Merge default options with provided options
     const mergedOptions = { ...defaultOptions, ...options };
-    
-    // Generate invoice number (you might want to customize this)
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+    // Generate invoice number using the proper sequential generator
+    const invoiceNumber = await generateInvoiceNumber(userId);
     
     // Calculate due date
     const dueDate = new Date();

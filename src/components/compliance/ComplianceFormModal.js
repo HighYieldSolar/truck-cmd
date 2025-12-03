@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { X, RefreshCw, CheckCircle, FileText, AlertCircle, Calendar, Info, ChevronRight, ChevronLeft, Check, Trash2, Building2, Shield } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { X, RefreshCw, CheckCircle, FileText, AlertCircle, ChevronRight, ChevronLeft, Check, Trash2, Shield } from "lucide-react";
+import { motion } from "framer-motion";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 
 export default function ComplianceFormModal({ isOpen, onClose, compliance, onSave, isSubmitting }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [hasRestoredData, setHasRestoredData] = useState(false);
-  
+
   // Form data state
   const [formData, setFormData] = useState({
     // Step 1: Basic Information
@@ -18,7 +18,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
     status: "Active",
     entity_type: "Vehicle",
     entity_name: "",
-    
+
     // Step 2: Document Details
     document_number: "",
     issue_date: "",
@@ -41,7 +41,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
     if (isOpen && !compliance) {
       const savedData = localStorage.getItem('complianceFormData');
       const savedStep = localStorage.getItem('complianceFormStep');
-      
+
       if (savedData) {
         try {
           const parsedData = JSON.parse(savedData);
@@ -50,8 +50,8 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             setCurrentStep(parseInt(savedStep) || 1);
             setHasRestoredData(true);
           }
-        } catch (error) {
-          console.error('Error loading saved form data:', error);
+        } catch {
+          // Silent fail - localStorage data may be corrupted
         }
       }
     } else if (compliance) {
@@ -165,10 +165,10 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Compliance Information</h3>
-            
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Compliance Information</h3>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -176,24 +176,24 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className={`block w-full px-4 py-3 border ${errors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
+                className={`block w-full px-4 py-3 border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
                 placeholder="e.g. Vehicle Registration for Truck #12"
               />
               {errors.title && (
-                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.title}</p>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Compliance Type
                 </label>
                 <select
                   name="compliance_type"
                   value={formData.compliance_type}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
                     <option key={key} value={key}>
@@ -204,14 +204,14 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="Active">Active</option>
                   <option value="Pending">Pending</option>
@@ -223,14 +223,14 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Entity Type
                 </label>
                 <select
                   name="entity_type"
                   value={formData.entity_type}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="Vehicle">Vehicle</option>
                   <option value="Driver">Driver</option>
@@ -240,7 +240,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Entity Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -248,11 +248,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   name="entity_name"
                   value={formData.entity_name}
                   onChange={handleInputChange}
-                  className={`block w-full px-4 py-3 border ${errors.entity_name ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
+                  className={`block w-full px-4 py-3 border ${errors.entity_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
                   placeholder="e.g. Truck #12 or John Smith"
                 />
                 {errors.entity_name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.entity_name}</p>
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.entity_name}</p>
                 )}
               </div>
             </div>
@@ -262,11 +262,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Document Details</h3>
-            
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Document Details</h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Document Number
                 </label>
                 <input
@@ -274,13 +274,13 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   name="document_number"
                   value={formData.document_number}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="e.g. License or Permit Number"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Issuing Authority
                 </label>
                 <input
@@ -288,7 +288,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   name="issuing_authority"
                   value={formData.issuing_authority}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                   placeholder="e.g. DMV or DOT"
                 />
               </div>
@@ -296,7 +296,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Issue Date
                 </label>
                 <input
@@ -304,12 +304,12 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   name="issue_date"
                   value={formData.issue_date}
                   onChange={handleInputChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Expiration Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -317,16 +317,16 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   name="expiration_date"
                   value={formData.expiration_date}
                   onChange={handleInputChange}
-                  className={`block w-full px-4 py-3 border ${errors.expiration_date ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
+                  className={`block w-full px-4 py-3 border ${errors.expiration_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                 />
                 {errors.expiration_date && (
-                  <p className="text-red-500 text-sm mt-1">{errors.expiration_date}</p>
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.expiration_date}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Document File
               </label>
               <input
@@ -334,63 +334,63 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 name="document_file"
                 onChange={handleInputChange}
                 accept=".pdf,.jpg,.jpeg,.png"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
+                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 focus:outline-none"
               />
               {formData.document_file && (
-                <p className="mt-1 text-sm text-gray-500 flex items-center">
-                  <CheckCircle size={14} className="text-green-500 mr-1" />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <CheckCircle size={14} className="text-green-500 dark:text-green-400 mr-1" />
                   Selected file: {formData.document_file.name}
                 </p>
               )}
               {compliance?.document_url && !formData.document_file && (
-                <div className="mt-1 flex items-center text-sm text-gray-500">
-                  <FileText size={14} className="text-blue-500 mr-1" />
+                <div className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  <FileText size={14} className="text-blue-500 dark:text-blue-400 mr-1" />
                   Current document on file
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Notes
               </label>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
+                className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 rows="4"
                 placeholder="Any additional notes about this compliance record..."
               />
             </div>
 
             {/* Review Summary */}
-            <div className="bg-gray-50 p-4 rounded-lg mt-6">
-              <h4 className="font-medium text-gray-900 mb-3">Review Compliance Information</h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mt-6 border border-gray-200 dark:border-gray-600">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Review Compliance Information</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600">Title:</span>
-                  <span className="ml-2 font-medium">{formData.title}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Title:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.title}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Type:</span>
-                  <span className="ml-2 font-medium">{COMPLIANCE_TYPES[formData.compliance_type]?.name}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{COMPLIANCE_TYPES[formData.compliance_type]?.name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Entity:</span>
-                  <span className="ml-2 font-medium">{formData.entity_type} - {formData.entity_name}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Entity:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.entity_type} - {formData.entity_name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Status:</span>
-                  <span className="ml-2 font-medium">{formData.status}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.status}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Expiration:</span>
-                  <span className="ml-2 font-medium">{formData.expiration_date || 'Not set'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Expiration:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.expiration_date || 'Not set'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Document #:</span>
-                  <span className="ml-2 font-medium">{formData.document_number || 'Not provided'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Document #:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.document_number || 'Not provided'}</span>
                 </div>
               </div>
             </div>
@@ -402,15 +402,15 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header with Progress */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-6 rounded-t-xl">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold">
               {compliance ? 'Edit Compliance Record' : 'Create New Compliance Record'}
@@ -465,17 +465,17 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         </div>
         {/* Restored Data Alert */}
         {hasRestoredData && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mx-6 mt-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mx-6 mt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <AlertCircle className="text-blue-500 mr-2" size={20} />
-                <p className="text-sm text-blue-700">
-                  We've restored your previous progress. You can continue where you left off.
+                <AlertCircle className="text-blue-500 dark:text-blue-400 mr-2" size={20} />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  We&apos;ve restored your previous progress. You can continue where you left off.
                 </p>
               </div>
               <button
                 onClick={clearSavedData}
-                className="text-blue-700 hover:text-blue-900 flex items-center gap-1 text-sm"
+                className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 flex items-center gap-1 text-sm"
               >
                 <Trash2 size={16} />
                 Clear
@@ -487,24 +487,24 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         {/* Form Content */}
         <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 240px)' }}>
           {renderStepContent()}
-          
+
           {errors.submit && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md mt-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 rounded-md mt-4">
               <div className="flex">
                 <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <p className="text-sm text-red-700">{errors.submit}</p>
+                <p className="text-sm text-red-700 dark:text-red-300">{errors.submit}</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer with Actions */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl">
           <div className="flex justify-between items-center">
             <button
               type="button"
               onClick={currentStep === 1 ? handleClose : handlePrevious}
-              className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors inline-flex items-center"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors inline-flex items-center"
               disabled={isSubmitting}
             >
               <ChevronLeft size={16} className="mr-2" />

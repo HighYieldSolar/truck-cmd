@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   AlertCircle,
@@ -11,14 +10,15 @@ import {
   Filter,
   Search,
   FileText,
-  Calendar,
   Clock,
   CheckCircle,
   RefreshCw,
   ArrowRight,
   Edit,
   Eye,
-  Trash2
+  Trash2,
+  Shield,
+  X
 } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import {
@@ -27,36 +27,95 @@ import {
   updateComplianceItem,
   deleteComplianceItem,
   uploadComplianceDocument,
-  deleteComplianceDocument
+  deleteComplianceDocument,
+  getComplianceStats,
+  subscribeToComplianceChanges,
+  unsubscribeFromComplianceChanges,
+  getDaysUntilExpiration,
+  computeStatus
 } from "@/lib/services/complianceService";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { getUserFriendlyError } from "@/lib/utils/errorMessages";
+import { usePagination, Pagination } from "@/hooks/usePagination";
+import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 
 // Import components
-import ComplianceFilters from "@/components/compliance/ComplianceFilters";
-import ComplianceTable from "@/components/compliance/ComplianceTable";
 import ComplianceFormModal from "@/components/compliance/ComplianceFormModal";
 import ViewComplianceModal from "@/components/compliance/ViewComplianceModal";
 import DeleteConfirmationModal from "@/components/compliance/DeleteConfirmationModal";
 import ComplianceSummary from "@/components/compliance/ComplianceSummary";
-import UpcomingExpirations from "@/components/compliance/UpcomingExpirations";
-import ComplianceTypes from "@/components/compliance/ComplianceTypes";
 
-// Main Compliance Dashboard Component
-export default function Page() {
+// Local storage key for form persistence
+const STORAGE_KEY = 'compliance_filters';
+
+// Loading skeleton component
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse">
+      {/* Stats skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Content skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const [user, setUser] = useState(null);
 
   // Compliance items state
   const [complianceItems, setComplianceItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    expiringSoon: 0,
+    expired: 0,
+    pending: 0
+  });
 
-  // Filter state
-  const [filters, setFilters] = useState({
-    status: "all",
-    type: "all",
-    entity: "all",
-    search: ""
+  // Filter state - restore from localStorage
+  const [filters, setFilters] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+    return {
+      status: "all",
+      type: "all",
+      entity: "all",
+      search: ""
+    };
   });
 
   // Modal states
@@ -67,66 +126,49 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Helper function to get an item's status based on its expiration date
-  const getItemStatus = useCallback((item) => {
-    if (!item.expiration_date) return "Unknown";
+  // Save filters to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+  }, [filters]);
 
-    const today = new Date();
-    const expirationDate = new Date(item.expiration_date);
-    const differenceInTime = expirationDate - today;
-    const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-
-    if (differenceInDays < 0) return "Expired";
-    if (differenceInDays <= 30) return "Expiring Soon";
-    return "Active";
+  // Compute status for each item
+  const computeItemStatus = useCallback((item) => {
+    if (!item.expiration_date) return item.status || "Active";
+    if (item.status === "Pending") return "Pending";
+    return computeStatus(item.expiration_date, item.status);
   }, []);
 
   // Apply filters to compliance items
-  const applyFilters = useCallback((items, currentFilters) => {
-    let result = [...items];
+  const filteredItems = useMemo(() => {
+    let result = [...complianceItems];
 
     // Filter by status
-    if (currentFilters.status !== "all") {
+    if (filters.status !== "all") {
       result = result.filter(item => {
-        if (!item.expiration_date) return currentFilters.status.toLowerCase() === "unknown";
-
-        // Calculate current status
-        const today = new Date();
-        const expirationDate = new Date(item.expiration_date);
-        const differenceInTime = expirationDate - today;
-        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-
-        let calculatedStatus;
-        if (differenceInDays < 0) {
-          calculatedStatus = "expired";
-        } else if (differenceInDays <= 30) {
-          calculatedStatus = "expiring soon";
-        } else {
-          calculatedStatus = "active";
-        }
-
-        // Use pending status from database if exists, otherwise use calculated status
-        const displayStatus = item.status?.toLowerCase() === "pending"
-          ? "pending"
-          : calculatedStatus;
-
-        return displayStatus === currentFilters.status.toLowerCase();
+        const displayStatus = computeItemStatus(item).toLowerCase();
+        return displayStatus === filters.status.toLowerCase();
       });
     }
 
     // Filter by compliance type
-    if (currentFilters.type !== "all") {
-      result = result.filter(item => item.compliance_type === currentFilters.type);
+    if (filters.type !== "all") {
+      result = result.filter(item => item.compliance_type === filters.type);
     }
 
     // Filter by entity type
-    if (currentFilters.entity !== "all") {
-      result = result.filter(item => item.entity_type === currentFilters.entity);
+    if (filters.entity !== "all") {
+      result = result.filter(item => item.entity_type === filters.entity);
     }
 
     // Filter by search term
-    if (currentFilters.search) {
-      const searchLower = currentFilters.search.toLowerCase();
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       result = result.filter(item =>
         (item.title && item.title.toLowerCase().includes(searchLower)) ||
         (item.entity_name && item.entity_name.toLowerCase().includes(searchLower)) ||
@@ -134,11 +176,61 @@ export default function Page() {
       );
     }
 
-    setFilteredItems(result);
+    return result;
+  }, [complianceItems, filters, computeItemStatus]);
+
+  // Pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    goToPage,
+    hasNextPage,
+    hasPrevPage,
+    pageNumbers,
+    showingText
+  } = usePagination(filteredItems, { itemsPerPage: 10 });
+
+  // Get upcoming expirations (items expiring in the next 30 days)
+  const upcomingExpirations = useMemo(() => {
+    const today = new Date();
+    return complianceItems
+      .filter(item => {
+        if (!item.expiration_date) return false;
+        const daysUntil = getDaysUntilExpiration(item.expiration_date);
+        return daysUntil !== null && daysUntil >= 0 && daysUntil <= 30;
+      })
+      .sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date))
+      .slice(0, 5);
+  }, [complianceItems]);
+
+  // Calculate category counts
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    Object.keys(COMPLIANCE_TYPES).forEach(key => {
+      counts[key] = complianceItems.filter(item => item.compliance_type === key).length;
+    });
+    return counts;
+  }, [complianceItems]);
+
+  // Fetch data
+  const loadData = useCallback(async (userId) => {
+    try {
+      const [items, statsData] = await Promise.all([
+        fetchComplianceItems(userId),
+        getComplianceStats(userId)
+      ]);
+      setComplianceItems(items);
+      setStats(statsData);
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || getUserFriendlyError(error) });
+    }
   }, []);
 
-  // Fetch user and compliance items on mount
+  // Initialize
   useEffect(() => {
+    let channel = null;
+
     async function initialize() {
       try {
         setLoading(true);
@@ -149,115 +241,78 @@ export default function Page() {
         if (userError) throw userError;
 
         if (!user) {
-          // Redirect to login if not authenticated
           window.location.href = '/login';
           return;
         }
 
         setUser(user);
+        await loadData(user.id);
 
-        // Fetch compliance items
-        const items = await fetchComplianceItems(user.id);
-        setComplianceItems(items);
-        applyFilters(items, filters);
+        // Set up real-time subscription
+        channel = subscribeToComplianceChanges(user.id, {
+          onInsert: (newItem) => {
+            setComplianceItems(prev => [newItem, ...prev]);
+            loadData(user.id); // Refresh stats
+          },
+          onUpdate: (updatedItem) => {
+            setComplianceItems(prev =>
+              prev.map(item => item.id === updatedItem.id ? updatedItem : item)
+            );
+            loadData(user.id); // Refresh stats
+          },
+          onDelete: (deletedItem) => {
+            setComplianceItems(prev =>
+              prev.filter(item => item.id !== deletedItem.id)
+            );
+            loadData(user.id); // Refresh stats
+          }
+        });
 
         setLoading(false);
       } catch (error) {
-        console.error("Error initializing compliance dashboard:", error);
-        setError("Failed to load compliance data. Please try again.");
+        setMessage({ type: 'error', text: getUserFriendlyError(error) });
         setLoading(false);
       }
     }
 
     initialize();
-  }, [applyFilters, filters]);
 
-  // Update compliance item statuses based on expiration dates
-  useEffect(() => {
-    const updateComplianceStatuses = async () => {
-      if (!user || complianceItems.length === 0) return;
-
-      const today = new Date();
-      const itemsToUpdate = [];
-
-      // Check if any items need their status updated based on expiration date
-      for (const item of complianceItems) {
-        if (!item.expiration_date) continue;
-
-        const expirationDate = new Date(item.expiration_date);
-        const differenceInTime = expirationDate - today;
-        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-
-        let calculatedStatus;
-        if (differenceInDays < 0) {
-          calculatedStatus = "Expired";
-        } else if (differenceInDays <= 30) {
-          calculatedStatus = "Expiring Soon";
-        } else {
-          calculatedStatus = "Active";
-        }
-
-        // If the stored status doesn't match the calculated status based on date
-        if (item.status !== calculatedStatus) {
-          itemsToUpdate.push({
-            id: item.id,
-            newStatus: calculatedStatus,
-            currentStatus: item.status
-          });
-        }
-      }
-
-      // Update items with incorrect statuses in database
-      if (itemsToUpdate.length > 0) {
-        console.log(`Updating status for ${itemsToUpdate.length} compliance items`);
-
-        for (const item of itemsToUpdate) {
-          try {
-            await updateComplianceItem(item.id, { status: item.newStatus });
-            console.log(`Updated item ${item.id} status from ${item.currentStatus} to ${item.newStatus}`);
-          } catch (error) {
-            console.error(`Failed to update status for item ${item.id}:`, error);
-          }
-        }
-
-        // Refresh compliance items after updates
-        const updatedItems = await fetchComplianceItems(user.id);
-        setComplianceItems(updatedItems);
-        applyFilters(updatedItems, filters);
+    // Cleanup subscription on unmount
+    return () => {
+      if (channel) {
+        unsubscribeFromComplianceChanges(channel);
       }
     };
-
-    updateComplianceStatuses();
-  }, [user, complianceItems, filters, applyFilters]);
+  }, [loadData]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFilters(prev => {
-      const newFilters = { ...prev, [name]: value };
-      applyFilters(complianceItems, newFilters);
-      return newFilters;
-    });
-  }, [applyFilters, complianceItems]);
+    setFilters(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   // Handle search
   const handleSearch = useCallback((e) => {
-    const value = e.target.value;
-    setFilters(prev => {
-      const newFilters = { ...prev, search: value };
-      applyFilters(complianceItems, newFilters);
-      return newFilters;
-    });
-  }, [applyFilters, complianceItems]);
+    setFilters(prev => ({ ...prev, search: e.target.value }));
+  }, []);
 
   // Handle type selection from the sidebar
   const handleTypeSelect = useCallback((type) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, type };
-      applyFilters(complianceItems, newFilters);
-      return newFilters;
+    setFilters(prev => ({
+      ...prev,
+      type: prev.type === type ? 'all' : type
+    }));
+  }, []);
+
+  // Reset filters
+  const resetFilters = useCallback(() => {
+    setFilters({
+      status: "all",
+      type: "all",
+      entity: "all",
+      search: ""
     });
-  }, [applyFilters, complianceItems]);
+  }, []);
 
   // Modal handlers
   const handleOpenFormModal = useCallback((item = null) => {
@@ -281,16 +336,15 @@ export default function Page() {
 
     try {
       setIsSubmitting(true);
+      setMessage(null);
 
       // Upload document if provided
       let documentUrl = currentItem?.document_url;
 
       if (formData.document_file) {
-        try {
-          documentUrl = await uploadComplianceDocument(user.id, formData.document_file);
-        } catch (uploadErr) {
-          console.error("Upload process error:", uploadErr);
-          throw uploadErr;
+        const uploadedUrl = await uploadComplianceDocument(user.id, formData.document_file);
+        if (uploadedUrl) {
+          documentUrl = uploadedUrl;
         }
       }
 
@@ -311,28 +365,25 @@ export default function Page() {
       };
 
       if (currentItem) {
-        // Update existing item
         await updateComplianceItem(currentItem.id, complianceData);
+        setMessage({ type: 'success', text: 'Compliance record updated successfully' });
       } else {
-        // Insert new item
         await createComplianceItem(complianceData);
+        setMessage({ type: 'success', text: 'Compliance record created successfully' });
       }
 
-      // Refresh compliance items
-      const updatedItems = await fetchComplianceItems(user.id);
-      setComplianceItems(updatedItems);
-      applyFilters(updatedItems, filters);
+      // Refresh data
+      await loadData(user.id);
 
       // Close the modal
       setFormModalOpen(false);
       setCurrentItem(null);
     } catch (error) {
-      console.error("Error saving compliance item:", error);
-      setError(error.message || "Failed to save compliance item. Please try again.");
+      setMessage({ type: 'error', text: error.message || getUserFriendlyError(error) });
     } finally {
       setIsSubmitting(false);
     }
-  }, [applyFilters, currentItem, filters, user]);
+  }, [currentItem, user, loadData]);
 
   // Delete compliance item
   const handleDeleteComplianceItem = useCallback(async () => {
@@ -340,116 +391,35 @@ export default function Page() {
 
     try {
       setIsDeleting(true);
+      setMessage(null);
 
       // Delete document from storage if exists
       if (currentItem.document_url) {
-        try {
-          await deleteComplianceDocument(currentItem.document_url);
-        } catch (storageError) {
-          console.warn("Error removing document file:", storageError);
-          // Continue with deletion even if removing file fails
-        }
+        await deleteComplianceDocument(currentItem.document_url);
       }
 
       // Delete the compliance item
       await deleteComplianceItem(currentItem.id);
 
-      // Refresh compliance items
-      const updatedItems = await fetchComplianceItems(user.id);
-      setComplianceItems(updatedItems);
-      applyFilters(updatedItems, filters);
+      // Refresh data
+      await loadData(user.id);
+
+      setMessage({ type: 'success', text: 'Compliance record deleted successfully' });
 
       // Close the modal
       setDeleteModalOpen(false);
       setCurrentItem(null);
     } catch (error) {
-      console.error("Error deleting compliance item:", error);
-      setError(error.message || "Failed to delete compliance item. Please try again.");
+      setMessage({ type: 'error', text: error.message || getUserFriendlyError(error) });
     } finally {
       setIsDeleting(false);
     }
-  }, [applyFilters, currentItem, filters, user]);
-
-  // Get summary statistics
-  const getSummaryStats = useCallback(() => {
-    const total = complianceItems.length;
-
-    // Calculate current status for each item
-    const itemsWithCalculatedStatus = complianceItems.map(item => {
-      if (!item.expiration_date) return { ...item, calculatedStatus: "Unknown" };
-
-      const today = new Date();
-      const expirationDate = new Date(item.expiration_date);
-      const differenceInTime = expirationDate - today;
-      const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-
-      let calculatedStatus;
-      if (differenceInDays < 0) {
-        calculatedStatus = "Expired";
-      } else if (differenceInDays <= 30) {
-        calculatedStatus = "Expiring Soon";
-      } else {
-        calculatedStatus = "Active";
-      }
-
-      return {
-        ...item,
-        calculatedStatus: item.status === "Pending" ? "Pending" : calculatedStatus
-      };
-    });
-
-    const active = itemsWithCalculatedStatus.filter(item =>
-      item.calculatedStatus === "Active"
-    ).length;
-
-    const expiringSoon = itemsWithCalculatedStatus.filter(item =>
-      item.calculatedStatus === "Expiring Soon"
-    ).length;
-
-    const expired = itemsWithCalculatedStatus.filter(item =>
-      item.calculatedStatus === "Expired"
-    ).length;
-
-    const pending = itemsWithCalculatedStatus.filter(item =>
-      item.calculatedStatus === "Pending"
-    ).length;
-
-    return { total, active, expiringSoon, expired, pending };
-  }, [complianceItems]);
-
-  // Get upcoming expirations (items expiring in the next 30 days)
-  const getUpcomingExpirations = useCallback(() => {
-    const today = new Date();
-    return complianceItems
-      .filter(item => {
-        if (!item.expiration_date) return false;
-
-        const expirationDate = new Date(item.expiration_date);
-        const differenceInTime = expirationDate - today;
-        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
-
-        return differenceInDays >= 0 && differenceInDays <= 30;
-      })
-      .sort((a, b) => new Date(a.expiration_date) - new Date(b.expiration_date))
-      .slice(0, 5); // Get top 5 upcoming expirations
-  }, [complianceItems]);
-
-  const stats = getSummaryStats();
-  const upcomingExpirations = getUpcomingExpirations();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  }, [currentItem, user, loadData]);
 
   // Export compliance data to CSV
-  const handleExportData = () => {
+  const handleExportData = useCallback(() => {
     if (complianceItems.length === 0) return;
 
-    // Convert data to CSV
     const headers = [
       "Title",
       "Type",
@@ -471,20 +441,16 @@ export default function Page() {
       item.document_number || "",
       item.issue_date || "",
       item.expiration_date || "",
-      item.status || getItemStatus(item) || "",
+      computeItemStatus(item) || "",
       item.issuing_authority || "",
       item.notes || ""
     ]);
 
-    // Create CSV content
     let csvContent = headers.join(",") + "\n";
     csvData.forEach(row => {
-      // Escape fields with commas or quotes
       const escapedRow = row.map(field => {
-        // Convert to string
         const str = String(field);
         if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          // Escape double quotes with double quotes
           return `"${str.replace(/"/g, '""')}"`;
         }
         return str;
@@ -492,7 +458,6 @@ export default function Page() {
       csvContent += escapedRow.join(",") + "\n";
     });
 
-    // Download the CSV file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -501,14 +466,49 @@ export default function Page() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [complianceItems, computeItemStatus]);
+
+  // Get status badge styling
+  const getStatusBadge = useCallback((status) => {
+    const statusLower = status?.toLowerCase() || '';
+    switch (statusLower) {
+      case 'expired':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'expiring soon':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      case 'pending':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'active':
+      default:
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <DashboardLayout activePage="compliance">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto">
+            {/* Header skeleton */}
+            <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
+              <div className="animate-pulse">
+                <div className="h-8 bg-white/20 rounded w-64 mb-2"></div>
+                <div className="h-4 bg-white/20 rounded w-96"></div>
+              </div>
+            </div>
+            <LoadingSkeleton />
+          </div>
+        </main>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout activePage="compliance">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
-          {/* Header with background */}
-          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+          {/* Header with gradient */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-3xl font-bold mb-1">Compliance Management</h1>
@@ -524,7 +524,7 @@ export default function Page() {
                 </button>
                 <button
                   onClick={handleExportData}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                  className="px-4 py-2 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center font-medium"
                   disabled={complianceItems.length === 0}
                 >
                   <Download size={18} className="mr-2" />
@@ -534,15 +534,11 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Error message */}
-          {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
-                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          )}
+          {/* Operation message */}
+          <OperationMessage
+            message={message}
+            onDismiss={() => setMessage(null)}
+          />
 
           {/* Statistics */}
           <ComplianceSummary stats={stats} />
@@ -552,8 +548,8 @@ export default function Page() {
             {/* Left Sidebar */}
             <div className="lg:col-span-1">
               {/* Upcoming Expirations Card */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-orange-500 px-5 py-4 text-white">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <Clock size={18} className="mr-2" />
                     Upcoming Expirations
@@ -561,30 +557,31 @@ export default function Page() {
                 </div>
                 <div className="p-4">
                   {upcomingExpirations.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <CheckCircle size={36} className="mx-auto mb-2 text-green-500" />
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
                       <p>No documents expiring soon</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {upcomingExpirations.map(item => {
-                        const daysLeft = Math.ceil(
-                          (new Date(item.expiration_date) - new Date()) / (1000 * 60 * 60 * 24)
-                        );
+                        const daysLeft = getDaysUntilExpiration(item.expiration_date);
 
                         return (
                           <div
                             key={item.id}
-                            className="p-3 bg-gray-50 rounded-lg hover:bg-orange-50 cursor-pointer transition-colors"
+                            className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer transition-colors"
                             onClick={() => handleOpenViewModal(item)}
                           >
                             <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 text-sm truncate">{item.title}</p>
-                                <p className="text-sm text-gray-500">{item.entity_name}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.title}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.entity_name}</p>
                               </div>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${daysLeft <= 7 ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
-                                }`}>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                                daysLeft <= 7
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                              }`}>
                                 {daysLeft} days
                               </span>
                             </div>
@@ -592,10 +589,10 @@ export default function Page() {
                         );
                       })}
 
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
                         <button
                           onClick={() => setFilters({ ...filters, status: 'expiring soon' })}
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                         >
                           View all expiring items
                           <ArrowRight size={14} className="ml-1" />
@@ -606,9 +603,9 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* Compliance Types */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-blue-500 px-5 py-4 text-white">
+              {/* Compliance Categories */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <FileText size={18} className="mr-2" />
                     Compliance Categories
@@ -616,40 +613,41 @@ export default function Page() {
                 </div>
                 <div className="p-4">
                   {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => {
-                    const count = complianceItems.filter(item => item.compliance_type === key).length;
+                    const count = categoryCounts[key] || 0;
                     if (count === 0) return null;
 
                     return (
                       <div
                         key={key}
-                        className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${filters.type === key ? 'bg-blue-50 border-blue-200 border' : 'bg-gray-50 hover:bg-blue-50'
-                          }`}
+                        className={`mb-3 p-3 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                          filters.type === key
+                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 border'
+                            : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                        }`}
                         onClick={() => handleTypeSelect(key)}
                       >
                         <div className="flex items-center">
                           {type.icon}
-                          <span className="ml-2 text-sm font-medium text-gray-700">{type.name}</span>
+                          <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">{type.name}</span>
                         </div>
-                        <span className="text-xs font-medium px-2 py-1 bg-white rounded-full text-gray-600 shadow-sm">
+                        <span className="text-xs font-medium px-2 py-1 bg-white dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 shadow-sm">
                           {count}
                         </span>
                       </div>
                     );
                   })}
 
-                  {Object.entries(COMPLIANCE_TYPES).every(([key]) =>
-                    complianceItems.filter(item => item.compliance_type === key).length === 0
-                  ) && (
-                      <div className="text-center py-8 text-gray-500">
-                        <FileText size={36} className="mx-auto mb-2 text-gray-400" />
-                        <p>No compliance items found</p>
-                      </div>
-                    )}
+                  {Object.values(categoryCounts).every(count => count === 0) && (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <FileText size={36} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
+                      <p>No compliance items found</p>
+                    </div>
+                  )}
 
-                  <div className="mt-2 pt-2 border-t border-gray-200 text-center">
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
                     <button
                       onClick={() => handleOpenFormModal()}
-                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                     >
                       Add compliance record
                       <Plus size={14} className="ml-1" />
@@ -662,93 +660,75 @@ export default function Page() {
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Filters */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200">
-                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200">
-                  <h3 className="font-medium flex items-center text-gray-700">
-                    <Filter size={18} className="mr-2 text-gray-500" />
-                    Filter Compliance Records
-                  </h3>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select
-                        name="status"
-                        value={filters.status}
-                        onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="flex-1 relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={filters.search}
+                      onChange={handleSearch}
+                      placeholder="Search by title, entity, or document number..."
+                      className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {filters.search && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       >
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="expiring soon">Expiring Soon</option>
-                        <option value="expired">Expired</option>
-                        <option value="pending">Pending</option>
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                      <select
-                        name="type"
-                        value={filters.type}
-                        onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="all">All Types</option>
-                        {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
-                          <option key={key} value={key}>
-                            {type.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Entity</label>
-                      <select
-                        name="entity"
-                        value={filters.entity}
-                        onChange={handleFilterChange}
-                        className="block w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="all">All Entities</option>
-                        <option value="Vehicle">Vehicles</option>
-                        <option value="Driver">Drivers</option>
-                        <option value="Company">Company</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                          <Search size={16} className="text-gray-400" />
-                        </div>
-                        <input
-                          type="text"
-                          value={filters.search}
-                          onChange={handleSearch}
-                          placeholder="Search records..."
-                          className="block w-full pl-10 rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
-                    <div className="text-sm text-gray-500">
-                      Showing {filteredItems.length} of {complianceItems.length} records
-                    </div>
+                  {/* Filter Dropdowns */}
+                  <div className="flex flex-wrap gap-3">
+                    <select
+                      name="status"
+                      value={filters.status}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="expiring soon">Expiring Soon</option>
+                      <option value="expired">Expired</option>
+                      <option value="pending">Pending</option>
+                    </select>
+
+                    <select
+                      name="type"
+                      value={filters.type}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
+                    >
+                      <option value="all">All Types</option>
+                      {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
+                        <option key={key} value={key}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      name="entity"
+                      value={filters.entity}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[130px] transition-colors"
+                    >
+                      <option value="all">All Entities</option>
+                      <option value="Vehicle">Vehicles</option>
+                      <option value="Driver">Drivers</option>
+                      <option value="Company">Company</option>
+                      <option value="Other">Other</option>
+                    </select>
+
+                    {/* Reset Filters Button */}
                     <button
-                      onClick={() => setFilters({
-                        status: "all",
-                        type: "all",
-                        entity: "all",
-                        search: ""
-                      })}
-                      className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                      onClick={resetFilters}
+                      className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Reset Filters"
                       disabled={
                         filters.status === "all" &&
                         filters.type === "all" &&
@@ -756,62 +736,64 @@ export default function Page() {
                         filters.search === ""
                       }
                     >
-                      <RefreshCw size={14} className="mr-1" />
-                      Reset filters
+                      <X size={18} />
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Compliance Table */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
-                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="font-medium text-gray-700">Compliance Records</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200">Compliance Records</h3>
                   <button
                     onClick={() => handleOpenFormModal()}
-                    className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                    className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Plus size={16} className="mr-1" />
                     Add New
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="w-[28%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Compliance Item
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="w-[18%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Entity
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Issue Date
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Expiration Date
+                        <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Expiration
                         </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="w-[14%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Status
                         </th>
-                        <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" className="w-[16%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredItems.length === 0 ? (
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedData.length === 0 ? (
                         <tr>
                           <td colSpan="6" className="px-6 py-12 text-center">
                             {complianceItems.length === 0 ? (
                               <div className="max-w-sm mx-auto">
-                                <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900 mb-1">No compliance records</h3>
-                                <p className="text-gray-500 mb-4">Start tracking your compliance documents and stay on top of expirations.</p>
+                                <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                                  <Shield className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No compliance records</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">Start tracking your compliance documents and stay on top of expirations.</p>
                                 <button
                                   onClick={() => handleOpenFormModal()}
-                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                                 >
                                   <Plus size={16} className="mr-2" />
                                   Add Compliance Record
@@ -819,15 +801,10 @@ export default function Page() {
                               </div>
                             ) : (
                               <div>
-                                <p className="text-gray-500 mb-2">No records match your current filters</p>
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">No records match your current filters</p>
                                 <button
-                                  onClick={() => setFilters({
-                                    status: "all",
-                                    type: "all",
-                                    entity: "all",
-                                    search: ""
-                                  })}
-                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                  onClick={resetFilters}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                                 >
                                   <RefreshCw size={14} className="mr-1" />
                                   Reset Filters
@@ -837,82 +814,53 @@ export default function Page() {
                           </td>
                         </tr>
                       ) : (
-                        filteredItems.map(item => {
-                          // Calculate days until expiration
-                          const today = new Date();
-                          const expirationDate = new Date(item.expiration_date);
-                          const daysUntil = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24));
-
-                          // Calculate current status based on expiration date
-                          let calculatedStatus;
-                          if (daysUntil < 0) {
-                            calculatedStatus = "Expired";
-                          } else if (daysUntil <= 30) {
-                            calculatedStatus = "Expiring Soon";
-                          } else {
-                            calculatedStatus = "Active";
-                          }
-
-                          // Use Pending status from database if it exists, otherwise use calculated status
-                          const displayStatus = item.status === "Pending" ? "Pending" : calculatedStatus;
-
-                          // Determine status class
-                          let statusClass = "bg-green-100 text-green-800"; // Default: Active
-                          switch (displayStatus) {
-                            case "Expired":
-                              statusClass = "bg-red-100 text-red-800";
-                              break;
-                            case "Expiring Soon":
-                              statusClass = "bg-orange-100 text-orange-800";
-                              break;
-                            case "Pending":
-                              statusClass = "bg-blue-100 text-blue-800";
-                              break;
-                          }
+                        paginatedData.map(item => {
+                          const displayStatus = computeItemStatus(item);
 
                           return (
-                            <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap">
+                            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                              <td className="px-4 py-3">
                                 <button
                                   onClick={() => handleOpenViewModal(item)}
-                                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                                  className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate block max-w-full text-left"
+                                  title={item.title}
                                 >
                                   {item.title}
                                 </button>
                               </td>
-                              <td className="text-black px-6 py-4 whitespace-nowrap">
-                                {item.entity_name}
+                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3">
+                                <span className="truncate block" title={item.entity_name}>{item.entity_name}</span>
                               </td>
-                              <td className="text-black px-6 py-4 whitespace-nowrap">
+                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
                                 {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}
                               </td>
-                              <td className="text-black px-6 py-4 whitespace-nowrap">
+                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
                                 {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(displayStatus)}`}>
                                   {displayStatus}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <div className="flex justify-center space-x-2">
+                              <td className="px-4 py-3 text-center">
+                                <div className="flex justify-center space-x-1">
                                   <button
                                     onClick={() => handleOpenViewModal(item)}
-                                    className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
+                                    className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                                     title="View"
                                   >
                                     <Eye size={16} />
                                   </button>
                                   <button
                                     onClick={() => handleOpenFormModal(item)}
-                                    className="p-1.5 bg-green-50 text-green-600 rounded-md hover:bg-green-100"
+                                    className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                                     title="Edit"
                                   >
                                     <Edit size={16} />
                                   </button>
                                   <button
                                     onClick={() => handleOpenDeleteModal(item)}
-                                    className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100"
+                                    className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                                     title="Delete"
                                   >
                                     <Trash2 size={16} />
@@ -927,15 +875,97 @@ export default function Page() {
                   </table>
                 </div>
 
-                {/* Pagination placeholder - can be implemented if needed */}
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Showing {filteredItems.length} of {complianceItems.length} records
-                  </div>
-                  <div>
-                    {/* Pagination controls would go here */}
-                  </div>
+                {/* Mobile Card View */}
+                <div className="md:hidden p-4 space-y-4">
+                  {paginatedData.length === 0 ? (
+                    complianceItems.length === 0 ? (
+                      <EmptyState
+                        icon={Shield}
+                        title="No compliance records"
+                        description="Start tracking your compliance documents and stay on top of expirations."
+                        action={{
+                          label: 'Add Compliance Record',
+                          onClick: () => handleOpenFormModal(),
+                          icon: Plus
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">No records match your current filters</p>
+                        <button
+                          onClick={resetFilters}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        >
+                          <RefreshCw size={14} className="mr-2" />
+                          Reset Filters
+                        </button>
+                      </div>
+                    )
+                  ) : (
+                    paginatedData.map(item => {
+                      const displayStatus = computeItemStatus(item);
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <button
+                              onClick={() => handleOpenViewModal(item)}
+                              className="font-medium text-blue-600 dark:text-blue-400 hover:underline text-left"
+                            >
+                              {item.title}
+                            </button>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(displayStatus)}`}>
+                              {displayStatus}
+                            </span>
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                            <p><span className="font-medium">Entity:</span> {item.entity_name}</p>
+                            <p><span className="font-medium">Issue:</span> {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}</p>
+                            <p><span className="font-medium">Expires:</span> {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}</p>
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleOpenViewModal(item)}
+                              className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleOpenFormModal(item)}
+                              className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleOpenDeleteModal(item)}
+                              className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
+
+                {/* Pagination */}
+                {filteredItems.length > 0 && (
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageNumbers={pageNumbers}
+                      onPageChange={goToPage}
+                      hasNextPage={hasNextPage}
+                      hasPrevPage={hasPrevPage}
+                      showingText={showingText}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

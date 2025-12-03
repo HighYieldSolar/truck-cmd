@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from 'react';
-import { Download, FileText, RefreshCw } from 'lucide-react';
+import { Download, Printer, RefreshCw } from 'lucide-react';
 
 /**
- * Component that generates and downloads a PDF invoice
- * Improved with better error handling and loading states
+ * Component that generates and downloads or prints a PDF invoice
+ * @param {Object} invoice - Invoice data
+ * @param {Object} companyInfo - Company information for the invoice header
+ * @param {string} id - HTML id for the button
+ * @param {string} mode - "download" (default) or "print"
  */
-export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
+export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "download" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -50,21 +53,37 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
         format: 'a4'
       });
       
-      // Add company logo placeholder
-      doc.setFillColor(240, 240, 240);
-      doc.rect(15, 15, 50, 20, 'F');
-      doc.setTextColor(100);
-      doc.setFontSize(12);
-      doc.text("LOGO", 40, 25, { align: 'center' });
+      // Add company name header (plain text, no colors)
+      doc.setTextColor(0);
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(company.name || 'Your Company', 15, 20);
+      doc.setFont(undefined, 'normal');
 
-      // Add company info
+      // Add company info below header
       doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(company.name, 15, 45);
-      doc.text(company.address, 15, 50);
-      doc.text(`${company.city}, ${company.state} ${company.zip}`, 15, 55);
-      doc.text(`Phone: ${company.phone}`, 15, 60);
-      doc.text(`Email: ${company.email}`, 15, 65);
+      doc.setTextColor(80);
+      let companyInfoY = 35;
+
+      if (company.address) {
+        doc.text(company.address, 15, companyInfoY);
+        companyInfoY += 5;
+      }
+
+      const cityStateZip = [company.city, company.state].filter(Boolean).join(', ') + (company.zip ? ` ${company.zip}` : '');
+      if (cityStateZip.trim()) {
+        doc.text(cityStateZip, 15, companyInfoY);
+        companyInfoY += 5;
+      }
+
+      if (company.phone) {
+        doc.text(`Phone: ${company.phone}`, 15, companyInfoY);
+        companyInfoY += 5;
+      }
+
+      if (company.email) {
+        doc.text(`Email: ${company.email}`, 15, companyInfoY);
+      }
       
       // Add invoice title and info
       doc.setFontSize(18);
@@ -137,9 +156,17 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
         startY: 100,
         head: [tableColumn],
         body: tableRows,
-        theme: 'striped',
+        theme: 'plain',
         headStyles: {
-          fillColor: [66, 139, 202]
+          fillColor: [245, 245, 245],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
+        },
+        bodyStyles: {
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
         },
         columnStyles: {
           0: { cellWidth: 90 },
@@ -152,30 +179,40 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
       // Calculate where the table ended
       const finalY = (doc.lastAutoTable.finalY || 120) + 10;
       
-      // Add totals section
+      // Add totals section with proper spacing
+      const totalsLabelX = 135;
+      const totalsValueX = 195;
+
       doc.setFontSize(10);
-      doc.text('Subtotal:', 140, finalY);
-      doc.text(`$${invoice.subtotal?.toFixed(2) || '0.00'}`, 175, finalY, { align: 'right' });
-      
-      doc.text(`Tax (${invoice.tax_rate || 0}%):`, 140, finalY + 5);
-      doc.text(`$${invoice.tax_amount?.toFixed(2) || '0.00'}`, 175, finalY + 5, { align: 'right' });
-      
+      doc.text('Subtotal:', totalsLabelX, finalY);
+      doc.text(`$${invoice.subtotal?.toFixed(2) || '0.00'}`, totalsValueX, finalY, { align: 'right' });
+
+      doc.text(`Tax (${invoice.tax_rate || 0}%):`, totalsLabelX, finalY + 6);
+      doc.text(`$${invoice.tax_amount?.toFixed(2) || '0.00'}`, totalsValueX, finalY + 6, { align: 'right' });
+
+      // Draw a line before total
+      doc.setDrawColor(200, 200, 200);
+      doc.line(totalsLabelX, finalY + 10, totalsValueX, finalY + 10);
+
+      doc.setFontSize(10);
+      doc.text('Total:', totalsLabelX, finalY + 16);
+      doc.text(`$${invoice.total?.toFixed(2) || '0.00'}`, totalsValueX, finalY + 16, { align: 'right' });
+
+      doc.text('Amount Paid:', totalsLabelX, finalY + 22);
+      doc.text(`$${invoice.amount_paid?.toFixed(2) || '0.00'}`, totalsValueX, finalY + 22, { align: 'right' });
+
+      // Draw a line before balance due
+      doc.line(totalsLabelX, finalY + 26, totalsValueX, finalY + 26);
+
       doc.setFontSize(11);
-      doc.text('Total:', 140, finalY + 12);
-      doc.text(`$${invoice.total?.toFixed(2) || '0.00'}`, 175, finalY + 12, { align: 'right' });
-      
-      doc.text('Amount Paid:', 140, finalY + 18);
-      doc.text(`$${invoice.amount_paid?.toFixed(2) || '0.00'}`, 175, finalY + 18, { align: 'right' });
-      
-      doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
-      doc.text('Balance Due:', 140, finalY + 25);
+      doc.text('Balance Due:', totalsLabelX, finalY + 32);
       const balanceDue = (invoice.total || 0) - (invoice.amount_paid || 0);
-      doc.text(`$${balanceDue.toFixed(2)}`, 175, finalY + 25, { align: 'right' });
+      doc.text(`$${balanceDue.toFixed(2)}`, totalsValueX, finalY + 32, { align: 'right' });
       doc.setFont(undefined, 'normal');
       
       // Add notes and terms if available
-      let notesY = finalY + 35;
+      let notesY = finalY + 45;
       
       if (invoice.notes) {
         doc.setFontSize(11);
@@ -189,15 +226,26 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
         notesY += 10 + (splitNotes.length * 5);
       }
       
-      if (invoice.terms) {
-        doc.setFontSize(11);
-        doc.text('TERMS & CONDITIONS:', 15, notesY);
-        doc.setFontSize(10);
-        
-        // Split terms into multiple lines if needed
-        const splitTerms = doc.splitTextToSize(invoice.terms, 170);
-        doc.text(splitTerms, 15, notesY + 5);
-      }
+      // Add terms & conditions - sync with payment_terms like the web page
+      const termsText = invoice.payment_terms === 'Due on Receipt'
+        ? 'Payment is due upon receipt of this invoice.'
+        : invoice.payment_terms === 'Net 7'
+        ? 'Payment is due within 7 days of invoice date.'
+        : invoice.payment_terms === 'Net 15'
+        ? 'Payment is due within 15 days of invoice date.'
+        : invoice.payment_terms === 'Net 30'
+        ? 'Payment is due within 30 days of invoice date.'
+        : invoice.payment_terms === 'Net 60'
+        ? 'Payment is due within 60 days of invoice date.'
+        : invoice.terms || 'Payment is due within 15 days of invoice date.';
+
+      doc.setFontSize(11);
+      doc.text('TERMS & CONDITIONS:', 15, notesY);
+      doc.setFontSize(10);
+
+      // Split terms into multiple lines if needed
+      const splitTerms = doc.splitTextToSize(termsText, 170);
+      doc.text(splitTerms, 15, notesY + 5);
       
       // Add footer
       const pageCount = doc.internal.getNumberOfPages();
@@ -211,13 +259,26 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
         );
       }
       
-      console.log("PDF generated, saving file");
-      
-      // Save the PDF with a detailed filename
-      const filename = `Invoice_${invoice.invoice_number}_${invoice.customer.replace(/\s+/g, '_')}.pdf`;
-      doc.save(filename);
-      
-      console.log(`PDF saved as: ${filename}`);
+      console.log("PDF generated, processing...");
+
+      if (mode === "print") {
+        // Open PDF in new window for printing
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const printWindow = window.open(pdfUrl, '_blank');
+
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+        console.log("PDF opened for printing");
+      } else {
+        // Save the PDF with a detailed filename
+        const filename = `Invoice_${invoice.invoice_number}_${invoice.customer.replace(/\s+/g, '_')}.pdf`;
+        doc.save(filename);
+        console.log(`PDF saved as: ${filename}`);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       setError('Failed to generate PDF. Please try again.');
@@ -226,6 +287,9 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
       setLoading(false);
     }
   };
+
+  const Icon = mode === "print" ? Printer : Download;
+  const buttonText = mode === "print" ? "Print Invoice" : "Download PDF";
 
   return (
     <button
@@ -237,12 +301,12 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id }) {
       {loading ? (
         <>
           <RefreshCw size={16} className="mr-2 animate-spin" />
-          Generating...
+          {mode === "print" ? "Preparing..." : "Generating..."}
         </>
       ) : (
         <>
-          <Download size={16} className="mr-2" />
-          Download PDF
+          <Icon size={16} className="mr-2" />
+          {buttonText}
         </>
       )}
       {error && <span className="text-red-500 ml-2 text-xs">{error}</span>}

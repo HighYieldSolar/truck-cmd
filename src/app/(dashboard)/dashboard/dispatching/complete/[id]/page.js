@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the CompleteLoadPage component to ensure client-side rendering
@@ -14,6 +14,7 @@ const CompleteLoadPage = dynamic(() => import('@/components/dashboard/CompleteLo
 });
 
 export default function CompleteLoadRoute({ params }) {
+  const unwrappedParams = use(params);
   const [isClient, setIsClient] = useState(false);
 
   // Use effect to confirm we're on client-side
@@ -30,5 +31,5 @@ export default function CompleteLoadRoute({ params }) {
     );
   }
 
-  return <CompleteLoadPage params={params} />;
+  return <CompleteLoadPage params={unwrappedParams} />;
 }

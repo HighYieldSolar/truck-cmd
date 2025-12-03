@@ -1,7 +1,7 @@
 // src/components/invoices/InvoiceDetail.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,12 +36,12 @@ import {
 // Payment History Item Component
 const PaymentHistoryItem = ({ payment }) => {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
       <div className="flex items-start">
         <div className={`p-2 rounded-full mr-3 ${
-          payment.status === 'completed' ? 'bg-green-100 text-green-600' :
-          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-          'bg-gray-100 text-gray-600'
+          payment.status === 'completed' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' :
+          payment.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400' :
+          'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
         }`}>
           {payment.method === 'credit_card' ? <CreditCard size={16} /> :
            payment.method === 'bank_transfer' ? <DollarSign size={16} /> :
@@ -50,13 +50,13 @@ const PaymentHistoryItem = ({ payment }) => {
           }
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-900">{payment.description}</p>
-          <p className="text-xs text-gray-500">{payment.date} · {payment.reference || 'No reference'}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{payment.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{payment.date} · {payment.reference || 'No reference'}</p>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-sm font-medium text-gray-900">${parseFloat(payment.amount).toFixed(2)}</p>
-        <p className="text-xs text-gray-500">{payment.status}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">${parseFloat(payment.amount).toFixed(2)}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{payment.status}</p>
       </div>
     </div>
   );
@@ -65,13 +65,13 @@ const PaymentHistoryItem = ({ payment }) => {
 // Invoice History Item Component
 const InvoiceHistoryItem = ({ activity }) => {
   return (
-    <div className="flex items-start py-3 border-b border-gray-200 last:border-0">
+    <div className="flex items-start py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
       <div className={`p-2 rounded-full mr-3 flex-shrink-0 ${
-        activity.type === 'created' ? 'bg-blue-100 text-blue-600' :
-        activity.type === 'sent' ? 'bg-purple-100 text-purple-600' :
-        activity.type === 'viewed' ? 'bg-green-100 text-green-600' :
-        activity.type === 'paid' ? 'bg-green-100 text-green-600' :
-        'bg-gray-100 text-gray-600'
+        activity.type === 'created' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' :
+        activity.type === 'sent' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' :
+        activity.type === 'viewed' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' :
+        activity.type === 'paid' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' :
+        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
       }`}>
         {activity.type === 'created' ? <FileText size={16} /> :
          activity.type === 'sent' ? <Mail size={16} /> :
@@ -81,8 +81,8 @@ const InvoiceHistoryItem = ({ activity }) => {
         }
       </div>
       <div className="flex-grow">
-        <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-        <p className="text-xs text-gray-500">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{activity.description}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {activity.date} · {activity.user}
         </p>
       </div>
@@ -91,18 +91,41 @@ const InvoiceHistoryItem = ({ activity }) => {
 };
 
 // Actions Dropdown Component
-const ActionsDropdown = ({ onAction }) => {
+const ActionsDropdown = ({ onAction, isPaid }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const actions = [
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Filter out payment options if invoice is already paid
+  const allActions = [
     { id: 'edit', label: 'Edit Invoice', icon: <Edit size={16} className="mr-2" /> },
     { id: 'duplicate', label: 'Duplicate', icon: <FileText size={16} className="mr-2" /> },
     { id: 'send', label: 'Send by Email', icon: <Mail size={16} className="mr-2" /> },
     { id: 'download', label: 'Download PDF', icon: <Download size={16} className="mr-2" /> },
     { id: 'print', label: 'Print', icon: <Printer size={16} className="mr-2" /> },
-    { id: 'markPaid', label: 'Mark as Paid', icon: <CheckCircle size={16} className="mr-2" /> },
-    { id: 'recordPayment', label: 'Record Payment', icon: <DollarSign size={16} className="mr-2" /> },
+    { id: 'markPaid', label: 'Mark as Paid', icon: <CheckCircle size={16} className="mr-2" />, hideWhenPaid: true },
+    { id: 'recordPayment', label: 'Record Payment', icon: <DollarSign size={16} className="mr-2" />, hideWhenPaid: true },
   ];
+
+  const actions = isPaid
+    ? allActions.filter(action => !action.hideWhenPaid)
+    : allActions;
 
   const handleAction = (actionId) => {
     setIsOpen(false);
@@ -110,22 +133,22 @@ const ActionsDropdown = ({ onAction }) => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center p-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+        className="inline-flex items-center p-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition-colors"
       >
         <MoreHorizontal size={18} />
       </button>
-      
+
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-56 py-2 bg-white rounded-md shadow-lg border border-gray-200">
+        <div className="absolute right-0 z-50 mt-2 w-56 py-2 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
           <div className="py-1" role="menu" aria-orientation="vertical">
             {actions.map((action) => (
               <button
                 key={action.id}
                 onClick={() => handleAction(action.id)}
-                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                className="flex items-center w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors"
                 role="menuitem"
               >
                 {action.icon}
@@ -173,22 +196,25 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">Record Payment</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
+        <div className="bg-green-500 dark:bg-green-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+          <h2 className="text-lg font-bold flex items-center">
+            <DollarSign size={20} className="mr-2" />
+            Record Payment
+          </h2>
+          <button onClick={onClose} className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors">
             <XCircle size={20} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Payment Amount
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <DollarSign size={16} className="text-gray-400" />
+                <DollarSign size={16} className="text-gray-400 dark:text-gray-500" />
               </div>
               <input
                 type="number"
@@ -199,17 +225,17 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
                 max={invoice?.balance || 0}
                 value={payment.amount}
                 onChange={handleChange}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 required
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Invoice balance: ${invoice?.balance?.toFixed(2)}
             </p>
           </div>
-          
+
           <div className="mb-4">
-            <label htmlFor="method" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="method" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Payment Method
             </label>
             <select
@@ -217,7 +243,7 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               name="method"
               value={payment.method}
               onChange={handleChange}
-              className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
               <option value="credit_card">Credit Card</option>
@@ -227,9 +253,9 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               <option value="other">Other</option>
             </select>
           </div>
-          
+
           <div className="mb-4">
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Payment Date
             </label>
             <input
@@ -238,13 +264,13 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               name="date"
               value={payment.date}
               onChange={handleChange}
-              className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             />
           </div>
-          
+
           <div className="mb-4">
-            <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Reference / Transaction ID
             </label>
             <input
@@ -253,13 +279,13 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               name="reference"
               value={payment.reference}
               onChange={handleChange}
-              className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Optional"
             />
           </div>
-          
+
           <div className="mb-6">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Notes
             </label>
             <textarea
@@ -268,23 +294,23 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
               value={payment.notes}
               onChange={handleChange}
               rows="2"
-              className="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Optional payment notes"
             ></textarea>
           </div>
-          
+
           <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -307,7 +333,7 @@ const PaymentModal = ({ isOpen, onClose, onSubmit, invoice, isSubmitting }) => {
 };
 
 // Email Modal Component
-const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting }) => {
+const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting, companyInfo }) => {
   const [emailData, setEmailData] = useState({
     to: '',
     cc: '',
@@ -317,48 +343,92 @@ const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting }) =
     includePdf: true,
     includePaymentLink: true
   });
+  const [showCcBcc, setShowCcBcc] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState('professional');
+
+  // Email templates
+  const templates = {
+    professional: {
+      name: 'Professional',
+      description: 'Formal business tone',
+      generate: (inv, company) => {
+        const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
+        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const companyName = company?.name || 'Your Company';
+        const companyPhone = company?.phone || '';
+        return `Dear ${inv.customer},
+
+Please find attached invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}.
+
+Payment Details:
+• Invoice Number: ${inv.invoice_number}
+• Invoice Date: ${new Date(inv.invoice_date).toLocaleDateString()}
+• Due Date: ${dueDate}
+• Amount Due: $${amountDue.toFixed(2)}
+
+Payment is due by ${dueDate}. Please don't hesitate to contact us if you have any questions.
+
+Thank you for your business.
+
+Best regards,
+${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
+      }
+    },
+    friendly: {
+      name: 'Friendly',
+      description: 'Casual and warm',
+      generate: (inv, company) => {
+        const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
+        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const companyName = company?.name || 'Your Company';
+        return `Hi ${inv.customer.split(' ')[0]},
+
+Hope you're doing well! I've attached invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}.
+
+Just a quick reminder that payment is due by ${dueDate}. Let me know if you have any questions!
+
+Thanks so much,
+${companyName}`;
+      }
+    },
+    reminder: {
+      name: 'Payment Reminder',
+      description: 'Follow-up for pending payment',
+      generate: (inv, company) => {
+        const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
+        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const companyName = company?.name || 'Your Company';
+        const companyPhone = company?.phone || '';
+        return `Dear ${inv.customer},
+
+This is a friendly reminder regarding invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}, which ${new Date(inv.due_date) < new Date() ? 'was due on' : 'is due on'} ${dueDate}.
+
+If you've already sent payment, please disregard this message. Otherwise, we kindly request that you process this payment at your earliest convenience.
+
+If you have any questions or concerns about this invoice, please don't hesitate to reach out.
+
+Thank you,
+${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen && invoice) {
+      const template = templates[selectedTemplate];
       setEmailData({
         to: invoice.customer_email || '',
         cc: '',
         bcc: '',
-        subject: `Invoice #${invoice.invoice_number} from Your Company`,
-        message: generateDefaultMessage(invoice),
+        subject: `Invoice #${invoice.invoice_number} from ${companyInfo?.name || 'Your Company'}`,
+        message: template.generate(invoice, companyInfo),
         includePdf: true,
         includePaymentLink: true
       });
     }
-  }, [isOpen, invoice]);
+  }, [isOpen, invoice, companyInfo, selectedTemplate]);
 
   if (!isOpen) return null;
-
-  // Generate a default email message
-  function generateDefaultMessage(invoice) {
-    const amountDue = (invoice.total || 0) - (invoice.amount_paid || 0);
-    const dueDate = new Date(invoice.due_date).toLocaleDateString();
-    
-    return `Dear ${invoice.customer},
-
-Please find attached invoice #${invoice.invoice_number} in the amount of $${amountDue.toFixed(2)}.
-
-This invoice is due on ${dueDate}. Please remit payment at your earliest convenience.
-
-Summary:
-- Invoice Number: ${invoice.invoice_number}
-- Invoice Date: ${new Date(invoice.invoice_date).toLocaleDateString()}
-- Due Date: ${dueDate}
-- Amount Due: $${amountDue.toFixed(2)}
-
-If you have any questions about this invoice, please don't hesitate to contact us.
-
-Thank you for your business!
-
-Best regards,
-Your Company Name
-(555) 123-4567`;
-  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -368,77 +438,134 @@ Your Company Name
     }));
   };
 
+  const handleTemplateChange = (templateKey) => {
+    setSelectedTemplate(templateKey);
+    const template = templates[templateKey];
+    setEmailData(prev => ({
+      ...prev,
+      message: template.generate(invoice, companyInfo)
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSend(emailData);
   };
 
+  const amountDue = (invoice.total || 0) - (invoice.amount_paid || 0);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900 flex items-center">
-            <Mail size={20} className="mr-2 text-blue-600" />
-            Send Invoice by Email
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
-            <XCircle size={20} />
-          </button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white px-6 py-5">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-bold flex items-center">
+                <Mail size={22} className="mr-3" />
+                Send Invoice
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">Compose and send invoice #{invoice.invoice_number}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+            >
+              <XCircle size={22} />
+            </button>
+          </div>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
-                To <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                id="to"
-                name="to"
-                value={emailData.to}
-                onChange={handleChange}
-                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
-                placeholder="customer@example.com"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="cc" className="block text-sm font-medium text-gray-700 mb-1">
-                  CC
-                </label>
-                <input
-                  type="text"
-                  id="cc"
-                  name="cc"
-                  value={emailData.cc}
-                  onChange={handleChange}
-                  className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
-                  placeholder="cc@example.com"
-                />
+
+        {/* Invoice Summary Card */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-xl">
+                <FileText size={24} className="text-blue-600 dark:text-blue-400" />
               </div>
-              
               <div>
-                <label htmlFor="bcc" className="block text-sm font-medium text-gray-700 mb-1">
-                  BCC
-                </label>
-                <input
-                  type="text"
-                  id="bcc"
-                  name="bcc"
-                  value={emailData.bcc}
-                  onChange={handleChange}
-                  className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
-                  placeholder="bcc@example.com"
-                />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Invoice for</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">{invoice.customer}</p>
               </div>
             </div>
-            
+            <div className="flex items-center space-x-6">
+              <div className="text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</p>
+                <p className="font-bold text-lg text-gray-900 dark:text-gray-100">${amountDue.toFixed(2)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Due Date</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-5">
+            {/* Recipient Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="to" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Recipient
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCcBcc(!showCcBcc)}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                >
+                  {showCcBcc ? 'Hide CC/BCC' : 'Add CC/BCC'}
+                </button>
+              </div>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  id="to"
+                  name="to"
+                  value={emailData.to}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-4 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-shadow"
+                  placeholder="customer@example.com"
+                  required
+                />
+              </div>
+
+              {showCcBcc && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label htmlFor="cc" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">CC</label>
+                    <input
+                      type="text"
+                      id="cc"
+                      name="cc"
+                      value={emailData.cc}
+                      onChange={handleChange}
+                      className="block w-full px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="cc@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="bcc" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">BCC</label>
+                    <input
+                      type="text"
+                      id="bcc"
+                      name="bcc"
+                      value={emailData.bcc}
+                      onChange={handleChange}
+                      className="block w-full px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="bcc@example.com"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Subject */}
             <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                Subject <span className="text-red-500">*</span>
+              <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Subject Line
               </label>
               <input
                 type="text"
@@ -446,69 +573,129 @@ Your Company Name
                 name="subject"
                 value={emailData.subject}
                 onChange={handleChange}
-                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                className="block w-full px-4 py-2.5 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-shadow"
                 required
               />
             </div>
-            
+
+            {/* Email Templates */}
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                Message <span className="text-red-500">*</span>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Email Template
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(templates).map(([key, template]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleTemplateChange(key)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      selectedTemplate === key
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-700'
+                    }`}
+                  >
+                    <p className={`text-sm font-medium ${selectedTemplate === key ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                      {template.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{template.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Message */}
+            <div>
+              <label htmlFor="message" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Message
               </label>
               <textarea
                 id="message"
                 name="message"
-                rows="10"
+                rows="8"
                 value={emailData.message}
                 onChange={handleChange}
-                className="block w-full shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300 rounded-md"
+                className="block w-full px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-shadow font-mono"
                 required
               ></textarea>
             </div>
-            
-            <div className="flex items-start space-x-6">
-              <div className="flex items-center h-5">
+
+            {/* Attachment Options */}
+            <div className="flex flex-wrap gap-4 pt-2">
+              <label className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                emailData.includePdf
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                  : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300'
+              }`}>
                 <input
                   id="includePdf"
                   name="includePdf"
                   type="checkbox"
                   checked={emailData.includePdf}
                   onChange={handleChange}
-                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  className="sr-only"
                 />
-                <label htmlFor="includePdf" className="ml-2 block text-sm text-gray-700">
-                  Attach PDF invoice
-                </label>
-              </div>
-              
-              <div className="flex items-center h-5">
+                <div className={`p-2 rounded-lg mr-3 ${emailData.includePdf ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-600'}`}>
+                  <FileText size={18} className={emailData.includePdf ? 'text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'} />
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${emailData.includePdf ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Attach PDF Invoice
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Include invoice as attachment</p>
+                </div>
+                {emailData.includePdf && (
+                  <CheckCircle size={20} className="ml-auto text-blue-500" />
+                )}
+              </label>
+
+              <label className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                emailData.includePaymentLink
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/30'
+                  : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300'
+              }`}>
                 <input
                   id="includePaymentLink"
                   name="includePaymentLink"
                   type="checkbox"
                   checked={emailData.includePaymentLink}
                   onChange={handleChange}
-                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  className="sr-only"
                 />
-                <label htmlFor="includePaymentLink" className="ml-2 block text-sm text-gray-700">
-                  Include payment link
-                </label>
-              </div>
+                <div className={`p-2 rounded-lg mr-3 ${emailData.includePaymentLink ? 'bg-green-100 dark:bg-green-800' : 'bg-gray-100 dark:bg-gray-600'}`}>
+                  <CreditCard size={18} className={emailData.includePaymentLink ? 'text-green-600 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'} />
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${emailData.includePaymentLink ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Include Payment Link
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Allow online payment</p>
+                </div>
+                {emailData.includePaymentLink && (
+                  <CheckCircle size={20} className="ml-auto text-green-500" />
+                )}
+              </label>
             </div>
           </div>
-          
-          <div className="mt-8 flex justify-end space-x-3">
+        </form>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Email will be sent from your account
+          </p>
+          <div className="flex space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
-              type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              onClick={handleSubmit}
+              className="inline-flex items-center px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -524,7 +711,7 @@ Your Company Name
               )}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -543,6 +730,14 @@ export default function InvoiceDetail({ invoiceId }) {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState(null);
+  const [companyInfo, setCompanyInfo] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    phone: ''
+  });
 
   // Fetch user and invoice data
   useEffect(() => {
@@ -562,7 +757,35 @@ export default function InvoiceDetail({ invoiceId }) {
         }
         
         setUser(user);
-        
+
+        // Fetch user profile/company info for invoice display
+        const { data: userData, error: profileError } = await supabase
+          .from('users')
+          .select('company_name, address, city, state, zip, phone')
+          .eq('id', user.id)
+          .single();
+
+        if (!profileError && userData) {
+          // Format phone number for display
+          const formatPhone = (phone) => {
+            if (!phone) return '';
+            const digits = phone.replace(/\D/g, '');
+            if (digits.length === 10) {
+              return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+            }
+            return phone;
+          };
+
+          setCompanyInfo({
+            name: userData.company_name || '',
+            address: userData.address || '',
+            city: userData.city || '',
+            state: userData.state || '',
+            zip: userData.zip || '',
+            phone: formatPhone(userData.phone)
+          });
+        }
+
         // Get invoice details
         const invoiceData = await getInvoiceById(invoiceId);
         
@@ -691,7 +914,7 @@ export default function InvoiceDetail({ invoiceId }) {
           const total = parseFloat(invoice.total) || 0;
           const amountPaid = parseFloat(invoice.amount_paid) || 0;
           const remainingBalance = total - amountPaid;
-          
+
           // Only record a payment if there's an outstanding balance
           if (remainingBalance > 0) {
             // Create payment data for the remaining balance
@@ -703,28 +926,21 @@ export default function InvoiceDetail({ invoiceId }) {
               description: `Payment for invoice ${invoice.invoice_number}`,
               status: 'completed'
             };
-            
+
             // Record the payment (this will also update the status)
             await recordPayment(invoiceId, paymentData);
           } else {
             // If already paid, just update the status
             await updateInvoiceStatus(invoiceId, 'Paid');
           }
-          
+
           // Force refresh of stats by setting a session flag
           if (typeof window !== 'undefined') {
             window.sessionStorage.setItem('dashboard-refresh-needed', 'true');
           }
-          
-          // Add to invoice history
-          const newActivity = {
-            type: 'paid',
-            description: 'Invoice marked as paid',
-            date: new Date().toLocaleString(),
-            user: 'You'
-          };
-          
-          setInvoiceHistory(prevHistory => [newActivity, ...prevHistory]);
+
+          // Redirect to invoices list
+          router.push('/dashboard/invoices');
           break;
         case 'recordPayment':
           setPaymentModalOpen(true);
@@ -737,7 +953,8 @@ export default function InvoiceDetail({ invoiceId }) {
           document.getElementById('download-invoice-btn').click();
           break;
         case 'print':
-          window.print();
+          // Print the invoice PDF
+          document.getElementById('print-invoice-btn').click();
           break;
         case 'duplicate':
           // Create a duplicate invoice
@@ -757,7 +974,7 @@ export default function InvoiceDetail({ invoiceId }) {
   const handleRecordPayment = async (paymentData) => {
     try {
       setSubmitting(true);
-      
+
       // Format the payment data
       const formattedPayment = {
         amount: parseFloat(paymentData.amount),
@@ -768,38 +985,61 @@ export default function InvoiceDetail({ invoiceId }) {
         description: `Payment for invoice ${invoice.invoice_number}`,
         status: 'completed'
       };
-      
-      // Record the payment
+
+      // Record the payment (this also records the activity in the service)
       await recordPayment(invoiceId, formattedPayment);
-      
+
       // Force refresh of stats
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem('dashboard-refresh-needed', 'true');
       }
-      
-      // Add to invoice history
-      const newActivity = {
-        type: 'paid',
-        description: `Payment of $${formattedPayment.amount.toFixed(2)} recorded`,
-        date: new Date().toLocaleString(),
-        user: 'You'
-      };
-      
-      setInvoiceHistory(prevHistory => [newActivity, ...prevHistory]);
-      
-      // Record activity in database
-      await supabase
-        .from('invoice_activities')
-        .insert([{
-          invoice_id: invoiceId,
-          activity_type: 'payment',
-          description: `Payment of $${formattedPayment.amount.toFixed(2)} recorded`,
-          user_id: user.id,
-          user_name: user.email
-        }]);
-      
-      // Close modal
+
+      // Close modal first
       setPaymentModalOpen(false);
+
+      // Refresh invoice data from database to get updated status and amounts
+      const refreshedInvoice = await getInvoiceById(invoiceId);
+      if (refreshedInvoice) {
+        setInvoice(refreshedInvoice);
+      }
+
+      // Refresh payment history from database
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('invoice_id', invoiceId)
+        .order('date', { ascending: false });
+
+      if (payments) {
+        setPaymentHistory(payments);
+      }
+
+      // Refresh activity history from database
+      const { data: activities } = await supabase
+        .from('invoice_activities')
+        .select('*')
+        .eq('invoice_id', invoiceId)
+        .order('created_at', { ascending: false });
+
+      if (activities && activities.length > 0) {
+        const formattedActivities = activities.map(activity => ({
+          type: activity.activity_type,
+          description: activity.description,
+          date: new Date(activity.created_at).toLocaleString(),
+          user: activity.user_name || 'System'
+        }));
+
+        // Add the initial creation activity
+        const initialHistory = [{
+          type: 'created',
+          description: 'Invoice created',
+          date: new Date(refreshedInvoice?.created_at || invoice.created_at).toLocaleString(),
+          user: 'You'
+        }];
+
+        setInvoiceHistory([...formattedActivities, ...initialHistory]);
+      }
+
     } catch (err) {
       console.error("Error recording payment:", err);
       setError("Failed to record payment. Please try again.");
@@ -854,7 +1094,7 @@ export default function InvoiceDetail({ invoiceId }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400"></div>
       </div>
     );
   }
@@ -862,20 +1102,20 @@ export default function InvoiceDetail({ invoiceId }) {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto py-12">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500 p-4 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           </div>
         </div>
         <div className="mt-6 text-center">
           <Link
             href="/dashboard/invoices"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             <ChevronLeft size={16} className="mr-2" />
             Back to Invoices
@@ -888,11 +1128,11 @@ export default function InvoiceDetail({ invoiceId }) {
   if (!invoice) {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Invoice Not Found</h2>
-        <p className="text-gray-600 mb-6">The invoice you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Invoice Not Found</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">The invoice you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
         <Link
           href="/dashboard/invoices"
-          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
           <ChevronLeft size={16} className="mr-2" />
           Back to Invoices
@@ -909,80 +1149,96 @@ export default function InvoiceDetail({ invoiceId }) {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between mb-8">
-        <div className="flex items-center mb-4 md:mb-0">
-          <Link 
-            href="/dashboard/invoices" 
-            className="mr-4 p-2 rounded-full hover:bg-gray-100"
-          >
-            <ChevronLeft size={20} className="text-gray-600" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Invoice {invoice.invoice_number}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Created on {new Date(invoice.invoice_date).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <InvoiceStatusBadge status={invoice.status} size="lg" />
-          
-          <div className="flex space-x-3">
+      {/* Header with Blue Gradient */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
+        <div className="flex flex-wrap items-center justify-between">
+          <div className="flex items-center mb-4 md:mb-0">
             <Link
-              href={`/dashboard/invoices/${invoiceId}/edit`}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              href="/dashboard/invoices"
+              className="mr-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
             >
-              <Edit size={16} className="mr-2" />
-              Edit
+              <ChevronLeft size={20} className="text-white" />
             </Link>
-            {!isPaid && (
-              <button
-                onClick={() => setPaymentModalOpen(true)}
-                className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-              >
-                <DollarSign size={16} className="mr-2" />
-                Record Payment
-              </button>
-            )}
-            <button
-              onClick={() => setEmailModalOpen(true)}
-              className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <Send size={16} className="mr-2" />
-              Send
-            </button>
-            {/* Hidden button for PDF generator to target */}
-            <div className="hidden">
-              <InvoicePdfGenerator 
-                invoice={invoice} 
-                id="download-invoice-btn"
-              />
+            <div className="flex items-center">
+              <div className="p-3 bg-white/20 rounded-xl mr-4">
+                <FileText size={28} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  Invoice {invoice.invoice_number}
+                </h1>
+                <p className="text-blue-100">
+                  Created on {new Date(invoice.invoice_date).toLocaleDateString()}
+                </p>
+              </div>
             </div>
-            <button
-              onClick={() => handleAction('download')}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Download size={16} className="mr-2" />
-              Download
-            </button>
-            <ActionsDropdown onAction={handleAction} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <InvoiceStatusBadge status={invoice.status} size="lg" />
           </div>
         </div>
       </div>
 
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center justify-end gap-3 mb-6">
+        <Link
+          href={`/dashboard/invoices/${invoiceId}/edit`}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        >
+          <Edit size={16} className="mr-2" />
+          Edit
+        </Link>
+        {!isPaid && (
+          <button
+            onClick={() => setPaymentModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors"
+          >
+            <DollarSign size={16} className="mr-2" />
+            Record Payment
+          </button>
+        )}
+        <button
+          onClick={() => setEmailModalOpen(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+        >
+          <Send size={16} className="mr-2" />
+          Send
+        </button>
+        {/* Hidden buttons for PDF generator to target */}
+        <div className="hidden">
+          <InvoicePdfGenerator
+            invoice={invoice}
+            companyInfo={companyInfo}
+            id="download-invoice-btn"
+            mode="download"
+          />
+          <InvoicePdfGenerator
+            invoice={invoice}
+            companyInfo={companyInfo}
+            id="print-invoice-btn"
+            mode="print"
+          />
+        </div>
+        <button
+          onClick={() => handleAction('download')}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        >
+          <Download size={16} className="mr-2" />
+          Download
+        </button>
+        <ActionsDropdown onAction={handleAction} isPaid={isPaid} />
+      </div>
+
       {/* Error display */}
       {error && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500 p-4 rounded-lg">
           <div className="flex">
             <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500" />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           </div>
         </div>
@@ -992,81 +1248,97 @@ export default function InvoiceDetail({ invoiceId }) {
         {/* Left Column (Invoice Details) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Invoice Preview */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-6">
               <div className="flex justify-between flex-wrap">
                 <div className="mb-6 md:mb-0">
-                  <div className="h-10 w-32 bg-gray-200 rounded mb-4"></div>
-                  <p className="text-gray-600 text-sm">Your Company Name</p>
-                  <p className="text-gray-600 text-sm">123 Trucking Way</p>
-                  <p className="text-gray-600 text-sm">Dallas, TX 75001</p>
-                  <p className="text-gray-600 text-sm">Phone: (555) 123-4567</p>
+                  <div className="h-10 w-32 bg-blue-600 dark:bg-blue-500 rounded-lg mb-4 flex items-center justify-center">
+                    <Truck size={24} className="text-white" />
+                  </div>
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold">
+                    {companyInfo.name || 'Your Company Name'}
+                  </p>
+                  {companyInfo.address && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{companyInfo.address}</p>
+                  )}
+                  {(companyInfo.city || companyInfo.state || companyInfo.zip) && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      {[companyInfo.city, companyInfo.state].filter(Boolean).join(', ')} {companyInfo.zip}
+                    </p>
+                  )}
+                  {companyInfo.phone && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Phone: {companyInfo.phone}</p>
+                  )}
                 </div>
                 <div className="text-right">
-                  <h2 className="text-2xl font-bold text-gray-900">INVOICE</h2>
-                  <p className="text-gray-600 text-sm mt-2">Invoice #: {invoice.invoice_number}</p>
-                  <p className="text-gray-600 text-sm">Date: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
-                  <p className="text-gray-600 text-sm">Due Date: {new Date(invoice.due_date).toLocaleDateString()}</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">INVOICE</h2>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">Invoice #: <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Date: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.invoice_date).toLocaleDateString()}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Due Date: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</span></p>
                   {invoice.po_number && (
-                    <p className="text-gray-600 text-sm">PO #: {invoice.po_number}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">PO #: <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.po_number}</span></p>
                   )}
                 </div>
               </div>
-              
-              <div className="flex justify-between flex-wrap mt-8">
-                <div>
-                  <h3 className="text-gray-600 font-semibold text-sm">BILL TO:</h3>
-                  <p className="font-medium text-gray-900">{invoice.customer}</p>
+
+              <div className="flex justify-between flex-wrap mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">BILL TO:</h3>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.customer}</p>
                   {invoice.customer_address && (
-                    <p className="text-gray-600 text-sm whitespace-pre-line">{invoice.customer_address}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm whitespace-pre-line mt-1">{invoice.customer_address}</p>
                   )}
                 </div>
-                
+
                 {invoice.loads && invoice.loads.length > 0 && (
-                  <div>
-                    <h3 className="text-gray-600 font-semibold text-sm">SHIPMENT INFO:</h3>
-                    <div className="flex items-center text-gray-600 text-sm mt-1">
-                      <span className="font-medium mr-1">Load #:</span> {invoice.loads[0].load_number}
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mt-4 md:mt-0">
+                    <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">SHIPMENT INFO:</h3>
+                    <div className="flex items-center text-gray-900 dark:text-gray-100 text-sm">
+                      <Package size={14} className="mr-2 text-blue-500" />
+                      <span className="font-medium">Load #:</span>
+                      <span className="ml-1">{invoice.loads[0].load_number}</span>
                     </div>
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <MapPin size={14} className="mr-1 flex-shrink-0" /> 
-                      {invoice.loads[0].origin} → {invoice.loads[0].destination}
+                    <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mt-1">
+                      <MapPin size={14} className="mr-2 text-green-500 flex-shrink-0" />
+                      {invoice.loads[0].origin}
+                      <ArrowRight size={12} className="mx-2" />
+                      {invoice.loads[0].destination}
                     </div>
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-8">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full">
                   <thead>
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b-2 border-gray-200 dark:border-gray-700">
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Description
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quantity
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Qty
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Unit Price
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Total
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {invoice.items && invoice.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-4 py-4 whitespace-normal text-sm text-gray-900 dark:text-gray-100">
                           {item.description}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                           {item.quantity}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
                           ${parseFloat(item.unit_price).toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
                           ${(item.quantity * item.unit_price).toFixed(2)}
                         </td>
                       </tr>
@@ -1074,47 +1346,57 @@ export default function InvoiceDetail({ invoiceId }) {
                   </tbody>
                 </table>
               </div>
-              
+
               <div className="mt-8 flex justify-end">
-                <div className="w-64 space-y-3">
+                <div className="w-72 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="text-gray-900">${invoice.subtotal?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax ({invoice.tax_rate || 0}%):</span>
-                    <span className="text-gray-900">${invoice.tax_amount?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div className="flex justify-between pt-3 border-t border-gray-200">
-                    <span className="font-medium text-gray-900">Total:</span>
-                    <span className="font-bold text-gray-900">${total.toFixed(2)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span className="text-gray-900 dark:text-gray-100">${invoice.subtotal?.toFixed(2) || '0.00'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Amount Paid:</span>
-                    <span className="text-gray-900">${amountPaid.toFixed(2)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">Tax ({invoice.tax_rate || 0}%):</span>
+                    <span className="text-gray-900 dark:text-gray-100">${invoice.tax_amount?.toFixed(2) || '0.00'}</span>
                   </div>
-                  <div className="flex justify-between pt-3 border-t border-gray-200">
-                    <span className="font-medium text-gray-900">Balance Due:</span>
-                    <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">${total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                    <span className="text-green-600 dark:text-green-400 font-medium">${amountPaid.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">Balance Due:</span>
+                    <span className={`font-bold text-lg ${balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       ${balance.toFixed(2)}
                     </span>
                   </div>
                 </div>
               </div>
-              
+
               {invoice.notes && (
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <h3 className="text-gray-600 font-semibold text-sm mb-2">NOTES:</h3>
-                  <p className="text-gray-600 text-sm">{invoice.notes}</p>
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">NOTES:</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">{invoice.notes}</p>
                 </div>
               )}
-              
-              {invoice.terms && (
-                <div className="mt-4">
-                  <h3 className="text-gray-600 font-semibold text-sm mb-2">TERMS & CONDITIONS:</h3>
-                  <p className="text-gray-600 text-sm">{invoice.terms}</p>
-                </div>
-              )}
+
+              <div className="mt-4">
+                <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">TERMS & CONDITIONS:</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  {invoice.payment_terms === 'Due on Receipt'
+                    ? 'Payment is due upon receipt of this invoice.'
+                    : invoice.payment_terms === 'Net 7'
+                    ? 'Payment is due within 7 days of invoice date.'
+                    : invoice.payment_terms === 'Net 15'
+                    ? 'Payment is due within 15 days of invoice date.'
+                    : invoice.payment_terms === 'Net 30'
+                    ? 'Payment is due within 30 days of invoice date.'
+                    : invoice.payment_terms === 'Net 60'
+                    ? 'Payment is due within 60 days of invoice date.'
+                    : invoice.terms || 'Payment is due within 15 days of invoice date.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1122,41 +1404,44 @@ export default function InvoiceDetail({ invoiceId }) {
         {/* Right Column (Payment Details & History) */}
         <div className="space-y-6">
           {/* Payment Status */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Payment Status</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <CreditCard size={18} className="mr-2 text-blue-500" />
+                Payment Status
+              </h3>
             </div>
             <div className="p-6">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="font-medium text-gray-900">${total.toFixed(2)}</span>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">${total.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Amount Paid:</span>
-                <span className="font-medium text-green-600">${amountPaid.toFixed(2)}</span>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                <span className="font-medium text-green-600 dark:text-green-400">${amountPaid.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between pt-3 border-t border-gray-200">
-                <span className="font-medium text-gray-900">Balance Due:</span>
-                <span className={`font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">Balance Due:</span>
+                <span className={`font-bold text-lg ${balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   ${balance.toFixed(2)}
                 </span>
               </div>
-              
-              <div className="mt-6">
-                <div className="flex items-center mb-2">
-                  <Clock size={16} className="text-gray-600 mr-2" />
-                  <span className="text-sm text-gray-600">Due on {new Date(invoice.due_date).toLocaleDateString()}</span>
+
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <Clock size={16} className="text-orange-500 mr-2" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Due on {new Date(invoice.due_date).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center">
-                  <CheckCircle size={16} className="text-gray-600 mr-2" />
-                  <span className="text-sm text-gray-600">Payment Terms: {invoice.payment_terms || 'Net 15'}</span>
+                <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <CheckCircle size={16} className="text-blue-500 mr-2" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Payment Terms: {invoice.payment_terms || 'Net 15'}</span>
                 </div>
               </div>
-              
+
               {!isPaid && balance > 0 && (
                 <button
                   onClick={() => setPaymentModalOpen(true)}
-                  className="w-full mt-6 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                  className="w-full mt-6 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
                 >
                   <DollarSign size={16} className="mr-2" />
                   Record Payment
@@ -1164,32 +1449,53 @@ export default function InvoiceDetail({ invoiceId }) {
               )}
             </div>
           </div>
-          
+
           {/* Payment History */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Payment History</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <DollarSign size={18} className="mr-2 text-green-500" />
+                Payment History
+              </h3>
+              {paymentHistory.length > 5 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {paymentHistory.length} payments
+                </span>
+              )}
             </div>
             <div className="p-6">
               {paymentHistory.length > 0 ? (
-                <div className="space-y-1">
+                <div className="space-y-1 max-h-[320px] overflow-y-auto pr-2">
                   {paymentHistory.map((payment, index) => (
                     <PaymentHistoryItem key={index} payment={payment} />
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No payments recorded yet.</p>
+                <div className="text-center py-6">
+                  <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full inline-block mb-3">
+                    <DollarSign size={24} className="text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
+                </div>
               )}
             </div>
           </div>
-          
+
           {/* Invoice History */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Activity History</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <Clock size={18} className="mr-2 text-purple-500" />
+                Activity History
+              </h3>
+              {invoiceHistory.length > 5 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {invoiceHistory.length} activities
+                </span>
+              )}
             </div>
             <div className="p-6">
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-[320px] overflow-y-auto pr-2">
                 {invoiceHistory.map((activity, index) => (
                   <InvoiceHistoryItem key={index} activity={activity} />
                 ))}
@@ -1215,6 +1521,7 @@ export default function InvoiceDetail({ invoiceId }) {
         onSend={handleSendEmail}
         invoice={invoice}
         isSubmitting={submitting}
+        companyInfo={companyInfo}
       />
     </div>
   );

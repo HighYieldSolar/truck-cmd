@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -8,9 +8,7 @@ import {
   FileText,
   Plus,
   Download,
-  Filter,
   Search,
-  Calendar,
   Clock,
   CheckCircle,
   RefreshCw,
@@ -19,38 +17,73 @@ import {
   Eye,
   Trash2,
   DollarSign,
-  Mail,
-  Printer,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
 import {
   fetchInvoices,
   updateInvoiceStatus,
   recordPayment,
   deleteInvoice,
-  emailInvoice,
   checkAndUpdateOverdueInvoices
 } from "@/lib/services/invoiceService";
+import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { getUserFriendlyError } from "@/lib/utils/errorMessages";
+import { usePagination, Pagination } from "@/hooks/usePagination";
+import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 
 // Import components
-import InvoiceListComponent from "@/components/invoices/InvoiceListComponent";
 import InvoiceStatsComponent from "@/components/invoices/InvoiceStatsComponent";
-import PaymentDueSoonComponent from "@/components/invoices/PaymentDueSoonComponent";
-import OverdueInvoicesComponent from "@/components/invoices/OverdueInvoicesComponent";
-import QuickActionsComponent from "@/components/invoices/QuickActionsComponent";
-import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import DeleteInvoiceModal from "@/components/invoices/DeleteInvoiceModal";
-import EmailInvoiceModal from "@/components/invoices/EmailInvoiceModal";
+
+// Local storage key for filter persistence
+const STORAGE_KEY = 'invoice_filters';
+
+// Loading skeleton component
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse">
+      {/* Stats skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Content skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Main Invoices Dashboard Component
 export default function Page() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const [user, setUser] = useState(null);
 
   // Invoices state
   const [invoices, setInvoices] = useState([]);
-  const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [stats, setStats] = useState({
     total: 0,
     paid: 0,
@@ -59,35 +92,52 @@ export default function Page() {
     draftCount: 0,
   });
 
-  // Filter state
-  const [filters, setFilters] = useState({
-    status: "all",
-    dateRange: "all",
-    search: "",
-    sortBy: "invoice_date",
-    sortDirection: "desc"
+  // Filter state - restore from localStorage
+  const [filters, setFilters] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+    return {
+      status: "all",
+      dateRange: "all",
+      search: "",
+      sortBy: "invoice_date",
+      sortDirection: "desc"
+    };
   });
 
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Apply filters to invoices
-  const applyFilters = useCallback((items, currentFilters) => {
-    if (!items) return [];
+  // Save filters to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+  }, [filters]);
 
-    let result = [...items];
+  // Apply filters to invoices
+  const filteredInvoices = useMemo(() => {
+    let result = [...invoices];
 
     // Filter by status
-    if (currentFilters.status !== "all") {
-      result = result.filter(item => item.status === currentFilters.status);
+    if (filters.status !== "all") {
+      result = result.filter(item => item.status?.toLowerCase() === filters.status.toLowerCase());
     }
 
     // Filter by date range
-    if (currentFilters.dateRange !== "all") {
+    if (filters.dateRange !== "all") {
       const today = new Date();
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -100,7 +150,7 @@ export default function Page() {
       const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
 
-      switch (currentFilters.dateRange) {
+      switch (filters.dateRange) {
         case "last30":
           result = result.filter(item => new Date(item.invoice_date) >= thirtyDaysAgo);
           break;
@@ -125,8 +175,8 @@ export default function Page() {
     }
 
     // Filter by search term
-    if (currentFilters.search) {
-      const searchLower = currentFilters.search.toLowerCase();
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       result = result.filter(item =>
         (item.invoice_number && item.invoice_number.toLowerCase().includes(searchLower)) ||
         (item.customer && item.customer.toLowerCase().includes(searchLower)) ||
@@ -138,7 +188,7 @@ export default function Page() {
     result.sort((a, b) => {
       let valueA, valueB;
 
-      switch (currentFilters.sortBy) {
+      switch (filters.sortBy) {
         case "invoice_date":
           valueA = new Date(a.invoice_date || 0);
           valueB = new Date(b.invoice_date || 0);
@@ -164,18 +214,80 @@ export default function Page() {
           valueB = new Date(b.invoice_date || 0);
       }
 
-      if (currentFilters.sortDirection === "asc") {
+      if (filters.sortDirection === "asc") {
         return valueA > valueB ? 1 : -1;
       } else {
         return valueA < valueB ? 1 : -1;
       }
     });
 
-    setFilteredInvoices(result);
+    return result;
+  }, [invoices, filters]);
+
+  // Pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    goToPage,
+    hasNextPage,
+    hasPrevPage,
+    pageNumbers,
+    showingText
+  } = usePagination(filteredInvoices, { itemsPerPage: 10 });
+
+  // Get upcoming payments (due within 7 days)
+  const upcomingPayments = useMemo(() => {
+    const today = new Date();
+    return invoices
+      .filter(inv => {
+        const status = inv.status?.toLowerCase();
+        if (status !== 'pending' && status !== 'sent') return false;
+        if (!inv.due_date) return false;
+        const dueDate = new Date(inv.due_date);
+        const differenceInTime = dueDate - today;
+        const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+        return differenceInDays >= 0 && differenceInDays <= 7;
+      })
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      .slice(0, 5);
+  }, [invoices]);
+
+  // Get overdue invoices
+  const overdueInvoices = useMemo(() => {
+    return invoices
+      .filter(inv => inv.status?.toLowerCase() === 'overdue')
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      .slice(0, 5);
+  }, [invoices]);
+
+  // Calculate stats
+  const calculateStats = useCallback((items) => {
+    if (!items) return;
+
+    const total = items.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+    // Use case-insensitive comparison for status
+    const paid = items.filter(item => item.status?.toLowerCase() === 'paid').length;
+    const pending = items.filter(item => {
+      const status = item.status?.toLowerCase();
+      return status === 'pending' || status === 'sent';
+    }).length;
+    const overdue = items.filter(item => item.status?.toLowerCase() === 'overdue').length;
+    const draftCount = items.filter(item => item.status?.toLowerCase() === 'draft').length;
+
+    setStats({
+      total,
+      paid,
+      pending,
+      overdue,
+      draftCount
+    });
   }, []);
 
   // Fetch user and invoices on mount
   useEffect(() => {
+    let channel = null;
+
     async function initialize() {
       try {
         setLoading(true);
@@ -186,7 +298,6 @@ export default function Page() {
         if (userError) throw userError;
 
         if (!user) {
-          // Redirect to login if not authenticated
           window.location.href = '/login';
           return;
         }
@@ -199,46 +310,48 @@ export default function Page() {
         // Fetch invoices
         const items = await fetchInvoices(user.id);
         setInvoices(items);
-        applyFilters(items, filters);
-
-        // Calculate stats
         calculateStats(items);
+
+        // Set up real-time subscription
+        channel = supabase
+          .channel('invoices-changes')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` },
+            (payload) => {
+              if (payload.eventType === 'INSERT') {
+                setInvoices(prev => [payload.new, ...prev]);
+              } else if (payload.eventType === 'UPDATE') {
+                setInvoices(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
+              } else if (payload.eventType === 'DELETE') {
+                setInvoices(prev => prev.filter(item => item.id !== payload.old.id));
+              }
+              // Recalculate stats
+              fetchInvoices(user.id).then(items => calculateStats(items));
+            }
+          )
+          .subscribe();
 
         setLoading(false);
       } catch (error) {
-        console.error("Error initializing invoices dashboard:", error);
-        setError("Failed to load invoice data. Please try again.");
+        setMessage({ type: 'error', text: getUserFriendlyError(error) });
         setLoading(false);
       }
     }
 
     initialize();
-  }, [applyFilters, filters]);
 
-  // Calculate invoice statistics
-  const calculateStats = (items) => {
-    if (!items) return;
-
-    const total = items.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
-    const paid = items.filter(item => item.status === 'paid').length;
-    const pending = items.filter(item => item.status === 'pending' || item.status === 'sent').length;
-    const overdue = items.filter(item => item.status === 'overdue').length;
-    const draftCount = items.filter(item => item.status === 'draft').length;
-
-    setStats({
-      total,
-      paid,
-      pending,
-      overdue,
-      draftCount
-    });
-  };
+    // Cleanup subscription on unmount
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [calculateStats]);
 
   // Export invoice data to CSV
-  const handleExportData = () => {
+  const handleExportData = useCallback(() => {
     if (invoices.length === 0) return;
 
-    // Convert data to CSV
     const headers = [
       "Invoice Number",
       "Customer",
@@ -259,15 +372,11 @@ export default function Page() {
       item.status || ""
     ]);
 
-    // Create CSV content
     let csvContent = headers.join(",") + "\n";
     csvData.forEach(row => {
-      // Escape fields with commas or quotes
       const escapedRow = row.map(field => {
-        // Convert to string
         const str = String(field);
         if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          // Escape double quotes with double quotes
           return `"${str.replace(/"/g, '""')}"`;
         }
         return str;
@@ -275,7 +384,6 @@ export default function Page() {
       csvContent += escapedRow.join(",") + "\n";
     });
 
-    // Download the CSV file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -284,18 +392,36 @@ export default function Page() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [invoices]);
 
   // Handle filter changes
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-    applyFilters(invoices, newFilters);
-  };
+  const handleFilterChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  // Handle search
+  const handleSearch = useCallback((e) => {
+    setFilters(prev => ({ ...prev, search: e.target.value }));
+  }, []);
+
+  // Reset filters
+  const resetFilters = useCallback(() => {
+    setFilters({
+      status: "all",
+      dateRange: "all",
+      search: "",
+      sortBy: "invoice_date",
+      sortDirection: "desc"
+    });
+  }, []);
 
   // Handle marking invoice as paid
   const handleMarkAsPaid = async (invoiceId) => {
     try {
-      setIsSubmitting(true);
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice || invoice.status?.toLowerCase() === 'paid') return;
+
       await recordPayment(invoiceId, { status: "paid", payment_date: new Date().toISOString() });
 
       // Update local state
@@ -304,13 +430,10 @@ export default function Page() {
       );
 
       setInvoices(updatedInvoices);
-      applyFilters(updatedInvoices, filters);
       calculateStats(updatedInvoices);
-
-      setIsSubmitting(false);
+      setMessage({ type: 'success', text: 'Invoice marked as paid successfully' });
     } catch (error) {
-      console.error("Error marking invoice as paid:", error);
-      setIsSubmitting(false);
+      setMessage({ type: 'error', text: getUserFriendlyError(error) });
     }
   };
 
@@ -321,32 +444,26 @@ export default function Page() {
   };
 
   // Confirm delete invoice
-  const confirmDeleteInvoice = async () => {
+  const confirmDeleteInvoice = async (deleteAssociatedLoad = false) => {
     if (!currentInvoice) return;
 
     try {
       setIsDeleting(true);
-      await deleteInvoice(currentInvoice.id);
+      await deleteInvoice(currentInvoice.id, deleteAssociatedLoad);
 
       // Update local state
       const updatedInvoices = invoices.filter(inv => inv.id !== currentInvoice.id);
       setInvoices(updatedInvoices);
-      applyFilters(updatedInvoices, filters);
       calculateStats(updatedInvoices);
 
       setDeleteModalOpen(false);
       setCurrentInvoice(null);
-      setIsDeleting(false);
+      setMessage({ type: 'success', text: 'Invoice deleted successfully' });
     } catch (error) {
-      console.error("Error deleting invoice:", error);
+      setMessage({ type: 'error', text: getUserFriendlyError(error) });
+    } finally {
       setIsDeleting(false);
     }
-  };
-
-  // Handle sending invoice via email
-  const handleEmailInvoice = (invoice) => {
-    setCurrentInvoice(invoice);
-    setEmailModalOpen(true);
   };
 
   // Navigate to invoice detail page
@@ -356,23 +473,70 @@ export default function Page() {
 
   // Format currency
   const formatCurrency = (amount) => {
-    return `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Get status badge styling
+  const getStatusBadge = useCallback((status) => {
+    const statusLower = status?.toLowerCase() || '';
+    switch (statusLower) {
+      case 'paid':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'pending':
+      case 'sent':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      case 'overdue':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      default:
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+    }
+  }, []);
+
+  // Get days until due or overdue
+  const getDaysInfo = (dueDate, status) => {
+    if (!dueDate) return null;
+    const due = new Date(dueDate);
+    const today = new Date();
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (status === 'overdue' || diffDays < 0) {
+      return { text: `${Math.abs(diffDays)} days overdue`, isOverdue: true };
+    } else if (diffDays === 0) {
+      return { text: 'Due today', isOverdue: false };
+    } else if (diffDays <= 7) {
+      return { text: `Due in ${diffDays} days`, isOverdue: false };
+    }
+    return null;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw size={32} className="animate-spin text-blue-500" />
-      </div>
+      <DashboardLayout activePage="invoices">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto">
+            {/* Header skeleton */}
+            <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
+              <div className="animate-pulse">
+                <div className="h-8 bg-white/20 rounded w-64 mb-2"></div>
+                <div className="h-4 bg-white/20 rounded w-96"></div>
+              </div>
+            </div>
+            <LoadingSkeleton />
+          </div>
+        </main>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout activePage="invoices">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
-          {/* Header with background */}
-          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-400 rounded-xl shadow-md p-6 text-white">
+          {/* Header with gradient */}
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
                 <h1 className="text-3xl font-bold mb-1">Invoice Management</h1>
@@ -388,7 +552,7 @@ export default function Page() {
                 </Link>
                 <button
                   onClick={handleExportData}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors shadow-sm flex items-center font-medium"
+                  className="px-4 py-2 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center font-medium"
                   disabled={invoices.length === 0}
                 >
                   <Download size={18} className="mr-2" />
@@ -398,83 +562,528 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Error display */}
-          {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-              <div className="flex">
-                <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <p className="text-sm text-red-700">{error}</p>
+          {/* Operation message */}
+          <OperationMessage
+            message={message}
+            onDismiss={() => setMessage(null)}
+          />
+
+          {/* Statistics */}
+          <InvoiceStatsComponent stats={stats} formatCurrency={formatCurrency} />
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1">
+              {/* Payments Due Soon Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <Clock size={18} className="mr-2" />
+                    Payments Due Soon
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {upcomingPayments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
+                      <p>No payments due soon</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingPayments.map(invoice => {
+                        const daysInfo = getDaysInfo(invoice.due_date, invoice.status);
+                        return (
+                          <div
+                            key={invoice.id}
+                            className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer transition-colors"
+                            onClick={() => handleViewInvoice(invoice.id)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{invoice.customer}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">#{invoice.invoice_number}</p>
+                              </div>
+                              <div className="text-right ml-2">
+                                <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{formatCurrency(invoice.total)}</p>
+                                {daysInfo && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    daysInfo.text === 'Due today'
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                      : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                                  }`}>
+                                    {daysInfo.text}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
+                        <button
+                          onClick={() => setFilters({ ...filters, status: 'pending' })}
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
+                        >
+                          View all pending invoices
+                          <ArrowRight size={14} className="ml-1" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Overdue Invoices Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-red-500 dark:bg-red-600 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <AlertCircle size={18} className="mr-2" />
+                    Overdue Invoices
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {overdueInvoices.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
+                      <p>No overdue invoices</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {overdueInvoices.map(invoice => {
+                        const daysInfo = getDaysInfo(invoice.due_date, invoice.status);
+                        return (
+                          <div
+                            key={invoice.id}
+                            className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors"
+                            onClick={() => handleViewInvoice(invoice.id)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{invoice.customer}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">#{invoice.invoice_number}</p>
+                              </div>
+                              <div className="text-right ml-2">
+                                <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{formatCurrency(invoice.total)}</p>
+                                {daysInfo && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                    {daysInfo.text}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
+                        <button
+                          onClick={() => setFilters({ ...filters, status: 'overdue' })}
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
+                        >
+                          View all overdue invoices
+                          <ArrowRight size={14} className="ml-1" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white">
+                  <h3 className="font-semibold flex items-center">
+                    <FileText size={18} className="mr-2" />
+                    Quick Actions
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <Link
+                    href="/dashboard/invoices/new"
+                    className="mb-3 p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
+                  >
+                    <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                      <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Create Invoice</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setFilters({ ...filters, status: 'pending' })}
+                    className="mb-3 p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
+                  >
+                    <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                      <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Record Payment</span>
+                  </button>
+
+                  <button
+                    onClick={() => setFilters({ ...filters, status: 'draft' })}
+                    className="mb-3 p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
+                  >
+                    <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                      <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Draft Invoices</span>
+                  </button>
+
+                  <button
+                    onClick={handleExportData}
+                    className="p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
+                    disabled={invoices.length === 0}
+                  >
+                    <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                      <Download className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Export Invoices</span>
+                  </button>
+
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
+                    <Link
+                      href="/dashboard/invoices/new"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
+                    >
+                      Create new invoice
+                      <Plus size={14} className="ml-1" />
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Stats row */}
-          <div className="mb-6">
-            <InvoiceStatsComponent stats={stats} formatCurrency={formatCurrency} />
-          </div>
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Filters */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Search Input */}
+                  <div className="flex-1 relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={filters.search}
+                      onChange={handleSearch}
+                      placeholder="Search by invoice #, customer, or description..."
+                      className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    />
+                    {filters.search && (
+                      <button
+                        onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
 
-          {/* Main content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2">
-              {/* Filters component */}
-              <InvoiceListComponent
-                invoices={filteredInvoices}
-                filters={filters}
-                setFilters={setFilters}
-                onApplyFilters={handleFilterChange}
-                handleViewInvoice={handleViewInvoice}
-                handleMarkAsPaid={handleMarkAsPaid}
-                handleDeleteInvoice={handleDeleteInvoice}
-                loading={loading}
-              />
-            </div>
-            <div className="space-y-6">
-              <QuickActionsComponent
-                onCreateInvoice={() => window.location.href = '/dashboard/invoices/new'}
-                onExportData={handleExportData}
-              />
-              <OverdueInvoicesComponent
-                invoices={invoices.filter(inv => inv.status === 'overdue')}
-                onViewInvoice={handleViewInvoice}
-              />
-              <PaymentDueSoonComponent
-                invoices={invoices.filter(inv => {
-                  if (inv.status !== 'pending' && inv.status !== 'sent') return false;
-                  if (!inv.due_date) return false;
+                  {/* Filter Dropdowns */}
+                  <div className="flex flex-wrap gap-3">
+                    <select
+                      name="status"
+                      value={filters.status}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="paid">Paid</option>
+                      <option value="pending">Pending</option>
+                      <option value="overdue">Overdue</option>
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                    </select>
 
-                  const today = new Date();
-                  const dueDate = new Date(inv.due_date);
-                  const differenceInTime = dueDate - today;
-                  const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+                    <select
+                      name="dateRange"
+                      value={filters.dateRange}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
+                    >
+                      <option value="all">All Time</option>
+                      <option value="last30">Last 30 Days</option>
+                      <option value="last90">Last 90 Days</option>
+                      <option value="thisMonth">This Month</option>
+                      <option value="lastMonth">Last Month</option>
+                      <option value="thisYear">This Year</option>
+                    </select>
 
-                  return differenceInDays >= 0 && differenceInDays <= 7;
-                })}
-                onViewInvoice={handleViewInvoice}
-              />
+                    <select
+                      name="sortBy"
+                      value={filters.sortBy}
+                      onChange={handleFilterChange}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[130px] transition-colors"
+                    >
+                      <option value="invoice_date">Invoice Date</option>
+                      <option value="due_date">Due Date</option>
+                      <option value="total">Amount</option>
+                      <option value="customer">Customer</option>
+                      <option value="status">Status</option>
+                    </select>
+
+                    {/* Reset Filters Button */}
+                    <button
+                      onClick={resetFilters}
+                      className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Reset Filters"
+                      disabled={
+                        filters.status === "all" &&
+                        filters.dateRange === "all" &&
+                        filters.search === "" &&
+                        filters.sortBy === "invoice_date"
+                      }
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Invoice Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200">Invoice Records</h3>
+                  <Link
+                    href="/dashboard/invoices/new"
+                    className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Add New
+                  </Link>
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                      <tr>
+                        <th scope="col" className="w-[20%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Invoice
+                        </th>
+                        <th scope="col" className="w-[20%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Customer
+                        </th>
+                        <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Invoice Date
+                        </th>
+                        <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Due Date
+                        </th>
+                        <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th scope="col" className="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="w-[14%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedData.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="px-6 py-12 text-center">
+                            {invoices.length === 0 ? (
+                              <div className="max-w-sm mx-auto">
+                                <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                                  <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No invoices yet</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">Create your first invoice to start tracking payments.</p>
+                                <Link
+                                  href="/dashboard/invoices/new"
+                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                                >
+                                  <Plus size={16} className="mr-2" />
+                                  Create Invoice
+                                </Link>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">No invoices match your current filters</p>
+                                <button
+                                  onClick={resetFilters}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                >
+                                  <RefreshCw size={14} className="mr-1" />
+                                  Reset Filters
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedData.map(invoice => (
+                          <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => handleViewInvoice(invoice.id)}
+                                className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate block max-w-full text-left"
+                                title={`Invoice #${invoice.invoice_number}`}
+                              >
+                                #{invoice.invoice_number}
+                              </button>
+                            </td>
+                            <td className="text-gray-900 dark:text-gray-100 px-4 py-3">
+                              <span className="truncate block" title={invoice.customer}>{invoice.customer}</span>
+                            </td>
+                            <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
+                              {invoice.invoice_date ? formatDateForDisplayMMDDYYYY(invoice.invoice_date) : '-'}
+                            </td>
+                            <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
+                              {invoice.due_date ? formatDateForDisplayMMDDYYYY(invoice.due_date) : '-'}
+                            </td>
+                            <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm font-medium">
+                              {formatCurrency(invoice.total)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadge(invoice.status)}`}>
+                                {invoice.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center space-x-1">
+                                <button
+                                  onClick={() => handleViewInvoice(invoice.id)}
+                                  className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                  title="View"
+                                >
+                                  <Eye size={16} />
+                                </button>
+                                {invoice.status?.toLowerCase() !== 'paid' && (
+                                  <button
+                                    onClick={() => handleMarkAsPaid(invoice.id)}
+                                    className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                                    title="Mark as Paid"
+                                  >
+                                    <DollarSign size={16} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteInvoice(invoice)}
+                                  className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden p-4 space-y-4">
+                  {paginatedData.length === 0 ? (
+                    invoices.length === 0 ? (
+                      <EmptyState
+                        icon={FileText}
+                        title="No invoices yet"
+                        description="Create your first invoice to start tracking payments."
+                        action={{
+                          label: 'Create Invoice',
+                          onClick: () => window.location.href = '/dashboard/invoices/new',
+                          icon: Plus
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">No invoices match your current filters</p>
+                        <button
+                          onClick={resetFilters}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        >
+                          <RefreshCw size={14} className="mr-2" />
+                          Reset Filters
+                        </button>
+                      </div>
+                    )
+                  ) : (
+                    paginatedData.map(invoice => (
+                      <div
+                        key={invoice.id}
+                        className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <button
+                            onClick={() => handleViewInvoice(invoice.id)}
+                            className="font-medium text-blue-600 dark:text-blue-400 hover:underline text-left"
+                          >
+                            #{invoice.invoice_number}
+                          </button>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadge(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                          <p><span className="font-medium">Customer:</span> {invoice.customer}</p>
+                          <p><span className="font-medium">Amount:</span> {formatCurrency(invoice.total)}</p>
+                          <p><span className="font-medium">Invoice Date:</span> {invoice.invoice_date ? formatDateForDisplayMMDDYYYY(invoice.invoice_date) : '-'}</p>
+                          <p><span className="font-medium">Due Date:</span> {invoice.due_date ? formatDateForDisplayMMDDYYYY(invoice.due_date) : '-'}</p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
+                          <button
+                            onClick={() => handleViewInvoice(invoice.id)}
+                            className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          {invoice.status?.toLowerCase() !== 'paid' && (
+                            <button
+                              onClick={() => handleMarkAsPaid(invoice.id)}
+                              className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"
+                            >
+                              <DollarSign size={18} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Pagination */}
+                {filteredInvoices.length > 0 && (
+                  <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageNumbers={pageNumbers}
+                      onPageChange={goToPage}
+                      hasNextPage={hasNextPage}
+                      hasPrevPage={hasPrevPage}
+                      showingText={showingText}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Delete confirmation modal */}
-      {deleteModalOpen && (
+        {/* Delete confirmation modal */}
         <DeleteInvoiceModal
           isOpen={deleteModalOpen}
-          onClose={() => setDeleteModalOpen(false)}
+          onClose={() => {
+            setDeleteModalOpen(false);
+            setCurrentInvoice(null);
+          }}
           onConfirm={confirmDeleteInvoice}
           invoice={currentInvoice}
           isDeleting={isDeleting}
         />
-      )}
-
-      {/* Email invoice modal */}
-      {emailModalOpen && (
-        <EmailInvoiceModal
-          isOpen={emailModalOpen}
-          onClose={() => setEmailModalOpen(false)}
-          invoice={currentInvoice}
-        />
-      )}
+      </main>
     </DashboardLayout>
   );
 }

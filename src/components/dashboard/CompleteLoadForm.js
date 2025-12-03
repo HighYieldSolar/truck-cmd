@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 import { recordFactoredEarnings } from "@/lib/services/earningsService";
+import { createInvoiceFromLoad } from "@/lib/services/loadInvoiceService";
 
 // Helper to persist form data to localStorage
 const saveFormToStorage = (formData, loadId) => {
@@ -663,9 +664,25 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           console.error("Error recording factored earnings:", factoringError);
         }
       } else if (formData.generateInvoice) {
-        // Generate invoice logic here
-        // Make sure to use currentUserId if needed
-        invoiceCreated = true;
+        // Generate invoice from the completed load
+        try {
+          const invoice = await createInvoiceFromLoad(currentUserId, loadId, {
+            markAsPaid: formData.markPaid,
+            dueInDays: 15,
+            invoiceDate: formData.deliveryDate || new Date().toISOString().split('T')[0],
+            notes: `Invoice for Load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`
+          });
+
+          if (invoice) {
+            console.log("Invoice created successfully:", invoice.id, invoice.invoice_number);
+            invoiceCreated = true;
+          }
+        } catch (invoiceError) {
+          console.error("Error generating invoice:", invoiceError);
+          // Continue with the completion process even if invoice generation fails
+          // but notify the user
+          setError(`Load completed but invoice generation failed: ${invoiceError.message}`);
+        }
       }
 
       // Clear form data

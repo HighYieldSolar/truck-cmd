@@ -5,85 +5,102 @@ import { FileText, CheckCircle, Clock, AlertCircle, PenTool } from "lucide-react
 export default function InvoiceStatsComponent({ stats, formatCurrency }) {
   // Format currency if not provided externally
   const formatCurrencyFn = formatCurrency || ((amount) => {
-    return `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   });
+
+  const statCards = [
+    {
+      label: "Total Value",
+      value: formatCurrencyFn(stats.total),
+      icon: FileText,
+      iconBg: "bg-blue-100 dark:bg-blue-900/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      valueColor: "text-gray-900 dark:text-gray-100",
+      borderColor: "border-l-blue-500 dark:border-l-blue-500",
+      footerBg: "bg-blue-50 dark:bg-blue-900/20",
+      footerText: "text-gray-600 dark:text-gray-400",
+      description: `All invoices (${stats.paid + stats.pending + stats.overdue + stats.draftCount})`
+    },
+    {
+      label: "Paid",
+      value: stats.paid,
+      icon: CheckCircle,
+      iconBg: "bg-green-100 dark:bg-green-900/40",
+      iconColor: "text-green-600 dark:text-green-400",
+      valueColor: "text-gray-900 dark:text-gray-100",
+      borderColor: "border-l-green-500 dark:border-l-green-500",
+      footerBg: "bg-green-50 dark:bg-green-900/20",
+      footerText: "text-gray-600 dark:text-gray-400",
+      description: "Completed invoices"
+    },
+    {
+      label: "Pending",
+      value: stats.pending,
+      icon: Clock,
+      iconBg: "bg-orange-100 dark:bg-orange-900/40",
+      iconColor: "text-orange-600 dark:text-orange-400",
+      valueColor: "text-gray-900 dark:text-gray-100",
+      borderColor: "border-l-orange-500 dark:border-l-orange-500",
+      footerBg: "bg-orange-50 dark:bg-orange-900/20",
+      footerText: "text-gray-600 dark:text-gray-400",
+      description: "Awaiting payment"
+    },
+    {
+      label: "Overdue",
+      value: stats.overdue,
+      icon: AlertCircle,
+      iconBg: "bg-red-100 dark:bg-red-900/40",
+      iconColor: "text-red-600 dark:text-red-400",
+      valueColor: "text-gray-900 dark:text-gray-100",
+      borderColor: "border-l-red-500 dark:border-l-red-500",
+      footerBg: "bg-red-50 dark:bg-red-900/20",
+      footerText: "text-gray-600 dark:text-gray-400",
+      description: "Past due date"
+    },
+    {
+      label: "Draft",
+      value: stats.draftCount,
+      icon: PenTool,
+      iconBg: "bg-purple-100 dark:bg-purple-900/40",
+      iconColor: "text-purple-600 dark:text-purple-400",
+      valueColor: "text-gray-900 dark:text-gray-100",
+      borderColor: "border-l-purple-500 dark:border-l-purple-500",
+      footerBg: "bg-purple-50 dark:bg-purple-900/20",
+      footerText: "text-gray-600 dark:text-gray-400",
+      description: "Not yet sent"
+    }
+  ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total Value</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrencyFn(stats.total)}</p>
+      {statCards.map((card, index) => {
+        const Icon = card.icon;
+        return (
+          <div
+            key={index}
+            className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 border-l-4 ${card.borderColor} hover:shadow-md transition-all`}
+          >
+            <div className="flex items-center justify-between p-4">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">
+                  {card.label}
+                </p>
+                <p className={`text-2xl font-bold mt-1 ${card.valueColor}`}>
+                  {card.value}
+                </p>
+              </div>
+              <div className={`p-3 rounded-xl ${card.iconBg}`}>
+                <Icon size={20} className={card.iconColor} />
+              </div>
+            </div>
+            <div className={`px-4 py-2 ${card.footerBg} border-t border-gray-100 dark:border-gray-700`}>
+              <span className={`text-xs ${card.footerText}`}>
+                {card.description}
+              </span>
+            </div>
           </div>
-          <div className="bg-blue-100 p-3 rounded-xl">
-            <FileText size={20} className="text-blue-600" />
-          </div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">All invoices ({stats.paid + stats.pending + stats.overdue + stats.draftCount})</span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Paid</p>
-            <p className="text-2xl font-bold text-green-600 mt-1">{stats.paid}</p>
-          </div>
-          <div className="bg-green-100 p-3 rounded-xl">
-            <CheckCircle size={20} className="text-green-600" />
-          </div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Completed invoices</span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Pending</p>
-            <p className="text-2xl font-bold text-orange-500 mt-1">{stats.pending}</p>
-          </div>
-          <div className="bg-orange-100 p-3 rounded-xl">
-            <Clock size={20} className="text-orange-600" />
-          </div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Awaiting payment</span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Overdue</p>
-            <p className="text-2xl font-bold text-red-600 mt-1">{stats.overdue}</p>
-          </div>
-          <div className="bg-red-100 p-3 rounded-xl">
-            <AlertCircle size={20} className="text-red-600" />
-          </div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Past due date</span>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Draft</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{stats.draftCount}</p>
-          </div>
-          <div className="bg-purple-100 p-3 rounded-xl">
-            <PenTool size={20} className="text-purple-600" />
-          </div>
-        </div>
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Not yet sent</span>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
-} 
+}

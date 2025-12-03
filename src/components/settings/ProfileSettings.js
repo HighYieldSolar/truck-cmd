@@ -16,12 +16,39 @@ export default function ProfileSettings() {
     jobFunction: "",
     personalPreferences: "",
     phone: "",
-    companyName: ""
+    companyName: "",
+    address: "",
+    city: "",
+    state: "",
+    zip: ""
   });
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Format phone number to (555) 555-5555 format
+  const formatPhoneNumber = (value) => {
+    if (!value) return "";
+
+    // Remove all non-digit characters
+    const phoneNumber = value.replace(/\D/g, '');
+
+    // Format based on length
+    if (phoneNumber.length === 0) return "";
+    if (phoneNumber.length <= 3) return `(${phoneNumber}`;
+    if (phoneNumber.length <= 6) return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+  };
+
+  // Handle phone input with formatting
+  const handlePhoneChange = (e) => {
+    const formattedPhone = formatPhoneNumber(e.target.value);
+    setProfile(prev => ({
+      ...prev,
+      phone: formattedPhone
+    }));
+  };
 
   // Load user data
   useEffect(() => {
@@ -58,8 +85,12 @@ export default function ProfileSettings() {
           preferredName: user.user_metadata?.preferred_name || "",
           jobFunction: user.user_metadata?.job_function || "",
           personalPreferences: user.user_metadata?.personal_preferences || "",
-          phone: userData?.phone || "",
-          companyName: userData?.company_name || ""
+          phone: formatPhoneNumber(userData?.phone || ""),
+          companyName: userData?.company_name || "",
+          address: userData?.address || "",
+          city: userData?.city || "",
+          state: userData?.state || "",
+          zip: userData?.zip || ""
         });
 
         setProfileImage(userData?.avatar_url || user.user_metadata?.profile_image || null);
@@ -192,13 +223,18 @@ export default function ProfileSettings() {
 
       if (authError) throw authError;
 
-      // Update users table
+      // Update users table - store phone as digits only for consistency
+      const rawPhone = profile.phone.replace(/\D/g, '');
       const { error: dbError } = await supabase
         .from('users')
         .update({
           full_name: profile.fullName,
-          phone: profile.phone,
+          phone: rawPhone,
           company_name: profile.companyName,
+          address: profile.address,
+          city: profile.city,
+          state: profile.state,
+          zip: profile.zip,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -349,9 +385,10 @@ export default function ProfileSettings() {
                 id="phone"
                 name="phone"
                 value={profile.phone}
-                onChange={handleChange}
+                onChange={handlePhoneChange}
+                maxLength={14}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="Your phone number"
+                placeholder="(555) 555-5555"
               />
             </div>
 
@@ -406,6 +443,128 @@ export default function ProfileSettings() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="e.g. preferred communication times, special requirements, etc."
             ></textarea>
+          </div>
+        </div>
+
+        {/* Business Address */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-green-600 to-green-500 dark:from-green-700 dark:to-green-600 rounded-lg shadow-sm p-4 mb-4">
+            <h3 className="text-lg font-medium text-white">Business Address</h3>
+            <p className="text-green-100 text-sm">This address will appear on your invoices</p>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="address">
+              Street Address
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={profile.address}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+              placeholder="123 Main Street"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="city">
+                City
+              </label>
+              <input
+                type="text"
+                id="city"
+                name="city"
+                value={profile.city}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="City"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="state">
+                State
+              </label>
+              <select
+                id="state"
+                name="state"
+                value={profile.state}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Select State</option>
+                <option value="AL">Alabama</option>
+                <option value="AK">Alaska</option>
+                <option value="AZ">Arizona</option>
+                <option value="AR">Arkansas</option>
+                <option value="CA">California</option>
+                <option value="CO">Colorado</option>
+                <option value="CT">Connecticut</option>
+                <option value="DE">Delaware</option>
+                <option value="FL">Florida</option>
+                <option value="GA">Georgia</option>
+                <option value="HI">Hawaii</option>
+                <option value="ID">Idaho</option>
+                <option value="IL">Illinois</option>
+                <option value="IN">Indiana</option>
+                <option value="IA">Iowa</option>
+                <option value="KS">Kansas</option>
+                <option value="KY">Kentucky</option>
+                <option value="LA">Louisiana</option>
+                <option value="ME">Maine</option>
+                <option value="MD">Maryland</option>
+                <option value="MA">Massachusetts</option>
+                <option value="MI">Michigan</option>
+                <option value="MN">Minnesota</option>
+                <option value="MS">Mississippi</option>
+                <option value="MO">Missouri</option>
+                <option value="MT">Montana</option>
+                <option value="NE">Nebraska</option>
+                <option value="NV">Nevada</option>
+                <option value="NH">New Hampshire</option>
+                <option value="NJ">New Jersey</option>
+                <option value="NM">New Mexico</option>
+                <option value="NY">New York</option>
+                <option value="NC">North Carolina</option>
+                <option value="ND">North Dakota</option>
+                <option value="OH">Ohio</option>
+                <option value="OK">Oklahoma</option>
+                <option value="OR">Oregon</option>
+                <option value="PA">Pennsylvania</option>
+                <option value="RI">Rhode Island</option>
+                <option value="SC">South Carolina</option>
+                <option value="SD">South Dakota</option>
+                <option value="TN">Tennessee</option>
+                <option value="TX">Texas</option>
+                <option value="UT">Utah</option>
+                <option value="VT">Vermont</option>
+                <option value="VA">Virginia</option>
+                <option value="WA">Washington</option>
+                <option value="WV">West Virginia</option>
+                <option value="WI">Wisconsin</option>
+                <option value="WY">Wyoming</option>
+                <option value="DC">District of Columbia</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="zip">
+                ZIP Code
+              </label>
+              <input
+                type="text"
+                id="zip"
+                name="zip"
+                value={profile.zip}
+                onChange={handleChange}
+                maxLength={10}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="12345"
+              />
+            </div>
           </div>
         </div>
 

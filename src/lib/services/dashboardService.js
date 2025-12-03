@@ -61,35 +61,35 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
         break;
         
       case 'all':
-        // All time - no date filtering
+        // All time - no date filtering, use far future date to capture everything
         startDate = '1900-01-01'; // Far back start date
-        endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
+        endDate = '2099-12-31'; // Far future end date to capture all data
+
         // For comparison, use data from 30 days ago to yesterday
         const thirtyDaysAgo = new Date(now);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        
+
         previousStartDate = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
         previousEndDate = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
         break;
         
       default: // 'month'
-        // Current month - first day of current month
+        // Current month - first day to last day of current month
         const year = now.getFullYear();
         const month = now.getMonth();
-        const day = now.getDate();
-        
-        // Format dates as YYYY-MM-DD in local timezone
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+        // Format dates as YYYY-MM-DD - use full month to handle timezone differences
         startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-        endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
+        endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+
         // Previous month for comparison
         const prevMonth = month === 0 ? 11 : month - 1;
         const prevYear = month === 0 ? year - 1 : year;
         const lastDayPrevMonth = new Date(year, month, 0).getDate();
-        
+
         previousStartDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
         previousEndDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(lastDayPrevMonth).padStart(2, '0')}`;
         break;
@@ -113,13 +113,14 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
       upcomingDeliveriesResult
     ] = await Promise.all([
       // Current period completed loads (main source of earnings)
+      // Use completed_at for filtering since that's when revenue is recognized
       supabase
         .from('loads')
-        .select('id, rate, final_rate, factored, factoring_company, delivery_date, load_number, customer')
+        .select('id, rate, final_rate, factored, factoring_company, delivery_date, load_number, customer, completed_at')
         .eq('user_id', userId)
         .eq('status', 'Completed')
-        .gte('delivery_date', startDate)
-        .lte('delivery_date', endDate),
+        .gte('completed_at', startDate)
+        .lte('completed_at', endDate + 'T23:59:59'),
         
       // Current period standalone invoices (NOT linked to loads to avoid double counting)
       supabase
@@ -133,11 +134,11 @@ export async function fetchDashboardStats(userId, dateRange = 'month') {
       // Previous period completed loads
       supabase
         .from('loads')
-        .select('rate, final_rate, factored')
+        .select('rate, final_rate, factored, completed_at')
         .eq('user_id', userId)
         .eq('status', 'Completed')
-        .gte('delivery_date', previousStartDate)
-        .lte('delivery_date', previousEndDate),
+        .gte('completed_at', previousStartDate)
+        .lte('completed_at', previousEndDate + 'T23:59:59'),
       
       // Previous period standalone invoices
       supabase
