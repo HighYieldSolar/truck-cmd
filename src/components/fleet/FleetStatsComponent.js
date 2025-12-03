@@ -5,82 +5,98 @@ import {
   Activity,
   FileCog,
   AlertTriangle,
-  Users,
-  ArrowUpRight,
-  ArrowDownRight
+  Users
 } from "lucide-react";
 
-// Stat Card Component
-const StatCard = ({ title, value, icon, color, change, changeType, changeText }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
-        <div>
-          <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className={`bg-${color}-100 p-3 rounded-xl`}>
-          {icon}
-        </div>
-      </div>
-      <div className="px-4 py-2 bg-gray-50">
-        {change ? (
-          <div className="flex items-center">
-            {changeType === 'increase' ? (
-              <ArrowUpRight size={14} className={changeType === 'positive' ? 'text-green-500' : 'text-red-500'} />
-            ) : (
-              <ArrowDownRight size={14} className={changeType === 'positive' ? 'text-green-500' : 'text-red-500'} />
-            )}
-            <span className={`text-xs ml-1 ${
-              changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {change} {changeText || ''}
-            </span>
-          </div>
-        ) : (
-          <span className="text-xs text-gray-500">Fleet status overview</span>
-        )}
-      </div>
-    </div>
-  );
-};
-
 export default function FleetStatsComponent({ truckStats, driverStats }) {
+  // Calculate utilization rate
+  const utilizationRate = truckStats.total > 0
+    ? Math.round((truckStats.active / truckStats.total) * 100)
+    : 0;
+
+  const statCards = [
+    {
+      label: "Total Vehicles",
+      value: truckStats.total,
+      icon: Truck,
+      iconBg: "bg-blue-100 dark:bg-blue-900/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      borderColor: "border-l-blue-500 dark:border-l-blue-500",
+      footerBg: "bg-blue-50 dark:bg-blue-900/20",
+      description: "All vehicles in fleet"
+    },
+    {
+      label: "Active Vehicles",
+      value: truckStats.active,
+      icon: Activity,
+      iconBg: "bg-green-100 dark:bg-green-900/40",
+      iconColor: "text-green-600 dark:text-green-400",
+      borderColor: "border-l-green-500 dark:border-l-green-500",
+      footerBg: "bg-green-50 dark:bg-green-900/20",
+      description: `${utilizationRate}% utilization rate`
+    },
+    {
+      label: "In Maintenance",
+      value: truckStats.maintenance,
+      icon: FileCog,
+      iconBg: "bg-orange-100 dark:bg-orange-900/40",
+      iconColor: "text-orange-600 dark:text-orange-400",
+      borderColor: "border-l-orange-500 dark:border-l-orange-500",
+      footerBg: "bg-orange-50 dark:bg-orange-900/20",
+      description: "Being serviced"
+    },
+    {
+      label: "Out of Service",
+      value: truckStats.outOfService,
+      icon: AlertTriangle,
+      iconBg: "bg-red-100 dark:bg-red-900/40",
+      iconColor: "text-red-600 dark:text-red-400",
+      borderColor: "border-l-red-500 dark:border-l-red-500",
+      footerBg: "bg-red-50 dark:bg-red-900/20",
+      description: "Needs attention"
+    },
+    {
+      label: "Total Drivers",
+      value: driverStats.total,
+      icon: Users,
+      iconBg: "bg-purple-100 dark:bg-purple-900/40",
+      iconColor: "text-purple-600 dark:text-purple-400",
+      borderColor: "border-l-purple-500 dark:border-l-purple-500",
+      footerBg: "bg-purple-50 dark:bg-purple-900/20",
+      description: "All registered drivers"
+    }
+  ];
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-      <StatCard
-        title="Total Vehicles"
-        value={truckStats.total}
-        icon={<Truck size={20} className="text-blue-600" />}
-        color="blue"
-      />
-      <StatCard
-        title="Active Vehicles"
-        value={truckStats.active}
-        icon={<Activity size={20} className="text-green-600" />}
-        color="green"
-        change={truckStats.active > 0 && truckStats.total > 0 ? `${Math.round((truckStats.active / truckStats.total) * 100)}%` : "0%"}
-        changeType="positive"
-        changeText="utilization rate"
-      />
-      <StatCard
-        title="In Maintenance"
-        value={truckStats.maintenance}
-        icon={<FileCog size={20} className="text-yellow-600" />}
-        color="yellow"
-      />
-      <StatCard
-        title="Out of Service"
-        value={truckStats.outOfService}
-        icon={<AlertTriangle size={20} className="text-red-600" />}
-        color="red"
-      />
-      <StatCard
-        title="Total Drivers"
-        value={driverStats.total}
-        icon={<Users size={20} className="text-purple-600" />}
-        color="purple"
-      />
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+      {statCards.map((card, index) => {
+        const Icon = card.icon;
+        return (
+          <div
+            key={index}
+            className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 border-l-4 ${card.borderColor} hover:shadow-md transition-all`}
+          >
+            <div className="flex items-center justify-between p-4">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">
+                  {card.label}
+                </p>
+                <p className="text-2xl font-bold mt-1 text-gray-900 dark:text-gray-100">
+                  {card.value}
+                </p>
+              </div>
+              <div className={`p-3 rounded-xl ${card.iconBg}`}>
+                <Icon size={20} className={card.iconColor} />
+              </div>
+            </div>
+            <div className={`px-4 py-2 ${card.footerBg} border-t border-gray-100 dark:border-gray-700`}>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {card.description}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

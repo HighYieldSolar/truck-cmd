@@ -2,14 +2,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, CheckCircle, Upload, Calendar, Truck, Tag, Hash, FileText, Wrench, Fuel, MapPin } from "lucide-react";
+import {
+  X,
+  AlertCircle,
+  CheckCircle,
+  Upload,
+  Calendar,
+  Truck,
+  Tag,
+  Hash,
+  FileText,
+  Wrench,
+  Fuel,
+  MapPin,
+  Loader2,
+  Settings
+} from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
-import { supabase } from "@/lib/supabaseClient";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
-import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit }) {
-  // Initialize with empty form data
   const initialFormData = {
     name: '',
     make: '',
@@ -24,32 +37,40 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     image: null,
     image_file: null,
     notes: '',
-    vehicle_id: '' // Add this field to store the vehicle_id
+    vehicle_id: ''
   };
 
-  // Generate unique form key based on whether we're editing or creating
   const formKey = truck ? `truckForm-${truck.id}` : 'truckForm-new';
-  
-  // Use the custom useLocalStorage hook
-  const [storedFormData, setStoredFormData, clearStoredFormData] = useLocalStorage(formKey, initialFormData);
-  
-  // Main form state - will be initialized from either truck data (when editing) or stored data (when creating)
+  // eslint-disable-next-line no-unused-vars
+  const [storedFormData, setStoredFormData] = useLocalStorage(formKey, initialFormData);
+
   const [formData, setFormData] = useState(initialFormData);
-  
-  // Flag to track if initial data was loaded from localStorage
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  
   const [errors, setErrors] = useState({});
+  const [tabErrors, setTabErrors] = useState({});
+  const [touchedTabs, setTouchedTabs] = useState({ basic: true });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(null);
-  
-  // Active tab state
+  const [submitMessage, setSubmitMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
 
-  // Load initial data: either from truck (when editing) or from localStorage (when creating)
+  // Define required fields per tab
+  const requiredFieldsByTab = {
+    basic: ['name', 'make', 'model', 'year'],
+    details: []
+  };
+
+  // Field labels for error messages
+  const fieldLabels = {
+    name: 'Vehicle Name',
+    make: 'Make',
+    model: 'Model',
+    year: 'Year'
+  };
+
+  // Load initial data
   useEffect(() => {
-    // For editing existing truck
+    if (!isOpen) return;
+
     if (truck) {
       setFormData({
         name: truck.name || '',
@@ -62,150 +83,215 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         purchase_date: truck.purchase_date || '',
         odometer: truck.odometer || '',
         fuel_type: truck.fuel_type || 'Diesel',
-        image: truck.image || null,
+        image: truck.image_url || null,
         image_file: null,
         notes: truck.notes || '',
         vehicle_id: truck.vehicle_id || ''
       });
-      
-      // Clear any saved data for new trucks to avoid confusion
       localStorage.removeItem('truckForm-new');
-    } 
-    // For creating new truck
-    else if (isOpen && !initialDataLoaded) {
-      // Check if we have valid stored data
-      const hasValidData = storedFormData && 
-        (storedFormData.name || storedFormData.make || storedFormData.model);
-        
-      if (hasValidData) {
-        setFormData(storedFormData);
+    } else if (!initialDataLoaded) {
+      // Load from localStorage only once on initial open
+      const stored = localStorage.getItem(formKey);
+      if (stored) {
+        try {
+          const parsedData = JSON.parse(stored);
+          const hasValidData = parsedData && (parsedData.name || parsedData.make || parsedData.model);
+          if (hasValidData) {
+            setFormData(parsedData);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
       }
-      
-      // Mark that we've loaded initial data
       setInitialDataLoaded(true);
     }
-    
-    // Clear error states on every modal open
-    setErrors({});
-    setSubmitError(null);
-    setSubmitSuccess(null);
-    
-  }, [truck, isOpen, initialDataLoaded, storedFormData]);
 
-  // Save form data to localStorage when specific fields change (only for new trucks)
-  // This avoids the infinite loop by not running on every formData change
+    setErrors({});
+    setTabErrors({});
+    setSubmitMessage(null);
+  }, [truck, isOpen, initialDataLoaded, formKey]);
+
   const handleSaveToLocalStorage = () => {
     if (!truck && isOpen) {
       setStoredFormData(formData);
     }
   };
 
-  // Reset initialDataLoaded when modal closes
+  // Reset on close
   useEffect(() => {
     if (!isOpen) {
       setInitialDataLoaded(false);
       setActiveTab('basic');
-      
-      // Only clear storage for new forms, keep edit forms in case user returns
+      setTabErrors({});
+      setTouchedTabs({ basic: true });
+      setErrors({});
       if (!truck) {
-        clearStoredFormData();
+        // Clear localStorage directly to avoid infinite loop
+        // (clearStoredFormData is not stable between renders)
+        localStorage.removeItem(formKey);
       }
     }
-  }, [isOpen, truck, clearStoredFormData]);
+  }, [isOpen, truck, formKey]);
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
+
     if (type === 'file' && files?.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        image_file: files[0],
-      }));
-      
-      // Create preview URL
+      setFormData(prev => ({ ...prev, image_file: files[0] }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          image: reader.result,
-        }));
+        setFormData(prev => ({ ...prev, image: reader.result }));
       };
       reader.readAsDataURL(files[0]);
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
-    
-    // Clear error when field is changed
+
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: null
-      }));
+      setErrors(prev => ({ ...prev, [name]: null }));
     }
-    
-    // Save to localStorage after a short delay to avoid constant updates
+
     setTimeout(handleSaveToLocalStorage, 500);
   };
 
-  // Validate form
-  const validateForm = () => {
+  // Validate a specific tab
+  const validateTab = (tabId, showErrors = true) => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Vehicle name is required';
+    const requiredFields = requiredFieldsByTab[tabId] || [];
+
+    // Check required fields for this tab
+    requiredFields.forEach(field => {
+      if (!formData[field] || !formData[field].toString().trim()) {
+        newErrors[field] = `${fieldLabels[field] || field} is required`;
+      }
+    });
+
+    // Additional format validations
+    if (tabId === 'basic') {
+      if (formData.year && !/^\d{4}$/.test(formData.year)) {
+        newErrors.year = 'Please enter a valid 4-digit year';
+      }
     }
-    
-    if (!formData.make.trim()) {
-      newErrors.make = 'Make is required';
+
+    if (tabId === 'details') {
+      if (formData.vin && formData.vin.length > 0 && formData.vin.length !== 17) {
+        newErrors.vin = 'VIN must be 17 characters';
+      }
+      if (formData.odometer && isNaN(formData.odometer)) {
+        newErrors.odometer = 'Odometer must be a number';
+      }
     }
-    
-    if (!formData.model.trim()) {
-      newErrors.model = 'Model is required';
+
+    if (showErrors) {
+      setErrors(prev => ({ ...prev, ...newErrors }));
+      setTabErrors(prev => ({
+        ...prev,
+        [tabId]: Object.keys(newErrors).length > 0
+      }));
     }
-    
-    if (!formData.year) {
-      newErrors.year = 'Year is required';
-    } else if (!/^\d{4}$/.test(formData.year)) {
-      newErrors.year = 'Please enter a valid 4-digit year';
-    }
-    
-    if (formData.vin && formData.vin.length > 0 && formData.vin.length !== 17) {
-      newErrors.vin = 'VIN must be 17 characters';
-    }
-    
-    if (formData.odometer && isNaN(formData.odometer)) {
-      newErrors.odometer = 'Odometer must be a number';
-    }
-    
-    setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  // Validate all tabs for final submission
+  const validateForm = () => {
+    const allErrors = {};
+    const allTabErrors = {};
+    const tabsWithErrors = [];
+
+    ['basic', 'details'].forEach(tabId => {
+      const requiredFields = requiredFieldsByTab[tabId] || [];
+
+      // Check required fields
+      requiredFields.forEach(field => {
+        if (!formData[field] || !formData[field].toString().trim()) {
+          allErrors[field] = `${fieldLabels[field] || field} is required`;
+          allTabErrors[tabId] = true;
+          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        }
+      });
+
+      // Format validations
+      if (tabId === 'basic') {
+        if (formData.year && !/^\d{4}$/.test(formData.year)) {
+          allErrors.year = 'Please enter a valid 4-digit year';
+          allTabErrors[tabId] = true;
+          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        }
+      }
+
+      if (tabId === 'details') {
+        if (formData.vin && formData.vin.length > 0 && formData.vin.length !== 17) {
+          allErrors.vin = 'VIN must be 17 characters';
+          allTabErrors[tabId] = true;
+          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        }
+        if (formData.odometer && isNaN(formData.odometer)) {
+          allErrors.odometer = 'Odometer must be a number';
+          allTabErrors[tabId] = true;
+          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        }
+      }
+    });
+
+    setErrors(allErrors);
+    setTabErrors(allTabErrors);
+    setTouchedTabs({ basic: true, details: true });
+
+    // If there are errors, navigate to the first tab with errors
+    if (tabsWithErrors.length > 0) {
+      setActiveTab(tabsWithErrors[0]);
+    }
+
+    return Object.keys(allErrors).length === 0;
+  };
+
+  // Handle tab navigation with validation
+  const handleNextTab = () => {
+    // Mark current tab as touched
+    setTouchedTabs(prev => ({ ...prev, [activeTab]: true }));
+
+    // Validate current tab before moving forward
+    if (!validateTab(activeTab)) {
+      return; // Don't navigate if validation fails
+    }
+
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex < tabs.length - 1) {
+      const nextTab = tabs[currentIndex + 1].id;
+      setActiveTab(nextTab);
+      setTouchedTabs(prev => ({ ...prev, [nextTab]: true }));
+    }
+  };
+
+  const handlePreviousTab = () => {
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1].id);
+    }
+  };
+
+  // Check if a tab is complete (all required fields filled)
+  const isTabComplete = (tabId) => {
+    const requiredFields = requiredFieldsByTab[tabId] || [];
+    return requiredFields.every(field => formData[field] && formData[field].toString().trim());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(null);
-    
+    setSubmitMessage(null);
+
     try {
-      let imageUrl = formData.image;
-      
-      // Upload image if there's a new one
+      let imageUrl = truck?.image_url || null;
+
       if (formData.image_file) {
         imageUrl = await uploadTruckImage(userId, formData.image_file);
       }
-      
-      // Prepare data for submission
+
       const truckData = {
         name: formData.name,
         make: formData.make,
@@ -214,43 +300,30 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         vin: formData.vin,
         license_plate: formData.license_plate,
         status: formData.status,
-        purchase_date: formData.purchase_date,
-        odometer: formData.odometer ? parseFloat(formData.odometer) : null,
         fuel_type: formData.fuel_type,
-        image: imageUrl,
+        image_url: imageUrl,
         notes: formData.notes,
-        vehicle_id: formData.vehicle_id, // Include the vehicle_id
       };
-      
+
       let result;
-      
+
       if (truck) {
-        // Update existing truck
         result = await updateTruck(truck.id, truckData);
       } else {
-        // Create new truck
         truckData.user_id = userId;
         truckData.created_at = new Date().toISOString();
         result = await createTruck(truckData);
       }
-      
-      setSubmitSuccess(truck ? 'Vehicle updated successfully' : 'Vehicle added successfully');
-      
-      // Call the onSubmit callback
-      if (onSubmit) {
-        await onSubmit(result);
-      }
-      
-      // Clear form data in localStorage after successful submission
-      clearStoredFormData();
-      
-      // Close modal after a short delay to show success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+
+      setSubmitMessage({ type: 'success', text: truck ? 'Vehicle updated successfully!' : 'Vehicle added successfully!' });
+      localStorage.removeItem(formKey);
+
+      if (onSubmit) await onSubmit(result);
+
+      setTimeout(() => onClose(), 1500);
     } catch (error) {
       console.error('Error saving truck:', error);
-      setSubmitError(error.message || 'Failed to save vehicle. Please try again.');
+      setSubmitMessage({ type: 'error', text: error.message || 'Failed to save vehicle. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -258,179 +331,233 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
   if (!isOpen) return null;
 
-  // Tabs for form sections
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: <Truck size={16} /> },
-    { id: 'details', label: 'Details', icon: <FileText size={16} /> }
+    { id: 'details', label: 'Details & Notes', icon: <Settings size={16} /> }
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center border-b px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white sticky top-0">
-          <h2 className="text-xl font-semibold flex items-center">
-            {truck ? (
-              <>
-                <Truck size={20} className="mr-2" />
-                Edit Vehicle: {truck.name}
-              </>
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                <Truck size={22} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">
+                  {truck ? `Edit Vehicle: ${truck.name}` : 'Add New Vehicle'}
+                </h2>
+                <p className="text-blue-100 text-sm">
+                  {truck ? 'Update vehicle information' : 'Enter vehicle details to add to your fleet'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X size={22} className="text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        {submitMessage && (
+          <div className={`mx-6 mt-4 p-4 rounded-lg flex items-start ${
+            submitMessage.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800'
+              : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800'
+          }`}>
+            {submitMessage.type === 'success' ? (
+              <CheckCircle className="h-5 w-5 text-emerald-500 mr-3 flex-shrink-0" />
             ) : (
-              <>
-                <Truck size={20} className="mr-2" />
-                Add New Vehicle
-              </>
+              <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
             )}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-white hover:bg-blue-700 rounded-full p-1"
-            disabled={isSubmitting}
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        {/* Success/Error Messages */}
-        {submitSuccess && (
-          <div className="mx-6 mt-4 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
-            <CheckCircle className="h-5 w-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-green-700">{submitSuccess}</p>
+            <p className={`text-sm ${
+              submitMessage.type === 'success'
+                ? 'text-emerald-800 dark:text-emerald-200'
+                : 'text-red-800 dark:text-red-200'
+            }`}>
+              {submitMessage.text}
+            </p>
           </div>
         )}
-        
-        {submitError && (
-          <div className="mx-6 mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
-            <AlertCircle className="h-5 w-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-700">{submitError}</p>
+
+        {/* Tab Navigation - Modern Step Indicator with Status */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-center">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-1">
+              {tabs.map((tab, index) => {
+                const hasError = touchedTabs[tab.id] && tabErrors[tab.id];
+                const isComplete = isTabComplete(tab.id) && !tabErrors[tab.id];
+                const hasRequiredFields = requiredFieldsByTab[tab.id]?.length > 0;
+
+                return (
+                  <button
+                    key={tab.id}
+                    className={`relative flex items-center px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? hasError
+                          ? 'bg-red-600 text-white shadow-md'
+                          : 'bg-blue-600 text-white shadow-md'
+                        : hasError
+                          ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                          : isComplete && hasRequiredFields
+                            ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    onClick={() => {
+                      setTouchedTabs(prev => ({ ...prev, [tab.id]: true }));
+                      setActiveTab(tab.id);
+                    }}
+                  >
+                    <span className={`flex items-center justify-center w-6 h-6 rounded-full mr-2 text-xs font-bold ${
+                      activeTab === tab.id
+                        ? 'bg-white/20'
+                        : hasError
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                          : isComplete && hasRequiredFields
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                            : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                    }`}>
+                      {hasError ? (
+                        <AlertCircle size={14} />
+                      ) : isComplete && hasRequiredFields ? (
+                        <CheckCircle size={14} />
+                      ) : (
+                        index + 1
+                      )}
+                    </span>
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.icon}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
-        
-        {/* Tab Navigation */}
-        <div className="px-6 pt-4 border-b">
-          <div className="flex space-x-4">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                className={`pb-3 px-2 font-medium text-sm flex items-center transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+
+          {/* Required Fields Legend */}
+          <div className="flex items-center justify-center mt-3 text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-red-500 mr-1">*</span>
+            <span>Required fields</span>
+            {Object.keys(tabErrors).some(k => tabErrors[k]) && (
+              <span className="ml-4 flex items-center text-red-500 dark:text-red-400">
+                <AlertCircle size={12} className="mr-1" />
+                Please complete required fields
+              </span>
+            )}
           </div>
         </div>
-        
+
         {/* Form Content */}
-        <div className="overflow-y-auto flex-1 px-6 py-4">
-          <form onSubmit={handleSubmit}>
-            {/* Basic Information Tab */}
-            {activeTab === 'basic' && (
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Left column */}
-                  <div className="flex-1 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+          {/* Basic Information Tab */}
+          {activeTab === 'basic' && (
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Left column */}
+                <div className="flex-1 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Tag size={14} className="inline mr-1.5" />
+                      Vehicle Name / ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 rounded-lg border ${
+                        errors.name
+                          ? 'border-red-300 dark:border-red-600'
+                          : 'border-gray-300 dark:border-gray-600'
+                      } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                      placeholder="e.g. Truck #101"
+                    />
+                    {errors.name && (
+                      <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.name}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Vehicle Name / ID *
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Make <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                        name="make"
+                        value={formData.make}
                         onChange={handleChange}
-                        className={`block w-full px-3 py-2 border ${
-                          errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                        placeholder="e.g. Truck #101"
-                        required
+                        className={`w-full px-4 py-2.5 rounded-lg border ${
+                          errors.make
+                            ? 'border-red-300 dark:border-red-600'
+                            : 'border-gray-300 dark:border-gray-600'
+                        } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                        placeholder="e.g. Freightliner"
                       />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                      {errors.make && (
+                        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.make}</p>
                       )}
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
-                          Make *
-                        </label>
-                        <input
-                          type="text"
-                          id="make"
-                          name="make"
-                          value={formData.make}
-                          onChange={handleChange}
-                          className={`block w-full px-3 py-2 border ${
-                            errors.make ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                          } rounded-md shadow-sm text-sm`}
-                          placeholder="e.g. Freightliner"
-                          required
-                        />
-                        {errors.make && (
-                          <p className="mt-1 text-sm text-red-600">{errors.make}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
-                          Model *
-                        </label>
-                        <input
-                          type="text"
-                          id="model"
-                          name="model"
-                          value={formData.model}
-                          onChange={handleChange}
-                          className={`block w-full px-3 py-2 border ${
-                            errors.model ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                          } rounded-md shadow-sm text-sm`}
-                          placeholder="e.g. Cascadia"
-                          required
-                        />
-                        {errors.model && (
-                          <p className="mt-1 text-sm text-red-600">{errors.model}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
-                          Year *
-                        </label>
-                        <input
-                          type="text"
-                          id="year"
-                          name="year"
-                          value={formData.year}
-                          onChange={handleChange}
-                          className={`block w-full px-3 py-2 border ${
-                            errors.year ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                          } rounded-md shadow-sm text-sm`}
-                          placeholder="e.g. 2023"
-                          required
-                        />
-                        {errors.year && (
-                          <p className="mt-1 text-sm text-red-600">{errors.year}</p>
-                        )}
-                      </div>
-                    </div>
-                    
+
                     <div>
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Model <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="model"
+                        value={formData.model}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-2.5 rounded-lg border ${
+                          errors.model
+                            ? 'border-red-300 dark:border-red-600'
+                            : 'border-gray-300 dark:border-gray-600'
+                        } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                        placeholder="e.g. Cascadia"
+                      />
+                      {errors.model && (
+                        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.model}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Year <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="year"
+                        value={formData.year}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-2.5 rounded-lg border ${
+                          errors.year
+                            ? 'border-red-300 dark:border-red-600'
+                            : 'border-gray-300 dark:border-gray-600'
+                        } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                        placeholder="e.g. 2023"
+                      />
+                      {errors.year && (
+                        <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.year}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Status
                       </label>
                       <select
-                        id="status"
                         name="status"
                         value={formData.status}
                         onChange={handleChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
                         <option value="Active">Active</option>
                         <option value="In Maintenance">In Maintenance</option>
@@ -438,245 +565,220 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
                         <option value="Idle">Idle</option>
                       </select>
                     </div>
-                    
+
                     <div>
-                      <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <Calendar size={14} className="inline mr-1.5" />
                         Purchase Date
                       </label>
-                      <div className="flex items-center">
-                        <Calendar size={18} className="text-gray-400 mr-2" />
-                        <input
-                          type="date"
-                          id="purchase_date"
-                          name="purchase_date"
-                          value={formData.purchase_date}
-                          onChange={handleChange}
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Right column - Image upload */}
-                  <div className="md:w-1/3 flex flex-col items-center space-y-4">
-                    <div className="w-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Vehicle Photo
-                      </label>
-                      <div className="flex flex-col items-center space-y-4">
-                        {formData.image ? (
-                          <div className="relative">
-                            <img 
-                              src={formData.image} 
-                              alt="Vehicle preview" 
-                              className="h-40 w-auto object-cover rounded-md border border-gray-300" 
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFormData({...formData, image: null, image_file: null})}
-                              className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="h-40 w-full rounded-md bg-gray-100 flex items-center justify-center">
-                            <Truck size={60} className="text-gray-400" />
-                          </div>
-                        )}
-                        
-                        <label className="w-full flex flex-col items-center px-4 py-2 bg-blue-50 text-blue-500 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-                          <Upload size={18} className="mb-1" />
-                          <span className="text-sm font-medium">Upload Photo</span>
-                          <input
-                            type="file"
-                            id="image"
-                            name="image"
-                            accept="image/*"
-                            onChange={handleChange}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
+                      <input
+                        type="date"
+                        name="purchase_date"
+                        value={formData.purchase_date}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      />
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {/* Details Tab */}
-            {activeTab === 'details' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">
-                      VIN
-                    </label>
-                    <div className="flex items-center">
-                      <Hash size={18} className="text-gray-400 mr-2" />
-                      <input
-                        type="text"
-                        id="vin"
-                        name="vin"
-                        value={formData.vin}
-                        onChange={handleChange}
-                        className={`block w-full px-3 py-2 border ${
-                          errors.vin ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                        placeholder="Vehicle Identification Number"
-                      />
-                    </div>
-                    {errors.vin && (
-                      <p className="mt-1 text-sm text-red-600">{errors.vin}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="license_plate" className="block text-sm font-medium text-gray-700 mb-1">
-                      License Plate
-                    </label>
-                    <div className="flex items-center">
-                      <Tag size={18} className="text-gray-400 mr-2" />
-                      <input
-                        type="text"
-                        id="license_plate"
-                        name="license_plate"
-                        value={formData.license_plate}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="e.g. TX-12345"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 mb-1">
-                      Odometer (miles)
-                    </label>
-                    <div className="flex items-center">
-                      <MapPin size={18} className="text-gray-400 mr-2" />
-                      <input
-                        type="text"
-                        id="odometer"
-                        name="odometer"
-                        value={formData.odometer}
-                        onChange={handleChange}
-                        className={`block w-full px-3 py-2 border ${
-                          errors.odometer ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                        } rounded-md shadow-sm text-sm`}
-                        placeholder="Current mileage"
-                      />
-                    </div>
-                    {errors.odometer && (
-                      <p className="mt-1 text-sm text-red-600">{errors.odometer}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="fuel_type" className="block text-sm font-medium text-gray-700 mb-1">
-                      Fuel Type
-                    </label>
-                    <div className="flex items-center">
-                      <Fuel size={18} className="text-gray-400 mr-2" />
-                      <select
-                        id="fuel_type"
-                        name="fuel_type"
-                        value={formData.fuel_type}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value="Diesel">Diesel</option>
-                        <option value="Gasoline">Gasoline</option>
-                        <option value="CNG">CNG (Compressed Natural Gas)</option>
-                        <option value="LNG">LNG (Liquefied Natural Gas)</option>
-                        <option value="Electric">Electric</option>
-                        <option value="Hybrid">Hybrid</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
+
+                {/* Right column - Photo */}
+                <div className="md:w-1/3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Vehicle Photo
                   </label>
-                  <textarea
-                    id="notes"
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleChange}
-                    rows="3"
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="Additional information about this vehicle"
-                  ></textarea>
-                </div>
-                
-                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
-                  <div className="flex">
-                    <Wrench className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-blue-700">
-                      Regular vehicle inspections and maintenance keep your fleet operating efficiently and safely.
-                    </p>
+                  <div className="flex flex-col items-center space-y-4 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                    {formData.image ? (
+                      <div className="relative">
+                        <img
+                          src={formData.image}
+                          alt="Vehicle preview"
+                          className="h-36 w-auto max-w-full object-cover rounded-lg border-4 border-white dark:border-gray-600 shadow-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData({...formData, image: null, image_file: null})}
+                          className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="h-36 w-full rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                        <Truck size={48} className="text-gray-400 dark:text-gray-500" />
+                      </div>
+                    )}
+
+                    <label className="w-full flex flex-col items-center px-4 py-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-200 dark:border-blue-800">
+                      <Upload size={18} className="mb-1" />
+                      <span className="text-sm font-medium">Upload Photo</span>
+                      <input
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        onChange={handleChange}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 </div>
               </div>
-            )}
-          </form>
-        </div>
-        
-        {/* Form Actions */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+            </div>
+          )}
+
+          {/* Details Tab */}
+          {activeTab === 'details' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Hash size={14} className="inline mr-1.5" />
+                    VIN
+                  </label>
+                  <input
+                    type="text"
+                    name="vin"
+                    value={formData.vin}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${
+                      errors.vin
+                        ? 'border-red-300 dark:border-red-600'
+                        : 'border-gray-300 dark:border-gray-600'
+                    } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono`}
+                    placeholder="Vehicle Identification Number"
+                  />
+                  {errors.vin && (
+                    <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.vin}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Tag size={14} className="inline mr-1.5" />
+                    License Plate
+                  </label>
+                  <input
+                    type="text"
+                    name="license_plate"
+                    value={formData.license_plate}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="e.g. TX-12345"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <MapPin size={14} className="inline mr-1.5" />
+                    Odometer (miles)
+                  </label>
+                  <input
+                    type="text"
+                    name="odometer"
+                    value={formData.odometer}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 rounded-lg border ${
+                      errors.odometer
+                        ? 'border-red-300 dark:border-red-600'
+                        : 'border-gray-300 dark:border-gray-600'
+                    } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors`}
+                    placeholder="Current mileage"
+                  />
+                  {errors.odometer && (
+                    <p className="mt-1.5 text-sm text-red-500 dark:text-red-400">{errors.odometer}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Fuel size={14} className="inline mr-1.5" />
+                    Fuel Type
+                  </label>
+                  <select
+                    name="fuel_type"
+                    value={formData.fuel_type}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    <option value="Diesel">Diesel</option>
+                    <option value="Gasoline">Gasoline</option>
+                    <option value="CNG">CNG (Compressed Natural Gas)</option>
+                    <option value="LNG">LNG (Liquefied Natural Gas)</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <FileText size={14} className="inline mr-1.5" />
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                  placeholder="Additional information about this vehicle"
+                />
+              </div>
+
+              {/* Tip Box */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start">
+                <Wrench className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Regular vehicle inspections and maintenance keep your fleet operating efficiently and safely. Keep odometer readings up-to-date for accurate IFTA reporting.
+                </p>
+              </div>
+            </div>
+          )}
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
             disabled={isSubmitting}
+            className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
           >
             Cancel
           </button>
-          
-          <div className="flex items-center space-x-2">
+
+          <div className="flex items-center space-x-3">
             {activeTab !== 'basic' && (
               <button
                 type="button"
-                onClick={() => {
-                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                  if (currentIndex > 0) {
-                    setActiveTab(tabs[currentIndex - 1].id);
-                  }
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                onClick={handlePreviousTab}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                 disabled={isSubmitting}
               >
                 Previous
               </button>
             )}
-            
+
             {activeTab !== tabs[tabs.length - 1].id ? (
               <button
                 type="button"
-                onClick={() => {
-                  const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                  if (currentIndex < tabs.length - 1) {
-                    setActiveTab(tabs[currentIndex + 1].id);
-                  }
-                }}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                onClick={handleNextTab}
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                 disabled={isSubmitting}
               >
                 Next
               </button>
             ) : (
               <button
-                type="button"
+                type="submit"
                 onClick={handleSubmit}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none flex items-center"
                 disabled={isSubmitting}
+                className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors flex items-center disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <>
-                    <RefreshCw size={16} className="animate-spin mr-2" />
+                    <Loader2 size={18} className="animate-spin mr-2" />
                     Saving...
                   </>
                 ) : (

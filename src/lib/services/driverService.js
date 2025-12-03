@@ -88,6 +88,7 @@ export async function createDriver(driverData) {
       state: driverData.state || null,
       emergency_contact: driverData.emergency_contact,
       emergency_phone: driverData.emergency_phone,
+      image_url: driverData.image_url || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -130,6 +131,7 @@ export async function updateDriver(id, driverData) {
       state: driverData.state,
       emergency_contact: driverData.emergency_contact,
       emergency_phone: driverData.emergency_phone,
+      image_url: driverData.image_url,
       updated_at: new Date().toISOString()
     };
     

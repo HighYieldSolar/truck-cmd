@@ -50,13 +50,13 @@ export async function fetchTrucks(userId, filters = {}) {
 export async function getTruckById(id) {
   try {
     const { data, error } = await supabase
-      .from('trucks')
+      .from('vehicles')
       .select('*')
       .eq('id', id)
       .single();
-      
+
     if (error) throw error;
-    
+
     return data;
   } catch (error) {
     console.error('Error fetching truck:', error);
@@ -71,30 +71,34 @@ export async function getTruckById(id) {
  */
 export async function createTruck(truckData) {
   try {
-    // Prepare the data to match your existing database structure
+    // Prepare the data to match the vehicles table structure
     const preparedData = {
       user_id: truckData.user_id,
       name: truckData.name,
+      type: truckData.type || null,
       make: truckData.make,
       model: truckData.model,
-      year: truckData.year,
-      vin: truckData.vin,
-      license_plate: truckData.license_plate,
-      status: truckData.status,
+      year: truckData.year ? parseInt(truckData.year, 10) : null,
+      vin: truckData.vin || null,
+      license_plate: truckData.license_plate || null,
+      status: truckData.status || 'Active',
       color: truckData.color || null,
-      fuel_type: truckData.fuel_type,
+      mpg: truckData.mpg || null,
+      fuel_type: truckData.fuel_type || null,
       tank_capacity: truckData.tank_capacity || null,
+      notes: truckData.notes || null,
+      image_url: truckData.image_url || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
+
     const { data, error } = await supabase
-      .from('vehicles')  // Use your actual table name
+      .from('vehicles')
       .insert([preparedData])
       .select();
-      
+
     if (error) throw error;
-    
+
     return data?.[0] || null;
   } catch (error) {
     console.error('Error creating truck:', error);
@@ -110,14 +114,38 @@ export async function createTruck(truckData) {
  */
 export async function updateTruck(id, truckData) {
   try {
+    // Only include valid columns that exist in the vehicles table
+    const validColumns = {
+      name: truckData.name,
+      type: truckData.type,
+      make: truckData.make,
+      model: truckData.model,
+      year: truckData.year ? parseInt(truckData.year, 10) : null,
+      vin: truckData.vin,
+      license_plate: truckData.license_plate,
+      status: truckData.status,
+      color: truckData.color,
+      mpg: truckData.mpg,
+      fuel_type: truckData.fuel_type,
+      tank_capacity: truckData.tank_capacity,
+      notes: truckData.notes,
+      image_url: truckData.image_url,
+      updated_at: new Date().toISOString()
+    };
+
+    // Remove undefined/null keys to avoid overwriting with nulls
+    const updateData = Object.fromEntries(
+      Object.entries(validColumns).filter(([_, value]) => value !== undefined)
+    );
+
     const { data, error } = await supabase
-      .from('trucks')
-      .update(truckData)
+      .from('vehicles')
+      .update(updateData)
       .eq('id', id)
       .select();
-      
+
     if (error) throw error;
-    
+
     return data?.[0] || null;
   } catch (error) {
     console.error('Error updating truck:', error);
@@ -133,12 +161,12 @@ export async function updateTruck(id, truckData) {
 export async function deleteTruck(id) {
   try {
     const { error } = await supabase
-      .from('trucks')
+      .from('vehicles')
       .delete()
       .eq('id', id);
-      
+
     if (error) throw error;
-    
+
     return true;
   } catch (error) {
     console.error('Error deleting truck:', error);
