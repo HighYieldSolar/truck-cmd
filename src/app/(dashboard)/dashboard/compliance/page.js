@@ -45,6 +45,10 @@ import ViewComplianceModal from "@/components/compliance/ViewComplianceModal";
 import DeleteConfirmationModal from "@/components/compliance/DeleteConfirmationModal";
 import ComplianceSummary from "@/components/compliance/ComplianceSummary";
 
+// Feature gating
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
+
 // Local storage key for form persistence
 const STORAGE_KEY = 'compliance_filters';
 
@@ -86,6 +90,10 @@ function LoadingSkeleton() {
 }
 
 export default function CompliancePage() {
+  // Feature access check
+  const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
+  const hasComplianceAccess = canAccess('compliance');
+
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
   const [user, setUser] = useState(null);
@@ -484,7 +492,7 @@ export default function CompliancePage() {
     }
   }, []);
 
-  if (loading) {
+  if (loading || featureLoading) {
     return (
       <DashboardLayout activePage="compliance">
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
@@ -497,6 +505,74 @@ export default function CompliancePage() {
               </div>
             </div>
             <LoadingSkeleton />
+          </div>
+        </main>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt if user doesn't have compliance access (Basic plan)
+  if (!hasComplianceAccess) {
+    return (
+      <DashboardLayout activePage="compliance">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2.5 rounded-xl">
+                  <Shield size={28} />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold">Compliance Management</h1>
+                  <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
+                    Upgrade to Premium to access compliance tracking
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upgrade Prompt */}
+            <UpgradePrompt feature="compliance" currentTier={currentTier} />
+
+            {/* Feature Preview */}
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                What you'll get with Compliance Tracking:
+              </h3>
+              <ul className="space-y-3 text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                    <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span>Track document expirations for licenses, registrations, and permits</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle size={16} className="text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span>Get alerts before documents expire to stay DOT compliant</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <span>Store digital copies of all compliance documents</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                    <Clock size={16} className="text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span>Track driver medical cards, CDLs, and vehicle inspections</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                    <Download size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <span>Export compliance reports for audits</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </main>
       </DashboardLayout>

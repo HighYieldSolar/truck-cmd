@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Lock, FileText, BarChart2, Calendar, Download } from "lucide-react";
 import { getTruckStats } from "@/lib/services/truckService";
 import { getDriverStats } from "@/lib/services/driverService";
 import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 import { OperationMessage } from "@/components/ui/OperationMessage";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 // Import custom components
 import FleetManagementHeader from "@/components/fleet/FleetManagementHeader";
@@ -66,6 +68,10 @@ export default function FleetManagementPage() {
     maintenance: 0,
     outOfService: 0
   });
+
+  // Feature access check for Fleet Reports
+  const { canAccess } = useFeatureAccess();
+  const hasFleetReportsAccess = canAccess('fleetReports');
 
   const [driverStats, setDriverStats] = useState({
     total: 0,
@@ -338,7 +344,56 @@ export default function FleetManagementPage() {
           </div>
 
           {/* Fleet Reports Section */}
-          <FleetReportsComponent />
+          {hasFleetReportsAccess ? (
+            <FleetReportsComponent />
+          ) : (
+            <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
+                  <FileText size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
+                  Fleet Reports
+                </h3>
+                <span className="inline-flex items-center px-2.5 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full">
+                  <Lock size={12} className="mr-1" />
+                  Fleet Plan
+                </span>
+              </div>
+              <div className="p-6">
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BarChart2 size={28} className="text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Advanced Fleet Reports
+                  </h4>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                    Unlock comprehensive fleet reports including fleet summaries, maintenance schedules,
+                    document expiration reports, and automated weekly reporting.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-3 mb-6">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <BarChart2 size={16} className="text-blue-600 dark:text-blue-400" />
+                      Fleet Summary Report
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
+                      Maintenance Schedule
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <Download size={16} className="text-green-600 dark:text-green-400" />
+                      Export Fleet Data
+                    </div>
+                  </div>
+                  <Link
+                    href="/dashboard/billing"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                  >
+                    Upgrade to Fleet Plan
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </DashboardLayout>

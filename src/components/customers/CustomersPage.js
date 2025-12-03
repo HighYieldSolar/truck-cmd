@@ -2,13 +2,17 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Plus,
   Download,
   RefreshCw,
-  Users
+  Users,
+  Lock
 } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 
 // Components
 import CustomerStats from "./CustomerStats";
@@ -35,6 +39,9 @@ export default function CustomersPage() {
   // Data state
   const [customers, setCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Feature access for resource limits
+  const { checkResourceUpgrade, getResourceLimit } = useFeatureAccess();
 
   // Message state
   const [message, setMessage] = useState(null);
@@ -327,16 +334,32 @@ export default function CustomersPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedCustomer(null);
-                    setFormModalOpen(true);
-                  }}
-                  className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2 font-medium"
-                >
-                  <Plus size={18} />
-                  Add Customer
-                </button>
+                {(() => {
+                  const customerLimit = checkResourceUpgrade('customers', customers.length);
+                  if (customerLimit.needsUpgrade) {
+                    return (
+                      <Link
+                        href="/dashboard/billing"
+                        className="px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center gap-2 font-medium"
+                      >
+                        <Lock size={18} />
+                        Limit Reached ({customers.length}/{customerLimit.limit})
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setFormModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2 font-medium"
+                    >
+                      <Plus size={18} />
+                      Add Customer
+                    </button>
+                  );
+                })()}
                 <button
                   onClick={exportToCSV}
                   className="px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center gap-2 font-medium"
@@ -356,6 +379,40 @@ export default function CustomersPage() {
 
           {/* Stats */}
           <CustomerStats stats={stats} isLoading={isLoading} />
+
+          {/* Customer Limit Warning Banner */}
+          {(() => {
+            const customerLimit = checkResourceUpgrade('customers', customers.length);
+            const limit = getResourceLimit('customers');
+            if (customerLimit.needsUpgrade) {
+              return (
+                <LimitReachedPrompt
+                  limitName="customers"
+                  currentCount={customers.length}
+                  limit={limit}
+                  nextTier={customerLimit.nextTier}
+                  resourceName="Customers"
+                  className="mb-6"
+                />
+              );
+            }
+            if (limit !== Infinity && customers.length >= Math.floor(limit * 0.8) && !customerLimit.needsUpgrade) {
+              return (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-amber-600 dark:text-amber-400" />
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      <span className="font-medium">Approaching limit:</span> You have {customers.length} of {limit} customers.
+                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                        Upgrade for unlimited customers
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -386,19 +443,42 @@ export default function CustomersPage() {
 
               {/* Empty State or Table */}
               {!isLoading && customers.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title="No customers yet"
-                  description="Start building your customer list by adding your first customer."
-                  action={{
-                    label: 'Add Customer',
-                    icon: Plus,
-                    onClick: () => {
-                      setSelectedCustomer(null);
-                      setFormModalOpen(true);
-                    }
-                  }}
-                />
+                (() => {
+                  const customerLimit = checkResourceUpgrade('customers', customers.length);
+                  if (customerLimit.needsUpgrade) {
+                    return (
+                      <div className="text-center py-12">
+                        <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                          <Users className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No customers yet</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add customers.</p>
+                        <Link
+                          href="/dashboard/billing"
+                          className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
+                        >
+                          <Lock size={16} className="mr-2" />
+                          Upgrade Plan
+                        </Link>
+                      </div>
+                    );
+                  }
+                  return (
+                    <EmptyState
+                      icon={Users}
+                      title="No customers yet"
+                      description="Start building your customer list by adding your first customer."
+                      action={{
+                        label: 'Add Customer',
+                        icon: Plus,
+                        onClick: () => {
+                          setSelectedCustomer(null);
+                          setFormModalOpen(true);
+                        }
+                      }}
+                    />
+                  );
+                })()
               ) : (
                 <CustomerTable
                   customers={pagination.paginatedData}

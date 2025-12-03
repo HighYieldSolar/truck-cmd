@@ -5,10 +5,13 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 import { OperationMessage } from '@/components/ui/OperationMessage';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import Link from 'next/link';
 import {
   Bell, Mail, Smartphone, Monitor, Settings,
   FileText, TruckIcon, User, Calendar, Wrench,
-  CreditCard, AlertTriangle, RefreshCw, Save, Fuel
+  CreditCard, AlertTriangle, RefreshCw, Save, Fuel,
+  Lock, ArrowRight, Sparkles
 } from 'lucide-react';
 
 // Notification categories with their settings
@@ -117,6 +120,13 @@ export default function NotificationsSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [operationMessage, setOperationMessage] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Feature access checks
+  const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
+  const hasEmailNotifications = canAccess('notificationsEmail');
+  const hasSMSNotifications = canAccess('notificationsSMS');
+  const hasQuietHours = canAccess('notificationsQuietHours');
+  const hasDigestMode = canAccess('notificationsDigest');
 
   // Load preferences
   const loadPreferences = useCallback(async () => {
@@ -387,14 +397,31 @@ export default function NotificationsSettings() {
                 <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">Email Notifications</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  Email Notifications
+                  {!hasEmailNotifications && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Premium
+                    </span>
+                  )}
+                </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
               </div>
             </div>
-            <Toggle
-              enabled={preferences.email_enabled}
-              onChange={(v) => updateMasterToggle('email_enabled', v)}
-            />
+            {hasEmailNotifications ? (
+              <Toggle
+                enabled={preferences.email_enabled}
+                onChange={(v) => updateMasterToggle('email_enabled', v)}
+              />
+            ) : (
+              <Link
+                href="/dashboard/billing"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              >
+                Upgrade <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
           </div>
 
           {/* Push Toggle */}
@@ -421,14 +448,31 @@ export default function NotificationsSettings() {
                 <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">SMS Notifications</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  SMS Notifications
+                  {!hasSMSNotifications && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Fleet
+                    </span>
+                  )}
+                </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Receive critical alerts via text message</p>
               </div>
             </div>
-            <Toggle
-              enabled={preferences.sms_enabled}
-              onChange={(v) => updateMasterToggle('sms_enabled', v)}
-            />
+            {hasSMSNotifications ? (
+              <Toggle
+                enabled={preferences.sms_enabled}
+                onChange={(v) => updateMasterToggle('sms_enabled', v)}
+              />
+            ) : (
+              <Link
+                href="/dashboard/billing"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              >
+                Upgrade <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -526,52 +570,82 @@ export default function NotificationsSettings() {
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bell className="h-4 w-4 text-blue-500" />
             Quiet Hours
+            {!hasQuietHours && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                <Lock className="h-3 w-3 mr-1" />
+                Fleet
+              </span>
+            )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Pause non-critical notifications during specific hours
           </p>
         </div>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">Enable Quiet Hours</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Only critical notifications will be delivered during quiet hours
-              </p>
+        {hasQuietHours ? (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">Enable Quiet Hours</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Only critical notifications will be delivered during quiet hours
+                </p>
+              </div>
+              <Toggle
+                enabled={preferences.quiet_hours.enabled}
+                onChange={(v) => updateQuietHours('enabled', v)}
+              />
             </div>
-            <Toggle
-              enabled={preferences.quiet_hours.enabled}
-              onChange={(v) => updateQuietHours('enabled', v)}
-            />
-          </div>
 
-          {preferences.quiet_hours.enabled && (
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Start Time
-                </label>
-                <input
-                  type="time"
-                  value={preferences.quiet_hours.start}
-                  onChange={(e) => updateQuietHours('start', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+            {preferences.quiet_hours.enabled && (
+              <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={preferences.quiet_hours.start}
+                    onChange={(e) => updateQuietHours('start', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={preferences.quiet_hours.end}
+                    onChange={(e) => updateQuietHours('end', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={preferences.quiet_hours.end}
-                  onChange={(e) => updateQuietHours('end', e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+            )}
+          </div>
+        ) : (
+          <div className="p-6 bg-gray-50 dark:bg-gray-700/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                  <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Upgrade to Fleet</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Set quiet hours to pause notifications during off-hours
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/dashboard/billing"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+              >
+                Upgrade <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Digest Mode */}
@@ -580,60 +654,90 @@ export default function NotificationsSettings() {
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Mail className="h-4 w-4 text-blue-500" />
             Email Digest
+            {!hasDigestMode && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                <Lock className="h-3 w-3 mr-1" />
+                Premium
+              </span>
+            )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Choose how often you receive email notification digests
           </p>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { value: 'instant', label: 'Instant', description: 'Get emails as they happen' },
-              { value: 'daily', label: 'Daily Digest', description: 'One email per day' },
-              { value: 'weekly', label: 'Weekly Digest', description: 'One email per week' }
-            ].map((option) => (
-              <label
-                key={option.value}
-                className={`
-                  relative flex cursor-pointer rounded-lg border p-4 transition-colors
-                  ${preferences.digest_mode === option.value
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  }
-                `}
-              >
-                <input
-                  type="radio"
-                  name="digest_mode"
-                  value={option.value}
-                  checked={preferences.digest_mode === option.value}
-                  onChange={(e) => {
-                    setPreferences(prev => ({ ...prev, digest_mode: e.target.value }));
-                    setHasChanges(true);
-                  }}
-                  className="sr-only"
-                />
-                <div>
-                  <span className={`block text-sm font-medium ${
-                    preferences.digest_mode === option.value
-                      ? 'text-blue-700 dark:text-blue-300'
-                      : 'text-gray-900 dark:text-gray-100'
-                  }`}>
-                    {option.label}
-                  </span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {option.description}
-                  </span>
-                </div>
-                {preferences.digest_mode === option.value && (
-                  <div className="absolute top-2 right-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+        {hasDigestMode ? (
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { value: 'instant', label: 'Instant', description: 'Get emails as they happen' },
+                { value: 'daily', label: 'Daily Digest', description: 'One email per day' },
+                { value: 'weekly', label: 'Weekly Digest', description: 'One email per week' }
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`
+                    relative flex cursor-pointer rounded-lg border p-4 transition-colors
+                    ${preferences.digest_mode === option.value
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="digest_mode"
+                    value={option.value}
+                    checked={preferences.digest_mode === option.value}
+                    onChange={(e) => {
+                      setPreferences(prev => ({ ...prev, digest_mode: e.target.value }));
+                      setHasChanges(true);
+                    }}
+                    className="sr-only"
+                  />
+                  <div>
+                    <span className={`block text-sm font-medium ${
+                      preferences.digest_mode === option.value
+                        ? 'text-blue-700 dark:text-blue-300'
+                        : 'text-gray-900 dark:text-gray-100'
+                    }`}>
+                      {option.label}
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {option.description}
+                    </span>
                   </div>
-                )}
-              </label>
-            ))}
+                  {preferences.digest_mode === option.value && (
+                    <div className="absolute top-2 right-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    </div>
+                  )}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="p-6 bg-gray-50 dark:bg-gray-700/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Upgrade to Premium</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Control email frequency with daily or weekly digests
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard/billing"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+              >
+                Upgrade <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

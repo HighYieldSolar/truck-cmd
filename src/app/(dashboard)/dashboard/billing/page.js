@@ -22,7 +22,7 @@ import {
 export default function BillingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState('yearly');
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -38,62 +38,76 @@ export default function BillingPage() {
     getDaysLeftInTrial
   } = useSubscription();
 
-  // Plans data - matches API route pricing
+  // Plans data - matches tierConfig.js
   const plans = {
     basic: {
       id: "basic",
-      name: "Basic Plan",
-      description: "Perfect for owner-operators with 1 truck",
+      name: "Basic",
+      description: "For owner-operators just getting started",
       monthlyPrice: 20,
       yearlyPrice: 16,
       yearlyTotal: 192,
       savings: 48,
+      limits: "1 Truck • 1 Driver • 50 Loads/mo",
       features: [
-        "Basic Invoicing & Dispatching",
-        "Simple Expense Tracking",
-        "Standard Reports",
-        "Single User Account",
-        "Email Support"
+        "Load management & dispatching",
+        "Basic invoicing (50/month)",
+        "Expense tracking",
+        "Customer management (50 max)",
+        "Fuel logging",
+        "PDF exports",
+        "Email support"
       ],
       notIncluded: [
-        "Advanced IFTA Tools",
-        "Load Optimization",
-        "Priority Support"
+        "Compliance tracking",
+        "IFTA Calculator",
+        "State Mileage Tracker",
+        "Maintenance scheduling"
       ]
     },
     premium: {
       id: "premium",
-      name: "Premium Plan",
-      description: "Ideal for owner-operators with 1-2 trucks",
+      name: "Premium",
+      description: "For growing owner-operators",
       monthlyPrice: 35,
       yearlyPrice: 28,
       yearlyTotal: 336,
       savings: 84,
+      limits: "3 Trucks • 3 Drivers • Unlimited Loads",
       features: [
-        "Advanced Invoicing & Dispatching",
-        "Comprehensive Expense Tracking",
-        "Advanced Reports & Analytics",
-        "Customer Management System",
-        "Advanced IFTA Calculator",
-        "Priority Email Support"
+        "Everything in Basic, plus:",
+        "Compliance tracking & alerts",
+        "IFTA Calculator",
+        "State Mileage Tracker",
+        "Unlimited loads & invoices",
+        "Unlimited customers",
+        "Fuel receipt uploads",
+        "Email notifications"
+      ],
+      notIncluded: [
+        "Maintenance scheduling",
+        "Fleet reports",
+        "SMS notifications"
       ],
       recommended: true
     },
     fleet: {
       id: "fleet",
-      name: "Fleet Plan",
-      description: "For small fleets with 3-8 trucks",
+      name: "Fleet",
+      description: "For small to medium fleets",
       monthlyPrice: 75,
       yearlyPrice: 60,
       yearlyTotal: 720,
       savings: 180,
+      limits: "12 Trucks • 12 Drivers • 6 Team Users",
       features: [
-        "All Premium Features",
-        "Fleet Management Tools",
-        "Real-time GPS Tracking",
-        "Team Access (1 User per 2 Trucks)",
-        "Fuel & Load Optimizations",
-        "Priority Phone Support"
+        "Everything in Premium, plus:",
+        "Maintenance scheduling",
+        "Advanced fleet reports",
+        "SMS notifications",
+        "Quiet hours for notifications",
+        "CSV & Excel exports",
+        "Priority phone support"
       ]
     }
   };
@@ -334,8 +348,15 @@ export default function BillingPage() {
                 )}
 
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{plan.description}</p>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{plan.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{plan.description}</p>
+
+                  {/* Resource limits badge */}
+                  {plan.limits && (
+                    <div className="inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full mb-3">
+                      {plan.limits}
+                    </div>
+                  )}
 
                   <div className="flex items-baseline mb-1">
                     <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">

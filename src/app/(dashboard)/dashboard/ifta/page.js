@@ -33,10 +33,14 @@ import QuarterSelector from "@/components/ifta/QuarterSelector";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import VehicleSelector from "@/components/ifta/VehicleSelector";
 import SimplifiedExportModal from "@/components/ifta/SimplifiedExportModal";
+import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
 import { getQuarterDateRange } from "@/lib/utils/dateUtils";
+
+// Import hooks
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 // State name mapping
 const STATE_NAMES = {
@@ -60,6 +64,10 @@ const STATE_NAMES = {
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
+
+  // Feature access check
+  const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
+  const hasIFTAAccess = canAccess('iftaCalculator');
 
   // Core state
   const [user, setUser] = useState(null);
@@ -395,11 +403,79 @@ export default function IFTACalculatorPage() {
     ? trips
     : trips.filter(t => t.vehicle_id === selectedVehicle);
 
-  if (initialLoading) {
+  if (initialLoading || featureLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
+    );
+  }
+
+  // Show upgrade prompt for Basic plan users
+  if (!hasIFTAAccess) {
+    return (
+      <DashboardLayout activePage="ifta">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2.5 rounded-xl">
+                  <Calculator size={28} />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
+                  <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
+                    Upgrade to Premium to access IFTA tax reporting
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upgrade Prompt */}
+            <UpgradePrompt feature="iftaCalculator" currentTier={currentTier} />
+
+            {/* Feature Preview */}
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                What you'll get with IFTA Calculator:
+              </h3>
+              <ul className="space-y-3 text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                    <Route size={16} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span>Automatic mileage tracking by jurisdiction</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                    <Fuel size={16} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <span>Fuel purchase tracking integrated with Fuel Tracker</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                    <Gauge size={16} className="text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span>Average MPG calculations per jurisdiction</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                    <FileDown size={16} className="text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span>Export quarterly IFTA reports in PDF format</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                    <MapPin size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <span>Multi-jurisdiction summary for all 48 IFTA states/provinces</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </main>
+      </DashboardLayout>
     );
   }
 

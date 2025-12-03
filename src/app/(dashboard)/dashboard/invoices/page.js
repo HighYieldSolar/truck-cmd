@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import {
   FileText,
   Plus,
@@ -18,7 +19,8 @@ import {
   Trash2,
   DollarSign,
   AlertCircle,
-  X
+  X,
+  Lock
 } from "lucide-react";
 import {
   fetchInvoices,
@@ -27,6 +29,7 @@ import {
   deleteInvoice,
   checkAndUpdateOverdueInvoices
 } from "@/lib/services/invoiceService";
+import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { usePagination, Pagination } from "@/hooks/usePagination";
@@ -81,6 +84,10 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
   const [user, setUser] = useState(null);
+
+  // Feature access for resource limits
+  const { checkResourceUpgrade, getResourceLimit, loading: featureLoading } = useFeatureAccess();
+  const [monthlyInvoiceCount, setMonthlyInvoiceCount] = useState(0);
 
   // Invoices state
   const [invoices, setInvoices] = useState([]);
@@ -284,6 +291,28 @@ export default function Page() {
     });
   }, []);
 
+  // Fetch monthly invoice count for resource limits
+  const fetchMonthlyInvoiceCount = useCallback(async (userId) => {
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+      const { count, error } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', firstDayOfMonth)
+        .lte('created_at', lastDayOfMonth);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error fetching monthly invoice count:', error);
+      return 0;
+    }
+  }, []);
+
   // Fetch user and invoices on mount
   useEffect(() => {
     let channel = null;
@@ -312,18 +341,28 @@ export default function Page() {
         setInvoices(items);
         calculateStats(items);
 
+        // Fetch monthly invoice count for resource limits
+        const count = await fetchMonthlyInvoiceCount(user.id);
+        setMonthlyInvoiceCount(count);
+
         // Set up real-time subscription
         channel = supabase
           .channel('invoices-changes')
           .on('postgres_changes',
             { event: '*', schema: 'public', table: 'invoices', filter: `user_id=eq.${user.id}` },
-            (payload) => {
+            async (payload) => {
               if (payload.eventType === 'INSERT') {
                 setInvoices(prev => [payload.new, ...prev]);
+                // Update monthly count when new invoice is created
+                const newCount = await fetchMonthlyInvoiceCount(user.id);
+                setMonthlyInvoiceCount(newCount);
               } else if (payload.eventType === 'UPDATE') {
                 setInvoices(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
               } else if (payload.eventType === 'DELETE') {
                 setInvoices(prev => prev.filter(item => item.id !== payload.old.id));
+                // Update monthly count when invoice is deleted
+                const newCount = await fetchMonthlyInvoiceCount(user.id);
+                setMonthlyInvoiceCount(newCount);
               }
               // Recalculate stats
               fetchInvoices(user.id).then(items => calculateStats(items));
@@ -346,7 +385,7 @@ export default function Page() {
         supabase.removeChannel(channel);
       }
     };
-  }, [calculateStats]);
+  }, [calculateStats, fetchMonthlyInvoiceCount]);
 
   // Export invoice data to CSV
   const handleExportData = useCallback(() => {
@@ -512,7 +551,13 @@ export default function Page() {
     return null;
   };
 
-  if (loading) {
+  // Resource limit checks
+  const invoiceLimit = getResourceLimit('invoicesPerMonth');
+  const needsUpgradeForInvoices = checkResourceUpgrade('invoicesPerMonth', monthlyInvoiceCount + 1);
+  const isAtInvoiceLimit = invoiceLimit !== null && monthlyInvoiceCount >= invoiceLimit;
+  const isNearInvoiceLimit = invoiceLimit !== null && monthlyInvoiceCount >= Math.floor(invoiceLimit * 0.8) && !isAtInvoiceLimit;
+
+  if (loading || featureLoading) {
     return (
       <DashboardLayout activePage="invoices">
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
@@ -543,13 +588,24 @@ export default function Page() {
                 <p className="text-blue-100">Track and manage all your customer invoices and payments</p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/dashboard/invoices/new"
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
-                >
-                  <Plus size={18} className="mr-2" />
-                  New Invoice
-                </Link>
+                {isAtInvoiceLimit ? (
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-white/50 text-gray-400 rounded-lg shadow-sm flex items-center font-medium cursor-not-allowed"
+                    title={`Monthly invoice limit reached (${monthlyInvoiceCount}/${invoiceLimit})`}
+                  >
+                    <Lock size={18} className="mr-2" />
+                    Limit Reached
+                  </button>
+                ) : (
+                  <Link
+                    href="/dashboard/invoices/new"
+                    className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                  >
+                    <Plus size={18} className="mr-2" />
+                    New Invoice
+                  </Link>
+                )}
                 <button
                   onClick={handleExportData}
                   className="px-4 py-2 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center font-medium"
@@ -567,6 +623,37 @@ export default function Page() {
             message={message}
             onDismiss={() => setMessage(null)}
           />
+
+          {/* Limit reached prompt */}
+          {isAtInvoiceLimit && (
+            <div className="mb-6">
+              <LimitReachedPrompt
+                resource="invoicesPerMonth"
+                current={monthlyInvoiceCount}
+                limit={invoiceLimit}
+              />
+            </div>
+          )}
+
+          {/* Approaching limit warning */}
+          {isNearInvoiceLimit && (
+            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                    Approaching Invoice Limit
+                  </h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    You've used {monthlyInvoiceCount} of {invoiceLimit} invoices this month.
+                    <Link href="/dashboard/billing" className="ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                      Upgrade for unlimited invoices
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Statistics */}
           <InvoiceStatsComponent stats={stats} formatCurrency={formatCurrency} />
@@ -700,15 +787,26 @@ export default function Page() {
                   </h3>
                 </div>
                 <div className="p-4">
-                  <Link
-                    href="/dashboard/invoices/new"
-                    className="mb-3 p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
-                  >
-                    <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
-                      <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  {isAtInvoiceLimit ? (
+                    <div className="mb-3 p-3 rounded-lg flex items-center bg-gray-100 dark:bg-gray-700 opacity-60 cursor-not-allowed w-full">
+                      <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                        <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Limit Reached ({monthlyInvoiceCount}/{invoiceLimit})
+                      </span>
                     </div>
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Create Invoice</span>
-                  </Link>
+                  ) : (
+                    <Link
+                      href="/dashboard/invoices/new"
+                      className="mb-3 p-3 rounded-lg flex items-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 w-full"
+                    >
+                      <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
+                        <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Create Invoice</span>
+                    </Link>
+                  )}
 
                   <button
                     onClick={() => setFilters({ ...filters, status: 'pending' })}
@@ -742,13 +840,20 @@ export default function Page() {
                   </button>
 
                   <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
-                    <Link
-                      href="/dashboard/invoices/new"
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
-                    >
-                      Create new invoice
-                      <Plus size={14} className="ml-1" />
-                    </Link>
+                    {isAtInvoiceLimit ? (
+                      <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center justify-center w-full">
+                        <Lock size={14} className="mr-1" />
+                        Upgrade to create more invoices
+                      </span>
+                    ) : (
+                      <Link
+                        href="/dashboard/invoices/new"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
+                      >
+                        Create new invoice
+                        <Plus size={14} className="ml-1" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -844,13 +949,20 @@ export default function Page() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">Invoice Records</h3>
-                  <Link
-                    href="/dashboard/invoices/new"
-                    className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Add New
-                  </Link>
+                  {isAtInvoiceLimit ? (
+                    <span className="flex items-center text-sm text-gray-400 dark:text-gray-500">
+                      <Lock size={16} className="mr-1" />
+                      Limit Reached
+                    </span>
+                  ) : (
+                    <Link
+                      href="/dashboard/invoices/new"
+                      className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    >
+                      <Plus size={16} className="mr-1" />
+                      Add New
+                    </Link>
+                  )}
                 </div>
 
                 {/* Desktop Table View */}
@@ -892,13 +1004,23 @@ export default function Page() {
                                 </div>
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No invoices yet</h3>
                                 <p className="text-gray-500 dark:text-gray-400 mb-4">Create your first invoice to start tracking payments.</p>
-                                <Link
-                                  href="/dashboard/invoices/new"
-                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                                >
-                                  <Plus size={16} className="mr-2" />
-                                  Create Invoice
-                                </Link>
+                                {isAtInvoiceLimit ? (
+                                  <button
+                                    disabled
+                                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-400 cursor-not-allowed"
+                                  >
+                                    <Lock size={16} className="mr-2" />
+                                    Limit Reached
+                                  </button>
+                                ) : (
+                                  <Link
+                                    href="/dashboard/invoices/new"
+                                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                                  >
+                                    <Plus size={16} className="mr-2" />
+                                    Create Invoice
+                                  </Link>
+                                )}
                               </div>
                             ) : (
                               <div>
@@ -981,16 +1103,29 @@ export default function Page() {
                 <div className="md:hidden p-4 space-y-4">
                   {paginatedData.length === 0 ? (
                     invoices.length === 0 ? (
-                      <EmptyState
-                        icon={FileText}
-                        title="No invoices yet"
-                        description="Create your first invoice to start tracking payments."
-                        action={{
-                          label: 'Create Invoice',
-                          onClick: () => window.location.href = '/dashboard/invoices/new',
-                          icon: Plus
-                        }}
-                      />
+                      isAtInvoiceLimit ? (
+                        <EmptyState
+                          icon={Lock}
+                          title="Invoice Limit Reached"
+                          description={`You've used ${monthlyInvoiceCount}/${invoiceLimit} invoices this month. Upgrade your plan for unlimited invoices.`}
+                          action={{
+                            label: 'Upgrade Plan',
+                            onClick: () => window.location.href = '/dashboard/billing',
+                            icon: Lock
+                          }}
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={FileText}
+                          title="No invoices yet"
+                          description="Create your first invoice to start tracking payments."
+                          action={{
+                            label: 'Create Invoice',
+                            onClick: () => window.location.href = '/dashboard/invoices/new',
+                            icon: Plus
+                          }}
+                        />
+                      )
                     ) : (
                       <div className="text-center py-8">
                         <p className="text-gray-500 dark:text-gray-400 mb-4">No invoices match your current filters</p>

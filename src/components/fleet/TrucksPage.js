@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Wrench,
   AlertTriangle,
-  Clock
+  Clock,
+  Lock
 } from "lucide-react";
 import { fetchTrucks, deleteTruck } from "@/lib/services/truckService";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
@@ -27,6 +28,8 @@ import TruckFormModal from "@/components/fleet/TruckFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import OperationMessage from "@/components/ui/OperationMessage";
 import { usePagination, Pagination } from "@/hooks/usePagination";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 
 const STORAGE_KEY = 'truck_filters';
 
@@ -34,6 +37,9 @@ export default function TrucksPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trucks, setTrucks] = useState([]);
+
+  // Feature access for resource limits
+  const { checkResourceUpgrade, getResourceLimit } = useFeatureAccess();
 
   // Statistics for vehicles
   const stats = useMemo(() => {
@@ -484,13 +490,29 @@ export default function TrucksPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleAddTruck}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
-                >
-                  <Plus size={18} className="mr-2" />
-                  Add Vehicle
-                </button>
+                {(() => {
+                  const truckLimit = checkResourceUpgrade('trucks', trucks.length);
+                  if (truckLimit.needsUpgrade) {
+                    return (
+                      <Link
+                        href="/dashboard/billing"
+                        className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
+                      >
+                        <Lock size={18} className="mr-2" />
+                        Limit Reached ({trucks.length}/{truckLimit.limit})
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      onClick={handleAddTruck}
+                      className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Add Vehicle
+                    </button>
+                  );
+                })()}
                 <button
                   onClick={exportToCSV}
                   className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors shadow-sm flex items-center font-medium"
@@ -533,6 +555,40 @@ export default function TrucksPage() {
               );
             })}
           </div>
+
+          {/* Vehicle Limit Warning Banner */}
+          {(() => {
+            const truckLimit = checkResourceUpgrade('trucks', trucks.length);
+            const limit = getResourceLimit('trucks');
+            if (truckLimit.needsUpgrade) {
+              return (
+                <LimitReachedPrompt
+                  limitName="trucks"
+                  currentCount={trucks.length}
+                  limit={limit}
+                  nextTier={truckLimit.nextTier}
+                  resourceName="Vehicles"
+                  className="mb-6"
+                />
+              );
+            }
+            if (limit !== Infinity && trucks.length >= limit - 1 && trucks.length > 0) {
+              return (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-amber-600 dark:text-amber-400" />
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      <span className="font-medium">Approaching limit:</span> You have {trucks.length} of {limit} vehicles.
+                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                        Upgrade for more vehicles
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Out of Service Alert */}
           {stats.outOfService > 0 && (
@@ -630,13 +686,29 @@ export default function TrucksPage() {
                     <p className="text-gray-500 dark:text-gray-400 mb-6">
                       Get started by adding your first vehicle to your fleet.
                     </p>
-                    <button
-                      onClick={handleAddTruck}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                    >
-                      <Plus size={18} className="mr-2" />
-                      Add Vehicle
-                    </button>
+                    {(() => {
+                      const truckLimit = checkResourceUpgrade('trucks', trucks.length);
+                      if (truckLimit.needsUpgrade) {
+                        return (
+                          <Link
+                            href="/dashboard/billing"
+                            className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-medium hover:bg-amber-200 transition-colors"
+                          >
+                            <Lock size={18} className="mr-2" />
+                            Upgrade to Add Vehicles
+                          </Link>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={handleAddTruck}
+                          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                          <Plus size={18} className="mr-2" />
+                          Add Vehicle
+                        </button>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div>

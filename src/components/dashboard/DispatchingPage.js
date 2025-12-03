@@ -9,11 +9,14 @@ import { fetchCustomers } from "@/lib/services/customerService";
 import { usePagination } from "@/hooks/usePagination";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 import {
   Plus,
   Truck,
   RefreshCw,
-  Package
+  Package,
+  Lock
 } from "lucide-react";
 
 // Import dispatching components
@@ -247,6 +250,10 @@ export default function DispatchingPage() {
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
 
+  // Feature access for resource limits
+  const { checkResourceUpgrade, getResourceLimit, loading: featureLoading } = useFeatureAccess();
+  const [monthlyLoadCount, setMonthlyLoadCount] = useState(0);
+
   // State for the loads
   const [loads, setLoads] = useState([]);
   const [loadStats, setLoadStats] = useState({
@@ -296,19 +303,46 @@ export default function DispatchingPage() {
     hasPrevPage
   } = usePagination(loads, { itemsPerPage: 10 });
 
+  // Fetch monthly load count for limit checking
+  const fetchMonthlyLoadCount = useCallback(async (userId) => {
+    if (!userId) return 0;
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+      const { count, error } = await supabase
+        .from('loads')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', firstDayOfMonth)
+        .lte('created_at', lastDayOfMonth);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (err) {
+      console.error('Error fetching monthly load count:', err);
+      return 0;
+    }
+  }, []);
+
   const loadLoadsData = useCallback(async (userId) => {
     if (!userId) return;
     try {
       setDataLoading(true);
-      const loadData = await fetchLoads(userId, filters);
+      const [loadData, monthlyCount] = await Promise.all([
+        fetchLoads(userId, filters),
+        fetchMonthlyLoadCount(userId)
+      ]);
       setLoads(loadData);
       setLoadStats(calculateLoadStats(loadData));
+      setMonthlyLoadCount(monthlyCount);
     } catch (err) {
       setMessage({ type: 'error', text: getUserFriendlyError(err) });
     } finally {
       setDataLoading(false);
     }
-  }, [filters]);
+  }, [filters, fetchMonthlyLoadCount]);
 
   // Initial data fetch
   useEffect(() => {
@@ -563,20 +597,58 @@ export default function DispatchingPage() {
                     </h1>
                     <p className="mt-1 text-blue-100">Create and manage your loads and dispatching</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditingLoad(null);
-                      setShowNewLoadModal(true);
-                    }}
-                    className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
-                  >
-                    <Plus size={18} className="mr-2" />
-                    Create Load
-                  </button>
+                  {(() => {
+                    const loadLimit = checkResourceUpgrade('loadsPerMonth', monthlyLoadCount);
+                    if (loadLimit.needsUpgrade) {
+                      return (
+                        <Link
+                          href="/dashboard/billing"
+                          className="inline-flex items-center px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium shadow-lg transition-all duration-200"
+                        >
+                          <Lock size={18} className="mr-2" />
+                          Limit Reached ({monthlyLoadCount}/{loadLimit.limit})
+                        </Link>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={() => {
+                          setEditingLoad(null);
+                          setShowNewLoadModal(true);
+                        }}
+                        className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
+                      >
+                        <Plus size={18} className="mr-2" />
+                        Create Load
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Limit Warning Banner */}
+          {(() => {
+            const loadLimit = checkResourceUpgrade('loadsPerMonth', monthlyLoadCount);
+            const limit = getResourceLimit('loadsPerMonth');
+            if (limit !== Infinity && monthlyLoadCount >= limit * 0.8 && !loadLimit.needsUpgrade) {
+              return (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-amber-600" />
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      <span className="font-medium">Approaching limit:</span> You've used {monthlyLoadCount} of {limit} loads this month.
+                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                        Upgrade for unlimited loads
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Operation Message */}
           <OperationMessage message={message} onDismiss={() => setMessage(null)} />

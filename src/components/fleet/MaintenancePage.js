@@ -20,7 +20,10 @@ import {
   AlertTriangle,
   DollarSign,
   Truck,
-  FileText
+  FileText,
+  Bell,
+  Settings,
+  ClipboardList
 } from "lucide-react";
 import {
   fetchMaintenanceRecords,
@@ -35,6 +38,8 @@ import MaintenanceFormModal from "@/components/fleet/MaintenanceFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import OperationMessage from "@/components/ui/OperationMessage";
 import { usePagination, Pagination } from "@/hooks/usePagination";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
 
 const STORAGE_KEY = 'maintenance_filters';
 
@@ -43,6 +48,10 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [trucks, setTrucks] = useState([]);
+
+  // Feature access check
+  const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
+  const hasMaintenanceAccess = canAccess('maintenanceScheduling');
 
   // Filters with localStorage persistence
   const [filters, setFilters] = useState(() => {
@@ -435,7 +444,7 @@ export default function MaintenancePage() {
   }, [filteredRecords]);
 
   // Loading skeleton
-  if (loading) {
+  if (loading || featureLoading) {
     return (
       <DashboardLayout activePage="fleet">
         <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
@@ -474,6 +483,80 @@ export default function MaintenancePage() {
                   <div key={i} className="h-16 bg-gray-100 dark:bg-gray-700 rounded animate-pulse"></div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt for Basic/Premium users (Fleet+ only feature)
+  if (!hasMaintenanceAccess) {
+    return (
+      <DashboardLayout activePage="fleet">
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/dashboard/fleet"
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </Link>
+                <div className="bg-white/20 p-2.5 rounded-xl">
+                  <Wrench size={28} />
+                </div>
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold">Maintenance Scheduling</h1>
+                  <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
+                    Upgrade to Fleet plan to access maintenance scheduling
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upgrade Prompt */}
+            <UpgradePrompt feature="maintenanceScheduling" currentTier={currentTier} />
+
+            {/* Feature Preview */}
+            <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                What you'll get with Maintenance Scheduling:
+              </h3>
+              <ul className="space-y-3 text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                    <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span>Schedule preventive maintenance for your entire fleet</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
+                    <Bell size={16} className="text-green-600 dark:text-green-400" />
+                  </div>
+                  <span>Get alerts when maintenance is due or overdue</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                    <DollarSign size={16} className="text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <span>Track maintenance costs and service history</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                    <Settings size={16} className="text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span>Multiple maintenance types: oil change, tire rotation, inspections, and more</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                    <ClipboardList size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <span>Service provider tracking and warranty management</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

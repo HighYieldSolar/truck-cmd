@@ -16,7 +16,8 @@ import {
   Download,
   Clock,
   CheckCircle,
-  X
+  X,
+  Lock
 } from "lucide-react";
 import { fetchDrivers, deleteDriver, checkDriverDocumentStatus, getDriverStats } from "@/lib/services/driverService";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
@@ -25,6 +26,8 @@ import { usePagination, Pagination } from "@/hooks/usePagination";
 import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 import DriverFormModal from "@/components/fleet/DriverFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 
 // Local storage key for filter persistence
 const STORAGE_KEY = 'driver_filters';
@@ -59,6 +62,9 @@ export default function DriversPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
   const [drivers, setDrivers] = useState([]);
+
+  // Feature access for resource limits
+  const { checkResourceUpgrade, getResourceLimit } = useFeatureAccess();
 
   // Statistics
   const [stats, setStats] = useState({
@@ -448,13 +454,29 @@ export default function DriversPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleAddDriver}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
-                >
-                  <Plus size={18} className="mr-2" />
-                  Add Driver
-                </button>
+                {(() => {
+                  const driverLimit = checkResourceUpgrade('drivers', drivers.length);
+                  if (driverLimit.needsUpgrade) {
+                    return (
+                      <Link
+                        href="/dashboard/billing"
+                        className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
+                      >
+                        <Lock size={18} className="mr-2" />
+                        Limit Reached ({drivers.length}/{driverLimit.limit})
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      onClick={handleAddDriver}
+                      className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Add Driver
+                    </button>
+                  );
+                })()}
                 <button
                   onClick={handleExport}
                   className="px-4 py-2 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center font-medium"
@@ -504,6 +526,40 @@ export default function DriversPage() {
               );
             })}
           </div>
+
+          {/* Driver Limit Warning Banner */}
+          {(() => {
+            const driverLimit = checkResourceUpgrade('drivers', drivers.length);
+            const limit = getResourceLimit('drivers');
+            if (driverLimit.needsUpgrade) {
+              return (
+                <LimitReachedPrompt
+                  limitName="drivers"
+                  currentCount={drivers.length}
+                  limit={limit}
+                  nextTier={driverLimit.nextTier}
+                  resourceName="Drivers"
+                  className="mb-6"
+                />
+              );
+            }
+            if (limit !== Infinity && drivers.length >= limit - 1 && drivers.length > 0) {
+              return (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Lock size={20} className="text-amber-600 dark:text-amber-400" />
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      <span className="font-medium">Approaching limit:</span> You have {drivers.length} of {limit} drivers.
+                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                        Upgrade for more drivers
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Expired documents alert */}
           {stats.expired > 0 && (
@@ -584,13 +640,29 @@ export default function DriversPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
             <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
               <h3 className="font-medium text-gray-700 dark:text-gray-200">Drivers</h3>
-              <button
-                onClick={handleAddDriver}
-                className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                <Plus size={16} className="mr-1" />
-                Add Driver
-              </button>
+              {(() => {
+                const driverLimit = checkResourceUpgrade('drivers', drivers.length);
+                if (driverLimit.needsUpgrade) {
+                  return (
+                    <Link
+                      href="/dashboard/billing"
+                      className="flex items-center text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
+                    >
+                      <Lock size={16} className="mr-1" />
+                      Upgrade for more
+                    </Link>
+                  );
+                }
+                return (
+                  <button
+                    onClick={handleAddDriver}
+                    className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Add Driver
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Desktop Table View */}
@@ -632,13 +704,29 @@ export default function DriversPage() {
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
                             <p className="text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first driver.</p>
-                            <button
-                              onClick={handleAddDriver}
-                              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                            >
-                              <Plus size={16} className="mr-2" />
-                              Add Driver
-                            </button>
+                            {(() => {
+                              const driverLimit = checkResourceUpgrade('drivers', drivers.length);
+                              if (driverLimit.needsUpgrade) {
+                                return (
+                                  <Link
+                                    href="/dashboard/billing"
+                                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
+                                  >
+                                    <Lock size={16} className="mr-2" />
+                                    Upgrade to Add Drivers
+                                  </Link>
+                                );
+                              }
+                              return (
+                                <button
+                                  onClick={handleAddDriver}
+                                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Plus size={16} className="mr-2" />
+                                  Add Driver
+                                </button>
+                              );
+                            })()}
                           </div>
                         ) : (
                           <div>
@@ -718,16 +806,39 @@ export default function DriversPage() {
             <div className="md:hidden p-4 space-y-4">
               {paginatedData.length === 0 ? (
                 drivers.length === 0 ? (
-                  <EmptyState
-                    icon={Users}
-                    title="No drivers found"
-                    description="Get started by adding your first driver."
-                    action={{
-                      label: 'Add Driver',
-                      onClick: handleAddDriver,
-                      icon: Plus
-                    }}
-                  />
+                  (() => {
+                    const driverLimit = checkResourceUpgrade('drivers', drivers.length);
+                    if (driverLimit.needsUpgrade) {
+                      return (
+                        <div className="text-center py-8">
+                          <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                            <Users className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
+                          <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add drivers.</p>
+                          <Link
+                            href="/dashboard/billing"
+                            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
+                          >
+                            <Lock size={16} className="mr-2" />
+                            Upgrade Plan
+                          </Link>
+                        </div>
+                      );
+                    }
+                    return (
+                      <EmptyState
+                        icon={Users}
+                        title="No drivers found"
+                        description="Get started by adding your first driver."
+                        action={{
+                          label: 'Add Driver',
+                          onClick: handleAddDriver,
+                          icon: Plus
+                        }}
+                      />
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500 dark:text-gray-400 mb-4">No drivers match your current filters</p>
