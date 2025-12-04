@@ -19,22 +19,17 @@ export const useNotificationSystem = () => {
       setIsCheckingNotifications(true);
       setNotificationError(null);
 
-      console.log('Starting automated notification checks...');
-
       const result = await NotificationService.runAutomatedChecks();
 
       if (result.success) {
         NotificationService.updateLastCheckTimestamp();
         setLastCheckTimestamp(new Date().toISOString());
-        console.log('Automated notification checks completed successfully:', result.results);
       } else {
         setNotificationError(result.error);
-        console.error('Automated notification checks failed:', result.error);
       }
 
       return result;
     } catch (error) {
-      console.error('Error running automated notification checks:', error);
       setNotificationError('Failed to run notification checks');
       return { success: false, error: error.message };
     } finally {
@@ -55,11 +50,9 @@ export const useNotificationSystem = () => {
         setComplianceSummary(result.data);
         return result.data;
       } else {
-        console.error('Failed to get compliance summary:', result.error);
         return null;
       }
     } catch (error) {
-      console.error('Error getting compliance summary:', error);
       return null;
     }
   }, [user?.id]);

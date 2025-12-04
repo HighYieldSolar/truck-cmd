@@ -47,7 +47,7 @@ export function ThemeProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error('Error loading theme preference:', error);
+      // Failed to load theme preference
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export function ThemeProvider({ children }) {
           });
       }
     } catch (error) {
-      console.error('Error updating theme:', error);
+      // Failed to update theme
     }
   };
 

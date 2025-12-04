@@ -120,12 +120,11 @@ export async function createFileFromUrl(url, filename, options = {}) {
   try {
     const response = await fetch(url);
     const blob = await response.blob();
-    return new File([blob], filename, { 
+    return new File([blob], filename, {
       type: blob.type,
       ...options
     });
   } catch (error) {
-    console.error('Error creating file from URL:', error);
     throw error;
   }
 }

@@ -46,7 +46,6 @@ export default function ExportMileageButton({
       document.body.removeChild(link);
 
     } catch (error) {
-      console.error('Error exporting mileage data:', error);
       alert('Failed to export mileage data. Please try again.');
     } finally {
       setLoading(false);

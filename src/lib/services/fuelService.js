@@ -79,7 +79,6 @@ export async function fetchFuelEntries(userId, filters = {}) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching fuel entries:', error);
     throw error;
   }
 }
@@ -101,7 +100,6 @@ export async function getFuelEntryById(id) {
     
     return data;
   } catch (error) {
-    console.error('Error fetching fuel entry:', error);
     return null;
   }
 }
@@ -116,29 +114,23 @@ export async function createFuelEntry(fuelEntryData) {
     if (!fuelEntryData.user_id) {
       throw new Error("User ID is required");
     }
-    
-    console.log("Creating fuel entry with data:", fuelEntryData);
-    
+
     // Create the entry
     const { data, error } = await supabase
       .from('fuel_entries')
       .insert([fuelEntryData])
       .select();
-      
+
     if (error) {
-      console.error("Error in createFuelEntry:", error);
       throw error;
     }
-    
-    console.log("Data from database:", data);
+
     if (!data || data.length === 0) {
       throw new Error("No data returned from fuel entry creation");
     }
-    
-    console.log("Fuel entry created successfully:", data[0]);
+
     return data[0];
   } catch (error) {
-    console.error('Error creating fuel entry:', error);
     throw error;
   }
 }
@@ -161,7 +153,6 @@ export async function updateFuelEntry(id, fuelEntryData) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error updating fuel entry:', error);
     throw error;
   }
 }
@@ -182,7 +173,6 @@ export async function deleteFuelEntry(id) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting fuel entry:', error);
     throw error;
   }
 }
@@ -274,7 +264,6 @@ export async function getFuelStats(userId, period = 'quarter') {
       byState: states
     };
   } catch (error) {
-    console.error('Error getting fuel statistics:', error);
     return defaultStats();
   }
 }
@@ -303,30 +292,23 @@ export async function uploadReceiptImage(userId, file) {
   try {
     // Create a unique file path
     const filePath = `${userId}/fuel_receipts/${Date.now()}_${file.name}`;
-    
-    // Log for debugging
-    console.log("Uploading file to:", filePath);
-    
+
     // Upload the file
     const { data, error } = await supabase.storage
-      .from('receipts')  // Make sure this bucket exists in your Supabase project
+      .from('receipts')
       .upload(filePath, file);
-      
+
     if (error) {
-      console.error("Supabase upload error:", error);
       throw error;
     }
-    
-     // Get the public URL
+
+    // Get the public URL
     const { data: publicUrlData } = supabase.storage
       .from('receipts')
       .getPublicUrl(filePath);
-    const publicUrl = data?.publicUrl;
-    
-    console.log("File uploaded, public URL:", publicUrl);
+
     return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('Error uploading receipt:', error);
     return null;
   }
 }
@@ -353,7 +335,6 @@ export async function getVehiclesWithFuelRecords(userId) {
     
     return vehicles;
   } catch (error) {
-    console.error('Error getting vehicles with fuel records:', error);
     return [];
   }
 }
@@ -396,7 +377,6 @@ export async function exportFuelDataForIFTA(userId, filters = {}) {
     
     return iftaData;
   } catch (error) {
-    console.error('Error exporting IFTA data:', error);
     throw error;
   }
 }

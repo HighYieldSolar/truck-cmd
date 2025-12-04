@@ -99,7 +99,6 @@ export async function fetchInvoices(userId, filters = {}) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching invoices:', error);
     throw error;
   }
 }
@@ -140,7 +139,6 @@ export async function getInvoiceById(id) {
       items: items || []
     };
   } catch (error) {
-    console.error('Error fetching invoice:', error);
     return null;
   }
 }
@@ -180,7 +178,6 @@ export async function generateInvoiceNumber(userId) {
     // Format with leading zeros for at least 4 digits
     return `INV-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
   } catch (error) {
-    console.error('Error generating invoice number:', error);
     // Fallback to a timestamp-based number if there's an error
     return `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
   }
@@ -230,13 +227,8 @@ export async function createInvoice(invoiceData) {
         .insert(itemsWithInvoiceId);
         
       if (itemsError) {
-        // If there's an error inserting items, we should ideally delete the invoice too
-        // but Supabase doesn't support true transactions yet.
-        console.error('Error inserting invoice items:', itemsError);
-        
-        // Try to delete the invoice
+        // If there's an error inserting items, delete the invoice
         await supabase.from('invoices').delete().eq('id', invoiceId);
-        
         throw itemsError;
       }
     }
@@ -255,7 +247,6 @@ export async function createInvoice(invoiceData) {
     // Return the created invoice
     return await getInvoiceById(invoiceId);
   } catch (error) {
-    console.error('Error creating invoice:', error);
     throw error;
   }
 }
@@ -329,7 +320,6 @@ export async function updateInvoice(id, invoiceData) {
     // Return the updated invoice
     return await getInvoiceById(id);
   } catch (error) {
-    console.error('Error updating invoice:', error);
     throw error;
   }
 }
@@ -392,26 +382,15 @@ export async function deleteInvoice(id, deleteAssociatedLoad = false) {
     
     // 5. Delete associated load if requested and it exists
     if (deleteAssociatedLoad && loadId) {
-      console.log('Deleting associated load:', loadId);
-      
-      // Delete any load-related records first
-      // This is simplified - you may need to add more tables depending on your schema
-      
-      // Delete the load
-      const { error: loadError } = await supabase
+      // Delete the load (errors ignored since invoice was already deleted)
+      await supabase
         .from('loads')
         .delete()
         .eq('id', loadId);
-      
-      if (loadError) {
-        console.error('Error deleting associated load:', loadError);
-        // We don't throw here since the invoice was already deleted successfully
-      }
     }
-    
+
     return true;
   } catch (error) {
-    console.error('Error deleting invoice:', error);
     throw error;
   }
 }
@@ -453,7 +432,6 @@ export async function updateInvoiceStatus(id, status) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error updating invoice status:', error);
     throw error;
   }
 }
@@ -485,15 +463,13 @@ export async function recordPayment(invoiceId, paymentData) {
     
     // If the invoice is already fully paid, don't add another payment
     if (currentAmountPaid >= invoiceTotal || invoice.status === 'Paid') {
-      console.log('Invoice is already paid. Not adding duplicate payment.');
       return null;
     }
-    
+
     // If this payment would exceed the invoice total, adjust it
     const adjustedPaymentAmount = Math.min(paymentAmount, invoiceTotal - currentAmountPaid);
-    
+
     if (adjustedPaymentAmount <= 0) {
-      console.log('No additional payment needed.');
       return null;
     }
     
@@ -543,7 +519,6 @@ export async function recordPayment(invoiceId, paymentData) {
     
     return payment?.[0] || null;
   } catch (error) {
-    console.error('Error recording payment:', error);
     throw error;
   }
 }
@@ -609,7 +584,6 @@ export async function getInvoiceStats(userId) {
       count: invoices.length
     };
   } catch (error) {
-    console.error('Error getting invoice statistics:', error);
     return { total: 0, paid: 0, pending: 0, overdue: 0, count: 0 };
   }
 }
@@ -651,12 +625,8 @@ export async function emailInvoice(invoiceId, emailDetails) {
         user_name: user?.email
       }]);
     
-    // In a real implementation, you would call your email API here
-    console.log(`Email would be sent to ${emailDetails.to}`);
-    
     return true;
   } catch (error) {
-    console.error('Error emailing invoice:', error);
     throw error;
   }
 }
@@ -711,7 +681,6 @@ export async function duplicateInvoice(invoiceId, overrides = {}) {
       items
     };
   } catch (error) {
-    console.error('Error preparing invoice for duplication:', error);
     throw error;
   }
 }
@@ -749,7 +718,6 @@ export async function checkAndUpdateOverdueInvoices(userId) {
     
     return overdueInvoices.length;
   } catch (error) {
-    console.error('Error checking for overdue invoices:', error);
     throw error;
   }
 }

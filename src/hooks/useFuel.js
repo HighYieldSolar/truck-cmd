@@ -75,7 +75,6 @@ export default function useFuel(userId) {
       setFuelEntries(data);
       return data;
     } catch (err) {
-      console.error('Error loading fuel entries:', err);
       setError('Failed to load fuel entries');
       return [];
     } finally {
@@ -90,7 +89,6 @@ export default function useFuel(userId) {
       setStats(stats);
       return stats;
     } catch (err) {
-      console.error('Error loading fuel stats:', err);
       return {
         totalGallons: 0,
         totalAmount: 0,
@@ -109,7 +107,6 @@ export default function useFuel(userId) {
       setVehicles(vehicles);
       return vehicles;
     } catch (err) {
-      console.error('Error loading vehicles:', err);
       return [];
     }
   }, [userId]);
@@ -121,7 +118,6 @@ export default function useFuel(userId) {
       const entry = await getFuelEntryById(id);
       return entry;
     } catch (err) {
-      console.error('Error getting fuel entry:', err);
       setError('Failed to load fuel entry');
       return null;
     } finally {
@@ -233,7 +229,6 @@ export default function useFuel(userId) {
       
       return newFuelEntry;
     } catch (err) {
-      console.error('Error creating fuel entry:', err);
       const errorMessage = err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
       setError('Failed to create fuel entry: ' + errorMessage);
       throw err;
@@ -278,7 +273,6 @@ export default function useFuel(userId) {
       
       return updatedEntry;
     } catch (err) {
-      console.error('Error updating fuel entry:', err);
       setError('Failed to update fuel entry');
       throw err;
     } finally {
@@ -306,7 +300,6 @@ export default function useFuel(userId) {
       
       return true;
     } catch (error) {
-      console.error('Error updating linked expense:', error);
       return false;
     }
   };
@@ -324,7 +317,6 @@ export default function useFuel(userId) {
         .single();
       
       if (fetchError) {
-        console.error('Error fetching fuel entry for deletion:', fetchError);
         // Continue anyway to attempt deleting the fuel entry
       }
       
@@ -376,7 +368,6 @@ export default function useFuel(userId) {
       await loadStats();
       return true;
     } catch (err) {
-      console.error('Error deleting fuel entry:', err);
       setError('Failed to delete fuel entry');
       throw err;
     } finally {
@@ -478,7 +469,6 @@ export default function useFuel(userId) {
       
       return expense[0];
     } catch (err) {
-      console.error('Error syncing fuel entry to expense:', err);
       throw err;
     }
   }, [userId, syncedEntries]);

@@ -11,13 +11,11 @@ export class NotificationService {
       const { data, error } = await supabase.rpc('generate_compliance_notifications');
 
       if (error) {
-        console.error('Error generating compliance notifications:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, count: data };
     } catch (err) {
-      console.error('Service error generating compliance notifications:', err);
       return { success: false, error: 'Failed to generate notifications' };
     }
   }
@@ -31,13 +29,11 @@ export class NotificationService {
       const { data, error } = await supabase.rpc('cleanup_old_notifications');
 
       if (error) {
-        console.error('Error cleaning up notifications:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, count: data };
     } catch (err) {
-      console.error('Service error cleaning up notifications:', err);
       return { success: false, error: 'Failed to cleanup notifications' };
     }
   }
@@ -54,13 +50,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error getting compliance summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, data };
     } catch (err) {
-      console.error('Service error getting compliance summary:', err);
       return { success: false, error: 'Failed to get compliance summary' };
     }
   }
@@ -95,13 +89,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error creating notification:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (err) {
-      console.error('Service error creating notification:', err);
       return { success: false, error: 'Failed to create notification' };
     }
   }
@@ -120,13 +112,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error marking notification as read:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (err) {
-      console.error('Service error marking notification as read:', err);
       return { success: false, error: 'Failed to mark notification as read' };
     }
   }
@@ -143,13 +133,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error marking all notifications as read:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (err) {
-      console.error('Service error marking all notifications as read:', err);
       return { success: false, error: 'Failed to mark all notifications as read' };
     }
   }
@@ -166,13 +154,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error getting unread notifications summary:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, data };
     } catch (err) {
-      console.error('Service error getting unread summary:', err);
       return { success: false, error: 'Failed to get unread notifications summary' };
     }
   }
@@ -199,13 +185,11 @@ export class NotificationService {
       });
 
       if (error) {
-        console.error('Error getting notifications:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, data };
     } catch (err) {
-      console.error('Service error getting notifications:', err);
       return { success: false, error: 'Failed to get notifications' };
     }
   }
@@ -231,7 +215,6 @@ export class NotificationService {
 
       return { success: true, results };
     } catch (err) {
-      console.error('Error running automated notification checks:', err);
       return { success: false, error: 'Failed to run automated checks' };
     }
   }

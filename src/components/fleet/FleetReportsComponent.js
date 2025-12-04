@@ -227,7 +227,6 @@ export default function FleetReportsComponent() {
       setTimestamps(getStoredTimestamps());
       showSuccess("summary");
     } catch (error) {
-      console.error("Error generating fleet summary report:", error);
       alert("Failed to generate report. Please try again.");
     } finally {
       setLoading(prev => ({ ...prev, summary: false }));
@@ -366,7 +365,6 @@ export default function FleetReportsComponent() {
       setTimestamps(getStoredTimestamps());
       showSuccess("maintenance");
     } catch (error) {
-      console.error("Error generating maintenance report:", error);
       alert("Failed to generate report. Please try again.");
     } finally {
       setLoading(prev => ({ ...prev, maintenance: false }));
@@ -567,7 +565,6 @@ export default function FleetReportsComponent() {
       setTimestamps(getStoredTimestamps());
       showSuccess("documents");
     } catch (error) {
-      console.error("Error generating document expiration report:", error);
       alert("Failed to generate report. Please try again.");
     } finally {
       setLoading(prev => ({ ...prev, documents: false }));
@@ -959,7 +956,6 @@ export default function FleetReportsComponent() {
       setTimestamps(getStoredTimestamps());
       showSuccess("export");
     } catch (error) {
-      console.error("Error exporting fleet data:", error);
       alert("Failed to export data. Please try again.");
     } finally {
       setLoading(prev => ({ ...prev, export: false }));

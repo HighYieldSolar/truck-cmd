@@ -57,7 +57,6 @@ export async function syncFuelToExpenses(userId) {
         .eq('id', entry.id);
         
       if (updateError) {
-        console.error(`Error updating fuel entry ${entry.id} with expense reference:`, updateError);
         // Consider deleting the created expense to keep consistency
         await supabase.from('expenses').delete().eq('id', expense[0].id);
         throw updateError;
@@ -76,11 +75,6 @@ export async function syncFuelToExpenses(userId) {
     const successful = results.filter(r => r.status === 'fulfilled');
     const failed = results.filter(r => r.status === 'rejected');
     
-    if (failed.length > 0) {
-      console.warn(`${failed.length} fuel entries failed to sync:`, 
-        failed.map(f => f.reason?.message || f.reason));
-    }
-    
     return { 
       syncedCount: successful.length,
       failedCount: failed.length,
@@ -89,7 +83,6 @@ export async function syncFuelToExpenses(userId) {
       failures: failed.map(f => f.reason)
     };
   } catch (error) {
-    console.error('Error syncing fuel to expenses:', error);
     throw error;
   }
 }
@@ -117,21 +110,17 @@ export async function syncSingleFuelEntryToExpense(userId, fuelEntryId) {
     
     // Check if this fuel entry is already synced to an expense
     if (fuelEntry.expense_id) {
-      console.log(`Fuel entry ${fuelEntryId} is already synced to expense ${fuelEntry.expense_id}`);
-      
       // Get the existing expense to return it
       const { data: existingExpense, error: expenseError } = await supabase
         .from('expenses')
         .select('*')
         .eq('id', fuelEntry.expense_id)
         .single();
-        
-      if (expenseError) {
-        console.warn(`Linked expense ${fuelEntry.expense_id} not found, may need to recreate`);
-        // The expense_id exists but expense doesn't - could clear the expense_id to allow re-sync
-      } else {
+
+      if (!expenseError) {
         return existingExpense; // Return the existing expense
       }
+      // The expense_id exists but expense doesn't - could clear the expense_id to allow re-sync
     }
     
     // Create expense entry
@@ -170,7 +159,6 @@ export async function syncSingleFuelEntryToExpense(userId, fuelEntryId) {
     
     return expense[0];
   } catch (error) {
-    console.error('Error syncing single fuel entry:', error);
     throw error;
   }
 }
@@ -204,7 +192,6 @@ export async function getLinkedExpense(fuelEntryId) {
     
     return expense;
   } catch (error) {
-    console.error('Error getting linked expense:', error);
     return null;
   }
 }
@@ -247,7 +234,6 @@ export async function updateLinkedExpense(fuelEntryId) {
     
     return { success: true, message: "Linked expense updated successfully" };
   } catch (error) {
-    console.error('Error updating linked expense:', error);
     return { success: false, message: error.message };
   }
 }
@@ -295,10 +281,9 @@ export async function unlinkExpense(fuelEntryId, deleteExpense = false) {
       success: true, 
       message: deleteExpense 
         ? "Expense deleted and unlinked successfully" 
-        : "Expense unlinked successfully" 
+        : "Expense unlinked successfully"
     };
   } catch (error) {
-    console.error('Error unlinking expense:', error);
     return { success: false, message: error.message };
   }
 }

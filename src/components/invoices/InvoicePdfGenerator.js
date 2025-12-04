@@ -33,8 +33,6 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
       setLoading(true);
       setError(null);
 
-      console.log("Starting PDF generation for invoice:", invoice.invoice_number);
-
       // Dynamically import jsPDF and jsPDF-AutoTable to reduce initial bundle size
       const [jsPDFModule, autoTableModule] = await Promise.all([
         import('jspdf'),
@@ -43,8 +41,6 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
       
       const jsPDF = jsPDFModule.default;
       const autoTable = autoTableModule.default;
-
-      console.log("Libraries loaded, creating PDF document");
 
       // Create new PDF document
       const doc = new jsPDF({
@@ -259,8 +255,6 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
         );
       }
       
-      console.log("PDF generated, processing...");
-
       if (mode === "print") {
         // Open PDF in new window for printing
         const pdfBlob = doc.output('blob');
@@ -272,15 +266,12 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
             printWindow.print();
           };
         }
-        console.log("PDF opened for printing");
       } else {
         // Save the PDF with a detailed filename
         const filename = `Invoice_${invoice.invoice_number}_${invoice.customer.replace(/\s+/g, '_')}.pdf`;
         doc.save(filename);
-        console.log(`PDF saved as: ${filename}`);
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
       setError('Failed to generate PDF. Please try again.');
       alert('Error generating PDF: ' + error.message);
     } finally {

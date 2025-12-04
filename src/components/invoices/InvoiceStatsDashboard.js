@@ -55,7 +55,6 @@ export default function InvoiceStatsDashboard({ period = "month" }) {
         const invoiceStats = await getInvoiceStats(user.id);
         setStats(invoiceStats);
       } catch (err) {
-        console.error('Error loading invoice statistics:', err);
         setError('Failed to load invoice statistics. Please try again.');
       } finally {
         setLoading(false);

@@ -43,7 +43,6 @@ export default function CompleteLoadPage({ params }) {
             setLoadId(params?.id);
           }
         } catch (err) {
-          console.error("Error resolving params:", err);
           setError("Failed to load page parameters");
         }
       };
@@ -93,7 +92,6 @@ export default function CompleteLoadPage({ params }) {
         setError(null);
 
       } catch (err) {
-        console.error("Error fetching load details:", err);
         setError(err.message || "Failed to load data");
       } finally {
         setLoading(false);

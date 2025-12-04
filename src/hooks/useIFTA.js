@@ -96,7 +96,6 @@ export default function useIFTA(userId, activeQuarter) {
         uniqueJurisdictions
       });
     } catch (err) {
-      console.error('Error calculating summary:', err);
       // Don't update stats if calculation fails
     }
   }, []);
@@ -129,7 +128,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return data;
     } catch (err) {
-      console.error('Error loading trips:', err);
       setError(formatError(err, 'Failed to load trips. Please try again.'));
       return [];
     } finally {
@@ -164,7 +162,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return data || [];
     } catch (err) {
-      console.error('Error loading tax rates:', err);
       setError(formatError(err, 'Failed to load tax rates. Please add your own rates for accurate calculations.'));
       
       // Don't provide any fallback rates - return empty array
@@ -215,7 +212,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return newTripData;
     } catch (err) {
-      console.error('Error adding trip:', err);
       setError(formatError(err, 'Failed to add trip. Please try again.'));
       throw err;
     } finally {
@@ -258,7 +254,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return updatedTrip;
     } catch (err) {
-      console.error('Error updating trip:', err);
       setError(formatError(err, 'Failed to update trip. Please try again.'));
       throw err;
     } finally {
@@ -296,7 +291,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return true;
     } catch (err) {
-      console.error('Error deleting trip:', err);
       setError(formatError(err, 'Failed to delete trip. Please try again.'));
       throw err;
     } finally {
@@ -329,7 +323,6 @@ export default function useIFTA(userId, activeQuarter) {
       
       return data[0];
     } catch (err) {
-      console.error('Error adding tax rate:', err);
       setError(formatError(err, 'Failed to add tax rate. Please try again.'));
       throw err;
     } finally {

@@ -26,7 +26,6 @@ export default function DashboardLayout({ children }) {
         
         setUser(user);
       } catch (error) {
-        console.error('Error checking authentication:', error);
         // If error, redirect to login
         router.push('/login');
       } finally {

@@ -259,8 +259,7 @@ function ContactForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // In a real implementation, this would send the form data to your backend
-    console.log("Form submitted:", formState);
-    
+
     // Simulate success
     setFormState(prev => ({
       ...prev,

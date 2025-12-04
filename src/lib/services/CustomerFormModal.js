@@ -218,7 +218,6 @@ const CustomerFormModal = ({ isOpen, onClose, userId, existingCustomer, isSubmit
       onClose();
       return result;
     } catch (error) {
-      console.error('Error in form submission:', error);
       setSubmitError(error.message || 'Failed to save customer. Please try again.');
     } finally {
       setSubmitting(false);

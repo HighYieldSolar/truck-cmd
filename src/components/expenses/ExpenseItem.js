@@ -48,7 +48,7 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
           setVehicleInfo(vehicleData);
         }
       } catch (error) {
-        console.error('Error loading vehicle info:', error);
+        // Failed to load vehicle info
       } finally {
         setLoading(false);
       }

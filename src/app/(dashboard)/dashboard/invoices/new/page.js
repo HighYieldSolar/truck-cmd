@@ -45,13 +45,13 @@ export default function NewInvoicePage() {
               setInitialData(duplicateData);
             }
           } catch (duplicateError) {
-            console.error('Error duplicating invoice:', duplicateError);
+            // Failed to duplicate invoice, continue with blank form
           }
         }
 
         setLoading(false);
       } catch (error) {
-        console.error('Error initializing:', error);
+        // Initialization failed
         setLoading(false);
       }
     }

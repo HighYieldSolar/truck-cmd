@@ -128,7 +128,6 @@ export default function VerifyEmail() {
       
       // After successful verification, redirect countdown starts
     } catch (error) {
-      console.error('Error verifying code:', error);
       setError(error.message || 'Invalid verification code. Please try again.');
       setIsVerified(false);
     } finally {
@@ -165,7 +164,6 @@ export default function VerifyEmail() {
         inputRefs.current[0].focus();
       }
     } catch (error) {
-      console.error('Error resending verification code:', error);
       setError(error.message || 'There was an error sending the verification code. Please try again.');
     } finally {
       setResendLoading(false);

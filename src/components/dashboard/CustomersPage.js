@@ -596,7 +596,6 @@ export default function CustomersPage() {
 
       return data;
     } catch (error) {
-      console.error('Error loading customers:', error);
       setError('Failed to load customers. Please try refreshing the page.');
       return [];
     } finally {
@@ -628,7 +627,6 @@ export default function CustomersPage() {
 
         setLoading(false);
       } catch (error) {
-        console.error('Error initializing data:', error);
         setError('Authentication error. Please try logging in again.');
         setLoading(false);
       }
@@ -678,7 +676,6 @@ export default function CustomersPage() {
         setDeleteModalOpen(false);
         setCustomerToDelete(null);
       } catch (error) {
-        console.error('Error deleting customer:', error);
         setError('Failed to delete customer. Please try again.');
       } finally {
         setIsDeleting(false);

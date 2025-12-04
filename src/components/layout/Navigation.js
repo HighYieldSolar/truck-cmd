@@ -125,7 +125,6 @@ export default function Navigation({ activePage = "dashboard" }) {
         
         setUser(user);
       } catch (error) {
-        console.error('Error checking authentication:', error);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -191,7 +190,7 @@ export default function Navigation({ activePage = "dashboard" }) {
       await supabase.auth.signOut();
       router.push('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      // Silent failure - user will see they're still logged in
     }
   };
 

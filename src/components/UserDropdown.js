@@ -100,7 +100,8 @@ export default function UserDropdown() {
       await supabase.auth.signOut();
       router.push('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      // Logout failed, redirect anyway
+      router.push('/login');
     }
   };
 

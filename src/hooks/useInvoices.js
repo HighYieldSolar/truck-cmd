@@ -29,7 +29,6 @@ export default function useInvoices(userId) {
       setInvoices(data);
       return data;
     } catch (err) {
-      console.error('Error loading invoices:', err);
       setError('Failed to load invoices');
       return [];
     } finally {
@@ -44,7 +43,6 @@ export default function useInvoices(userId) {
       setStats(stats);
       return stats;
     } catch (err) {
-      console.error('Error loading invoice stats:', err);
       return {
         total: 0,
         paid: 0,
@@ -62,7 +60,6 @@ export default function useInvoices(userId) {
       const invoice = await getInvoiceById(id);
       return invoice;
     } catch (err) {
-      console.error('Error getting invoice:', err);
       setError('Failed to load invoice');
       return null;
     } finally {
@@ -86,7 +83,6 @@ export default function useInvoices(userId) {
       
       return invoice;
     } catch (err) {
-      console.error('Error creating invoice:', err);
       setError('Failed to create invoice');
       throw err;
     } finally {
@@ -108,7 +104,6 @@ export default function useInvoices(userId) {
       await loadStats();
       return updatedInvoice;
     } catch (err) {
-      console.error('Error updating invoice:', err);
       setError('Failed to update invoice');
       throw err;
     } finally {
@@ -128,7 +123,6 @@ export default function useInvoices(userId) {
       
       return true;
     } catch (err) {
-      console.error('Error deleting invoice:', err);
       setError('Failed to delete invoice');
       throw err;
     } finally {

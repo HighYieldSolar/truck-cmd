@@ -27,7 +27,7 @@ export default function InvoiceDetailPage({ params }) {
         setUser(user);
         setLoading(false);
       } catch (error) {
-        console.error('Error getting user:', error);
+        // Auth error handled by redirect
         setLoading(false);
       }
     }

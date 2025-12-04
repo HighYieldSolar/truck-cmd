@@ -24,7 +24,6 @@ const getFormDataFromLocalStorage = (formKey) => {
     const formDataString = localStorage.getItem(formKey);
     return formDataString ? JSON.parse(formDataString) : null;
   } catch (error) {
-    console.error('Error retrieving from localStorage:', error);
     return null;
   }
 };
@@ -34,7 +33,7 @@ const setFormDataToLocalStorage = (formKey, data) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(formKey, JSON.stringify(data));
   } catch (error) {
-    console.error('Error saving to localStorage:', error);
+    // Ignore localStorage errors
   }
 };
 
@@ -43,7 +42,7 @@ const clearFormDataFromLocalStorage = (formKey) => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(formKey);
   } catch (error) {
-    console.error('Error clearing localStorage:', error);
+    // Ignore localStorage errors
   }
 };
 
@@ -149,7 +148,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
         setVehicles(data || []);
       } catch (error) {
-        console.error('Error loading vehicles:', error);
+        // Failed to load vehicles
       } finally {
         setVehiclesLoading(false);
       }

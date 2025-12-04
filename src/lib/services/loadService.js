@@ -101,7 +101,6 @@ export async function fetchLoads(userId, filters = {}) {
       notes: load.notes || ""
     }));
   } catch (error) {
-    console.error('Error fetching loads:', error);
     return [];
   }
 }
@@ -139,7 +138,6 @@ export async function getLoadById(id) {
       notes: data.notes || ""
     };
   } catch (error) {
-    console.error('Error fetching load:', error);
     return null;
   }
 }
@@ -198,7 +196,6 @@ export async function createLoad(userId, loadData) {
       notes: data[0].notes || ""
     };
   } catch (error) {
-    console.error('Error creating load:', error);
     return null;
   }
 }
@@ -253,7 +250,6 @@ export async function updateLoad(id, loadData) {
       notes: data[0].notes || ""
     };
   } catch (error) {
-    console.error('Error updating load:', error);
     return null;
   }
 }
@@ -274,7 +270,6 @@ export async function deleteLoad(id) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting load:', error);
     return false;
   }
 }
@@ -317,7 +312,6 @@ export async function assignDriver(loadId, driverName) {
       notes: data[0].notes || ""
     };
   } catch (error) {
-    console.error('Error assigning driver:', error);
     return null;
   }
 }
@@ -357,7 +351,6 @@ export async function updateLoadStatus(loadId, status) {
       notes: data[0].notes || ""
     };
   } catch (error) {
-    console.error('Error updating load status:', error);
     return null;
   }
 }
@@ -371,8 +364,6 @@ export async function updateLoadStatus(loadId, status) {
  */
 export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
   try {
-    console.log(`Updating earnings for load ${loadId}: oldRate=${oldRate}, newRate=${newRate}`);
-    
     // First, check if there's an existing earnings record for this load
     const { data: existingEarnings, error: fetchError } = await supabase
       .from('earnings')
@@ -381,19 +372,16 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
-      console.error('Error fetching existing earnings:', fetchError);
       throw fetchError;
     }
-
-    console.log('Existing earnings record:', existingEarnings);
 
     if (existingEarnings) {
       // For existing earnings, we should set the amount to the new rate, not add the difference
       // This ensures the earnings always match the current load rate
-      
-      const { data: updatedEarnings, error: updateError } = await supabase
+
+      const { error: updateError } = await supabase
         .from('earnings')
-        .update({ 
+        .update({
           amount: newRate
         })
         .eq('id', existingEarnings.id)
@@ -401,9 +389,6 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
         .single();
 
       if (updateError) throw updateError;
-      
-      console.log(`Updated earnings for load ${loadId}: ${existingEarnings.amount} -> ${newRate}`);
-      console.log('Updated earnings record:', updatedEarnings);
     } else {
       // Check if load is factored
       const { data: load, error: loadError } = await supabase
@@ -416,7 +401,7 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
 
       if (load && load.factored) {
         // Create new earnings record for factored load
-        const { data: newEarnings, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from('earnings')
           .insert({
             user_id: load.user_id,
@@ -431,11 +416,6 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
           .single();
 
         if (insertError) throw insertError;
-        
-        console.log(`Created new earnings record for factored load ${loadId} with amount ${newRate}`);
-        console.log('New earnings record:', newEarnings);
-      } else {
-        console.log('Load is not factored, no earnings record to update');
       }
     }
 
@@ -452,7 +432,6 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
 
     return true;
   } catch (error) {
-    console.error('Error updating completed load earnings:', error);
     return false;
   }
 }
@@ -464,8 +443,6 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
  */
 export async function removeCompletedLoadEarnings(loadId) {
   try {
-    console.log(`Removing earnings for load ${loadId} (status changed from Completed)`);
-    
     // First, check if there's an existing earnings record for this load
     const { data: existingEarnings, error: fetchError } = await supabase
       .from('earnings')
@@ -474,7 +451,6 @@ export async function removeCompletedLoadEarnings(loadId) {
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
-      console.error('Error fetching existing earnings:', fetchError);
       throw fetchError;
     }
 
@@ -486,10 +462,6 @@ export async function removeCompletedLoadEarnings(loadId) {
         .eq('id', existingEarnings.id);
 
       if (deleteError) throw deleteError;
-      
-      console.log(`Deleted earnings record for load ${loadId} with amount ${existingEarnings.amount}`);
-    } else {
-      console.log(`No earnings record found for load ${loadId}`);
     }
 
     // Also clear the final_rate in the loads table
@@ -505,7 +477,6 @@ export async function removeCompletedLoadEarnings(loadId) {
 
     return true;
   } catch (error) {
-    console.error('Error removing completed load earnings:', error);
     return false;
   }
 }
@@ -539,7 +510,6 @@ export async function getLoadStats(userId) {
       completed: (completed.data || []).length
     };
   } catch (error) {
-    console.error('Error getting load stats:', error);
     return {
       total: 0,
       pending: 0,

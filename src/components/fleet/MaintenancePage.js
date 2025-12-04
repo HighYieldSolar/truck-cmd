@@ -62,7 +62,7 @@ export default function MaintenancePage() {
           return JSON.parse(saved);
         }
       } catch (e) {
-        console.error('Error loading saved filters:', e);
+        // Ignore parse errors, use defaults
       }
     }
     return {
@@ -168,7 +168,6 @@ export default function MaintenancePage() {
       setRecords(maintenanceData);
       setTrucks(trucksData);
     } catch (error) {
-      console.error('Error loading data:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to load maintenance records. Please try again later.'
@@ -220,7 +219,6 @@ export default function MaintenancePage() {
           )
           .subscribe();
       } catch (error) {
-        console.error('Error initializing:', error);
         setOperationMessage({
           type: 'error',
           text: 'Failed to initialize. Please refresh the page.'
@@ -265,7 +263,6 @@ export default function MaintenancePage() {
 
       return true;
     } catch (error) {
-      console.error('Error after saving record:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to save maintenance record. Please try again.'
@@ -297,7 +294,6 @@ export default function MaintenancePage() {
         text: 'Maintenance record deleted successfully!'
       });
     } catch (error) {
-      console.error('Error deleting record:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to delete maintenance record. Please try again.'

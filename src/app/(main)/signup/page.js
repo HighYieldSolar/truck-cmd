@@ -126,7 +126,6 @@ export default function SignupPage() {
       }, 3000);
       
     } catch (error) {
-      console.error("Signup error:", error);
       setError(error.message || "An error occurred during signup. Please try again.");
     } finally {
       setLoading(false);

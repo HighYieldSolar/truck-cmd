@@ -19,7 +19,6 @@ export async function fetchCustomers(userId) {
     // Return the data, or an empty array if no data
     return data || [];
   } catch (error) {
-    console.error('Error fetching customers:', error);
     return [];
   }
 }
@@ -61,7 +60,6 @@ export async function createCustomer(userId, customerData) {
     // Return the created customer
     return data[0];
   } catch (error) {
-    console.error('Error creating customer:', error);
     return null;
   }
 }
@@ -103,7 +101,6 @@ export async function updateCustomer(id, customerData) {
     // Return the updated customer
     return data[0];
   } catch (error) {
-    console.error('Error updating customer:', error);
     return null;
   }
 }
@@ -124,7 +121,6 @@ export async function deleteCustomer(id) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting customer:', error);
     return false;
   }
 }
@@ -160,7 +156,6 @@ export async function getCustomerStats(userId) {
       brokers
     };
   } catch (error) {
-    console.error('Error getting customer stats:', error);
     return {
       total: 0,
       active: 0,
@@ -191,7 +186,6 @@ export async function searchCustomers(userId, query) {
     
     return data || [];
   } catch (error) {
-    console.error('Error searching customers:', error);
     return [];
   }
 }

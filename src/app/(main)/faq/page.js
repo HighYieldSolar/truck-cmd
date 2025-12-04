@@ -26,7 +26,6 @@ export default function FAQPage() {
   const handleSearch = (e) => {
     e.preventDefault();
     // In a real implementation, this would filter the FAQs based on search
-    console.log("Searching for:", searchQuery);
   };
 
   // FAQ Categories

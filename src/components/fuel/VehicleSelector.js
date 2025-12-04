@@ -58,7 +58,6 @@ export default function VehicleSelector({
           })));
         }
       } catch (err) {
-        console.error('Error loading vehicles:', err);
         setError('Failed to load vehicles');
       } finally {
         setLoading(false);

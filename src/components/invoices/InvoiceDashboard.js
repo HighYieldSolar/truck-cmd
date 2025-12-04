@@ -226,7 +226,6 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
 
       // Check if the invoice is already paid or has payments
       if (invoice.status === 'Paid' || (invoice.amount_paid && parseFloat(invoice.amount_paid) >= parseFloat(invoice.total))) {
-        console.log('Invoice is already paid or has sufficient payments');
         return;
       }
 
@@ -236,7 +235,6 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
       const remainingBalance = total - amountPaid;
 
       if (remainingBalance <= 0) {
-        console.log('Invoice already has full payment amount');
         // Just update status if needed
         if (invoice.status !== 'Paid') {
           await updateInvoiceStatus(invoiceId, 'Paid');
@@ -254,15 +252,12 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
         status: 'completed'
       };
 
-      console.log('Recording payment for remaining balance:', remainingBalance);
-
       // Record payment first - this should also update the invoice status to Paid
       // if the payment completes the total
       await recordPayment(invoiceId, paymentData);
 
       // Update will be handled by the real-time subscription
     } catch (err) {
-      console.error('Error marking invoice as paid:', err);
       setError('Failed to update invoice. Please try again.');
     }
   };
@@ -612,7 +607,6 @@ export default function InvoiceDashboard() {
       setOverdueInvoices(overdue);
 
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
       setError('Failed to load invoice data. Please try again.');
     } finally {
       setInvoicesLoading(false);
@@ -642,7 +636,6 @@ export default function InvoiceDashboard() {
 
         setLoading(false);
       } catch (err) {
-        console.error('Error initializing:', err);
         setError('Failed to load data. Please try again.');
         setLoading(false);
       }
@@ -674,7 +667,6 @@ export default function InvoiceDashboard() {
         const data = await fetchInvoices(user.id, newFilters);
         setFilteredInvoices(data);
       } catch (err) {
-        console.error('Error applying filters:', err);
         setError('Failed to filter invoices. Please try again.');
       } finally {
         setInvoicesLoading(false);
@@ -688,7 +680,6 @@ export default function InvoiceDashboard() {
       await updateInvoiceStatus(invoiceId, 'Paid');
       // Update will be handled by the real-time subscription
     } catch (err) {
-      console.error('Error marking invoice as paid:', err);
       setError('Failed to update invoice. Please try again.');
     }
   };
@@ -715,7 +706,6 @@ export default function InvoiceDashboard() {
         setInvoiceToDelete(null);
       }
     } catch (err) {
-      console.error('Error deleting invoice:', err);
       setError('Failed to delete invoice. Please try again.');
     } finally {
       setIsDeleting(false);

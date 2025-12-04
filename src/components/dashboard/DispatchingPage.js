@@ -312,7 +312,6 @@ export default function DispatchingPage() {
       if (error) throw error;
       return count || 0;
     } catch (err) {
-      console.error('Error fetching monthly load count:', err);
       return 0;
     }
   }, []);

@@ -34,10 +34,9 @@ export async function fetchTrucks(userId, filters = {}) {
     const { data, error } = await query;
     
     if (error) throw error;
-    
+
     return data || [];
   } catch (error) {
-    console.error('Error fetching trucks:', error);
     throw error;
   }
 }
@@ -59,7 +58,6 @@ export async function getTruckById(id) {
 
     return data;
   } catch (error) {
-    console.error('Error fetching truck:', error);
     return null;
   }
 }
@@ -101,7 +99,6 @@ export async function createTruck(truckData) {
 
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error creating truck:', error);
     throw error;
   }
 }
@@ -148,7 +145,6 @@ export async function updateTruck(id, truckData) {
 
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error updating truck:', error);
     throw error;
   }
 }
@@ -169,7 +165,6 @@ export async function deleteTruck(id) {
 
     return true;
   } catch (error) {
-    console.error('Error deleting truck:', error);
     throw error;
   }
 }
@@ -199,7 +194,6 @@ export async function uploadTruckImage(userId, file) {
       
     return publicUrl;
   } catch (error) {
-    console.error('Error uploading truck image:', error);
     return null;
   }
 }
@@ -231,7 +225,6 @@ export async function getTruckStats(userId) {
       outOfService
     };
   } catch (error) {
-    console.error('Error getting truck stats:', error);
     return {
       total: 0,
       active: 0,

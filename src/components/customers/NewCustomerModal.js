@@ -56,7 +56,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
             setHasRestoredData(true);
           }
         } catch (error) {
-          console.error('Error loading saved form data:', error);
+          // Failed to load saved form data
         }
       }
     } else if (initialData) {
@@ -174,7 +174,6 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
         window.location.reload();
       }
     } catch (error) {
-      console.error('Error saving customer:', error);
       setErrors({ submit: error.message || 'Failed to save customer' });
     } finally {
       setIsSubmitting(false);

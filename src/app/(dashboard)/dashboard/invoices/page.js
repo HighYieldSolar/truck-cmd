@@ -308,7 +308,6 @@ export default function Page() {
       if (error) throw error;
       return count || 0;
     } catch (error) {
-      console.error('Error fetching monthly invoice count:', error);
       return 0;
     }
   }, []);

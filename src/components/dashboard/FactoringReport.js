@@ -20,7 +20,7 @@ export default function FactoringReport({ userId, period = 'month' }) {
         const factoringStats = await getFactoringStats(userId, period);
         setStats(factoringStats);
       } catch (error) {
-        console.error("Error loading factoring stats:", error);
+        // Failed to load stats - will show zero values
       } finally {
         setLoading(false);
       }

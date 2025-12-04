@@ -32,7 +32,6 @@ export default function VehicleSelector({
         }
 
         if (!currentUserId) {
-          console.warn("No user ID available for fetching vehicles");
           return;
         }
 
@@ -73,7 +72,6 @@ export default function VehicleSelector({
           processPassedVehicles();
         }
       } catch (err) {
-        console.error("Error fetching vehicles:", err);
         setError(err.message);
         // Fall back to passed vehicles on error
         processPassedVehicles();

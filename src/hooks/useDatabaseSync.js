@@ -79,7 +79,6 @@ export default function useDatabaseSync({
       
       return connected;
     } catch (err) {
-      console.error("Error checking connection:", err);
       setIsConnected(false);
       setError('Database connection error: ' + (err.message || 'Unknown error'));
       return false;
@@ -91,8 +90,6 @@ export default function useDatabaseSync({
    */
   const reconnect = useCallback(async () => {
     try {
-      console.log('Attempting to reconnect to database...');
-      
       setConnectionStats(prev => ({
         ...prev,
         reconnectAttempts: prev.reconnectAttempts + 1
@@ -102,28 +99,23 @@ export default function useDatabaseSync({
       const { error: refreshError } = await supabase.auth.refreshSession();
       
       if (refreshError) {
-        console.error('Failed to refresh session:', refreshError);
-        
         // Try to get current session as alternative approach
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!session) {
-          console.error('No active session found');
           return false;
         }
       }
-      
+
       // Test the connection after refreshing
       const isConnected = await checkConnection();
-      
+
       if (isConnected) {
-        console.log('Successfully reconnected to database');
         return true;
       }
-      
+
       return false;
     } catch (err) {
-      console.error('Reconnection attempt failed:', err);
       return false;
     }
   }, [checkConnection]);
@@ -134,17 +126,15 @@ export default function useDatabaseSync({
   const refreshData = useCallback(async () => {
     // Prevent multiple concurrent refreshes and throttle frequent calls
     if (refreshingRef.current) {
-      console.log('Refresh already in progress, skipping');
       return false;
     }
-    
+
     // Throttle refreshes to at most once every 10 seconds
     if (lastRefreshTimeRef.current) {
       const now = new Date();
       const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
-      
+
       if (timeSinceLastRefresh < 10000) { // 10 seconds
-        console.log('Refresh throttled, last refresh was', Math.round(timeSinceLastRefresh / 1000), 'seconds ago');
         return false;
       }
     }
@@ -162,25 +152,23 @@ export default function useDatabaseSync({
         const reconnected = await reconnect();
         
         if (!reconnected) {
-          console.error('Failed to reconnect to database');
           setError('Unable to connect to database. Please try again later.');
           return false;
         }
       }
-      
+
       // Connection is healthy, perform refresh callback
       if (onRefreshRef.current) {
         await onRefreshRef.current();
       }
-      
+
       // Update last refresh time
       const now = new Date();
       lastRefreshTimeRef.current = now;
       setLastRefresh(now);
-      
+
       return true;
     } catch (err) {
-      console.error('Error refreshing data:', err);
       setError(`Error refreshing data: ${err.message}`);
       return false;
     } finally {
@@ -216,8 +204,6 @@ export default function useDatabaseSync({
       
       // If tab was hidden and now became visible, refresh the data
       if (isVisible && wasHidden && autoRefreshEnabled) {
-        console.log('Tab became visible - checking connection and refreshing if needed');
-        
         // Check how long since last refresh
         const now = new Date();
         const lastRefreshTime = lastRefreshTimeRef.current || new Date(0);

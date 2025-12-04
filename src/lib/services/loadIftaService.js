@@ -1,6 +1,6 @@
 // src/lib/services/loadIftaService.js
 import { supabase } from "../supabaseClient";
-import { getQuarterFromDate, validateTripQuarter } from "../utils/dateUtils";
+import { getQuarterFromDate } from "../utils/dateUtils";
 
 /**
  * Service to handle integration between Load Management and IFTA Calculator
@@ -68,7 +68,6 @@ export async function getImportableLoads(userId, quarter) {
 
     return markedLoads;
   } catch (error) {
-    console.error('Error getting importable loads:', error);
     throw new Error(`Failed to get importable loads: ${error.message}`);
   }
 }
@@ -109,11 +108,6 @@ export async function convertLoadsToIftaTrips(userId, quarter, loadIds) {
       const loadDate = load.actual_delivery_date || load.delivery_date;
       const correctQuarter = getQuarterFromDate(loadDate);
 
-      // Validate that the load belongs to the requested quarter
-      if (!validateTripQuarter(loadDate, quarter)) {
-        console.warn(`Load ${load.id} (${loadDate}) belongs to ${correctQuarter}, but importing to ${quarter}`);
-      }
-
       return {
         user_id: userId,
         quarter: correctQuarter, // Use the quarter determined from load date
@@ -144,7 +138,6 @@ export async function convertLoadsToIftaTrips(userId, quarter, loadIds) {
 
     return createdTrips || [];
   } catch (error) {
-    console.error('Error converting loads to IFTA trips:', error);
     throw new Error(`Failed to convert loads to IFTA trips: ${error.message}`);
   }
 }
@@ -201,7 +194,6 @@ export async function getLoadToIftaStats(userId, quarter) {
       success: true
     };
   } catch (error) {
-    console.error('Error getting load to IFTA stats:', error);
     return {
       total: 0,
       imported: 0,

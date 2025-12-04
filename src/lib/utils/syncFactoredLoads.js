@@ -17,9 +17,7 @@ export async function syncFactoredLoads(userId) {
     }
     userId = user.id;
   }
-  
-  console.log(`Starting factored loads sync for user: ${userId}`);
-  
+
   const result = {
     success: false,
     synced: 0,
@@ -46,9 +44,7 @@ export async function syncFactoredLoads(userId) {
       result.message = 'No factored loads found for this user';
       return result;
     }
-    
-    console.log(`Found ${factoredLoads.length} factored loads`);
-    
+
     // Get all existing factoring earnings records for this user
     const { data: existingEarnings, error: earningsError } = await supabase
       .from('earnings')
@@ -65,8 +61,7 @@ export async function syncFactoredLoads(userId) {
     
     // Filter to loads that need earnings records
     const loadsNeedingEarnings = factoredLoads.filter(load => !existingLoadIds.has(load.id));
-    
-    console.log(`Found ${loadsNeedingEarnings.length} factored loads without earnings records`);
+
     result.skipped = factoredLoads.length - loadsNeedingEarnings.length;
     
     // Create earnings records for each load
@@ -103,10 +98,7 @@ export async function syncFactoredLoads(userId) {
           earningId: data?.[0]?.id,
           amount: earningsData.amount
         });
-        
-        console.log(`Created earnings record for load #${load.load_number}`);
       } catch (error) {
-        console.error(`Error syncing load ${load.id}:`, error);
         result.failed++;
         result.errors.push({
           loadId: load.id,
@@ -125,7 +117,6 @@ export async function syncFactoredLoads(userId) {
     result.success = true;
     return result;
   } catch (error) {
-    console.error('Error syncing factored loads:', error);
     result.success = false;
     result.error = error.message;
     return result;
@@ -141,14 +132,10 @@ export function addSyncUtilToWindow() {
     window.syncFactoredLoads = async () => {
       try {
         const result = await syncFactoredLoads();
-        console.log('Sync complete:', result);
         return result;
       } catch (error) {
-        console.error('Error running sync:', error);
         return { success: false, error: error.message };
       }
     };
-    
-    console.log('Sync utility added to window. Run window.syncFactoredLoads() to sync factored loads with earnings.');
   }
 }

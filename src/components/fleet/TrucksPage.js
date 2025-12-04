@@ -110,7 +110,7 @@ export default function TrucksPage() {
           return JSON.parse(saved);
         }
       } catch (e) {
-        console.error('Error loading saved filters:', e);
+        // Ignore parse errors, use defaults
       }
     }
     return {
@@ -196,7 +196,6 @@ export default function TrucksPage() {
       const data = await fetchTrucks(userId);
       setTrucks(data);
     } catch (error) {
-      console.error('Error loading trucks:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to load vehicles. Please try again later.'
@@ -247,7 +246,6 @@ export default function TrucksPage() {
           )
           .subscribe();
       } catch (error) {
-        console.error('Error initializing:', error);
         setOperationMessage({
           type: 'error',
           text: 'Failed to initialize. Please refresh the page.'
@@ -293,7 +291,6 @@ export default function TrucksPage() {
 
       return true;
     } catch (error) {
-      console.error('Error after saving truck:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to save vehicle. Please try again.'
@@ -325,7 +322,6 @@ export default function TrucksPage() {
         text: 'Vehicle deleted successfully!'
       });
     } catch (error) {
-      console.error('Error deleting truck:', error);
       setOperationMessage({
         type: 'error',
         text: 'Failed to delete vehicle. Please try again.'

@@ -1477,7 +1477,6 @@ export default function StateMileageLogger() {
                             }
                             setTimeout(() => setSuccess(null), 4000);
                           } catch (error) {
-                            console.error("Error importing to IFTA:", error);
                             setError("Failed to import to IFTA calculator. Please try again.");
                           } finally {
                             setLoading(false);

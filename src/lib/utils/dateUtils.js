@@ -37,7 +37,6 @@ export function formatDateLocal(date) {
   }
 
   if (isNaN(dateObj.getTime())) {
-    console.warn('Invalid date provided to formatDateLocal:', date);
     return '';
   }
 
@@ -58,7 +57,6 @@ export function createLocalDate(dateString) {
 
   const parts = dateString.split('-');
   if (parts.length !== 3) {
-    console.warn('Invalid date format provided to createLocalDate:', dateString);
     return new Date();
   }
 
@@ -134,7 +132,6 @@ export function formatDateForDisplay(dateString) {
     const date = new Date(dateString + 'T00:00:00'); // Add time to prevent timezone issues
     return date.toLocaleDateString();
   } catch (error) {
-    console.warn('Error formatting date for display:', dateString, error);
     return dateString;
   }
 }
@@ -167,7 +164,6 @@ export function formatDateForDisplayMMDDYYYY(dateString) {
     // Fallback
     return formatDateForDisplay(dateString);
   } catch (error) {
-    console.warn('Error formatting date for MM/DD/YYYY display:', dateString, error);
     return dateString;
   }
 }
@@ -216,7 +212,6 @@ export function getQuarterFromDate(date) {
   }
 
   if (isNaN(dateObj.getTime())) {
-    console.warn('Invalid date provided to getQuarterFromDate:', date);
     return null;
   }
 

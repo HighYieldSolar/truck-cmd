@@ -6,7 +6,6 @@ function useLocalStorage(key, initialValue) {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(error);
       return initialValue;
     }
   });
@@ -18,17 +17,17 @@ function useLocalStorage(key, initialValue) {
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
-      console.error(error);
+      // Failed to save to localStorage
     }
-    };
+  };
 
-    const clearValue = () => {
-        try{
-            window.localStorage.removeItem(key);
-        } catch(error){
-            console.error(error)
-        }
+  const clearValue = () => {
+    try {
+      window.localStorage.removeItem(key);
+    } catch (error) {
+      // Failed to clear localStorage
     }
+  };
 
   return [storedValue, setValue, clearValue];
 }

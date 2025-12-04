@@ -5,8 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Missing Supabase environment variables. Check your .env.local file.");
-  throw new Error("Missing Supabase environment variables");
+  throw new Error("Missing Supabase environment variables. Check your .env.local file.");
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -24,16 +23,13 @@ export async function testConnection() {
   try {
     // Use a simple query to test the connection
     const { data, error } = await supabase.from('ifta_tax_rates').select('count').limit(1).single();
-    
+
     if (error) {
-      console.error("Supabase connection test failed:", error);
       return { success: false, error };
     }
-    
-    console.log("Supabase connection successful");
+
     return { success: true };
   } catch (error) {
-    console.error("Supabase connection test failed:", error);
     return { success: false, error };
   }
 }

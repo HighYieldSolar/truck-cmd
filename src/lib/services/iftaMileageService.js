@@ -65,7 +65,6 @@ export async function getImportableMileageTrips(userId, quarter) {
 
     return markedTrips;
   } catch (error) {
-    console.error('Error getting importable mileage trips:', error);
     throw new Error(`Failed to get importable mileage trips: ${error.message || "Unknown error"}`);
   }
 }
@@ -122,7 +121,6 @@ export async function getStateMileageForTrip(tripId) {
 
     return stateMileage;
   } catch (error) {
-    console.error('Error getting state mileage for trip:', error);
     throw new Error(`Failed to get state mileage: ${error.message || "Unknown error"}`);
   }
 }
@@ -136,11 +134,8 @@ export async function getStateMileageForTrip(tripId) {
  * @returns {Promise<Object>} - Import results
  */
 export async function importMileageTripToIFTA(userId, quarter, tripId) {
-  console.log(`Starting import of mileage trip ${tripId} for user ${userId} in quarter ${quarter}`);
-
   try {
     if (!userId || !quarter || !tripId) {
-      console.error("Missing required parameters:", { userId, quarter, tripId });
       throw new Error("User ID, quarter, and trip ID are required");
     }
 
@@ -153,12 +148,10 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       .single();
 
     if (tripError) {
-      console.error("Error fetching trip details:", tripError);
       throw tripError;
     }
 
     if (!trip) {
-      console.error("Mileage trip not found:", { tripId, userId });
       throw new Error("Mileage trip not found");
     }
 
@@ -166,14 +159,11 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
     let stateMileage;
     try {
       stateMileage = await getStateMileageForTrip(tripId);
-      console.log(`Found ${stateMileage.length} states with mileage for trip ${tripId}`);
     } catch (stateError) {
-      console.error("Error getting state mileage:", stateError);
       throw new Error(`Failed to get state mileage data: ${stateError.message}`);
     }
 
     if (stateMileage.length === 0) {
-      console.warn("No state mileage data found for trip:", tripId);
       return {
         success: true,
         importedCount: 0,
@@ -201,7 +191,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       .eq('mileage_trip_id', tripId);
 
     if (checkError) {
-      console.error("Error checking existing imports:", checkError);
       // Handle table doesn't exist case
       if (checkError.code === '42P01') {
         throw new Error("IFTA trip records table not found. Please contact support.");
@@ -211,7 +200,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
 
     // If we found existing imports, return early with "already imported" status
     if (count > 0) {
-      console.log(`Trip ${tripId} already has ${count} imported records`);
       return {
         success: true,
         importedCount: 0,
@@ -224,7 +212,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
 
     // Validate that the trip belongs to the requested quarter
     if (!validateTripQuarter(tripEndDate, quarter)) {
-      console.warn(`Trip ${trip.id} (${tripEndDate}) belongs to ${correctQuarter}, but importing to ${quarter}`);
       // Continue with import but use the correct quarter
     }
 
@@ -251,8 +238,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       source: 'mileage_tracker'
     }));
 
-    console.log(`Prepared ${tripRecords.length} IFTA records for insertion`);
-
     // Only insert if there are records to create
     let insertedData = [];
     if (tripRecords.length > 0) {
@@ -267,7 +252,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
           // Check specifically for unique constraint violation
           if (insertError.code === '23505' ||
             (insertError.message && insertError.message.includes('duplicate key value violates unique constraint'))) {
-            console.log(`Duplicate record detected for trip ${tripId}`);
             return {
               success: true,
               importedCount: 0,
@@ -277,17 +261,14 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
             };
           }
 
-          console.error("Error inserting IFTA records:", insertError);
           throw insertError;
         }
 
         insertedData = data || [];
-        console.log(`Successfully inserted ${insertedData.length} IFTA records`);
       } catch (insertErr) {
         // Handle PostgreSQL unique constraint violation
         if (insertErr.code === '23505' ||
           (insertErr.message && insertErr.message.includes('duplicate key value violates unique constraint'))) {
-          console.log(`Caught duplicate key error for trip ${tripId}`);
           return {
             success: true,
             importedCount: 0,
@@ -297,7 +278,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
           };
         }
 
-        console.error("Exception during IFTA record insertion:", insertErr);
         throw new Error(`Failed to insert IFTA records: ${insertErr.message}`);
       }
     }
@@ -316,7 +296,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
     // Handle PostgreSQL unique constraint violation at the outer level too
     if (error.code === '23505' ||
       (error.message && error.message.includes('duplicate key value violates unique constraint'))) {
-      console.log(`Caught duplicate key error at outer level for trip ${tripId}`);
       return {
         success: true,
         importedCount: 0,
@@ -326,7 +305,6 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       };
     }
 
-    console.error('Error importing mileage trip to IFTA:', error);
     return {
       success: false,
       error: error.message || "An unknown error occurred during import"
@@ -382,7 +360,6 @@ export async function generateIFTASummaryFromMileage(userId, quarter) {
       jurisdictionSummary
     };
   } catch (error) {
-    console.error('Error generating IFTA summary from mileage:', error);
     throw new Error(`Failed to generate IFTA summary: ${error.message}`);
   }
 }
@@ -407,7 +384,6 @@ export async function getMileageToIftaStats(userId, quarter) {
       success: true
     };
   } catch (error) {
-    console.error('Error getting mileage to IFTA stats:', error);
     return {
       total: 0,
       imported: 0,

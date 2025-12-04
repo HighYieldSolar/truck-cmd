@@ -97,11 +97,8 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
       const { error: itemsError } = await supabase
         .from('invoice_items')
         .insert(invoiceItems);
-        
-      if (itemsError) {
-        console.error('Error creating invoice items:', itemsError);
-        // We don't throw here because we already created the invoice
-      }
+
+      // We don't throw here because we already created the invoice
     }
     
     // Record the activity
@@ -117,7 +114,6 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
     
     return invoice[0];
   } catch (error) {
-    console.error('Error creating invoice from load:', error);
     throw error;
   }
 }
@@ -169,7 +165,6 @@ export async function completeLoad(userId, loadId, completionData, generateInvoi
       invoice: invoiceData
     };
   } catch (error) {
-    console.error('Error completing load:', error);
     throw error;
   }
 }
@@ -221,7 +216,6 @@ export async function getLoadCompletionDetails(loadId) {
       invoice: load.invoices && load.invoices.length > 0 ? load.invoices[0] : null
     };
   } catch (error) {
-    console.error('Error getting load completion details:', error);
     throw error;
   }
 }
@@ -272,7 +266,6 @@ export async function uploadPodDocuments(userId, loadId, files) {
     
     return documentUrls;
   } catch (error) {
-    console.error('Error uploading POD documents:', error);
     throw error;
   }
 }

@@ -839,7 +839,6 @@ export default function InvoiceDetail({ invoiceId }) {
         
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching invoice:", err);
         setError("Failed to load invoice data: " + err.message);
         setLoading(false);
       }
@@ -864,7 +863,6 @@ export default function InvoiceDetail({ invoiceId }) {
             filter: `id=eq.${invoiceId}`
           },
           async (payload) => {
-            console.log("Invoice updated:", payload);
             // Refresh invoice data
             const invoiceData = await getInvoiceById(invoiceId);
             if (invoiceData) {
@@ -881,7 +879,6 @@ export default function InvoiceDetail({ invoiceId }) {
             filter: `invoice_id=eq.${invoiceId}`
           },
           async () => {
-            console.log("Payment updated");
             // Refresh payment history
             const { data } = await supabase
               .from('payments')
@@ -963,10 +960,9 @@ export default function InvoiceDetail({ invoiceId }) {
           }
           break;
         default:
-          console.log(`Action: ${actionId}`);
+          break;
       }
     } catch (err) {
-      console.error(`Error performing action ${actionId}:`, err);
       setError(`Failed to ${actionId} invoice. Please try again.`);
     }
   };
@@ -1041,7 +1037,6 @@ export default function InvoiceDetail({ invoiceId }) {
       }
 
     } catch (err) {
-      console.error("Error recording payment:", err);
       setError("Failed to record payment. Please try again.");
     } finally {
       setSubmitting(false);
@@ -1084,7 +1079,6 @@ export default function InvoiceDetail({ invoiceId }) {
       // Close modal
       setEmailModalOpen(false);
     } catch (err) {
-      console.error("Error sending email:", err);
       setError("Failed to send email. Please try again.");
     } finally {
       setSubmitting(false);

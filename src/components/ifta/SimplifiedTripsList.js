@@ -54,7 +54,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
           setVehicleDetails(detailsMap);
         }
       } catch (err) {
-        console.error("Error fetching vehicle details:", err);
+        // Failed to load vehicle details
       } finally {
         setLoadingVehicles(false);
       }
@@ -70,7 +70,6 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     try {
       return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
-      console.error("Error formatting date:", error);
       return dateString || "N/A";
     }
   };

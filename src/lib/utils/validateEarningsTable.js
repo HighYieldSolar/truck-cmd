@@ -17,14 +17,12 @@ export async function validateEarningsTable() {
   
   try {
     // Check if table exists
-    console.log("Checking if earnings table exists...");
     const { data, error } = await supabase
       .from('earnings')
       .select('count(*)')
       .limit(1);
     
     if (error) {
-      console.error("Error checking earnings table:", error);
       result.tableExists = false;
       result.issueSummary.push(`Table check failed: ${error.message}`);
       
@@ -48,12 +46,10 @@ CREATE TABLE public.earnings (
       }
     } else {
       result.tableExists = true;
-      console.log("Earnings table exists");
     }
     
     // Test permissions by attempting to insert a record
     if (result.tableExists) {
-      console.log("Testing permissions...");
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -75,7 +71,6 @@ CREATE TABLE public.earnings (
           .select();
         
         if (insertError) {
-          console.error("Permission test failed:", insertError);
           result.hasPermissions = false;
           result.issueSummary.push(`Permission check failed: ${insertError.message}`);
           
@@ -103,8 +98,7 @@ CREATE POLICY "Users can delete their own earnings"
           }
         } else {
           result.hasPermissions = true;
-          console.log("Permissions check passed");
-          
+
           // Clean up the test record
           if (insertData && insertData.length > 0) {
             await supabase
@@ -118,7 +112,6 @@ CREATE POLICY "Users can delete their own earnings"
     
     return result;
   } catch (error) {
-    console.error('Error validating earnings table:', error);
     result.issueSummary.push(`Validation error: ${error.message}`);
     return result;
   }

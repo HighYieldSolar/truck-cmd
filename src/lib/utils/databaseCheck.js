@@ -8,7 +8,6 @@ import { supabase } from "../supabaseClient";
  */
 export async function runDatabaseDiagnostics() {
   try {
-    console.log("Running database diagnostics...");
     const issues = [];
     const tables = [
       'ifta_trip_records',
@@ -69,11 +68,9 @@ export async function runDatabaseDiagnostics() {
       tables: tableChecks,
       iftaSchemaValid
     };
-    
-    console.log("Database diagnostic results:", result);
+
     return result;
   } catch (error) {
-    console.error("Error running database diagnostics:", error);
     return {
       success: false,
       issues: [error.message || "Unknown error during database diagnostics"],
@@ -120,7 +117,6 @@ export async function setupRequiredTables() {
     
     return results;
   } catch (error) {
-    console.error("Error setting up required tables:", error);
     return {
       success: false,
       created: [],

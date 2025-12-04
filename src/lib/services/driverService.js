@@ -37,7 +37,6 @@ export async function fetchDrivers(userId, filters = {}) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching drivers:', error);
     throw error;
   }
 }
@@ -59,7 +58,6 @@ export async function getDriverById(id) {
     
     return data;
   } catch (error) {
-    console.error('Error fetching driver:', error);
     return null;
   }
 }
@@ -102,7 +100,6 @@ export async function createDriver(driverData) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error creating driver:', error);
     throw error;
   }
 }
@@ -145,7 +142,6 @@ export async function updateDriver(id, driverData) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error updating driver:', error);
     throw error;
   }
 }
@@ -166,7 +162,6 @@ export async function deleteDriver(id) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting driver:', error);
     throw error;
   }
 }
@@ -196,7 +191,6 @@ export async function uploadDriverImage(userId, file) {
       
     return publicUrl;
   } catch (error) {
-    console.error('Error uploading driver image:', error);
     return null;
   }
 }
@@ -267,7 +261,6 @@ export async function getDriverStats(userId) {
       expiringMedical
     };
   } catch (error) {
-    console.error('Error getting driver stats:', error);
     return {
       total: 0,
       active: 0,

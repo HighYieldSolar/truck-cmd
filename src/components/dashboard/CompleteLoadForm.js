@@ -31,7 +31,7 @@ const saveFormToStorage = (formData, loadId) => {
 
       localStorage.setItem(`load_form_${loadId}`, JSON.stringify(serializedData));
     } catch (err) {
-      console.error("Error saving form to storage:", err);
+      // Failed to save form to storage
     }
   }
 };
@@ -43,7 +43,7 @@ const loadFormFromStorage = (loadId) => {
       const saved = localStorage.getItem(`load_form_${loadId}`);
       return saved ? JSON.parse(saved) : null;
     } catch (err) {
-      console.error("Error loading form from storage:", err);
+      // Failed to load form from storage
       return null;
     }
   }
@@ -413,7 +413,6 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           }));
         }
       } catch (err) {
-        console.error('Error fetching load details:', err);
         setError(err.message || 'Failed to load data');
       } finally {
         setLoading(false);
@@ -645,7 +644,6 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         .select();
 
       if (updateError) {
-        console.error('Supabase update error:', updateError);
         throw updateError;
       }
 
@@ -676,11 +674,9 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           });
 
           if (invoice) {
-            console.log("Invoice created successfully:", invoice.id, invoice.invoice_number);
             invoiceCreated = true;
           }
         } catch (invoiceError) {
-          console.error("Error generating invoice:", invoiceError);
           // Continue with the completion process even if invoice generation fails
           // but notify the user
           setError(`Load completed but invoice generation failed: ${invoiceError.message}`);
@@ -698,7 +694,6 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         router.push('/dashboard/dispatching');
       }, 2500);
     } catch (err) {
-      console.error('Error completing load:', err);
       // Better error handling to show the actual error
       let errorMessage = 'Failed to complete load';
       if (err && err.message) {

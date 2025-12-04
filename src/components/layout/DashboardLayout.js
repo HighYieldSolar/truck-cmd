@@ -81,7 +81,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             .limit(5);
 
           if (directError) {
-            console.error("Error fetching notifications:", directError);
             setNotificationError("Failed to load notifications.");
             setNotificationsData([]);
             setUnreadNotificationCount(0);
@@ -93,7 +92,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           setNotificationsData(notifications);
           setUnreadNotificationCount(unreadCount);
         } catch (e) {
-          console.error("Client-side error fetching notifications summary:", e);
           setNotificationError("An unexpected error occurred.");
           setNotificationsData([]);
           setUnreadNotificationCount(0);
@@ -150,7 +148,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           return;
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -170,7 +167,8 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       await supabase.auth.signOut();
       router.push('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      // Logout failed, redirect anyway
+      router.push('/login');
     }
   };
 
@@ -310,7 +308,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   // Notification interaction handlers
   const handleMarkAllRead = async () => {
     if (!user || !user.id) {
-      console.error("User not available for marking all notifications read.");
       setNotificationError("User not found. Please try again.");
       return;
     }
@@ -323,7 +320,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         .eq('is_read', false);
 
       if (error) {
-        console.error("Error marking all notifications as read:", error);
         setNotificationError("Failed to mark all as read.");
       } else {
         setNotificationsData(notificationsData.map(n => ({ ...n, is_read: true })));
@@ -331,14 +327,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         setNotificationError(null);
       }
     } catch (e) {
-      console.error("Client-side error marking all read:", e);
       setNotificationError("An unexpected error occurred.");
     }
   };
 
   const handleNotificationClick = async (notification) => {
     if (!user || !user.id) {
-      console.error("User not available for marking notification read.");
       setNotificationError("User not found. Please try again.");
       return;
     }
@@ -353,7 +347,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           .eq('user_id', user.id);
 
         if (error) {
-          console.error("Error marking notification as read:", error);
           setNotificationError("Failed to mark notification as read.");
         } else {
           setNotificationsData(
@@ -372,7 +365,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       }
       setNotificationsOpen(false);
     } catch (e) {
-      console.error("Client-side error handling notification click:", e);
       setNotificationError("An unexpected error occurred.");
     }
   };

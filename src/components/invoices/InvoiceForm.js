@@ -208,7 +208,6 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
           }));
         }
       } catch (err) {
-        console.error("Error initializing form:", err);
         setErrors({ submit: "Failed to initialize form. Please try again." });
       }
     }
@@ -455,7 +454,6 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
         router.push(`/dashboard/invoices/${result.id}`);
       }, 1000);
     } catch (err) {
-      console.error("Error saving invoice:", err);
       setErrors({ submit: err.message || "Failed to save invoice. Please try again." });
     } finally {
       setLoading(false);

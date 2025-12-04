@@ -84,7 +84,6 @@ export default function ResetPassword() {
       
       setSuccess(true);
     } catch (error) {
-      console.error("Error resetting password:", error);
       setError(error.message || "Failed to reset password. Please try again or request a new reset link.");
     } finally {
       setLoading(false);

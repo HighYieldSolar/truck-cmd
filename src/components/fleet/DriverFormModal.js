@@ -394,7 +394,6 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
 
       setTimeout(() => onClose(), 1500);
     } catch (error) {
-      console.error('Error saving driver:', error);
       setSubmitMessage({ type: 'error', text: error.message || 'Failed to save driver. Please try again.' });
     } finally {
       setIsSubmitting(false);

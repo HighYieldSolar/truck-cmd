@@ -19,7 +19,6 @@ export async function fetchActiveTrips(userId) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching active trips:', error);
     throw error;
   }
 }
@@ -41,7 +40,6 @@ export async function fetchTripCrossings(tripId) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching trip crossings:', error);
     throw error;
   }
 }
@@ -66,7 +64,6 @@ export async function createTrip(tripData) {
     
     return data[0];
   } catch (error) {
-    console.error('Error creating trip:', error);
     throw error;
   }
 }
@@ -91,7 +88,6 @@ export async function addStateCrossing(crossingData) {
     
     return data[0];
   } catch (error) {
-    console.error('Error adding state crossing:', error);
     throw error;
   }
 }
@@ -112,7 +108,6 @@ export async function deleteStateCrossing(crossingId) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting state crossing:', error);
     throw error;
   }
 }
@@ -142,7 +137,6 @@ export async function completeTrip(tripId) {
     
     return true;
   } catch (error) {
-    console.error('Error completing trip:', error);
     throw error;
   }
 }
@@ -186,7 +180,6 @@ export async function deleteTrip(tripId, userId) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting trip:', error);
     throw error;
   }
 }
@@ -264,7 +257,6 @@ export async function generateIFTAReport(tripId) {
     
     return report;
   } catch (error) {
-    console.error('Error generating IFTA report:', error);
     throw error;
   }
 }
@@ -312,7 +304,6 @@ export async function exportTripDataAsCSV(tripId) {
     
     return rows.join('\n');
   } catch (error) {
-    console.error('Error exporting trip data:', error);
     throw error;
   }
 }

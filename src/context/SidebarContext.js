@@ -50,7 +50,7 @@ export function SidebarProvider({ children }) {
             setSidebarConfig(mergeWithDefaults(parsed));
           }
         } catch (e) {
-          console.error('Error parsing local sidebar config:', e);
+          // Invalid local config, will use defaults
         }
       }
 
@@ -70,7 +70,7 @@ export function SidebarProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error('Error loading sidebar preferences:', error);
+      // Failed to load preferences, will use defaults
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,6 @@ export function SidebarProvider({ children }) {
           });
       }
     } catch (error) {
-      console.error('Error updating sidebar config:', error);
       throw error;
     }
   };
@@ -168,7 +167,6 @@ export function SidebarProvider({ children }) {
           .eq('setting_key', SIDEBAR_SETTINGS_KEY);
       }
     } catch (error) {
-      console.error('Error resetting sidebar config:', error);
       throw error;
     }
   };

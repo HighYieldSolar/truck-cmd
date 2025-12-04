@@ -34,8 +34,7 @@ export default function FeedbackPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // In a real implementation, this would send the feedback data to your backend
-    console.log("Feedback submitted:", formState);
-    
+
     // Simulate a successful submission
     setTimeout(() => {
       setFormState(prev => ({

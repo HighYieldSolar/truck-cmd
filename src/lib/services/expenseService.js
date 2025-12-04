@@ -22,7 +22,6 @@ function formatDateForStorage(dateString) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error("Error formatting date:", error);
     return dateString; // Return original if there's an error
   }
 }
@@ -113,7 +112,6 @@ export async function fetchExpenses(userId, filters = {}) {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching expenses:', error);
     throw error;
   }
 }
@@ -135,7 +133,6 @@ export async function getExpenseById(id) {
     
     return data;
   } catch (error) {
-    console.error('Error fetching expense:', error);
     return null;
   }
 }
@@ -162,7 +159,6 @@ export async function createExpense(expenseData) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error creating expense:', error);
     throw error;
   }
 }
@@ -191,7 +187,6 @@ export async function updateExpense(id, expenseData) {
     
     return data?.[0] || null;
   } catch (error) {
-    console.error('Error updating expense:', error);
     throw error;
   }
 }
@@ -212,7 +207,6 @@ export async function deleteExpense(id) {
     
     return true;
   } catch (error) {
-    console.error('Error deleting expense:', error);
     throw error;
   }
 }
@@ -292,7 +286,6 @@ export async function getExpenseStats(userId, period = 'month') {
       byCategory
     };
   } catch (error) {
-    console.error('Error getting expense statistics:', error);
     // Return safe default values
     return {
       total: 0,
@@ -335,7 +328,6 @@ export async function uploadReceiptImage(userId, file) {
       
     return publicUrl;
   } catch (error) {
-    console.error('Error uploading receipt:', error);
     return null;
   }
 }
@@ -402,7 +394,6 @@ export async function getExpenseSummaries(userId, groupBy = 'month', range = nul
     // Sort by period
     return result.sort((a, b) => a.period.localeCompare(b.period));
   } catch (error) {
-    console.error('Error getting expense summaries:', error);
     return [];
   }
 }

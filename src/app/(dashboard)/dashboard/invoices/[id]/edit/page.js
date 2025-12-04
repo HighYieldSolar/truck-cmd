@@ -87,7 +87,6 @@ export default function EditInvoicePage({ params }) {
         setInvoiceData(formattedInvoice);
         setLoading(false);
       } catch (err) {
-        console.error('Error initializing edit page:', err);
         setError(err.message || 'Failed to load invoice');
         setLoading(false);
       }
