@@ -37,22 +37,10 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
         }
 
         // Try to get vehicles from both possible tables
-        let { data: vehiclesData, error: vehiclesError } = await supabase
+        const { data: vehiclesData, error: vehiclesError } = await supabase
           .from('vehicles')
           .select('id, name, license_plate')
           .in('id', vehicleIds);
-
-        // If we couldn't find vehicles, try the trucks table
-        if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
-          const { data: trucksData, error: trucksError } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .in('id', vehicleIds);
-
-          if (!trucksError && trucksData && trucksData.length > 0) {
-            vehiclesData = trucksData;
-          }
-        }
 
         // Build a lookup object for vehicle details
         if (vehiclesData && vehiclesData.length > 0) {

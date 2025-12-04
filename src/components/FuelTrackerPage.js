@@ -125,26 +125,12 @@ export default function FuelTrackerPage() {
         
         // Load vehicles for the selector
         try {
-          // First try to get trucks from the vehicles table
-          let { data, error } = await supabase
+          const { data, error } = await supabase
             .from('vehicles')
             .select('id, name, license_plate')
             .eq('user_id', user.id);
-          
-          // If that fails, try the trucks table instead
-          if (error || !data || data.length === 0) {
-            const { data: trucksData, error: trucksError } = await supabase
-              .from('trucks')
-              .select('id, name, license_plate')
-              .eq('user_id', user.id);
-              
-            if (!trucksError) {
-              data = trucksData;
-            }
-          }
-          
-          // If we found vehicle data, save it
-          if (data && data.length > 0) {
+
+          if (!error && data && data.length > 0) {
             setVehicleData(data);
           }
         } catch (vehicleError) {

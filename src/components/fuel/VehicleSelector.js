@@ -24,25 +24,13 @@ export default function VehicleSelector({
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         
-        // First try to get trucks from the vehicles table
+        // Get vehicles from the vehicles table
         let { data, error } = await supabase
           .from('vehicles')
           .select('id, name, license_plate')
           .eq('user_id', user.id);
-        
-        // If that fails, try the trucks table instead
-        if (error || !data || data.length === 0) {
-          const { data: trucksData, error: trucksError } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .eq('user_id', user.id);
-            
-          if (!trucksError && trucksData) {
-            data = trucksData;
-          }
-        }
-        
-        // If we still don't have data, try to get vehicle IDs from fuel entries
+
+        // If we don't have data, try to get vehicle IDs from fuel entries
         if (!data || data.length === 0) {
           const { data: fuelData, error: fuelError } = await supabase
             .from('fuel_entries')

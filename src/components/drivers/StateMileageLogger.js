@@ -482,33 +482,18 @@ export default function StateMileageLogger() {
   // Load vehicles
   const loadVehicles = useCallback(async (userId) => {
     try {
-      // First try to get trucks from the vehicles table
-      let { data, error } = await supabase
+      // Get vehicles from the vehicles table
+      const { data, error } = await supabase
         .from('vehicles')
         .select('id, name, license_plate')
         .eq('user_id', userId);
 
-      // If that fails, try the trucks table instead
-      if (error || !data || data.length === 0) {
-        const { data: trucksData, error: trucksError } = await supabase
-          .from('trucks')
-          .select('id, name, license_plate')
-          .eq('user_id', userId);
-
-        if (!trucksError) {
-          data = trucksData;
-        }
+      if (!error && data && data.length > 0) {
+        setVehicles(data);
+      } else {
+        // If no vehicles found, set empty array
+        setVehicles([]);
       }
-
-      // If we still don't have data, create some sample vehicles
-      if (!data || data.length === 0) {
-        data = [
-          { id: 'truck1', name: 'Truck 1', license_plate: 'ABC123' },
-          { id: 'truck2', name: 'Truck 2', license_plate: 'XYZ789' }
-        ];
-      }
-
-      setVehicles(data);
 
     } catch (error) {
       // console.error('Error loading vehicles:', error);

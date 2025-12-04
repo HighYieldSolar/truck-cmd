@@ -53,17 +53,8 @@ const fetchTrucks = async (userId) => {
       .select('*')
       .eq('user_id', userId);
 
-    if (error || !data || data.length === 0) {
-      const { data: trucksData, error: trucksError } = await supabase
-        .from('trucks')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (trucksError) throw trucksError;
-      return trucksData || [];
-    }
-
-    return data;
+    if (error) throw error;
+    return data || [];
   } catch (err) {
     return [];
   }

@@ -46,37 +46,22 @@ export default function useFuel(userId) {
       // Attempt to enhance data with vehicle info
       if (data && data.length > 0) {
         const vehicleIds = data.map(entry => entry.vehicle_id).filter(Boolean);
-        
+
         if (vehicleIds.length > 0) {
-          // First try vehicles table
           const { data: vehicles } = await supabase
             .from('vehicles')
             .select('id, name, license_plate')
             .in('id', vehicleIds);
-            
-          // Then try trucks table
-          const { data: trucks } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .in('id', vehicleIds);
-          
-          // Combine results
+
+          // Create vehicle lookup map
           const vehicleMap = {};
-          
+
           if (vehicles && vehicles.length > 0) {
             vehicles.forEach(vehicle => {
               vehicleMap[vehicle.id] = vehicle;
             });
           }
-          
-          if (trucks && trucks.length > 0) {
-            trucks.forEach(truck => {
-              if (!vehicleMap[truck.id]) {
-                vehicleMap[truck.id] = truck;
-              }
-            });
-          }
-          
+
           // Attach vehicle info to entries
           data.forEach(entry => {
             if (entry.vehicle_id && vehicleMap[entry.vehicle_id]) {

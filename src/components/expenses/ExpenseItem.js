@@ -38,25 +38,13 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
       try {
         setLoading(true);
 
-        // Try vehicles table first
-        let { data: vehicleData, error: vehicleError } = await supabase
+        const { data: vehicleData, error: vehicleError } = await supabase
           .from('vehicles')
           .select('name, license_plate')
           .eq('id', expense.vehicle_id)
           .single();
 
-        if (vehicleError) {
-          // Fall back to trucks table
-          const { data: truckData } = await supabase
-            .from('trucks')
-            .select('name, license_plate')
-            .eq('id', expense.vehicle_id)
-            .single();
-
-          if (truckData) {
-            setVehicleInfo(truckData);
-          }
-        } else {
+        if (!vehicleError && vehicleData) {
           setVehicleInfo(vehicleData);
         }
       } catch (error) {

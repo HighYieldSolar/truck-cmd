@@ -15,27 +15,13 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
     async function fetchVehicleInfo() {
       if (!fuelEntry.vehicle_id) return;
       
-      // First check vehicles table
-      let { data: vehicle, error } = await supabase
+      const { data: vehicle, error } = await supabase
         .from('vehicles')
         .select('id, name, license_plate')
         .eq('id', fuelEntry.vehicle_id)
         .single();
-        
-      // If not found, check trucks table
-      if (error || !vehicle) {
-        const { data: truck, error: truckError } = await supabase
-          .from('trucks')
-          .select('id, name, license_plate')
-          .eq('id', fuelEntry.vehicle_id)
-          .single();
-          
-        if (!truckError && truck) {
-          vehicle = truck;
-        }
-      }
-      
-      if (vehicle) {
+
+      if (!error && vehicle) {
         setVehicleInfo(vehicle);
       }
     }

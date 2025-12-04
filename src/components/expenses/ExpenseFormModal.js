@@ -142,19 +142,10 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
         const userId = session.user.id;
 
         // Try vehicles table first
-        let { data, error } = await supabase
+        const { data, error } = await supabase
           .from('vehicles')
           .select('id, name, license_plate')
           .eq('user_id', userId);
-
-        // Fall back to trucks table
-        if (error || !data || data.length === 0) {
-          const { data: trucksData } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate')
-            .eq('user_id', userId);
-          if (trucksData) data = trucksData;
-        }
 
         setVehicles(data || []);
       } catch (error) {

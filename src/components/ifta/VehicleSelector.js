@@ -37,24 +37,11 @@ export default function VehicleSelector({
         }
 
         // Query the vehicles/trucks table
-        let { data: vehiclesData, error: vehiclesError } = await supabase
+        const { data: vehiclesData, error: vehiclesError } = await supabase
           .from('vehicles')
           .select('id, name, license_plate, make, model, year')
           .eq('user_id', currentUserId)
           .order('name');
-
-        // If no vehicles found, try the trucks table
-        if (vehiclesError || !vehiclesData || vehiclesData.length === 0) {
-          const { data: trucksData, error: trucksError } = await supabase
-            .from('trucks')
-            .select('id, name, license_plate, make, model, year')
-            .eq('user_id', currentUserId)
-            .order('name');
-
-          if (!trucksError && trucksData && trucksData.length > 0) {
-            vehiclesData = trucksData;
-          }
-        }
 
         if (vehiclesData && vehiclesData.length > 0) {
           // Create lookup map for vehicle details
