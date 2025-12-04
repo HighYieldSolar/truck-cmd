@@ -495,7 +495,7 @@ export default function CompliancePage() {
   if (loading || featureLoading) {
     return (
       <DashboardLayout activePage="compliance">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-7xl mx-auto">
             {/* Header skeleton */}
             <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
@@ -515,7 +515,7 @@ export default function CompliancePage() {
   if (!hasComplianceAccess) {
     return (
       <DashboardLayout activePage="compliance">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
@@ -581,7 +581,7 @@ export default function CompliancePage() {
 
   return (
     <DashboardLayout activePage="compliance">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           {/* Header with gradient */}
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">

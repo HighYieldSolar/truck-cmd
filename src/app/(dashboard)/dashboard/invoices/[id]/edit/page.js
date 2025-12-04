@@ -99,7 +99,7 @@ export default function EditInvoicePage({ params }) {
   if (loading) {
     return (
       <DashboardLayout activePage="invoices">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <RefreshCw size={32} className="animate-spin text-blue-500 mx-auto mb-4" />
@@ -114,7 +114,7 @@ export default function EditInvoicePage({ params }) {
   if (error) {
     return (
       <DashboardLayout activePage="invoices">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-5xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
               <div className="flex flex-col items-center justify-center text-center">
@@ -151,7 +151,7 @@ export default function EditInvoicePage({ params }) {
 
   return (
     <DashboardLayout activePage="invoices">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto">
           {/* Page Header */}
           <div className="bg-gradient-to-r from-amber-600 to-amber-500 dark:from-amber-700 dark:to-amber-600 rounded-xl shadow-lg p-6 mb-6">

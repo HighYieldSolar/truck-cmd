@@ -38,7 +38,7 @@ export default function InvoiceDetailPage({ params }) {
   if (loading) {
     return (
       <DashboardLayout activePage="invoices">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center justify-center min-h-[60vh]">
             <RefreshCw size={32} className="animate-spin text-blue-500" />
           </div>
@@ -49,7 +49,7 @@ export default function InvoiceDetailPage({ params }) {
 
   return (
     <DashboardLayout activePage="invoices">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <InvoiceDetail invoiceId={invoiceId} />
       </main>
     </DashboardLayout>

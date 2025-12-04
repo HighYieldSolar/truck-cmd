@@ -738,7 +738,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
   if (error || !loadDetails) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-100 dark:bg-gray-900">
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-50 dark:bg-gray-900">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-2xl w-full border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/40 rounded-full mx-auto mb-4">
             <AlertCircle size={32} className="text-red-500 dark:text-red-400" />

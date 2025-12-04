@@ -553,7 +553,7 @@ export default function DispatchingPage() {
   if (loading) {
     return (
       <DashboardLayout activePage="dispatching">
-        <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             {/* Header Skeleton */}
             <div className="mb-6 h-32 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse"></div>
@@ -573,7 +573,7 @@ export default function DispatchingPage() {
 
   return (
     <DashboardLayout activePage="dispatching">
-      <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {/* Header with gradient background */}
           <div className="mb-6">

@@ -310,7 +310,7 @@ export default function CustomersPage() {
   if (isLoading && customers.length === 0) {
     return (
       <DashboardLayout activePage="customers">
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
           <div className="flex flex-col items-center gap-3">
             <RefreshCw size={32} className="animate-spin text-blue-500" />
             <p className="text-gray-600 dark:text-gray-400">Loading customers...</p>
@@ -322,7 +322,7 @@ export default function CustomersPage() {
 
   return (
     <DashboardLayout activePage="customers">
-      <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">

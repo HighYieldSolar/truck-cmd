@@ -419,7 +419,7 @@ export default function DriversPage() {
   if (loading) {
     return (
       <DashboardLayout activePage="fleet">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="max-w-7xl mx-auto">
             {/* Header skeleton */}
             <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
@@ -437,7 +437,7 @@ export default function DriversPage() {
 
   return (
     <DashboardLayout activePage="fleet">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           {/* Header with gradient */}
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">

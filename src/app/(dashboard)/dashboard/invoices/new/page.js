@@ -62,7 +62,7 @@ export default function NewInvoicePage() {
   if (loading) {
     return (
       <DashboardLayout activePage="invoices">
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center justify-center min-h-[60vh]">
             <RefreshCw size={32} className="animate-spin text-blue-500" />
           </div>
@@ -73,7 +73,7 @@ export default function NewInvoicePage() {
 
   return (
     <DashboardLayout activePage="invoices">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-5xl mx-auto">
           {/* Page Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">

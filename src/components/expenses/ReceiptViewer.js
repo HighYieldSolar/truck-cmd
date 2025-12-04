@@ -181,7 +181,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                       </div>
                     </div>
                     {/* Image Container */}
-                    <div className="bg-gray-100 dark:bg-gray-900 flex justify-center p-6 min-h-[200px] overflow-hidden">
+                    <div className="bg-gray-50 dark:bg-gray-900 flex justify-center p-6 min-h-[200px] overflow-hidden">
                       <img
                         src={receipt.receipt_image}
                         alt={`Receipt for ${receipt.description}`}

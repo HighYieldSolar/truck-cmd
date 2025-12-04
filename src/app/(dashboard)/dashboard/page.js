@@ -284,7 +284,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout activePage="dashboard">
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
           <DashboardHeader 

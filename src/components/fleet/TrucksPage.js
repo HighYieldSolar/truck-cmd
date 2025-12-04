@@ -429,7 +429,7 @@ export default function TrucksPage() {
   if (loading) {
     return (
       <DashboardLayout activePage="fleet">
-        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
           <div className="max-w-7xl mx-auto">
             {/* Header skeleton */}
             <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
@@ -464,7 +464,7 @@ export default function TrucksPage() {
 
   return (
     <DashboardLayout activePage="fleet">
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Operation Message */}
           <OperationMessage

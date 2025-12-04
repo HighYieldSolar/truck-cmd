@@ -447,7 +447,7 @@ export default function MaintenancePage() {
   if (loading || featureLoading) {
     return (
       <DashboardLayout activePage="fleet">
-        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
           <div className="max-w-7xl mx-auto">
             {/* Header skeleton */}
             <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6">
@@ -494,7 +494,7 @@ export default function MaintenancePage() {
   if (!hasMaintenanceAccess) {
     return (
       <DashboardLayout activePage="fleet">
-        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
@@ -566,7 +566,7 @@ export default function MaintenancePage() {
 
   return (
     <DashboardLayout activePage="fleet">
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Operation Message */}
           <OperationMessage
