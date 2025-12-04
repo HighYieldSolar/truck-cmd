@@ -74,10 +74,19 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [hasRestoredData, setHasRestoredData] = useState(false);
+
+  // Field labels for user-friendly error messages
+  const fieldLabels = {
+    description: 'Description',
+    amount: 'Amount',
+    date: 'Date',
+    category: 'Category'
+  };
 
   // Load initial data
   useEffect(() => {
@@ -161,6 +170,11 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
 
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+    }
+
     if (type === 'file' && files && files[0]) {
       const file = files[0];
       const previewUrl = URL.createObjectURL(file);
@@ -176,11 +190,69 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
     }
   };
 
+  // Validate form fields
+  const validateForm = () => {
+    const errors = {};
+
+    // Description validation
+    if (!formData.description.trim()) {
+      errors.description = `${fieldLabels.description} is required.`;
+    } else if (formData.description.trim().length < 3) {
+      errors.description = `${fieldLabels.description} must be at least 3 characters.`;
+    }
+
+    // Amount validation
+    if (!formData.amount) {
+      errors.amount = `${fieldLabels.amount} is required.`;
+    } else {
+      const amount = parseFloat(formData.amount);
+      if (isNaN(amount) || amount <= 0) {
+        errors.amount = `${fieldLabels.amount} must be a positive number.`;
+      } else if (amount > 1000000) {
+        errors.amount = `${fieldLabels.amount} exceeds maximum allowed value.`;
+      }
+    }
+
+    // Date validation
+    if (!formData.date) {
+      errors.date = `${fieldLabels.date} is required.`;
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+
+      if (selectedDate > today) {
+        errors.date = 'Date cannot be in the future.';
+      }
+
+      // Check if date is not too old (more than 2 years)
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      if (selectedDate < twoYearsAgo) {
+        errors.date = 'Date is too far in the past.';
+      }
+    }
+
+    // Category validation
+    if (!formData.category) {
+      errors.category = `${fieldLabels.category} is required.`;
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
+
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       let receiptImageUrl = formData.receipt_image;
@@ -301,10 +373,12 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
-                      required
                       placeholder="e.g. Fuel for Truck #123"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className={`w-full px-3 py-2 border ${fieldErrors.description ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     />
+                    {fieldErrors.description && (
+                      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.description}</p>
+                    )}
                   </div>
 
                   <div>
@@ -318,10 +392,12 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       min="0"
                       value={formData.amount}
                       onChange={handleChange}
-                      required
                       placeholder="0.00"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className={`w-full px-3 py-2 border ${fieldErrors.amount ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     />
+                    {fieldErrors.amount && (
+                      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.amount}</p>
+                    )}
                   </div>
                 </div>
 
@@ -335,9 +411,11 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       name="date"
                       value={formData.date}
                       onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className={`w-full px-3 py-2 border ${fieldErrors.date ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     />
+                    {fieldErrors.date && (
+                      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.date}</p>
+                    )}
                   </div>
 
                   <div>
@@ -348,8 +426,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       name="category"
                       value={formData.category}
                       onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      className={`w-full px-3 py-2 border ${fieldErrors.category ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     >
                       <option value="Fuel">Fuel</option>
                       <option value="Maintenance">Maintenance</option>
@@ -360,6 +437,9 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       <option value="Meals">Meals</option>
                       <option value="Other">Other</option>
                     </select>
+                    {fieldErrors.category && (
+                      <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.category}</p>
+                    )}
                   </div>
 
                   <div>

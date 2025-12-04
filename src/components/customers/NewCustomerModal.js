@@ -5,6 +5,7 @@ import { X, Building2, Phone, FileText, ChevronRight, ChevronLeft, Check, AlertC
 import { motion, AnimatePresence } from 'framer-motion';
 import { createCustomer, updateCustomer } from '@/lib/services/customerService';
 import { supabase } from '@/lib/supabaseClient';
+import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 
 const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = null }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -110,17 +111,43 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
     }
   };
 
+  // Validation patterns
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[\d\s\-\(\)\+\.]+$/;
+
   const validateStep = (step) => {
     const newErrors = {};
 
     switch (step) {
       case 1:
+        // Company name validation
         if (!formData.company_name.trim()) {
-          newErrors.company_name = 'Company name is required';
+          newErrors.company_name = 'Company name is required.';
+        }
+
+        // Contact name validation
+        if (!formData.contact_name.trim()) {
+          newErrors.contact_name = 'Contact name is required.';
+        }
+
+        // Phone validation
+        if (!formData.phone.trim()) {
+          newErrors.phone = 'Phone number is required.';
+        } else if (!phoneRegex.test(formData.phone)) {
+          newErrors.phone = 'Please enter a valid phone number.';
+        } else if (formData.phone.replace(/\D/g, '').length < 10) {
+          newErrors.phone = 'Phone number must have at least 10 digits.';
+        }
+
+        // Email validation
+        if (!formData.email.trim()) {
+          newErrors.email = 'Email address is required.';
+        } else if (!emailRegex.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address.';
         }
         break;
       case 2:
-        // No validation needed for step 2
+        // No required fields in step 2 - all optional
         break;
     }
 
@@ -139,14 +166,18 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(3)) return;
+    // Validate step 1 fields before submission (step 2 has no required fields)
+    if (!validateStep(1)) {
+      setCurrentStep(1); // Go back to step 1 to show errors
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        throw new Error('Authentication required');
+        throw new Error('Please log in to create a customer.');
       }
 
       // Format data for submission - map zip_code to zip
@@ -164,17 +195,17 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
       // Clear saved data
       clearSavedData();
-      
+
       // Notify parent and close
       onCustomerCreated?.();
       onClose();
-      
+
       // Refresh the page to show the new customer
       if (!initialData) {
         window.location.reload();
       }
     } catch (error) {
-      setErrors({ submit: error.message || 'Failed to save customer' });
+      setErrors({ submit: getUserFriendlyError(error) });
     } finally {
       setIsSubmitting(false);
     }

@@ -296,39 +296,138 @@ export function getUserFriendlyError(error) {
  */
 export function getFieldError(fieldName, validationType) {
   const fieldLabels = {
+    // Common fields
     date: 'Date',
-    location: 'Location',
-    state: 'State',
-    gallons: 'Gallons',
-    price_per_gallon: 'Price per gallon',
-    total_amount: 'Total amount',
-    vehicle_id: 'Vehicle',
-    odometer: 'Odometer',
-    fuel_type: 'Fuel type',
-    payment_method: 'Payment method',
-    notes: 'Notes',
-    receipt_image: 'Receipt',
     name: 'Name',
     email: 'Email',
     phone: 'Phone',
     address: 'Address',
-    amount: 'Amount',
+    city: 'City',
+    state: 'State',
+    zip: 'ZIP Code',
+    zip_code: 'ZIP Code',
+    notes: 'Notes',
     description: 'Description',
+    amount: 'Amount',
+    status: 'Status',
+
+    // Customer fields
+    company_name: 'Company Name',
+    contact_name: 'Contact Name',
+    customer_type: 'Customer Type',
+
+    // Vehicle/Fleet fields
+    vehicle_id: 'Vehicle',
+    make: 'Make',
+    model: 'Model',
+    year: 'Year',
+    vin: 'VIN',
+    license_plate: 'License Plate',
+    truck_number: 'Truck Number',
+
+    // Driver fields
+    driver_name: 'Driver Name',
+    license_number: 'License Number',
+    license_expiration: 'License Expiration',
+    medical_card_expiration: 'Medical Card Expiration',
+    hire_date: 'Hire Date',
+
+    // Fuel fields
+    location: 'Location',
+    gallons: 'Gallons',
+    price_per_gallon: 'Price per Gallon',
+    total_amount: 'Total Amount',
+    odometer: 'Odometer',
+    fuel_type: 'Fuel Type',
+    payment_method: 'Payment Method',
+    receipt_image: 'Receipt',
+
+    // Expense fields
+    category: 'Category',
+    deductible: 'Tax Deductible',
+
+    // Load/Dispatch fields
+    load_number: 'Load Number',
+    pickup_location: 'Pickup Location',
+    delivery_location: 'Delivery Location',
+    pickup_date: 'Pickup Date',
+    delivery_date: 'Delivery Date',
+    rate: 'Rate',
+    weight: 'Weight',
+    distance: 'Distance',
+    broker: 'Broker',
+    customer_id: 'Customer',
+
+    // Invoice fields
+    invoice_number: 'Invoice Number',
+    invoice_date: 'Invoice Date',
+    due_date: 'Due Date',
+    payment_terms: 'Payment Terms',
+    subtotal: 'Subtotal',
+    tax: 'Tax',
+    total: 'Total',
+
+    // IFTA fields
+    jurisdiction: 'Jurisdiction',
+    miles: 'Miles',
+    fuel_purchased: 'Fuel Purchased',
+    quarter: 'Quarter',
+
+    // Maintenance fields
+    service_type: 'Service Type',
+    service_date: 'Service Date',
+    cost: 'Cost',
+    provider: 'Provider',
+    next_due_date: 'Next Due Date',
+    next_due_miles: 'Next Due Miles',
   };
 
   const label = fieldLabels[fieldName] || fieldName;
 
   const messages = {
+    // Required field
     required: `${label} is required.`,
+
+    // General validation
     invalid: `Please enter a valid ${label.toLowerCase()}.`,
+    invalid_format: `${label} format is invalid.`,
+
+    // Length validation
     too_short: `${label} is too short.`,
     too_long: `${label} is too long.`,
+    min_length: `${label} must be at least 3 characters.`,
+
+    // Numeric validation
     too_low: `${label} must be greater than zero.`,
     too_high: `${label} exceeds the maximum allowed value.`,
-    invalid_format: `${label} format is invalid.`,
+    not_a_number: `${label} must be a valid number.`,
+    negative: `${label} cannot be negative.`,
+
+    // Date validation
     invalid_date: `Please select a valid date.`,
-    future_date: `Date cannot be in the future.`,
-    past_date: `Date is too far in the past.`,
+    future_date: `${label} cannot be in the future.`,
+    past_date: `${label} is too far in the past.`,
+    date_before: `${label} must be before the end date.`,
+    date_after: `${label} must be after the start date.`,
+    expired: `${label} has expired.`,
+    expiring_soon: `${label} is expiring soon.`,
+
+    // Email/Phone validation
+    invalid_email: `Please enter a valid email address.`,
+    invalid_phone: `Please enter a valid phone number.`,
+    phone_too_short: `Phone number must have at least 10 digits.`,
+
+    // Unique/Duplicate validation
+    duplicate: `This ${label.toLowerCase()} already exists.`,
+    already_exists: `A record with this ${label.toLowerCase()} already exists.`,
+
+    // File validation
+    file_too_large: `File is too large. Maximum size is 10MB.`,
+    invalid_file_type: `Please upload a valid file (PNG, JPG, or PDF).`,
+
+    // Selection validation
+    not_selected: `Please select a ${label.toLowerCase()}.`,
+    invalid_selection: `Please select a valid ${label.toLowerCase()}.`,
   };
 
   return messages[validationType] || `${label} is invalid.`;
