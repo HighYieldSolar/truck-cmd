@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Image from "next/image";
+import { useSubscription } from "@/context/SubscriptionContext";
 import { RefreshCw, Save, User, Camera, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function ProfileSettings() {
+  const { updateUserProfile } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -137,8 +138,8 @@ export default function ProfileSettings() {
       setErrorMessage(null);
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-profile-${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
@@ -164,6 +165,8 @@ export default function ProfileSettings() {
 
       // Update profile state
       setProfileImage(publicUrl);
+      // Update the global context so navbar updates immediately
+      updateUserProfile({ avatarUrl: publicUrl });
       setSuccessMessage('Profile picture updated successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -188,6 +191,8 @@ export default function ProfileSettings() {
       if (updateError) throw updateError;
 
       setProfileImage(null);
+      // Update the global context so navbar updates immediately
+      updateUserProfile({ avatarUrl: null });
       setSuccessMessage('Profile picture removed successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -294,11 +299,9 @@ export default function ProfileSettings() {
               {uploadingImage ? (
                 <RefreshCw size={24} className="animate-spin text-blue-500" />
               ) : profileImage ? (
-                <Image
+                <img
                   src={profileImage}
                   alt="Profile"
-                  width={96}
-                  height={96}
                   className="w-full h-full object-cover"
                 />
               ) : (

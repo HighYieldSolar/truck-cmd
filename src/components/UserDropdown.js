@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { 
-  Settings, 
-  LogOut, 
+import {
+  Settings,
+  LogOut,
   User,
   ChevronRight,
   ChevronLeft,
@@ -31,7 +31,7 @@ export default function UserDropdown() {
   const languageTimeoutRef = useRef(null);
   const learnMoreTimeoutRef = useRef(null);
   const router = useRouter();
-  const { user, subscription } = useSubscription();
+  const { user, userProfile, subscription } = useSubscription();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -126,8 +126,16 @@ export default function UserDropdown() {
         className="flex items-center space-x-1 focus:outline-none group"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-400 font-semibold ring-2 ring-transparent group-hover:ring-blue-400 dark:group-hover:ring-blue-500 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-all duration-200 ease-in-out">
-          {user?.email?.[0]?.toUpperCase() || 'U'}
+        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-400 font-semibold ring-2 ring-transparent group-hover:ring-blue-400 dark:group-hover:ring-blue-500 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-all duration-200 ease-in-out overflow-hidden">
+          {userProfile?.avatarUrl ? (
+            <img
+              src={userProfile.avatarUrl}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            user?.email?.[0]?.toUpperCase() || 'U'
+          )}
         </div>
         <ChevronDown size={16} className="text-gray-500 dark:text-gray-400 ml-1 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
       </button>

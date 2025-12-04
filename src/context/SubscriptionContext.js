@@ -18,6 +18,7 @@ export function useSubscription() {
 // Create a provider component
 export function SubscriptionProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState({
     status: 'loading', // loading, trial, active, expired, none
@@ -45,11 +46,27 @@ export function SubscriptionProvider({ children }) {
           trialEndsAt: null,
           currentPeriodEndsAt: null
         });
+        setUserProfile(null);
         setLoading(false);
         return;
       }
 
       setUser(user);
+
+      // Fetch user profile data (including avatar_url)
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('full_name, avatar_url, company_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData) {
+        setUserProfile({
+          fullName: profileData.full_name,
+          avatarUrl: profileData.avatar_url,
+          companyName: profileData.company_name
+        });
+      }
 
       // Check for subscription
       const { data: subscriptionData, error: subError } = await supabase
@@ -142,6 +159,7 @@ export function SubscriptionProvider({ children }) {
           checkUserAndSubscription();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setUserProfile(null);
           setSubscription({
             status: 'none',
             plan: null,
@@ -273,16 +291,26 @@ export function SubscriptionProvider({ children }) {
     }, 500);
   };
 
+  // Update user profile data (called after profile changes)
+  const updateUserProfile = (newProfileData) => {
+    setUserProfile(prev => ({
+      ...prev,
+      ...newProfileData
+    }));
+  };
+
   // Provide the context value
   const value = {
     user,
+    userProfile,
     subscription,
     loading,
     isTrialActive,
     isSubscriptionActive,
     getDaysLeftInTrial,
     updateSubscription,
-    refreshSubscription
+    refreshSubscription,
+    updateUserProfile
   };
 
   return (
