@@ -1,6 +1,7 @@
 import './globals.css';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SidebarProvider } from '@/context/SidebarContext';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://truckcommand.com';
 
@@ -176,7 +177,9 @@ export default function RootLayout({ children }) {
       <body>
         <SubscriptionProvider>
           <ThemeProvider>
-            {children}
+            <SidebarProvider>
+              {children}
+            </SidebarProvider>
           </ThemeProvider>
         </SubscriptionProvider>
       </body>

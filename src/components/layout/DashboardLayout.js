@@ -14,6 +14,7 @@ import {
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useSidebar } from "@/context/SidebarContext";
 import UserDropdown from "@/components/UserDropdown";
 import NotificationIcon from "@/components/notifications/NotificationIcon";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
@@ -41,6 +42,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   } = useSubscription();
   
   const { theme } = useTheme();
+  const { sidebarConfig } = useSidebar();
 
   const [notificationsData, setNotificationsData] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -207,78 +209,93 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     };
   }, [notificationsOpen, searchOpen, mobileMenuOpen]);
 
-  // Menu items definition
-  const menuItems = [
-    {
+  // Base menu items definition (keyed by ID for lookup)
+  const baseMenuItems = {
+    dashboard: {
+      id: 'dashboard',
       name: 'Dashboard',
       href: '/dashboard',
       icon: <LayoutDashboard size={20} />,
       active: currentActivePage === 'dashboard' && !pageTitle
     },
-    {
+    dispatching: {
+      id: 'dispatching',
       name: 'Load Management',
       href: '/dashboard/dispatching',
       icon: <Truck size={20} />,
       active: currentActivePage === 'dispatching' && !pageTitle,
       protected: true
     },
-    {
+    mileage: {
+      id: 'mileage',
       name: 'State Mileage',
       href: '/dashboard/mileage',
       icon: <MapPin size={20} />,
       active: currentActivePage === 'mileage' && !pageTitle,
       protected: true
     },
-    {
+    invoices: {
+      id: 'invoices',
       name: 'Invoices',
       href: '/dashboard/invoices',
       icon: <FileText size={20} />,
       active: currentActivePage === 'invoices' && !pageTitle,
       protected: true
     },
-    {
+    expenses: {
+      id: 'expenses',
       name: 'Expenses',
       href: '/dashboard/expenses',
       icon: <Wallet size={20} />,
       active: currentActivePage === 'expenses' && !pageTitle,
       protected: true
     },
-    {
+    customers: {
+      id: 'customers',
       name: 'Customers',
       href: '/dashboard/customers',
       icon: <Users size={20} />,
       active: currentActivePage === 'customers' && !pageTitle,
       protected: true
     },
-    {
+    fleet: {
+      id: 'fleet',
       name: 'Fleet',
       href: '/dashboard/fleet',
       icon: <Package size={20} />,
       active: currentActivePage === 'fleet' && !pageTitle,
       protected: true
     },
-    {
+    compliance: {
+      id: 'compliance',
       name: 'Compliance',
       href: '/dashboard/compliance',
       icon: <CheckCircle size={20} />,
       active: currentActivePage === 'compliance' && !pageTitle,
       protected: true
     },
-    {
+    ifta: {
+      id: 'ifta',
       name: 'IFTA Calculator',
       href: '/dashboard/ifta',
       icon: <Calculator size={20} />,
       active: currentActivePage === 'ifta' && !pageTitle,
       protected: true
     },
-    {
+    fuel: {
+      id: 'fuel',
       name: 'Fuel Tracker',
       href: '/dashboard/fuel',
       icon: <Fuel size={20} />,
       active: currentActivePage === 'fuel' && !pageTitle,
       protected: true
     },
-  ];
+  };
+
+  // Generate menu items based on sidebar configuration
+  const menuItems = sidebarConfig
+    .filter(config => config.visible && baseMenuItems[config.id])
+    .map(config => baseMenuItems[config.id]);
 
   // System menu items - only Settings now
   const systemItems = [
@@ -365,8 +382,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     setNotificationsOpen(false);
   };
 
-  // Determine the displayed title
-  const displayedTitle = pageTitle || menuItems.find(item => item.active)?.name || systemItems.find(item => item.active)?.name || 'Dashboard';
+  // Determine the displayed title - check both visible menuItems and baseMenuItems for hidden pages
+  const displayedTitle = pageTitle
+    || menuItems.find(item => item.active)?.name
+    || systemItems.find(item => item.active)?.name
+    || Object.values(baseMenuItems).find(item => item.active)?.name
+    || 'Dashboard';
 
   if (loading || subscriptionLoading) {
     return (
