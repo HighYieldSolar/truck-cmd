@@ -65,8 +65,8 @@ export async function POST(request) {
     // Set up success and cancel URLs
     const successUrl = body.returnUrl
       ? `${body.returnUrl}?session_id={CHECKOUT_SESSION_ID}`
-      : `${process.env.NEXT_PUBLIC_URL}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/billing?canceled=true`;
+      : `${process.env.NEXT_PUBLIC_URL}/dashboard/upgrade/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/upgrade?canceled=true`;
 
     // Create the checkout session
     const session = await stripe.checkout.sessions.create({

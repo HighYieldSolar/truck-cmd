@@ -94,7 +94,9 @@ export function SubscriptionProvider({ children }) {
           cancel_at_period_end: subscriptionData.cancel_at_period_end,
           canceled_at: subscriptionData.canceled_at,
           current_period_starts_at: subscriptionData.current_period_starts_at,
-          current_period_ends_at: subscriptionData.current_period_ends_at
+          current_period_ends_at: subscriptionData.current_period_ends_at,
+          scheduled_plan: subscriptionData.scheduled_plan,
+          scheduled_billing_cycle: subscriptionData.scheduled_billing_cycle
         });
       } else {
         // No subscription record found - create a trial subscription

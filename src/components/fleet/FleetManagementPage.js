@@ -385,7 +385,7 @@ export default function FleetManagementPage() {
                     </div>
                   </div>
                   <Link
-                    href="/dashboard/billing"
+                    href="/dashboard/upgrade"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                   >
                     Upgrade to Fleet Plan

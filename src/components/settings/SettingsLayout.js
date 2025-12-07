@@ -103,7 +103,7 @@ export default function SettingsLayout({ children }) {
                     {pathname === "/dashboard/settings/billing" && (
                       <div className="mt-3 md:mt-0">
                         <Link
-                          href="/dashboard/billing"
+                          href="/dashboard/upgrade"
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 transition-colors shadow-sm"
                         >
                           <CreditCard size={16} className="mr-2" />

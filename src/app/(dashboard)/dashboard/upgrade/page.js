@@ -7,6 +7,7 @@ import { useSubscription } from "@/context/SubscriptionContext";
 import {
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   CreditCard,
   Check,
@@ -16,10 +17,15 @@ import {
   Shield,
   HelpCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ArrowUp,
+  ArrowDown,
+  ArrowRight,
+  Loader2,
+  Calendar
 } from "lucide-react";
 
-export default function BillingPage() {
+export default function UpgradePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -28,6 +34,9 @@ export default function BillingPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
 
+  // Plan change state (kept for loading indicator if needed)
+  const [planChangeLoading, setPlanChangeLoading] = useState(false);
+
   // Get subscription context for user info
   const {
     user,
@@ -35,7 +44,8 @@ export default function BillingPage() {
     loading: subscriptionLoading,
     isSubscriptionActive,
     isTrialActive,
-    getDaysLeftInTrial
+    getDaysLeftInTrial,
+    refreshSubscription
   } = useSubscription();
 
   // Plans data - matches tierConfig.js
@@ -142,7 +152,10 @@ export default function BillingPage() {
   // Handle plan selection
   const handleSelectPlan = (planId) => {
     setSelectedPlan(planId);
-    router.push(`/dashboard/billing/checkout?plan=${planId}&cycle=${billingCycle}`);
+    // Store checkout info in sessionStorage for success page
+    sessionStorage.setItem('checkout_plan', planId);
+    sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+    router.push(`/dashboard/upgrade/${planId}`);
   };
 
   // Toggle billing cycle
@@ -155,9 +168,87 @@ export default function BillingPage() {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
+  // Plan order for upgrade/downgrade detection
+  const planOrder = ['basic', 'premium', 'fleet'];
+
+  // Get change type (upgrade/downgrade/same)
+  const getChangeType = (currentPlan, targetPlan) => {
+    const currentIndex = planOrder.indexOf(currentPlan?.toLowerCase());
+    const targetIndex = planOrder.indexOf(targetPlan?.toLowerCase());
+    if (targetIndex > currentIndex) return 'upgrade';
+    if (targetIndex < currentIndex) return 'downgrade';
+    return 'same';
+  };
+
+  // Check if user has active subscription
+  const hasActiveSubscription = isSubscriptionActive && isSubscriptionActive();
+  const currentPlan = subscription?.plan?.toLowerCase();
+  const currentBillingCycle = subscription?.billing_cycle || 'monthly';
+
+  // Check if this is the exact same plan AND billing cycle
+  const isExactCurrentPlan = (planId) => {
+    return currentPlan === planId && currentBillingCycle === billingCycle;
+  };
+
+  // Check if same plan but different billing cycle
+  const isBillingCycleChange = (planId) => {
+    return currentPlan === planId && currentBillingCycle !== billingCycle;
+  };
+
+  // Handle plan change for existing subscribers
+  const handlePlanChange = async (targetPlanId) => {
+    if (!hasActiveSubscription) {
+      // New subscription - go to upgrade checkout
+      sessionStorage.setItem('checkout_plan', targetPlanId);
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      router.push(`/dashboard/upgrade/${targetPlanId}`);
+      return;
+    }
+
+    // Determine if upgrade or downgrade
+    const changeType = getChangeType(currentPlan, targetPlanId);
+
+    if (changeType === 'upgrade') {
+      // Upgrade - go to upgrade checkout
+      sessionStorage.setItem('checkout_plan', targetPlanId);
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      router.push(`/dashboard/upgrade/${targetPlanId}`);
+    } else if (changeType === 'downgrade') {
+      // Downgrade - go to downgrade page (also pass billing cycle)
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      router.push(`/dashboard/downgrade/${targetPlanId}`);
+    } else if (changeType === 'same' && isBillingCycleChange(targetPlanId)) {
+      // Same plan but different billing cycle
+      sessionStorage.setItem('checkout_plan', targetPlanId);
+      sessionStorage.setItem('checkout_billing_cycle', billingCycle);
+      // Yearly is an upgrade (saves money), monthly is a downgrade (costs more per month)
+      if (billingCycle === 'yearly') {
+        router.push(`/dashboard/upgrade/${targetPlanId}`);
+      } else {
+        router.push(`/dashboard/downgrade/${targetPlanId}`);
+      }
+    }
+  };
+
   // Get subscription status info
   const getSubscriptionInfo = () => {
     if (isSubscriptionActive && isSubscriptionActive()) {
+      // Check if subscription is pending cancellation
+      if (subscription?.cancel_at_period_end) {
+        return {
+          status: 'canceled',
+          label: 'Canceling Soon',
+          color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+        };
+      }
+      // Check if there's a scheduled plan change
+      if (subscription?.scheduled_plan && subscription.scheduled_plan !== subscription?.plan) {
+        return {
+          status: 'scheduled',
+          label: `Changing to ${subscription.scheduled_plan.charAt(0).toUpperCase() + subscription.scheduled_plan.slice(1)}`,
+          color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+        };
+      }
       return {
         status: 'active',
         label: 'Active Subscription',
@@ -174,12 +265,26 @@ export default function BillingPage() {
     return null;
   };
 
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch {
+      return '';
+    }
+  };
+
   const subscriptionInfo = getSubscriptionInfo();
 
   // Show loading state
   if (loading) {
     return (
-      <DashboardLayout activePage="billing">
+      <DashboardLayout activePage="upgrade">
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
           <div className="flex items-center justify-center min-h-screen">
             <div className="flex flex-col items-center">
@@ -193,7 +298,7 @@ export default function BillingPage() {
   }
 
   return (
-    <DashboardLayout activePage="billing">
+    <DashboardLayout activePage="upgrade">
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header with gradient background */}
@@ -210,9 +315,16 @@ export default function BillingPage() {
               </div>
               {subscriptionInfo && (
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${subscriptionInfo.color}`}>
-                  {subscriptionInfo.status === 'active' ? (
+                  {subscriptionInfo.status === 'active' && (
                     <CheckCircle className="h-4 w-4 mr-1.5" />
-                  ) : (
+                  )}
+                  {subscriptionInfo.status === 'canceled' && (
+                    <AlertTriangle className="h-4 w-4 mr-1.5" />
+                  )}
+                  {subscriptionInfo.status === 'scheduled' && (
+                    <ArrowRight className="h-4 w-4 mr-1.5" />
+                  )}
+                  {subscriptionInfo.status === 'trial' && (
                     <Zap className="h-4 w-4 mr-1.5" />
                   )}
                   {subscriptionInfo.label}
@@ -252,39 +364,149 @@ export default function BillingPage() {
             </div>
           )}
 
-          {/* Current subscription info (if active) */}
-          {subscription?.status === 'active' && isSubscriptionActive && isSubscriptionActive() && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8 transition-colors duration-200">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mr-3">
-                  <CheckCircle size={24} className="text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Current Subscription</h2>
-              </div>
+          {/* Current subscription info box - shows for trial OR active subscription */}
+          {(subscriptionInfo) && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 transition-colors duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {/* Trial State */}
+                {subscriptionInfo.status === 'trial' && (
+                  <>
+                    <div className="flex items-center">
+                      <div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Zap size={18} className="text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                          Free Trial
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {getDaysLeftInTrial ? getDaysLeftInTrial() : 0} days remaining • Full access to Basic features
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="hidden sm:flex w-24 bg-blue-100 dark:bg-blue-900/50 rounded-full h-1.5">
+                        <div
+                          className="bg-blue-500 h-1.5 rounded-full"
+                          style={{ width: `${Math.max(10, ((getDaysLeftInTrial ? getDaysLeftInTrial() : 0) / 7) * 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Select a plan below to upgrade
+                      </span>
+                    </div>
+                  </>
+                )}
 
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 capitalize">
-                    {subscription?.plan || 'Premium'} Plan
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Billed {subscription?.billing_cycle === 'yearly' ? 'yearly' : 'monthly'}
-                  </p>
-                  <div className="mt-2 flex items-center">
-                    <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400 mr-2" />
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">Active subscription</span>
-                  </div>
-                </div>
+                {/* Active Subscription State */}
+                {subscriptionInfo.status === 'active' && (
+                  <>
+                    <div className="flex items-center">
+                      <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                            {subscription?.plan || 'Premium'} Plan
+                          </h3>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                            Active
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Billed {subscription?.billing_cycle === 'yearly' ? 'annually' : 'monthly'} •
+                          ${subscription?.billing_cycle === 'yearly'
+                            ? plans[subscription?.plan]?.yearlyPrice || 28
+                            : plans[subscription?.plan]?.monthlyPrice || 35}/mo
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center font-medium"
+                      onClick={() => router.push('/dashboard/settings/billing')}
+                    >
+                      <CreditCard size={16} className="mr-1.5" />
+                      Manage
+                    </button>
+                  </>
+                )}
 
-                <div className="mt-4 md:mt-0">
-                  <button
-                    className="w-full md:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center font-medium"
-                    onClick={() => router.push('/dashboard/settings/billing')}
-                  >
-                    <CreditCard size={18} className="mr-2" />
-                    Manage Subscription
-                  </button>
-                </div>
+                {/* Canceled Subscription State */}
+                {subscriptionInfo.status === 'canceled' && (
+                  <>
+                    <div className="flex items-center">
+                      <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <AlertTriangle size={18} className="text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                            {subscription?.plan || 'Premium'} Plan
+                          </h3>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                            Canceling
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Access until {formatDate(subscription?.current_period_ends_at || subscription?.currentPeriodEndsAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center font-medium"
+                        onClick={() => router.push('/dashboard/settings/billing')}
+                      >
+                        <RefreshCw size={16} className="mr-1.5" />
+                        Keep My Plan
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors flex items-center justify-center font-medium"
+                        onClick={() => {
+                          const plansSection = document.getElementById('plans');
+                          if (plansSection) {
+                            plansSection.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                      >
+                        Change Plan
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Scheduled Plan Change State */}
+                {subscriptionInfo.status === 'scheduled' && (
+                  <>
+                    <div className="flex items-center">
+                      <div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                        <Calendar size={18} className="text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 capitalize">
+                            {subscription?.plan || 'Premium'} Plan
+                          </h3>
+                          <ArrowRight size={14} className="text-gray-400" />
+                          <span className="text-base font-semibold text-blue-600 dark:text-blue-400 capitalize">
+                            {subscription?.scheduled_plan}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Changes on {formatDate(subscription?.current_period_ends_at || subscription?.currentPeriodEndsAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center font-medium"
+                      onClick={() => router.push('/dashboard/settings/billing')}
+                    >
+                      <CreditCard size={16} className="mr-1.5" />
+                      Manage
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -378,12 +600,54 @@ export default function BillingPage() {
                     </p>
                   )}
 
-                  <button
-                    onClick={() => handleSelectPlan(plan.id)}
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
-                  >
-                    Select Plan
-                  </button>
+                  {/* Dynamic button based on subscription status */}
+                  {hasActiveSubscription && isExactCurrentPlan(plan.id) ? (
+                    <div className="w-full py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-center font-medium flex items-center justify-center">
+                      <CheckCircle size={16} className="mr-2" />
+                      Current Plan
+                    </div>
+                  ) : hasActiveSubscription && isBillingCycleChange(plan.id) ? (
+                    <button
+                      onClick={() => handlePlanChange(plan.id)}
+                      className="w-full py-2.5 rounded-lg transition-colors font-medium flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    >
+                      {billingCycle === 'yearly' ? (
+                        <>
+                          <ArrowUp size={16} className="mr-1.5" />
+                          Switch to Yearly
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDown size={16} className="mr-1.5" />
+                          Switch to Monthly
+                        </>
+                      )}
+                    </button>
+                  ) : hasActiveSubscription ? (
+                    <button
+                      onClick={() => handlePlanChange(plan.id)}
+                      className="w-full py-2.5 rounded-lg transition-colors font-medium flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    >
+                      {getChangeType(currentPlan, plan.id) === 'upgrade' ? (
+                        <>
+                          <ArrowUp size={16} className="mr-1.5" />
+                          Upgrade to {plan.name}
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDown size={16} className="mr-1.5" />
+                          Downgrade to {plan.name}
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handlePlanChange(plan.id)}
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors font-medium"
+                    >
+                      Select Plan
+                    </button>
+                  )}
                 </div>
 
                 <div className="p-6 flex-1">
@@ -459,6 +723,7 @@ export default function BillingPage() {
           </div>
         </div>
       </div>
+
     </DashboardLayout>
   );
 }

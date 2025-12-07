@@ -45,6 +45,23 @@ export async function POST(req) {
         await handleCheckoutCompleted(event, stripe);
         break;
 
+      case "invoice.payment_succeeded":
+        await handleInvoicePaymentSucceeded(event, stripe);
+        break;
+
+      case "invoice.paid":
+        await handleInvoicePaymentSucceeded(event, stripe);
+        break;
+
+      case "subscription_schedule.completed":
+        await handleSubscriptionScheduleCompleted(event, stripe);
+        break;
+
+      case "subscription_schedule.updated":
+        // Log schedule updates for debugging
+        console.log("Subscription schedule updated:", event.data.object.id);
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -162,9 +179,28 @@ async function handleSubscriptionUpdate(event) {
   if (planId) updateData.plan = planId;
   if (billingCycle) updateData.billing_cycle = billingCycle;
 
-  // Add amount if available
+  // Add amount if available - use Math.round to avoid floating point issues
   if (subscription.items.data[0]?.price?.unit_amount) {
-    updateData.amount = subscription.items.data[0].price.unit_amount / 100; // Convert from cents to dollars
+    updateData.amount = Math.round(subscription.items.data[0].price.unit_amount) / 100; // Convert from cents to dollars
+  }
+
+  // Check if this subscription update is from a schedule (scheduled downgrade taking effect)
+  // If the subscription no longer has a schedule attached, clear the scheduled fields
+  if (!subscription.schedule) {
+    // Get current subscription data to check for scheduled changes
+    const { data: currentSub } = await supabase
+      .from("subscriptions")
+      .select("scheduled_plan, scheduled_billing_cycle")
+      .eq("user_id", userId)
+      .single();
+
+    if (currentSub?.scheduled_plan) {
+      // The scheduled change has taken effect, clear the scheduled fields
+      updateData.scheduled_plan = null;
+      updateData.scheduled_billing_cycle = null;
+      updateData.scheduled_amount = null;
+      console.log(`Clearing scheduled plan fields - scheduled change has taken effect`);
+    }
   }
 
   // Clear trial_ends_at if subscription is active (no longer in trial)
@@ -552,4 +588,274 @@ async function updateUserStripeInfo(userId, stripeCustomerId) {
 
   console.log(`✅ Successfully updated Stripe customer info for user ${userId}`);
   return { error: null };
+}
+
+/**
+ * Handle invoice payment succeeded event
+ * This is triggered when a subscription payment succeeds (including the first payment)
+ * Also handles applying scheduled downgrades at renewal time
+ */
+async function handleInvoicePaymentSucceeded(event, stripe) {
+  console.log("Processing invoice payment succeeded...");
+
+  const invoice = event.data.object;
+
+  // Only process subscription invoices
+  if (!invoice.subscription) {
+    console.log("Not a subscription invoice, skipping");
+    return;
+  }
+
+  const subscriptionId = typeof invoice.subscription === 'string'
+    ? invoice.subscription
+    : invoice.subscription?.id;
+  const stripeCustomerId = typeof invoice.customer === 'string'
+    ? invoice.customer
+    : invoice.customer?.id;
+
+  console.log(`Invoice paid for subscription ${subscriptionId}, customer ${stripeCustomerId}`);
+
+  try {
+    // Get the subscription from Stripe
+    const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Find user by customer ID and get their subscription data including scheduled changes
+    let userId;
+    let dbSubscription;
+
+    // First try subscriptions table
+    const { data: subData, error: subError } = await supabase
+      .from("subscriptions")
+      .select("user_id, scheduled_plan, scheduled_billing_cycle, scheduled_amount")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!subError && subData) {
+      userId = subData.user_id;
+      dbSubscription = subData;
+    } else {
+      // Try users table
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("stripe_customer_id", stripeCustomerId)
+        .single();
+
+      if (!userError && userData) {
+        userId = userData.id;
+        // Get subscription data separately
+        const { data: subDataById } = await supabase
+          .from("subscriptions")
+          .select("scheduled_plan, scheduled_billing_cycle, scheduled_amount")
+          .eq("user_id", userId)
+          .single();
+        dbSubscription = subDataById;
+      }
+    }
+
+    if (!userId) {
+      // Try to get from subscription metadata
+      userId = stripeSubscription.metadata?.userId;
+    }
+
+    if (!userId) {
+      console.log("Could not find user for invoice payment, skipping update");
+      return;
+    }
+
+    console.log(`Found user ${userId} for invoice payment`);
+
+    // Check if there's a scheduled downgrade that needs to be applied
+    const hasScheduledDowngrade = dbSubscription?.scheduled_plan ||
+      stripeSubscription.metadata?.scheduled_downgrade === 'true';
+
+    if (hasScheduledDowngrade) {
+      console.log(`Applying scheduled downgrade for user ${userId}`);
+
+      const newPlan = dbSubscription?.scheduled_plan || stripeSubscription.metadata?.scheduled_plan;
+      const newBillingCycle = dbSubscription?.scheduled_billing_cycle || stripeSubscription.metadata?.scheduled_billing_cycle;
+      const scheduledPriceId = stripeSubscription.metadata?.scheduled_price_id;
+
+      if (scheduledPriceId) {
+        // Apply the scheduled price change to Stripe now
+        const subscriptionItemId = stripeSubscription.items.data[0]?.id;
+
+        if (subscriptionItemId) {
+          console.log(`Updating Stripe subscription to new price ${scheduledPriceId}`);
+
+          await stripe.subscriptions.update(subscriptionId, {
+            items: [{
+              id: subscriptionItemId,
+              price: scheduledPriceId
+            }],
+            proration_behavior: 'none', // No proration since this is a scheduled change
+            metadata: {
+              plan: newPlan,
+              billingCycle: newBillingCycle,
+              // Clear the scheduled downgrade metadata (use empty string, not null)
+              scheduled_downgrade: '',
+              scheduled_plan: '',
+              scheduled_billing_cycle: '',
+              scheduled_price_id: ''
+            }
+          });
+
+          console.log(`✅ Applied scheduled downgrade to ${newPlan} in Stripe`);
+        }
+      }
+
+      // Update our database to reflect the new plan and clear scheduled fields
+      const { error: updateError } = await supabase
+        .from("subscriptions")
+        .update({
+          status: 'active',
+          plan: newPlan,
+          billing_cycle: newBillingCycle,
+          amount: dbSubscription?.scheduled_amount || (Math.round(invoice.amount_paid) / 100),
+          stripe_subscription_id: subscriptionId,
+          stripe_customer_id: stripeCustomerId,
+          current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+          current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+          // Clear scheduled fields
+          scheduled_plan: null,
+          scheduled_billing_cycle: null,
+          scheduled_amount: null,
+          trial_ends_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId);
+
+      if (updateError) {
+        console.error(`Error applying scheduled downgrade: ${updateError.message}`);
+        throw updateError;
+      }
+
+      console.log(`✅ Successfully applied scheduled downgrade to ${newPlan} for user ${userId}`);
+      return;
+    }
+
+    // No scheduled downgrade - normal invoice payment processing
+    // Extract plan info from metadata or subscription
+    const plan = stripeSubscription.metadata?.plan || 'premium';
+    const billingCycle = stripeSubscription.metadata?.billingCycle ||
+      (stripeSubscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly');
+
+    // Calculate amount
+    const amount = invoice.amount_paid || stripeSubscription.items.data[0]?.price?.unit_amount || 0;
+
+    // Update subscription to active status
+    const { error: updateError } = await supabase
+      .from("subscriptions")
+      .update({
+        status: stripeSubscription.status,
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: stripeCustomerId,
+        plan: plan,
+        billing_cycle: billingCycle,
+        amount: Math.round(amount) / 100, // Convert from cents
+        current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
+        current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+        trial_ends_at: null, // Clear trial as payment succeeded
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error(`Error updating subscription after invoice payment: ${updateError.message}`);
+      throw updateError;
+    }
+
+    console.log(`✅ Successfully updated subscription to ${stripeSubscription.status} after invoice payment for user ${userId}`);
+
+  } catch (error) {
+    console.error(`Error processing invoice payment succeeded: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Handle subscription schedule completed event
+ * This fires when a subscription schedule finishes all its phases
+ * For downgrades, this means the scheduled plan change has taken effect
+ */
+async function handleSubscriptionScheduleCompleted(event, stripe) {
+  console.log("Processing subscription schedule completed...");
+
+  const schedule = event.data.object;
+  const subscriptionId = schedule.subscription;
+  const stripeCustomerId = schedule.customer;
+
+  console.log(`Schedule ${schedule.id} completed for subscription ${subscriptionId}`);
+
+  // Get the new plan info from schedule metadata
+  const newPlan = schedule.metadata?.new_plan;
+  const newBillingCycle = schedule.metadata?.new_billing_cycle;
+
+  if (!newPlan) {
+    console.log("No new_plan in schedule metadata, skipping database update");
+    return;
+  }
+
+  // Find user by subscription ID or customer ID
+  let userId;
+
+  // Try subscriptions table first
+  const { data: subData, error: subError } = await supabase
+    .from("subscriptions")
+    .select("user_id, scheduled_plan, scheduled_billing_cycle, scheduled_amount")
+    .eq("stripe_subscription_id", subscriptionId)
+    .single();
+
+  if (!subError && subData) {
+    userId = subData.user_id;
+  } else {
+    // Try by customer ID
+    const { data: custData, error: custError } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!custError && custData) {
+      userId = custData.user_id;
+    }
+  }
+
+  if (!userId) {
+    console.log("Could not find user for schedule completion, skipping");
+    return;
+  }
+
+  console.log(`Found user ${userId}, applying scheduled plan change to ${newPlan}`);
+
+  // Pricing in dollars
+  const pricing = {
+    basic: { monthly: 20, yearly: 192 },
+    premium: { monthly: 35, yearly: 336 },
+    fleet: { monthly: 75, yearly: 720 }
+  };
+
+  const amount = pricing[newPlan]?.[newBillingCycle] || subData?.scheduled_amount;
+
+  // Now update the subscription to apply the scheduled change
+  const { error: updateError } = await supabase
+    .from("subscriptions")
+    .update({
+      plan: newPlan,
+      billing_cycle: newBillingCycle,
+      amount: amount,
+      // Clear scheduled fields since the change has now taken effect
+      scheduled_plan: null,
+      scheduled_billing_cycle: null,
+      scheduled_amount: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("user_id", userId);
+
+  if (updateError) {
+    console.error(`Error updating subscription after schedule completion: ${updateError.message}`);
+    throw updateError;
+  }
+
+  console.log(`✅ Successfully applied scheduled plan change to ${newPlan} for user ${userId}`);
 }

@@ -339,7 +339,7 @@ export default function CustomersPage() {
                   if (customerLimit.needsUpgrade) {
                     return (
                       <Link
-                        href="/dashboard/billing"
+                        href="/dashboard/upgrade"
                         className="px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center gap-2 font-medium"
                       >
                         <Lock size={18} />
@@ -403,7 +403,7 @@ export default function CustomersPage() {
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
                       <span className="font-medium">Approaching limit:</span> You have {customers.length} of {limit} customers.
-                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                      <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
                         Upgrade for unlimited customers
                       </Link>
                     </p>
@@ -454,7 +454,7 @@ export default function CustomersPage() {
                         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No customers yet</h3>
                         <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add customers.</p>
                         <Link
-                          href="/dashboard/billing"
+                          href="/dashboard/upgrade"
                           className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                         >
                           <Lock size={16} className="mr-2" />

@@ -416,7 +416,7 @@ export default function NotificationsSettings() {
               />
             ) : (
               <Link
-                href="/dashboard/billing"
+                href="/dashboard/upgrade"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 Upgrade <ArrowRight className="h-3 w-3" />
@@ -467,7 +467,7 @@ export default function NotificationsSettings() {
               />
             ) : (
               <Link
-                href="/dashboard/billing"
+                href="/dashboard/upgrade"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
                 Upgrade <ArrowRight className="h-3 w-3" />
@@ -638,7 +638,7 @@ export default function NotificationsSettings() {
                 </div>
               </div>
               <Link
-                href="/dashboard/billing"
+                href="/dashboard/upgrade"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
               >
                 Upgrade <ArrowRight className="h-4 w-4" />
@@ -730,7 +730,7 @@ export default function NotificationsSettings() {
                 </div>
               </div>
               <Link
-                href="/dashboard/billing"
+                href="/dashboard/upgrade"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
               >
                 Upgrade <ArrowRight className="h-4 w-4" />

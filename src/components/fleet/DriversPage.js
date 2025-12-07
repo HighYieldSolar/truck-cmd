@@ -459,7 +459,7 @@ export default function DriversPage() {
                   if (driverLimit.needsUpgrade) {
                     return (
                       <Link
-                        href="/dashboard/billing"
+                        href="/dashboard/upgrade"
                         className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
                       >
                         <Lock size={18} className="mr-2" />
@@ -550,7 +550,7 @@ export default function DriversPage() {
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
                       <span className="font-medium">Approaching limit:</span> You have {drivers.length} of {limit} drivers.
-                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                      <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
                         Upgrade for more drivers
                       </Link>
                     </p>
@@ -645,7 +645,7 @@ export default function DriversPage() {
                 if (driverLimit.needsUpgrade) {
                   return (
                     <Link
-                      href="/dashboard/billing"
+                      href="/dashboard/upgrade"
                       className="flex items-center text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
                     >
                       <Lock size={16} className="mr-1" />
@@ -709,7 +709,7 @@ export default function DriversPage() {
                               if (driverLimit.needsUpgrade) {
                                 return (
                                   <Link
-                                    href="/dashboard/billing"
+                                    href="/dashboard/upgrade"
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                                   >
                                     <Lock size={16} className="mr-2" />
@@ -817,7 +817,7 @@ export default function DriversPage() {
                           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
                           <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add drivers.</p>
                           <Link
-                            href="/dashboard/billing"
+                            href="/dashboard/upgrade"
                             className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                           >
                             <Lock size={16} className="mr-2" />

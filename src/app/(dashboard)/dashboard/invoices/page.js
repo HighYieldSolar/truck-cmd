@@ -645,7 +645,7 @@ export default function Page() {
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                     You've used {monthlyInvoiceCount} of {invoiceLimit} invoices this month.
-                    <Link href="/dashboard/billing" className="ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
+                    <Link href="/dashboard/upgrade" className="ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
                       Upgrade for unlimited invoices
                     </Link>
                   </p>
@@ -1109,7 +1109,7 @@ export default function Page() {
                           description={`You've used ${monthlyInvoiceCount}/${invoiceLimit} invoices this month. Upgrade your plan for unlimited invoices.`}
                           action={{
                             label: 'Upgrade Plan',
-                            onClick: () => window.location.href = '/dashboard/billing',
+                            onClick: () => window.location.href = '/dashboard/upgrade',
                             icon: Lock
                           }}
                         />

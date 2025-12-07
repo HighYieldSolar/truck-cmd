@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
         pathname.startsWith("/dashboard/fuel");
 
       if (isProtected && !hasAccess()) {
-        router.push("/dashboard/billing");
+        router.push("/dashboard/upgrade");
       }
     }
   }, [hasAccess, loading, pathname, router]);

@@ -135,7 +135,7 @@ export default function HelpPage() {
               <h3 className="font-semibold text-gray-900 mb-2">Account Settings</h3>
               <p className="text-gray-600">Manage your profile, password, and preferences</p>
             </Link>
-            <Link href="/dashboard/billing" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
+            <Link href="/dashboard/upgrade" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
               <h3 className="font-semibold text-gray-900 mb-2">Billing & Plans</h3>
               <p className="text-gray-600">View plans, manage subscription, and payment methods</p>
             </Link>

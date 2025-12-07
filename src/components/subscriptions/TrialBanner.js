@@ -73,7 +73,7 @@ export default function TrialBanner() {
           {/* Action buttons */}
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-center sm:justify-end">
             <Link
-              href="/dashboard/billing"
+              href="/dashboard/upgrade"
               className="whitespace-nowrap py-1.5 px-4 rounded-md bg-white text-blue-700 hover:bg-blue-50 font-medium text-sm transition-colors flex items-center"
             >
               <CreditCard size={16} className="mr-1.5" />

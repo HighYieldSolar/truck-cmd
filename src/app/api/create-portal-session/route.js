@@ -1,43 +1,79 @@
-import { NextResponse } from "next/server";
-import stripe from "@/lib/stripe";
-import { supabase } from "@/lib/supabaseClient";
+// src/app/api/create-portal-session/route.js
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(request) {
   try {
-    const { userId, returnUrl } = await request.json();
-    
+    const body = await request.json();
+    const { userId, returnUrl } = body;
+
     if (!userId) {
-      return NextResponse.json({ 
-        error: 'Missing required parameters' 
+      return NextResponse.json({
+        error: 'Missing required field: userId'
       }, { status: 400 });
     }
 
-    // Get subscription data from database
+    // Initialize Stripe
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Get user's subscription from database to find their Stripe customer ID
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .select('stripe_customer_id, stripe_subscription_id')
       .eq('user_id', userId)
       .single();
-      
-    if (subError || !subscription?.stripe_customer_id) {
-      return NextResponse.json({ 
-        error: 'Subscription not found' 
+
+    if (subError || !subscription) {
+      return NextResponse.json({
+        error: 'No subscription found for this user'
       }, { status: 404 });
     }
 
-    // Create a Stripe billing portal session
+    // If no Stripe customer ID, try to find it from the subscription
+    let customerId = subscription.stripe_customer_id;
+
+    if (!customerId && subscription.stripe_subscription_id) {
+      // Try to get customer ID from the Stripe subscription
+      try {
+        const stripeSubscription = await stripe.subscriptions.retrieve(
+          subscription.stripe_subscription_id
+        );
+        customerId = stripeSubscription.customer;
+
+        // Update our database with the customer ID for future use
+        await supabase
+          .from('subscriptions')
+          .update({
+            stripe_customer_id: customerId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      } catch (err) {
+        console.error('Error retrieving Stripe subscription:', err);
+      }
+    }
+
+    if (!customerId) {
+      return NextResponse.json({
+        error: 'No Stripe customer found. Please contact support.'
+      }, { status: 400 });
+    }
+
+    // Create a Stripe Billing Portal session
     const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
-      return_url: returnUrl || `${process.env.NEXT_PUBLIC_URL}/dashboard/billing`,
+      customer: customerId,
+      return_url: returnUrl || `${process.env.NEXT_PUBLIC_URL}/dashboard/upgrade`,
     });
 
-    // Return the URL for the portal
-    return NextResponse.json({ url: session.url });
-    
+    return NextResponse.json({
+      url: session.url
+    });
+
   } catch (error) {
     console.error('Error creating portal session:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Failed to create portal session' 
+    return NextResponse.json({
+      error: error.message || 'Failed to create billing portal session'
     }, { status: 500 });
   }
 }

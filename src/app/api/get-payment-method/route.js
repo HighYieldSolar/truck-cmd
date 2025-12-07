@@ -99,9 +99,42 @@ export async function POST(request) {
         }
       }
 
+      // Format the payment method response
+      let formattedPaymentMethod = null;
+
+      if (paymentMethod) {
+        if (paymentMethod.type === 'card') {
+          formattedPaymentMethod = {
+            id: paymentMethod.id,
+            type: 'card',
+            card: {
+              brand: paymentMethod.card?.brand,
+              last4: paymentMethod.card?.last4,
+              exp_month: paymentMethod.card?.exp_month,
+              exp_year: paymentMethod.card?.exp_year,
+              funding: paymentMethod.card?.funding
+            }
+          };
+        } else if (paymentMethod.type === 'link') {
+          formattedPaymentMethod = {
+            id: paymentMethod.id,
+            type: 'link',
+            email: paymentMethod.link?.email || customer.email
+          };
+        } else {
+          // Generic fallback for other payment types
+          formattedPaymentMethod = {
+            id: paymentMethod.id,
+            type: paymentMethod.type,
+            details: paymentMethod[paymentMethod.type] || {}
+          };
+        }
+      }
+
       return NextResponse.json({
         success: true,
-        paymentMethod: paymentMethod
+        paymentMethod: formattedPaymentMethod,
+        customerEmail: customer.email
       });
 
     } catch (stripeError) {

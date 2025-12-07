@@ -31,7 +31,7 @@ export function UpgradePrompt({
         <LockClosedIcon className="w-4 h-4" />
         <span>
           Requires {tierInfo?.name || 'Premium'} plan.{' '}
-          <Link href="/dashboard/billing" className="text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/dashboard/upgrade" className="text-blue-600 dark:text-blue-400 hover:underline">
             Upgrade
           </Link>
         </span>
@@ -51,7 +51,7 @@ export function UpgradePrompt({
             </div>
           </div>
           <Link
-            href="/dashboard/billing"
+            href="/dashboard/upgrade"
             className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center gap-2"
           >
             Upgrade to {tierInfo?.name}
@@ -78,7 +78,7 @@ export function UpgradePrompt({
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/dashboard/billing"
+              href="/dashboard/upgrade"
               className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
               Upgrade to {tierInfo?.name}
@@ -188,7 +188,7 @@ export function UpgradeModal({
 
           <div className="flex flex-col gap-3">
             <Link
-              href="/dashboard/billing"
+              href="/dashboard/upgrade"
               className="w-full bg-blue-600 dark:bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-center"
             >
               Upgrade to {tierInfo?.name} - ${tierInfo?.price?.monthly}/mo
@@ -235,7 +235,7 @@ export function LimitReachedPrompt({
           </p>
           {nextTier && nextTier !== 'enterprise' && (
             <Link
-              href="/dashboard/billing"
+              href="/dashboard/upgrade"
               className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
             >
               Upgrade to {tierInfo?.name}

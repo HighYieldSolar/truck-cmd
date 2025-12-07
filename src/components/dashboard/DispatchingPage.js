@@ -592,7 +592,7 @@ export default function DispatchingPage() {
                     if (loadLimit.needsUpgrade) {
                       return (
                         <Link
-                          href="/dashboard/billing"
+                          href="/dashboard/upgrade"
                           className="inline-flex items-center px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium shadow-lg transition-all duration-200"
                         >
                           <Lock size={18} className="mr-2" />
@@ -629,7 +629,7 @@ export default function DispatchingPage() {
                     <Lock size={20} className="text-amber-600" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
                       <span className="font-medium">Approaching limit:</span> You've used {monthlyLoadCount} of {limit} loads this month.
-                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                      <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
                         Upgrade for unlimited loads
                       </Link>
                     </p>

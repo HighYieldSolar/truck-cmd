@@ -47,7 +47,7 @@ export default function StripeCheckoutButton({
           plan: planId,
           billingCycle,
           checkoutId,
-          returnUrl: returnUrl || `${window.location.origin}/dashboard/billing/success`
+          returnUrl: returnUrl || `${window.location.origin}/dashboard/upgrade/success`
         }),
       });
 

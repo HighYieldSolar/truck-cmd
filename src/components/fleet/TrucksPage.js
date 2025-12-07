@@ -491,7 +491,7 @@ export default function TrucksPage() {
                   if (truckLimit.needsUpgrade) {
                     return (
                       <Link
-                        href="/dashboard/billing"
+                        href="/dashboard/upgrade"
                         className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
                       >
                         <Lock size={18} className="mr-2" />
@@ -575,7 +575,7 @@ export default function TrucksPage() {
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
                       <span className="font-medium">Approaching limit:</span> You have {trucks.length} of {limit} vehicles.
-                      <Link href="/dashboard/billing" className="ml-2 underline hover:no-underline">
+                      <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
                         Upgrade for more vehicles
                       </Link>
                     </p>
@@ -687,7 +687,7 @@ export default function TrucksPage() {
                       if (truckLimit.needsUpgrade) {
                         return (
                           <Link
-                            href="/dashboard/billing"
+                            href="/dashboard/upgrade"
                             className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-medium hover:bg-amber-200 transition-colors"
                           >
                             <Lock size={18} className="mr-2" />

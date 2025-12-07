@@ -58,6 +58,7 @@ export async function POST(request) {
       // Update the subscription status in our database
       // Note: We keep status as 'active' since they have access until period end
       // The cancel_at_period_end flag indicates it's scheduled for cancellation
+      // Also clear any scheduled plan changes since subscription is being canceled
       const { error: updateError } = await supabase
         .from('subscriptions')
         .update({
@@ -66,6 +67,8 @@ export async function POST(request) {
           canceled_at: new Date().toISOString(),
           cancellation_reason: reason || null,
           cancellation_feedback: feedback || null,
+          scheduled_plan: null, // Clear any scheduled plan changes
+          scheduled_billing_cycle: null, // Clear any scheduled billing cycle changes
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
