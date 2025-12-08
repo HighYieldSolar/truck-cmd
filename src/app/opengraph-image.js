@@ -10,6 +10,9 @@ export const size = {
 export const contentType = 'image/png';
 
 export default async function Image() {
+  // Fetch the logo from the public folder
+  const logoUrl = new URL('/images/TC_pfp.png', 'https://truckcommand.com');
+
   return new ImageResponse(
     (
       <div
@@ -24,47 +27,29 @@ export default async function Image() {
           padding: '60px',
         }}
       >
-        {/* Logo container */}
+        {/* Logo container with actual logo */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '40px',
+            backgroundColor: 'white',
+            borderRadius: '24px',
+            padding: '20px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
           }}
         >
-          {/* TC Logo representation */}
-          <div
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl.toString()}
+            alt="Truck Command Logo"
+            width={150}
+            height={150}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              padding: '30px 40px',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+              objectFit: 'contain',
             }}
-          >
-            <span
-              style={{
-                fontSize: '80px',
-                fontWeight: 'bold',
-                color: '#222222',
-                marginRight: '-10px',
-              }}
-            >
-              T
-            </span>
-            <span
-              style={{
-                fontSize: '80px',
-                fontWeight: 'bold',
-                color: '#007BFF',
-              }}
-            >
-              C
-            </span>
-          </div>
+          />
         </div>
 
         {/* Title */}

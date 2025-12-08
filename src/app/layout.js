@@ -32,13 +32,14 @@ export const metadata = {
   // Favicon and icons
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/images/TC.png', type: 'image/png', sizes: '512x512' },
+      { url: '/images/TC_pfp.png', type: 'image/png', sizes: '32x32' },
+      { url: '/images/TC_pfp.png', type: 'image/png', sizes: '192x192' },
+      { url: '/images/TC_pfp.png', type: 'image/png', sizes: '512x512' },
     ],
     apple: [
-      { url: '/images/TC.png', sizes: '180x180', type: 'image/png' },
+      { url: '/images/TC_pfp.png', sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/images/TC_pfp.png',
   },
 
   // Open Graph - for Facebook, LinkedIn, etc.
