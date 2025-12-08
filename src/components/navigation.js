@@ -5,7 +5,8 @@ import Image from "next/image";
 import {
   Menu, X, ChevronDown, ChevronRight, FileText, Truck, Wallet,
   Users, Package, CheckCircle, Calculator, Fuel, MapPin,
-  HelpCircle, Mail, MessageSquare, Sparkles, ArrowRight, BarChart3
+  HelpCircle, Mail, MessageSquare, Sparkles, ArrowRight, BarChart3,
+  DollarSign, Shield
 } from "lucide-react";
 
 export default function Navigation() {

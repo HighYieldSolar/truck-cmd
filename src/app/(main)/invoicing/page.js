@@ -3,7 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown, ArrowRight, Check,
-  DollarSign, BarChart2, Clock, PieChart, CreditCard, Settings
+  DollarSign, BarChart2, Clock, PieChart, CreditCard, Settings,
+  Truck, Wallet, Users
 } from "lucide-react";
 
 // Testimonial Component
