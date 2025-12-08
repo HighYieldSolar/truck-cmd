@@ -22,7 +22,7 @@ import {
   X
 } from "lucide-react";
 import ExportMileageButton from "./ExportMileageButton";
-import { deleteTrip } from "@/lib/services/mileageService";
+import { deleteTrip, checkTripIftaStatus } from "@/lib/services/mileageService";
 import { importMileageTripToIFTA } from "@/lib/services/iftaMileageService";
 import { getCurrentDateLocal, formatDateForDisplayMMDDYYYY, prepareDateForDB } from "@/lib/utils/dateUtils";
 
@@ -98,7 +98,8 @@ function DeleteTripModal({
   onClose,
   onConfirm,
   isDeleting = false,
-  tripDetails = {}
+  tripDetails = {},
+  iftaStatus = null
 }) {
   if (!isOpen) return null;
 
@@ -106,18 +107,19 @@ function DeleteTripModal({
   const tripDate = tripDetails.date
     ? formatDateForDisplayMMDDYYYY(tripDetails.date)
     : 'unknown date';
+  const hasIftaRecords = iftaStatus?.isImported && iftaStatus?.recordCount > 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 p-4">
+        <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Delete Trip
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             disabled={isDeleting}
           >
             <X size={24} />
@@ -133,13 +135,31 @@ function DeleteTripModal({
               </div>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Delete this trip?
               </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Are you sure you want to delete the trip with {vehicleName} from {tripDate}? This will permanently remove all state crossings and mileage data associated with this trip.
               </p>
-              <p className="mt-2 text-sm font-medium text-red-500 dark:text-red-400">
+
+              {/* IFTA Warning */}
+              {hasIftaRecords && (
+                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
+                  <div className="flex items-start">
+                    <Fuel className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 mr-2 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        This trip has IFTA data
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        {iftaStatus.recordCount} IFTA record{iftaStatus.recordCount > 1 ? 's' : ''} ({iftaStatus.totalMiles.toFixed(0)} miles) in {iftaStatus.quarters.join(', ')} will also be removed from your IFTA calculator.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="mt-3 text-sm font-medium text-red-500 dark:text-red-400">
                 This action cannot be undone.
               </p>
             </div>
@@ -168,7 +188,7 @@ function DeleteTripModal({
                 Deleting...
               </>
             ) : (
-              'Delete Trip'
+              <>Delete Trip{hasIftaRecords ? ' & IFTA Data' : ''}</>
             )}
           </button>
         </div>
@@ -206,7 +226,7 @@ const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
           <div>
             <div className="flex items-center">
               <span className="font-medium text-gray-900 dark:text-gray-100">{crossing.state_name}</span>
-              <span className="ml-2 text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm">({crossing.state})</span>
+              <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">({crossing.state})</span>
             </div>
             <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
               <Calendar size={12} className="mr-1" />
@@ -258,7 +278,7 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
             </div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-gray-100">{vehicleName}</h3>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <Calendar className="h-3.5 w-3.5 mr-1" />
                 {tripDate}
               </div>
@@ -333,6 +353,7 @@ export default function StateMileageLogger() {
   // Delete modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState(null);
+  const [tripIftaStatus, setTripIftaStatus] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Get all US states for dropdowns
@@ -415,13 +436,22 @@ export default function StateMileageLogger() {
     }
   }, []);
 
-  // Handle delete button click
-  const handleDeleteClick = (trip, vehicleName) => {
+  // Handle delete button click - check IFTA status first
+  const handleDeleteClick = async (trip, vehicleName) => {
     setTripToDelete({
       id: trip.id,
       vehicleName,
       date: trip.start_date
     });
+
+    // Check if this trip has been imported to IFTA
+    if (user) {
+      const iftaStatus = await checkTripIftaStatus(trip.id, user.id);
+      setTripIftaStatus(iftaStatus);
+    } else {
+      setTripIftaStatus(null);
+    }
+
     setDeleteModalOpen(true);
   };
 
@@ -432,8 +462,8 @@ export default function StateMileageLogger() {
     try {
       setIsDeleting(true);
 
-      // Call the delete function
-      await deleteTrip(tripToDelete.id, user.id);
+      // Call the delete function (now also deletes IFTA records)
+      const result = await deleteTrip(tripToDelete.id, user.id);
 
       // If we were viewing this trip, clear it
       if (selectedPastTrip && selectedPastTrip.id === tripToDelete.id) {
@@ -463,13 +493,17 @@ export default function StateMileageLogger() {
       // Also remove from activeTrips if it was an active trip
       setActiveTrips(prev => prev.filter(trip => trip.id !== tripToDelete.id));
 
-      // Show success message
-      setSuccess('Trip deleted successfully');
-      setTimeout(() => setSuccess(null), 3000);
+      // Show success message with IFTA info if applicable
+      const iftaInfo = result.deletedIftaRecords > 0
+        ? ` (${result.deletedIftaRecords} IFTA record${result.deletedIftaRecords > 1 ? 's' : ''} also removed)`
+        : '';
+      setSuccess(`Trip deleted successfully${iftaInfo}`);
+      setTimeout(() => setSuccess(null), 4000);
 
-      // Close modal
+      // Close modal and reset state
       setDeleteModalOpen(false);
       setTripToDelete(null);
+      setTripIftaStatus(null);
 
     } catch (error) {
       // console.error('Error deleting trip:', error);
@@ -1071,7 +1105,7 @@ export default function StateMileageLogger() {
               <div className="p-4 bg-white dark:bg-gray-800">
                 {activeTrips.length === 0 ? (
                   <div className="text-center py-6">
-                    <Truck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <Truck className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No active trips</h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-4">Start a new trip to track state mileage</p>
                   </div>
@@ -1234,8 +1268,8 @@ export default function StateMileageLogger() {
                   <div className="p-4">
                     {selectedTripData.crossings.length === 0 ? (
                       <div className="text-center py-6">
-                        <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-700">No state crossings recorded yet</p>
+                        <MapPin className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-700 dark:text-gray-400">No state crossings recorded yet</p>
                       </div>
                     ) : (
                       <div className="space-y-2 mb-6">
@@ -1254,7 +1288,7 @@ export default function StateMileageLogger() {
 
                     {/* Add crossing form */}
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-md font-medium mb-3 text-gray-900">Add State Crossing</h4>
+                      <h4 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100">Add State Crossing</h4>
                       <form onSubmit={handleAddCrossing} className="flex flex-wrap items-end gap-3">
                         <div className="flex-grow min-w-[200px]">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1342,7 +1376,7 @@ export default function StateMileageLogger() {
                         {stateMileage.map(entry => (
                           <div key={entry.state} className="p-2">
                             <div className="flex justify-between items-center mb-1">
-                              <div className="font-medium text-gray-900">{entry.state_name}</div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">{entry.state_name}</div>
                               <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} mi</div>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
@@ -1358,8 +1392,8 @@ export default function StateMileageLogger() {
                       {/* Total miles */}
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center">
-                          <div className="font-medium text-gray-900">Total</div>
-                          <div className="text-lg font-semibold text-blue-600">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">Total</div>
+                          <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
                             {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} mi
                           </div>
                         </div>
@@ -1371,7 +1405,7 @@ export default function StateMileageLogger() {
             ) : activeTrips.length > 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
-                  <Truck className="h-16 w-16 text-blue-300 mx-auto mb-4" />
+                  <Truck className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
                   <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-3">Select an Active Trip</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-5">
                     You have {activeTrips.length} active trip{activeTrips.length !== 1 ? 's' : ''}.
@@ -1382,13 +1416,13 @@ export default function StateMileageLogger() {
                       <button
                         key={trip.id}
                         onClick={() => handleSelectTrip(trip)}
-                        className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-md text-blue-700 font-medium hover:bg-blue-100 transition-colors"
+                        className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md text-blue-700 dark:text-blue-300 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                       >
                         {vehicles.find(v => v.id === trip.vehicle_id)?.name || trip.vehicle_id}
                       </button>
                     ))}
                     {activeTrips.length > 3 && (
-                      <span className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-500 dark:text-gray-400">
+                      <span className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-gray-500 dark:text-gray-400">
                         +{activeTrips.length - 3} more
                       </span>
                     )}
@@ -1398,7 +1432,7 @@ export default function StateMileageLogger() {
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
-                  <MapPin className="h-16 w-16 text-blue-300 mx-auto mb-4" />
+                  <MapPin className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
                   <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">Select or Create a Trip</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     To start tracking your state mileage, select an existing trip from the list or create a new one.
@@ -1429,7 +1463,7 @@ export default function StateMileageLogger() {
                   </div>
                 ) : completedTrips.length === 0 ? (
                   <div className="text-center py-8">
-                    <History className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <History className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No completed trips</h3>
                     <p className="text-gray-500 dark:text-gray-400">Complete active trips to see history</p>
                   </div>
@@ -1471,11 +1505,17 @@ export default function StateMileageLogger() {
                             if (result.alreadyImported) {
                               setSuccess("This trip has already been imported to the IFTA calculator");
                             } else if (result.importedCount === 0) {
-                              setSuccess("No mileage data to import");
+                              setSuccess(result.message || "No mileage data to import");
                             } else {
-                              setSuccess(`Successfully imported ${result.importedCount} state records to IFTA calculator for ${quarter}`);
+                              // Show quarters info if trip spans multiple quarters
+                              const quartersInfo = result.quarters && result.quarters.length > 1
+                                ? ` (split across ${result.quarters.join(' and ')})`
+                                : result.quarters && result.quarters.length === 1
+                                  ? ` for ${result.quarters[0]}`
+                                  : '';
+                              setSuccess(`Successfully imported ${result.importedCount} state records to IFTA calculator${quartersInfo}`);
                             }
-                            setTimeout(() => setSuccess(null), 4000);
+                            setTimeout(() => setSuccess(null), 5000);
                           } catch (error) {
                             setError("Failed to import to IFTA calculator. Please try again.");
                           } finally {
@@ -1542,7 +1582,7 @@ export default function StateMileageLogger() {
                     {selectedPastTripData.loading ? (
                       <div className="text-center py-6">
                         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                        <p className="text-gray-700 dark:text-gray-400">Loading trip data...</p>
+                        <p className="text-gray-600 dark:text-gray-400">Loading trip data...</p>
                       </div>
                     ) : selectedPastTripData.crossings.length === 0 ? (
                       <div className="text-center py-6 text-gray-500 dark:text-gray-400">
@@ -1593,7 +1633,7 @@ export default function StateMileageLogger() {
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
-                  <History className="h-16 w-16 text-blue-300 mx-auto mb-4" />
+                  <History className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
                   <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">Select a Past Trip</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     Select a completed trip from the list to view details and mileage breakdown.
@@ -1616,10 +1656,10 @@ export default function StateMileageLogger() {
             </div>
             <div className="p-4">
               {totalHistoricalMileage.length === 0 ? (
-                <div className="text-center py-10 text-gray-700 dark:text-gray-400">
+                <div className="text-center py-10">
                   <MapPin className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                  <p>No historical mileage data available</p>
-                  <p className="text-sm mt-1">Complete trips to see your mileage summary</p>
+                  <p className="text-gray-700 dark:text-gray-300">No historical mileage data available</p>
+                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Complete trips to see your mileage summary</p>
                 </div>
               ) : (
                 <>
@@ -1675,10 +1715,12 @@ export default function StateMileageLogger() {
         onClose={() => {
           setDeleteModalOpen(false);
           setTripToDelete(null);
+          setTripIftaStatus(null);
         }}
         onConfirm={confirmDeleteTrip}
         isDeleting={isDeleting}
         tripDetails={tripToDelete}
+        iftaStatus={tripIftaStatus}
       />
     </div>
   );

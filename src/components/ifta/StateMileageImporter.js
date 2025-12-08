@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { getQuarterFromDate, validateTripQuarter } from "@/lib/utils/dateUtils";
+import { getQuarterFromDate, validateTripQuarter, getQuarterDateRange } from "@/lib/utils/dateUtils";
 import {
   Upload,
   CheckCircle,
@@ -43,12 +43,21 @@ export default function StateMileageImporter({
       setError(null);
 
       // Parse quarter into date range
-      const [year, q] = quarter.split('-Q');
-      const quarterStartMonth = (parseInt(q) - 1) * 3;
-      const startDate = new Date(parseInt(year), quarterStartMonth, 1);
-      const endDate = new Date(parseInt(year), quarterStartMonth + 3, 0);
+      const { startDate: quarterStart, endDate: quarterEnd } = getQuarterDateRange(quarter);
 
-      // Fetch completed trips from the state mileage tracker within the quarter
+      // Extend the search window to catch cross-quarter trips
+      // Look for trips that might have ANY crossings in the selected quarter
+      // This means start_date could be up to 3 months before quarter start (previous quarter)
+      // and end_date could be up to 3 months after quarter end (next quarter)
+      const [year, q] = quarter.split('-Q');
+      const qNum = parseInt(q);
+
+      // Calculate extended date range to find potential cross-quarter trips
+      const extendedStart = new Date(parseInt(year), (qNum - 1) * 3 - 3, 1); // One quarter before
+      const extendedEnd = new Date(parseInt(year), (qNum) * 3 + 3, 0); // One quarter after
+
+      // Fetch completed trips from the state mileage tracker
+      // We'll filter more precisely later based on actual crossing dates
       const { data: trips, error: tripsError } = await supabase
         .from('driver_mileage_trips')
         .select(`
@@ -60,8 +69,8 @@ export default function StateMileageImporter({
         `)
         .eq('user_id', userId)
         .eq('status', 'completed')
-        .gte('start_date', startDate.toISOString().split('T')[0])
-        .lte('end_date', endDate.toISOString().split('T')[0]);
+        .gte('start_date', extendedStart.toISOString().split('T')[0])
+        .lte('end_date', extendedEnd.toISOString().split('T')[0]);
 
       if (tripsError) throw tripsError;
 
@@ -114,13 +123,21 @@ export default function StateMileageImporter({
             return null;
           }
 
-          // Calculate mileage by state
-          const mileageByState = calculateMileageByState(crossings || []);
+          // Calculate mileage by state AND track quarters
+          const { mileage: mileageByState, quarters: crossingQuarters } = calculateMileageByState(crossings || []);
 
-          // Determine the correct quarter for this trip
-          const tripEndDate = trip.end_date || trip.start_date;
-          const correctQuarter = getQuarterFromDate(tripEndDate);
-          const isCorrectQuarter = validateTripQuarter(tripEndDate, quarter);
+          // Determine which quarters this trip spans based on actual crossing dates
+          const quartersArray = [...crossingQuarters].sort();
+          const spansMultipleQuarters = quartersArray.length > 1;
+          const belongsToSelectedQuarter = quartersArray.includes(quarter);
+
+          // Build warning message
+          let quarterWarning = null;
+          if (spansMultipleQuarters) {
+            quarterWarning = `Trip spans ${quartersArray.join(' & ')} - miles will be split by crossing date`;
+          } else if (!belongsToSelectedQuarter && quartersArray.length === 1) {
+            quarterWarning = `Crossings are from ${quartersArray[0]}, not ${quarter}`;
+          }
 
           return {
             ...trip,
@@ -128,15 +145,21 @@ export default function StateMileageImporter({
             vehicleLicensePlate: vehicleNames[trip.vehicle_id]?.licensePlate || '',
             crossings: crossings || [],
             mileageByState,
-            correctQuarter,
-            isCorrectQuarter,
-            quarterWarning: !isCorrectQuarter ? `This trip (${tripEndDate}) belongs to ${correctQuarter}, not ${quarter}` : null
+            crossingQuarters: quartersArray,
+            spansMultipleQuarters,
+            belongsToSelectedQuarter,
+            quarterWarning
           };
         })
       );
 
       // Filter out trips with no mileage data
-      const validTrips = tripsWithData.filter(trip => trip && trip.mileageByState.length > 0);
+      // Also include trips that have crossings in the selected quarter (even if trip dates don't match)
+      const validTrips = tripsWithData.filter(trip =>
+        trip &&
+        trip.mileageByState.length > 0 &&
+        (trip.belongsToSelectedQuarter || trip.spansMultipleQuarters)
+      );
 
       setLoadData(validTrips);
       setSuccess(false);
@@ -149,18 +172,30 @@ export default function StateMileageImporter({
   };
 
   // Helper function to calculate mileage by state from crossings
+  // Also tracks quarters based on crossing dates
   const calculateMileageByState = (crossings) => {
     if (!crossings || crossings.length < 2) {
-      return [];
+      return { mileage: [], quarters: new Set() };
     }
 
     const stateMileage = [];
+    const quartersSet = new Set();
 
     for (let i = 0; i < crossings.length - 1; i++) {
       const currentState = crossings[i].state;
       const currentOdometer = crossings[i].odometer;
       const nextOdometer = crossings[i + 1].odometer;
       const milesDriven = nextOdometer - currentOdometer;
+
+      // Track which quarter this crossing belongs to
+      const crossingDate = crossings[i].crossing_date ||
+        (crossings[i].timestamp ? crossings[i].timestamp.split('T')[0] : null);
+      if (crossingDate) {
+        const crossingQuarter = getQuarterFromDate(crossingDate);
+        if (crossingQuarter) {
+          quartersSet.add(crossingQuarter);
+        }
+      }
 
       // Add or update state mileage
       const existingEntry = stateMileage.find(entry => entry.state === currentState);
@@ -176,10 +211,14 @@ export default function StateMileageImporter({
     }
 
     // Sort by miles (highest first)
-    return stateMileage.sort((a, b) => b.miles - a.miles);
+    return {
+      mileage: stateMileage.sort((a, b) => b.miles - a.miles),
+      quarters: quartersSet
+    };
   };
 
   // Import selected loads into IFTA trip records
+  // IMPROVED: Uses crossing dates to determine quarters, properly handles cross-quarter trips
   const importLoads = async () => {
     if (selectedLoads.length === 0) {
       setError('Please select at least one trip to import');
@@ -192,36 +231,75 @@ export default function StateMileageImporter({
       setImportedTrips([]);
 
       const tripsToInsert = [];
+      const allQuarters = new Set();
 
       for (const trip of selectedLoads) {
-        const mileageByState = trip.mileageByState;
+        const crossings = trip.crossings || [];
 
-        if (!mileageByState || mileageByState.length === 0) continue;
+        if (crossings.length < 2) continue;
 
-        // Determine the correct quarter for this trip
-        const tripEndDate = trip.end_date || trip.start_date;
-        const correctQuarter = getQuarterFromDate(tripEndDate);
+        // Calculate mileage by quarter based on crossing dates
+        const mileageByQuarter = {};
 
-        for (const stateMileage of mileageByState) {
-          if (stateMileage.miles > 0) {
-            tripsToInsert.push({
-              user_id: userId,
-              quarter: correctQuarter, // Use the quarter determined from trip date
-              start_date: trip.start_date,
-              end_date: trip.end_date || trip.start_date,
-              vehicle_id: trip.vehicle_id,
-              start_jurisdiction: stateMileage.state,
-              end_jurisdiction: stateMileage.state, // Same state for these records
-              total_miles: stateMileage.miles,
-              mileage_trip_id: trip.id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_imported: true,
-              source: 'mileage_tracker',
-              notes: `Imported from State Mileage Tracker: ${stateMileage.state_name} (${stateMileage.miles.toFixed(1)} miles)`,
-              gallons: 0,
-              fuel_cost: 0
-            });
+        for (let i = 0; i < crossings.length - 1; i++) {
+          const currentCrossing = crossings[i];
+          const currentState = currentCrossing.state;
+          const currentOdometer = currentCrossing.odometer;
+          const nextOdometer = crossings[i + 1].odometer;
+          const milesDriven = nextOdometer - currentOdometer;
+
+          if (milesDriven <= 0) continue;
+
+          // Use crossing_date to determine which quarter
+          const crossingDate = currentCrossing.crossing_date ||
+            (currentCrossing.timestamp ? currentCrossing.timestamp.split('T')[0] : null);
+
+          if (!crossingDate) continue;
+
+          const crossingQuarter = getQuarterFromDate(crossingDate);
+          if (!crossingQuarter) continue;
+
+          allQuarters.add(crossingQuarter);
+
+          // Initialize quarter object if needed
+          if (!mileageByQuarter[crossingQuarter]) {
+            mileageByQuarter[crossingQuarter] = {};
+          }
+
+          // Add miles to this state in this quarter
+          if (!mileageByQuarter[crossingQuarter][currentState]) {
+            mileageByQuarter[crossingQuarter][currentState] = {
+              state: currentState,
+              state_name: currentCrossing.state_name,
+              miles: 0
+            };
+          }
+          mileageByQuarter[crossingQuarter][currentState].miles += milesDriven;
+        }
+
+        // Create IFTA records for each quarter and state
+        for (const importQuarter of Object.keys(mileageByQuarter)) {
+          for (const state of Object.values(mileageByQuarter[importQuarter])) {
+            if (state.miles > 0) {
+              tripsToInsert.push({
+                user_id: userId,
+                quarter: importQuarter, // Use quarter determined from crossing date
+                start_date: trip.start_date,
+                end_date: trip.end_date || trip.start_date,
+                vehicle_id: trip.vehicle_id,
+                start_jurisdiction: state.state,
+                end_jurisdiction: state.state,
+                total_miles: state.miles,
+                mileage_trip_id: trip.id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_imported: true,
+                source: 'mileage_tracker',
+                notes: `Imported from State Mileage Tracker: ${state.state_name} (${state.miles.toFixed(1)} miles) - ${importQuarter}`,
+                gallons: 0,
+                fuel_cost: 0
+              });
+            }
           }
         }
       }
@@ -232,22 +310,14 @@ export default function StateMileageImporter({
       }
 
       // Ensure all required fields are present and valid
-      const validTrips = tripsToInsert.map(trip => {
-        // Ensure required fields have valid values
-        return {
-          ...trip,
-          // Ensure numeric fields are properly formatted
-          total_miles: parseFloat(trip.total_miles) || 0,
-          // Make sure all dates are in ISO format
-          start_date: typeof trip.start_date === 'string' ? trip.start_date : new Date(trip.start_date).toISOString().split('T')[0],
-          end_date: typeof trip.end_date === 'string' ? trip.end_date : new Date(trip.end_date).toISOString().split('T')[0],
-          // Ensure these fields exist
-          gallons: trip.gallons || 0,
-          fuel_cost: trip.fuel_cost || 0
-        };
-      });
-
-      console.log('Attempting to insert trips:', validTrips);
+      const validTrips = tripsToInsert.map(trip => ({
+        ...trip,
+        total_miles: parseFloat(trip.total_miles) || 0,
+        start_date: typeof trip.start_date === 'string' ? trip.start_date : new Date(trip.start_date).toISOString().split('T')[0],
+        end_date: typeof trip.end_date === 'string' ? trip.end_date : new Date(trip.end_date).toISOString().split('T')[0],
+        gallons: trip.gallons || 0,
+        fuel_cost: trip.fuel_cost || 0
+      }));
 
       // Insert trips into IFTA database
       const { data: insertedTrips, error: insertError } = await supabase
@@ -272,7 +342,15 @@ export default function StateMileageImporter({
 
       setImportedTrips(tripsWithVehicleInfo);
       setImportCount(insertedTrips?.length || 0);
-      setSuccess(true);
+
+      // Show info about multiple quarters if applicable
+      const quartersArray = [...allQuarters].sort();
+      if (quartersArray.length > 1) {
+        setSuccess(`Imported to ${quartersArray.join(' & ')}`);
+      } else {
+        setSuccess(true);
+      }
+
       setSelectedLoads([]);
 
       // Refresh available trips
@@ -346,7 +424,8 @@ export default function StateMileageImporter({
               <div>
                 <p className="text-sm font-medium text-green-800">Import Successful!</p>
                 <p className="text-sm text-green-700">
-                  Successfully imported {importCount} trips from selected trips.
+                  Successfully imported {importCount} records from selected trips.
+                  {typeof success === 'string' && ` ${success}`}
                 </p>
               </div>
             </div>

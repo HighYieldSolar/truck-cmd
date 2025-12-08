@@ -142,10 +142,10 @@ export async function completeTrip(tripId) {
 }
 
 /**
- * Delete a mileage trip and its associated crossings
+ * Delete a mileage trip and its associated crossings AND IFTA records
  * @param {string} tripId - Trip ID
  * @param {string} userId - User ID (for security verification)
- * @returns {Promise<boolean>} - Success status
+ * @returns {Promise<Object>} - Result with success status and deleted IFTA record count
  */
 export async function deleteTrip(tripId, userId) {
   try {
@@ -156,31 +156,77 @@ export async function deleteTrip(tripId, userId) {
       .eq('id', tripId)
       .eq('user_id', userId)
       .single();
-      
+
     if (tripError || !tripData) {
       throw new Error('Trip not found or you do not have permission to delete it');
     }
-    
-    // Delete all associated crossings first (handle the foreign key constraint)
+
+    // IMPORTANT: Delete associated IFTA records FIRST (before the trip is deleted)
+    // This ensures the IFTA calculator stays in sync when trips are deleted
+    const { data: deletedIftaRecords, error: iftaDeleteError } = await supabase
+      .from('ifta_trip_records')
+      .delete()
+      .eq('mileage_trip_id', tripId)
+      .eq('user_id', userId)
+      .select('id');
+
+    if (iftaDeleteError) {
+      console.error('Error deleting IFTA records:', iftaDeleteError);
+      // Continue with deletion even if IFTA records fail - they'll be orphaned but won't block
+    }
+
+    const deletedIftaCount = deletedIftaRecords?.length || 0;
+
+    // Delete all associated crossings (handle the foreign key constraint)
     const { error: crossingDeleteError } = await supabase
       .from('driver_mileage_crossings')
       .delete()
       .eq('trip_id', tripId);
-      
+
     if (crossingDeleteError) throw crossingDeleteError;
-    
+
     // Finally, delete the trip
     const { error: tripDeleteError } = await supabase
       .from('driver_mileage_trips')
       .delete()
       .eq('id', tripId)
       .eq('user_id', userId); // Extra security to ensure only the owner can delete
-      
+
     if (tripDeleteError) throw tripDeleteError;
-    
-    return true;
+
+    return {
+      success: true,
+      deletedIftaRecords: deletedIftaCount
+    };
   } catch (error) {
     throw error;
+  }
+}
+
+/**
+ * Check if a trip has been imported to IFTA
+ * @param {string} tripId - Trip ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} - Info about IFTA import status
+ */
+export async function checkTripIftaStatus(tripId, userId) {
+  try {
+    const { data, error } = await supabase
+      .from('ifta_trip_records')
+      .select('id, quarter, total_miles')
+      .eq('mileage_trip_id', tripId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return {
+      isImported: data && data.length > 0,
+      recordCount: data?.length || 0,
+      quarters: [...new Set(data?.map(r => r.quarter) || [])],
+      totalMiles: data?.reduce((sum, r) => sum + (parseFloat(r.total_miles) || 0), 0) || 0
+    };
+  } catch (error) {
+    return { isImported: false, recordCount: 0, quarters: [], totalMiles: 0 };
   }
 }
 

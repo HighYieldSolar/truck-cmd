@@ -126,10 +126,90 @@ export async function getStateMileageForTrip(tripId) {
 }
 
 /**
+ * Get state mileage for a trip, split by quarter based on crossing dates
+ * This handles trips that span multiple quarters correctly
+ * @param {string} tripId - Mileage trip ID
+ * @returns {Promise<Object>} - Object with mileage grouped by quarter then by state
+ */
+export async function getStateMileageByQuarter(tripId) {
+  try {
+    if (!tripId) {
+      throw new Error("Trip ID is required");
+    }
+
+    // Fetch all crossings for this trip
+    const { data: crossings, error } = await supabase
+      .from('driver_mileage_crossings')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('timestamp', { ascending: true });
+
+    if (error) throw error;
+
+    // Calculate mileage by quarter and state
+    // Structure: { "2024-Q4": { "TX": { state, state_name, miles }, ... }, "2025-Q1": { ... } }
+    const mileageByQuarter = {};
+
+    if (crossings && crossings.length >= 2) {
+      for (let i = 0; i < crossings.length - 1; i++) {
+        const currentCrossing = crossings[i];
+        const currentState = currentCrossing.state;
+        const currentOdometer = currentCrossing.odometer;
+        const nextOdometer = crossings[i + 1].odometer;
+        const milesDriven = nextOdometer - currentOdometer;
+
+        // Skip negative or zero miles (possible data error)
+        if (milesDriven <= 0) continue;
+
+        // Determine the quarter based on the crossing date (when the miles were driven)
+        // Use crossing_date if available, otherwise fall back to timestamp
+        const crossingDate = currentCrossing.crossing_date ||
+          (currentCrossing.timestamp ? currentCrossing.timestamp.split('T')[0] : null);
+
+        if (!crossingDate) continue;
+
+        const quarter = getQuarterFromDate(crossingDate);
+        if (!quarter) continue;
+
+        // Initialize quarter if not exists
+        if (!mileageByQuarter[quarter]) {
+          mileageByQuarter[quarter] = {};
+        }
+
+        // Add or update state mileage for this quarter
+        if (!mileageByQuarter[quarter][currentState]) {
+          mileageByQuarter[quarter][currentState] = {
+            state: currentState,
+            state_name: currentCrossing.state_name || currentState,
+            miles: 0
+          };
+        }
+        mileageByQuarter[quarter][currentState].miles += milesDriven;
+      }
+    }
+
+    // Convert nested objects to arrays and sort
+    const result = {};
+    Object.keys(mileageByQuarter).forEach(quarter => {
+      result[quarter] = Object.values(mileageByQuarter[quarter])
+        .sort((a, b) => b.miles - a.miles);
+    });
+
+    return {
+      quarters: Object.keys(result).sort(),
+      mileageByQuarter: result,
+      totalMiles: Object.values(result).flat().reduce((sum, s) => sum + s.miles, 0)
+    };
+  } catch (error) {
+    throw new Error(`Failed to get state mileage by quarter: ${error.message || "Unknown error"}`);
+  }
+}
+
+/**
  * Import state mileage trip into IFTA records
- * Modified to work with existing schema (no auto_imported column)
+ * IMPROVED: Now properly handles trips that span multiple quarters by using crossing dates
  * @param {string} userId - User ID
- * @param {string} quarter - Quarter string (e.g., "2023-Q1")
+ * @param {string} quarter - Quarter string (e.g., "2023-Q1") - used for validation, actual quarter determined by crossing dates
  * @param {string} tripId - Mileage trip ID to import
  * @returns {Promise<Object>} - Import results
  */
@@ -155,101 +235,92 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
       throw new Error("Mileage trip not found");
     }
 
-    // Get state mileage for this trip
-    let stateMileage;
-    try {
-      stateMileage = await getStateMileageForTrip(tripId);
-    } catch (stateError) {
-      throw new Error(`Failed to get state mileage data: ${stateError.message}`);
-    }
-
-    if (stateMileage.length === 0) {
-      return {
-        success: true,
-        importedCount: 0,
-        totalMiles: 0,
-        states: [],
-        message: "No state mileage data found for this trip."
-      };
-    }
-
-    // Determine the correct quarter based on the trip's end date first
-    const tripEndDate = trip.end_date || trip.start_date;
-    const correctQuarter = getQuarterFromDate(tripEndDate);
-
-    if (!correctQuarter) {
-      throw new Error(`Invalid trip date: ${tripEndDate}`);
-    }
-
-    // IMPORTANT: First check if this trip has already been imported
-    // Check in the correct quarter based on trip date
+    // IMPORTANT: Check if this trip has already been imported (in ANY quarter)
     const { count, error: checkError } = await supabase
       .from('ifta_trip_records')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('quarter', correctQuarter)
       .eq('mileage_trip_id', tripId);
 
     if (checkError) {
-      // Handle table doesn't exist case
       if (checkError.code === '42P01') {
         throw new Error("IFTA trip records table not found. Please contact support.");
       }
       throw checkError;
     }
 
-    // If we found existing imports, return early with "already imported" status
     if (count > 0) {
       return {
         success: true,
         importedCount: 0,
         totalMiles: 0,
         states: [],
+        quarters: [],
         alreadyImported: true,
         message: "This trip has already been imported to IFTA."
       };
     }
 
-    // Validate that the trip belongs to the requested quarter
-    if (!validateTripQuarter(tripEndDate, quarter)) {
-      // Continue with import but use the correct quarter
+    // Get state mileage BY QUARTER - this properly splits crossings across quarters
+    let mileageData;
+    try {
+      mileageData = await getStateMileageByQuarter(tripId);
+    } catch (stateError) {
+      throw new Error(`Failed to get state mileage data: ${stateError.message}`);
     }
 
-    // Use the correct quarter based on trip date, not the selected quarter
-    const importQuarter = correctQuarter;
+    if (mileageData.quarters.length === 0 || mileageData.totalMiles === 0) {
+      return {
+        success: true,
+        importedCount: 0,
+        totalMiles: 0,
+        states: [],
+        quarters: [],
+        message: "No state mileage data found for this trip."
+      };
+    }
 
-    // Prepare IFTA records for each state with miles
-    const tripRecords = stateMileage.map(state => ({
-      user_id: userId,
-      quarter: importQuarter, // Use the quarter determined from trip date
-      start_date: trip.start_date,
-      end_date: trip.end_date || trip.start_date,
-      vehicle_id: trip.vehicle_id,
-      mileage_trip_id: trip.id,
-      start_jurisdiction: state.state,
-      end_jurisdiction: state.state, // Same state for these records since we're importing state by state
-      total_miles: state.miles,
-      gallons: 0, // To be filled based on MPG later
-      fuel_cost: 0,
-      notes: `Imported from State Mileage Tracker: ${state.state_name} (${state.miles.toFixed(1)} miles)`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_imported: true,
-      source: 'mileage_tracker'
-    }));
+    // Prepare IFTA records for each quarter and state
+    const tripRecords = [];
+    const allStates = new Set();
 
-    // Only insert if there are records to create
+    for (const importQuarter of mileageData.quarters) {
+      const stateMileage = mileageData.mileageByQuarter[importQuarter];
+
+      for (const state of stateMileage) {
+        allStates.add(state.state);
+
+        tripRecords.push({
+          user_id: userId,
+          quarter: importQuarter, // Use the quarter determined from crossing dates
+          start_date: trip.start_date,
+          end_date: trip.end_date || trip.start_date,
+          vehicle_id: trip.vehicle_id,
+          mileage_trip_id: trip.id,
+          start_jurisdiction: state.state,
+          end_jurisdiction: state.state,
+          total_miles: state.miles,
+          gallons: 0,
+          fuel_cost: 0,
+          notes: `Imported from State Mileage Tracker: ${state.state_name} (${state.miles.toFixed(1)} miles) - ${importQuarter}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_imported: true,
+          source: 'mileage_tracker'
+        });
+      }
+    }
+
+    // Insert records
     let insertedData = [];
     if (tripRecords.length > 0) {
       try {
-        // Insert all the trip records
         const { data, error: insertError } = await supabase
           .from('ifta_trip_records')
           .insert(tripRecords)
           .select();
 
         if (insertError) {
-          // Check specifically for unique constraint violation
           if (insertError.code === '23505' ||
             (insertError.message && insertError.message.includes('duplicate key value violates unique constraint'))) {
             return {
@@ -260,13 +331,11 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
               message: "This trip has already been imported to IFTA."
             };
           }
-
           throw insertError;
         }
 
         insertedData = data || [];
       } catch (insertErr) {
-        // Handle PostgreSQL unique constraint violation
         if (insertErr.code === '23505' ||
           (insertErr.message && insertErr.message.includes('duplicate key value violates unique constraint'))) {
           return {
@@ -277,23 +346,27 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
             message: "This trip has already been imported to IFTA."
           };
         }
-
         throw new Error(`Failed to insert IFTA records: ${insertErr.message}`);
       }
     }
 
-    // Calculate total miles for reporting
-    const totalMiles = stateMileage.reduce((sum, state) => sum + state.miles, 0);
+    // Build result message
+    const quarterInfo = mileageData.quarters.length > 1
+      ? `Split across ${mileageData.quarters.join(' and ')}`
+      : mileageData.quarters[0];
 
     return {
       success: true,
       importedCount: tripRecords.length,
-      totalMiles: totalMiles,
-      states: stateMileage.map(state => state.state),
-      createdRecords: insertedData
+      totalMiles: mileageData.totalMiles,
+      states: [...allStates],
+      quarters: mileageData.quarters,
+      createdRecords: insertedData,
+      message: mileageData.quarters.length > 1
+        ? `Trip spans multiple quarters - miles assigned based on crossing dates (${quarterInfo})`
+        : undefined
     };
   } catch (error) {
-    // Handle PostgreSQL unique constraint violation at the outer level too
     if (error.code === '23505' ||
       (error.message && error.message.includes('duplicate key value violates unique constraint'))) {
       return {
