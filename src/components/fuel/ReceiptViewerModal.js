@@ -2,18 +2,19 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { 
-  X, 
-  Download, 
-  Share2, 
-  Printer, 
+import {
+  X,
+  Download,
+  Share2,
+  Printer,
   Maximize2,
   Fuel,
   MapPin,
   Calendar,
   DollarSign,
   Truck,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
 import SupabaseImage from "./SupabaseImage";
 
@@ -25,38 +26,60 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
 
   if (!isOpen || !receipt) return null;
 
-  const handleDownload = () => {
-      if (!receipt.receipt_image) return;
-  
-      // Check if receipt.receipt_image is a valid URL
-      try {
-          new URL(receipt.receipt_image);
-      } catch (_) {
-          console.error("Invalid image URL:", receipt.receipt_image);
-          return;
+  const handleDownload = async () => {
+    if (!receipt.receipt_image || isDownloading) return;
+
+    // Validate URL
+    try {
+      new URL(receipt.receipt_image);
+    } catch (_) {
+      console.error("Invalid image URL:", receipt.receipt_image);
+      return;
+    }
+
+    setIsDownloading(true);
+
+    try {
+      // Fetch the image as a blob to force instant download
+      const response = await fetch(receipt.receipt_image);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch receipt');
       }
-  
-      setIsDownloading(true);
-  
-      try {
-          const link = document.createElement('a');
-          link.href = receipt.receipt_image;
-          const date = new Date(receipt.date).toISOString().split('T')[0];
-          const location = receipt.location.replace(/\s+/g, '_');
-          const filename = `receipt_${date}_${location}.jpg`;
-  
-          link.setAttribute('download', filename);
-          link.setAttribute('target', '_blank');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-      } catch (error) {
-          console.error('Error downloading image:', error);
-      } finally {
-          setTimeout(() => {
-              setIsDownloading(false);
-          }, 1000);
-      }
+
+      const blob = await response.blob();
+
+      // Determine file extension from content type
+      const contentType = blob.type || 'image/jpeg';
+      let extension = 'jpg';
+      if (contentType.includes('png')) extension = 'png';
+      else if (contentType.includes('gif')) extension = 'gif';
+      else if (contentType.includes('webp')) extension = 'webp';
+      else if (contentType.includes('pdf')) extension = 'pdf';
+
+      // Create filename
+      const date = new Date(receipt.date).toISOString().split('T')[0];
+      const location = (receipt.location || 'fuel').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      const filename = `receipt_${date}_${location}.${extension}`;
+
+      // Create blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab if blob download fails
+      window.open(receipt.receipt_image, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
   };
   
   const handlePrint = () => {
@@ -185,12 +208,16 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
           <div className="flex items-center space-x-1">
             <button
               onClick={handleDownload}
-              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
-              title="Download"
+              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper disabled:opacity-50"
+              title={isDownloading ? "Downloading..." : "Download"}
               disabled={isDownloading}
             >
-              <Download size={20} className={isDownloading ? "animate-pulse" : ""} />
-              <span className="tooltip">Download</span>
+              {isDownloading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <Download size={20} />
+              )}
+              <span className="tooltip">{isDownloading ? "Downloading..." : "Download"}</span>
             </button>
             <button
               onClick={handlePrint}

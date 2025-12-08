@@ -2,12 +2,13 @@
 "use client";
 
 import { useState } from "react";
-import { X, FileText, Clock, Download, ExternalLink, Shield, Building2, User, FileCheck } from "lucide-react";
+import { X, FileText, Clock, Download, ExternalLink, Shield, Building2, User, FileCheck, Loader2 } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
   const [imagePreviewExpanded, setImagePreviewExpanded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!isOpen || !compliance) return null;
 
@@ -90,16 +91,57 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
     return urlParts[urlParts.length - 1];
   };
 
-  // Download document
-  const handleDownloadDocument = () => {
-    if (!compliance.document_url) return;
+  // Download document - instant download using blob
+  const handleDownloadDocument = async () => {
+    if (!compliance.document_url || isDownloading) return;
 
-    const link = document.createElement('a');
-    link.href = compliance.document_url;
-    link.download = getDocumentFileName() || `compliance-document-${compliance.id}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setIsDownloading(true);
+
+    try {
+      // Fetch the document as a blob to force instant download
+      const response = await fetch(compliance.document_url);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch document');
+      }
+
+      const blob = await response.blob();
+
+      // Determine file extension from content type or URL
+      const contentType = blob.type || '';
+      let extension = '';
+      if (contentType.includes('pdf')) extension = 'pdf';
+      else if (contentType.includes('png')) extension = 'png';
+      else if (contentType.includes('gif')) extension = 'gif';
+      else if (contentType.includes('webp')) extension = 'webp';
+      else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+      else {
+        // Try to get extension from URL
+        const urlParts = compliance.document_url.split('.');
+        extension = urlParts[urlParts.length - 1].split('?')[0] || 'file';
+      }
+
+      // Create filename
+      const filename = `compliance-${compliance.compliance_type || 'document'}-${compliance.id}.${extension}`;
+
+      // Create blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab if blob download fails
+      window.open(compliance.document_url, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const daysUntilExpiration = getDaysUntilExpiration();
@@ -256,10 +298,15 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                         </button>
                         <button
                           onClick={handleDownloadDocument}
-                          className="text-white hover:text-gray-200"
-                          title="Download Document"
+                          disabled={isDownloading}
+                          className="text-white hover:text-gray-200 disabled:opacity-50"
+                          title={isDownloading ? "Downloading..." : "Download Document"}
                         >
-                          <Download size={16} />
+                          {isDownloading ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <Download size={16} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -302,10 +349,15 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                   )}
                   <button
                     onClick={handleDownloadDocument}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                    disabled={isDownloading}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                   >
-                    <Download size={16} className="mr-2" />
-                    Download
+                    {isDownloading ? (
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                    ) : (
+                      <Download size={16} className="mr-2" />
+                    )}
+                    {isDownloading ? 'Downloading...' : 'Download'}
                   </button>
                 </div>
               </div>
