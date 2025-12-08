@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   X,
   Download,
@@ -12,7 +12,8 @@ import {
   FileText,
   Calendar,
   Truck,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 /**
@@ -25,6 +26,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!isOpen || !receipt) return null;
 
@@ -66,14 +68,47 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  const handleDownload = () => {
-    if (!hasReceipt) return;
-    const link = document.createElement('a');
-    link.href = receipt.receipt_image;
-    link.download = `receipt-${receipt.id || 'expense'}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async () => {
+    if (!hasReceipt || isDownloading) return;
+
+    setIsDownloading(true);
+
+    try {
+      // Fetch the image as a blob to force download (bypasses cross-origin issues)
+      const response = await fetch(receipt.receipt_image);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch receipt');
+      }
+
+      const blob = await response.blob();
+
+      // Determine file extension from content type or URL
+      const contentType = blob.type || 'image/jpeg';
+      let extension = 'jpg';
+      if (contentType.includes('png')) extension = 'png';
+      else if (contentType.includes('gif')) extension = 'gif';
+      else if (contentType.includes('webp')) extension = 'webp';
+      else if (contentType.includes('pdf')) extension = 'pdf';
+
+      // Create a blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `receipt-${receipt.id || 'expense'}-${new Date().toISOString().split('T')[0]}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Fallback: open in new tab if blob download fails
+      window.open(receipt.receipt_image, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleImageError = () => {
@@ -173,10 +208,15 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                         </button>
                         <button
                           onClick={handleDownload}
-                          className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"
-                          title="Download"
+                          disabled={isDownloading}
+                          className="p-1.5 text-white hover:bg-white/10 rounded transition-colors disabled:opacity-50"
+                          title={isDownloading ? "Downloading..." : "Download"}
                         >
-                          <Download className="h-4 w-4" />
+                          {isDownloading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -214,10 +254,15 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                       </a>
                       <button
                         onClick={handleDownload}
-                        className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                        disabled={isDownloading}
+                        className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                       >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
+                        {isDownloading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        {isDownloading ? 'Downloading...' : 'Download'}
                       </button>
                     </div>
                   </div>
@@ -352,10 +397,15 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
             {hasReceipt && (
               <button
                 onClick={handleDownload}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isDownloading}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download Receipt
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isDownloading ? 'Downloading...' : 'Download Receipt'}
               </button>
             )}
             <button

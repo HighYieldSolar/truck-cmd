@@ -19,7 +19,6 @@ import {
 // Import services
 import {
   fetchExpenses,
-  getExpenseStats,
   deleteExpense
 } from '@/lib/services/expenseService';
 
@@ -135,6 +134,81 @@ export default function ExpensesPage() {
     checkAuth();
   }, [router]);
 
+  // Calculate stats from filtered expenses - this ensures stats always reflect current filters
+  const calculateStatsFromExpenses = useCallback((expensesData) => {
+    if (!expensesData || expensesData.length === 0) {
+      return {
+        total: 0,
+        topCategory: null,
+        dailyAverage: 0,
+        byCategory: {},
+        count: 0
+      };
+    }
+
+    // Calculate total from filtered expenses
+    const total = expensesData.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+
+    // Calculate expenses by category from filtered data
+    const byCategory = {};
+    expensesData.forEach(expense => {
+      if (expense.category) {
+        if (!byCategory[expense.category]) {
+          byCategory[expense.category] = 0;
+        }
+        byCategory[expense.category] += parseFloat(expense.amount) || 0;
+      }
+    });
+
+    // Find top category from filtered data
+    let topCategory = null;
+    let maxAmount = 0;
+    for (const [category, amount] of Object.entries(byCategory)) {
+      if (amount > maxAmount) {
+        maxAmount = amount;
+        topCategory = { name: category, amount };
+      }
+    }
+
+    // Calculate daily average based on date range
+    const now = new Date();
+    let daysInPeriod = 30; // default
+
+    if (filters.dateRange === 'This Month') {
+      daysInPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    } else if (filters.dateRange === 'Last Month') {
+      daysInPeriod = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    } else if (filters.dateRange === 'This Quarter' || filters.dateRange === 'Last Quarter') {
+      daysInPeriod = 90;
+    } else if (filters.dateRange === 'This Year') {
+      daysInPeriod = 365;
+    } else if (filters.dateRange === 'All Time') {
+      // Calculate days from oldest to newest expense
+      if (expensesData.length > 0) {
+        const dates = expensesData.map(e => new Date(e.date)).filter(d => !isNaN(d));
+        if (dates.length > 0) {
+          const oldest = Math.min(...dates);
+          const newest = Math.max(...dates);
+          daysInPeriod = Math.max(1, Math.ceil((newest - oldest) / (1000 * 60 * 60 * 24)) + 1);
+        }
+      }
+    } else if (filters.dateRange === 'Custom' && filters.startDate && filters.endDate) {
+      const start = new Date(filters.startDate);
+      const end = new Date(filters.endDate);
+      daysInPeriod = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
+    }
+
+    const dailyAverage = total / daysInPeriod;
+
+    return {
+      total,
+      topCategory,
+      dailyAverage,
+      byCategory,
+      count: expensesData.length
+    };
+  }, [filters.dateRange, filters.startDate, filters.endDate]);
+
   // Load expenses when user or filters change
   const loadExpenses = useCallback(async () => {
     if (!user) return;
@@ -142,42 +216,14 @@ export default function ExpensesPage() {
     try {
       setLoading(true);
 
-      // Fetch expenses
+      // Fetch expenses with all filters applied
       const expensesData = await fetchExpenses(user.id, filters);
       setExpenses(expensesData || []);
 
-      // Get stats
-      const period = filters.dateRange === 'Custom' ? 'custom' :
-        filters.dateRange === 'This Month' ? 'month' :
-        filters.dateRange === 'This Quarter' ? 'quarter' : 'year';
-
-      const statsData = await getExpenseStats(user.id, period);
-
-      // Find top category
-      let topCategory = null;
-      let maxAmount = 0;
-      for (const [category, amount] of Object.entries(statsData.byCategory || {})) {
-        if (amount > maxAmount) {
-          maxAmount = amount;
-          topCategory = { name: category, amount };
-        }
-      }
-
-      // Calculate daily average
-      const now = new Date();
-      const daysInPeriod = filters.dateRange === 'This Month' ?
-        new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() :
-        filters.dateRange === 'This Quarter' ? 90 : 365;
-
-      const dailyAverage = (statsData.total || 0) / daysInPeriod;
-
-      setStats({
-        total: statsData.total || 0,
-        topCategory,
-        dailyAverage,
-        byCategory: statsData.byCategory || {},
-        count: expensesData?.length || 0
-      });
+      // Calculate stats directly from the filtered expenses
+      // This ensures stats always reflect the current filter selections
+      const calculatedStats = calculateStatsFromExpenses(expensesData);
+      setStats(calculatedStats);
     } catch (error) {
       setOperationMessage({
         type: 'error',
@@ -186,7 +232,7 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, filters]);
+  }, [user, filters, calculateStatsFromExpenses]);
 
   useEffect(() => {
     loadExpenses();
