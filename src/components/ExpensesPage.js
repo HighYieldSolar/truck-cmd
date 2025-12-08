@@ -51,6 +51,7 @@ export default function ExpensesPage() {
 
   // Data state
   const [expenses, setExpenses] = useState([]);
+  const [allExpenses, setAllExpenses] = useState([]); // Unfiltered expenses for Receipt Directory
   const [stats, setStats] = useState({
     total: 0,
     topCategory: null,
@@ -64,7 +65,7 @@ export default function ExpensesPage() {
   const [filters, setFilters] = useState({
     search: '',
     category: 'All',
-    dateRange: 'This Month',
+    dateRange: 'All Time',
     startDate: '',
     endDate: '',
     sortBy: 'date',
@@ -222,6 +223,16 @@ export default function ExpensesPage() {
       const expensesData = await fetchExpenses(user.id, filters);
       setExpenses(expensesData || []);
 
+      // Also fetch all expenses (no date filter) for Receipt Directory
+      const allExpensesFilters = {
+        ...filters,
+        dateRange: 'All Time',
+        startDate: '',
+        endDate: ''
+      };
+      const allExpensesData = await fetchExpenses(user.id, allExpensesFilters);
+      setAllExpenses(allExpensesData || []);
+
       // Calculate stats directly from the filtered expenses
       // This ensures stats always reflect the current filter selections
       const calculatedStats = calculateStatsFromExpenses(expensesData);
@@ -335,7 +346,7 @@ export default function ExpensesPage() {
     setFilters({
       search: '',
       category: 'All',
-      dateRange: 'This Month',
+      dateRange: 'All Time',
       startDate: '',
       endDate: '',
       sortBy: 'date',
@@ -653,9 +664,9 @@ export default function ExpensesPage() {
                 )}
               </div>
 
-              {/* Receipt Directory */}
+              {/* Receipt Directory - Shows all receipts regardless of main page filters */}
               <ReceiptDirectory
-                expenses={expenses}
+                expenses={allExpenses}
                 onViewReceipt={handleViewReceipt}
                 isLoading={loading}
               />
