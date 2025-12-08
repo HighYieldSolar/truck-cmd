@@ -1,14 +1,11 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { 
-  ArrowRight, Check, BarChart2, MapPin, Calendar, 
-  Map, Smartphone, Repeat, RotateCw, FileText, 
+import {
+  ArrowRight, Check, BarChart2, MapPin, Calendar,
+  Map, Smartphone, Repeat, RotateCw, FileText,
   Package, Truck, ChevronDown
 } from "lucide-react";
-import Navigation from '@/components/navigation';
-import Footer from '@/components/footer';
 
 // Example Testimonial Component
 const Testimonial = ({ text, author, role, company }) => (
@@ -59,49 +56,39 @@ const FAQItem = ({ question, answer }) => {
 
 export default function DispatchingFeature() {
   return (
-    <main className="min-h-screen bg-[#F5F5F5] text-[#222222]">
+    <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative py-20 px-6 bg-gradient-to-br from-blue-600 to-blue-400 text-white overflow-hidden">
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 text-center md:text-left mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                Intelligent <span className="text-yellow-300">Dispatching</span> for Your Fleet
-              </h1>
-              <p className="text-xl mt-6 max-w-xl">
-                Optimize routes, assign loads efficiently, and track your fleet in real-time with our intuitive dispatching system built for trucking companies.
-              </p>
-              <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center md:justify-start">
-                <a
-                  href="/signup"
-                  className="px-8 py-4 bg-white text-blue-600 rounded-md text-xl shadow-lg transition-all duration-300 hover:scale-105 hover:bg-blue-50 flex items-center justify-center"
-                >
-                  Try It Free 
-                  <ArrowRight size={20} className="ml-2" />
-                </a>
-                <a
-                  href="#how-it-works"
-                  className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-md text-xl transition-all duration-300 hover:bg-white hover:text-blue-600"
-                >
-                  Learn More
-                </a>
-              </div>
-            </div>
-            <div className="md:w-1/2 relative">
-              <div className="relative w-full h-96 bg-white rounded-lg shadow-xl overflow-hidden">
-                {/* Placeholder for feature image/screenshot */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-white opacity-50"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-lg text-gray-500">Dispatching Dashboard</p>
-                </div>
-              </div>
-            </div>
+      <section className="relative py-16 md:py-24 px-6 bg-gradient-to-b from-blue-50 via-white to-white overflow-hidden">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <Truck size={16} />
+            Load Management
           </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+            Smart <span className="text-blue-600">Dispatching</span> for Your Fleet
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            Optimize routes, assign loads efficiently, and track your fleet in real-time with our intuitive dispatching system built for trucking companies.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+            <Link
+              href="/signup"
+              className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              Start Free Trial
+              <ArrowRight size={20} />
+            </Link>
+            <a
+              href="#how-it-works"
+              className="px-8 py-4 bg-white text-gray-700 text-lg font-medium rounded-lg border border-gray-300 hover:border-gray-400 transition-colors flex items-center justify-center"
+            >
+              Learn More
+            </a>
+          </div>
+          <p className="text-sm text-gray-500">
+            No credit card required • 7-day free trial • Cancel anytime
+          </p>
         </div>
-        
-        {/* Background decorations */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-20 transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-300 rounded-full filter blur-3xl opacity-30 transform -translate-x-1/2 translate-y-1/2"></div>
       </section>
 
       {/* Key Benefits Section */}
@@ -463,6 +450,6 @@ export default function DispatchingFeature() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

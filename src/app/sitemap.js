@@ -71,6 +71,7 @@ export default function sitemap() {
     'compliance',
     'ifta-calculator',
     'fuel-tracker',
+    'state-mileage',
   ].map((feature) => ({
     url: `${siteUrl}/features/${feature}`,
     lastModified: currentDate,

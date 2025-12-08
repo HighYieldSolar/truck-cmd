@@ -396,7 +396,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 z-20 transition-all duration-300">
+        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 left-0 h-screen z-20 transition-all duration-300">
           <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center">
               <Image
@@ -409,7 +409,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             </Link>
           </div>
 
-          <div className="flex-1 flex flex-col overflow-y-auto py-4">
+          <div className="flex-1 flex flex-col overflow-y-auto py-4 min-h-0">
             {/* Main Navigation */}
             <div className="px-3">
               <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">

@@ -1,239 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Clock, 
-  MessageSquare, 
-  Send, 
+import Link from "next/link";
+import {
+  Phone,
+  Mail,
+  Clock,
+  MessageSquare,
+  Send,
   CheckCircle,
+  HelpCircle,
+  ArrowRight,
   ChevronRight
 } from "lucide-react";
-import Link from "next/link";
-import { ContactSection } from "@/components/sections";
-
-export default function ContactPage() {
-  return (
-    <main className="min-h-screen bg-[#F5F5F5] text-[#222222]">
-      {/* Hero Section */}
-      <section className="relative py-16 px-6 bg-gradient-to-br from-blue-600 to-blue-400 text-white overflow-hidden">
-        <div className="max-w-6xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 inline-block relative">
-            Get In Touch
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-white bg-opacity-70 rounded"></div>
-          </h1>
-          <p className="text-xl mb-8 max-w-3xl mx-auto">
-            We&apos;re here to help with any questions about our trucking management software.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-            <ContactCard 
-              icon={<Phone size={28} />}
-              title="Call Us"
-              content={<>
-                <p className="text-lg font-medium">(951) 505-1147</p>
-                <p className="text-sm opacity-90">Mon-Fri: 8am-8pm PST</p>
-              </>}
-            />
-            
-            <ContactCard 
-              icon={<Mail size={28} />}
-              title="Email Us"
-              content={<>
-                <p className="text-lg font-medium">support@truckcommand.com</p>
-                <p className="text-sm opacity-90">We&apos;ll respond within 24 hours</p>
-              </>}
-            />
-            
-            <ContactCard 
-              icon={<MessageSquare size={28} />}
-              title="Live Chat"
-              content={<>
-                <p className="text-lg font-medium">Chat with Support</p>
-                <p className="text-sm opacity-90">Available during business hours</p>
-              </>}
-              action={{
-                text: "Start Chat",
-                href: "#chat",
-                onClick: (e) => {
-                  e.preventDefault();
-                  // Implement your chat functionality here
-                  alert("Chat functionality would open here");
-                }
-              }}
-            />
-          </div>
-        </div>
-        
-        {/* Background decorations */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-20 transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-300 rounded-full filter blur-3xl opacity-30 transform -translate-x-1/2 translate-y-1/2"></div>
-      </section>
-
-      {/* Main Contact Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col lg:flex-row bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Contact Info */}
-            <div className="lg:w-1/3 bg-gradient-to-b from-blue-800 to-blue-900 text-white p-10">
-              <h2 className="text-2xl font-bold mb-6 inline-block relative">
-                Contact Information
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-400 rounded"></div>
-              </h2>
-              
-              <div className="space-y-8 mt-10">
-                <ContactInfoItem 
-                  icon={<Phone size={24} />}
-                  title="Phone"
-                  content="(951) 505-1147"
-                />
-                
-                <ContactInfoItem 
-                  icon={<Mail size={24} />}
-                  title="Email"
-                  content="support@truckcommand.com"
-                />
-                
-                
-                <ContactInfoItem 
-                  icon={<Clock size={24} />}
-                  title="Business Hours"
-                  content={<>
-                    Monday - Friday: 8am - 8pm PST<br />
-                    Saturday: 9am - 5pm PST<br />
-                    Sunday: Closed
-                  </>}
-                />
-              </div>
-              
-              <div className="mt-12">
-                <h3 className="font-medium mb-4">Connect With Us</h3>
-                <div className="flex space-x-4">
-                  <SocialButton href="#" label="FB" />
-                  <SocialButton href="#" label="TW" />
-                  <SocialButton href="#" label="IG" />
-                  <SocialButton href="#" label="LI" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Contact Form */}
-            <div className="lg:w-2/3 p-10">
-              <h2 className="text-2xl font-bold mb-6 inline-block relative text-gray-800">
-                Send Us a Message
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded"></div>
-              </h2>
-              
-              <p className="text-gray-600 mb-8">
-                Fill out the form below and our team will get back to you within one business day.
-              </p>
-              
-              <ContactForm />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Help Resources Section */}
-      <section className="py-16 px-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-center inline-block relative">
-            Additional Resources
-            <div className="absolute bottom-0 left-0 right-0 w-full h-1 bg-blue-500 rounded"></div>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <ResourceCard 
-              title="Help Center"
-              description="Browse through our knowledge base for answers to frequently asked questions."
-              linkText="Visit Help Center"
-              linkHref="/help"
-            />
-            
-            <ResourceCard 
-              title="Video Tutorials"
-              description="Watch step-by-step guides to learn how to use Truck Command effectively."
-              linkText="View Tutorials"
-              linkHref="/tutorials"
-            />
-            
-            <ResourceCard 
-              title="Schedule a Demo"
-              description="Get a personalized walkthrough of our platform with one of our experts."
-              linkText="Book a Demo"
-              linkHref="/demo"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Map Section */}
-      <section className="h-96 bg-gray-200 relative">
-        {/* Map would go here - using a placeholder */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-300">
-          <p className="text-gray-700 text-xl">Interactive Map Would Go Here</p>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-// Contact Hero Card Component
-function ContactCard({ icon, title, content, action = null }) {
-  return (
-    <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20 shadow-lg hover:bg-opacity-20 transition duration-300">
-      <div className="flex flex-col items-center text-center">
-        <div className="p-3 bg-white bg-opacity-20 rounded-full mb-4">
-          {icon}
-        </div>
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <div className="mb-4">
-          {content}
-        </div>
-        
-        {action && (
-          <button
-            onClick={action.onClick}
-            className="mt-2 px-4 py-2 bg-white text-blue-700 rounded-md hover:bg-blue-50 transition-colors inline-flex items-center"
-          >
-            {action.text}
-            <ChevronRight size={16} className="ml-1" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Contact Information Item Component
-function ContactInfoItem({ icon, title, content }) {
-  return (
-    <div className="flex items-start">
-      <div className="p-2 bg-blue-700 rounded-lg mr-4">
-        {icon}
-      </div>
-      <div>
-        <h3 className="font-medium text-lg">{title}</h3>
-        <div className="text-blue-100 mt-1">{content}</div>
-      </div>
-    </div>
-  );
-}
-
-// Social Media Button Component
-function SocialButton({ href, label }) {
-  return (
-    <a 
-      href={href} 
-      className="w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-600 flex items-center justify-center transition-colors"
-      aria-label={label}
-    >
-      {label}
-    </a>
-  );
-}
 
 // Contact Form Component
 function ContactForm() {
@@ -244,8 +23,7 @@ function ContactForm() {
     company: '',
     fleetSize: '',
     message: '',
-    submitted: false,
-    error: false
+    submitted: false
   });
 
   const handleChange = (e) => {
@@ -258,9 +36,6 @@ function ContactForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // In a real implementation, this would send the form data to your backend
-
-    // Simulate success
     setFormState(prev => ({
       ...prev,
       submitted: true
@@ -269,17 +44,17 @@ function ContactForm() {
 
   if (formState.submitted) {
     return (
-      <div className="bg-green-50 p-8 rounded-lg text-center">
+      <div className="bg-green-50 p-8 rounded-2xl text-center border border-green-100">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-500 mb-4">
           <CheckCircle size={32} />
         </div>
         <h3 className="text-2xl font-bold text-green-800 mb-2">Message Sent!</h3>
-        <p className="text-green-700 mb-4">
-          Thank you for contacting us. A member of our team will get back to you within 1 business day.
+        <p className="text-green-700 mb-6">
+          Thank you for contacting us. We&apos;ll get back to you within 1 business day.
         </p>
-        <button 
-          onClick={() => setFormState(prev => ({ ...prev, submitted: false, name: '', email: '', phone: '', company: '', fleetSize: '', message: '' }))}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        <button
+          onClick={() => setFormState({ name: '', email: '', phone: '', company: '', fleetSize: '', message: '', submitted: false })}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           Send Another Message
         </button>
@@ -297,7 +72,7 @@ function ContactForm() {
             name="name"
             type="text"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
             placeholder="John Smith"
             value={formState.name}
             onChange={handleChange}
@@ -310,7 +85,7 @@ function ContactForm() {
             name="email"
             type="email"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
             placeholder="john@example.com"
             value={formState.email}
             onChange={handleChange}
@@ -322,7 +97,7 @@ function ContactForm() {
             id="phone"
             name="phone"
             type="tel"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
             placeholder="(555) 123-4567"
             value={formState.phone}
             onChange={handleChange}
@@ -334,32 +109,32 @@ function ContactForm() {
             id="company"
             name="company"
             type="text"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
             placeholder="Your Trucking Company"
             value={formState.company}
             onChange={handleChange}
           />
         </div>
       </div>
-      
+
       <div>
         <label htmlFor="fleetSize" className="block text-gray-700 font-medium mb-2">Fleet Size</label>
         <select
           id="fleetSize"
           name="fleetSize"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
           value={formState.fleetSize}
           onChange={handleChange}
         >
           <option value="">Select your fleet size</option>
-          <option value="1-2">1-2 trucks</option>
-          <option value="3-8">3-8 trucks</option>
-          <option value="9-14">9-14 trucks</option>
-          <option value="15-24">15-24 trucks</option>
-          <option value="25+">25+ trucks</option>
+          <option value="1">1 truck (Owner Operator)</option>
+          <option value="2-3">2-3 trucks</option>
+          <option value="4-6">4-6 trucks</option>
+          <option value="7-12">7-12 trucks</option>
+          <option value="13+">13+ trucks</option>
         </select>
       </div>
-      
+
       <div>
         <label htmlFor="message" className="block text-gray-700 font-medium mb-2">Your Message *</label>
         <textarea
@@ -367,38 +142,213 @@ function ContactForm() {
           name="message"
           required
           rows={5}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white resize-none"
           placeholder="How can we help you today?"
           value={formState.message}
           onChange={handleChange}
         ></textarea>
       </div>
-      
+
       <div>
         <button
           type="submit"
-          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
         >
           Send Message
-          <Send size={18} className="ml-2" />
+          <Send size={18} />
         </button>
-        <p className="text-sm text-gray-500 mt-2">
-          * Required fields. We&apos;ll get back to you within 1 business day.
+        <p className="text-sm text-gray-500 mt-3 text-center">
+          * Required fields. We typically respond within 24 hours.
         </p>
       </div>
     </form>
   );
 }
 
-// Resource Card Component
-function ResourceCard({ title, description, linkText, linkHref }) {
+export default function ContactPage() {
+  const contactMethods = [
+    {
+      icon: <Mail size={24} />,
+      title: "Email Support",
+      description: "Get help via email",
+      contact: "support@truckcommand.com",
+      note: "We respond within 24 hours"
+    },
+    {
+      icon: <Phone size={24} />,
+      title: "Phone Support",
+      description: "Talk to our team",
+      contact: "(951) 505-1147",
+      note: "Mon-Fri: 8am-8pm PST"
+    },
+    {
+      icon: <Clock size={24} />,
+      title: "Business Hours",
+      description: "When we're available",
+      contact: "Monday - Friday",
+      note: "8am - 8pm Pacific Time"
+    }
+  ];
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200">
-      <h3 className="text-xl font-bold text-gray-800 mb-3">{title}</h3>
-      <p className="text-gray-600 mb-4">{description}</p>
-      <Link href={linkHref} className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center">
-        {linkText} <ChevronRight size={16} className="ml-1" />
-      </Link>
+    <div className="bg-white">
+
+      {/* Hero Section */}
+      <section className="py-16 md:py-24 px-6 bg-gradient-to-b from-blue-50 via-white to-white">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <MessageSquare size={16} />
+            Get in Touch
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+            We&apos;re Here to{" "}
+            <span className="text-blue-600">Help</span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Have questions about Truck Command? Our team is ready to help you get started
+            or solve any issues you might have.
+          </p>
+        </div>
+      </section>
+
+      {/* Contact Methods */}
+      <section className="py-12 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            {contactMethods.map((method, index) => (
+              <div key={index} className="bg-gray-50 rounded-2xl p-8 text-center border border-gray-100 hover:shadow-lg transition-shadow">
+                <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mx-auto mb-4">
+                  {method.icon}
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{method.title}</h3>
+                <p className="text-gray-500 text-sm mb-3">{method.description}</p>
+                <p className="font-semibold text-gray-900 mb-1">{method.contact}</p>
+                <p className="text-gray-500 text-sm">{method.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Form Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Form */}
+            <div className="bg-white rounded-2xl p-8 md:p-10 shadow-lg border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Send Us a Message</h2>
+              <p className="text-gray-600 mb-8">
+                Fill out the form below and our team will get back to you within one business day.
+              </p>
+              <ContactForm />
+            </div>
+
+            {/* Help Resources */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Help</h2>
+              <p className="text-gray-600 mb-8">
+                Looking for answers? Check out these resources while you wait for a response.
+              </p>
+
+              <div className="space-y-4">
+                <Link
+                  href="/faq"
+                  className="flex items-center justify-between p-6 bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                      <HelpCircle size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">FAQ</h3>
+                      <p className="text-gray-500 text-sm">Find answers to common questions</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="flex items-center justify-between p-6 bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                      <CheckCircle size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Pricing</h3>
+                      <p className="text-gray-500 text-sm">View our plans and features</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
+                </Link>
+
+                <Link
+                  href="/signup"
+                  className="flex items-center justify-between p-6 bg-blue-600 rounded-2xl hover:bg-blue-700 transition-colors group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-white">
+                      <ArrowRight size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">Start Free Trial</h3>
+                      <p className="text-blue-100 text-sm">7 days free, no credit card required</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-white/70" />
+                </Link>
+              </div>
+
+              {/* Additional Info */}
+              <div className="mt-8 p-6 bg-white rounded-2xl border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-3">Response Times</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    Email: Within 24 hours
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    Phone: Real-time during business hours
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    Urgent issues: Same-day response
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Try Truck Command free for 7 days. No credit card required.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link
+              href="/signup"
+              className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              Start Your Free Trial
+              <ArrowRight size={20} />
+            </Link>
+            <Link
+              href="/pricing"
+              className="px-8 py-4 bg-gray-100 text-gray-700 text-lg font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+            >
+              View Pricing
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

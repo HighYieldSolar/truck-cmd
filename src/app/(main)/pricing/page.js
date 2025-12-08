@@ -1,71 +1,94 @@
 "use client";
 
 import { useState } from "react";
-import { HelpCircle, Check, X, Star, ArrowRight } from "lucide-react";
-import PlanCard from "@/components/pricing/PlanCard";
-import BillingToggle from "@/components/pricing/BillingToggle";
-import { CTASection, FAQSection } from "@/components/sections";
+import Link from "next/link";
+import { Check, ArrowRight, Zap, Shield, Clock, Award, HelpCircle } from "lucide-react";
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState('yearly');
+  const [billingCycle, setBillingCycle] = useState('monthly');
 
-  // Owner-operator plan features
-  const basicFeatures = [
-    { included: true, text: "Basic Invoicing & Dispatching" },
-    { included: true, text: "Simple Expense Tracking" },
-    { included: true, text: "Standard Reports" },
-    { included: true, text: "Single User Account" },
-    { included: false, text: "Advanced IFTA Tools" },
-    { included: false, text: "Load Optimization" }
-  ];
-  
-  const premiumFeatures = [
-    { included: true, text: "Advanced Invoicing & Dispatching" },
-    { included: true, text: "Comprehensive Expense Tracking" },
-    { included: true, text: "Advanced Reports & Analytics" },
-    { included: true, text: "Customer Management System" },
-    { included: true, text: "Advanced IFTA Calculator" },
-    { included: true, text: "Priority Email Support" }
-  ];
-  
-  // Fleet plan features
-  const smallFleetFeatures = [
-    { included: true, text: "All Premium Features" },
-    { included: true, text: "Fleet Management Tools" },
-    { included: true, text: "Real-time GPS Tracking" },
-    { included: true, text: "Team Access (1 User per 2 Trucks)" },
-    { included: true, text: "Fuel & Load Optimizations" }
-  ];
-  
-  const mediumFleetFeatures = [
-    { included: true, text: "All Small Fleet Features" },
-    { included: true, text: "Enhanced Fleet Reporting" },
-    { included: true, text: "Performance Analytics" },
-    { included: true, text: "More User Seats" },
-    { included: true, text: "Priority Support" }
-  ];
-  
-  const largeFleetFeatures = [
-    { included: true, text: "All Medium Fleet Features" },
-    { included: true, text: "Comprehensive Analytics" },
-    { included: true, text: "Custom Integrations" },
-    { included: true, text: "Dedicated Support Team" },
-    { included: true, text: "Training Resources" }
-  ];
-
-  // FAQ items for the pricing page
-  const pricingFAQs = [
+  const plans = [
     {
-      question: "Can I upgrade or downgrade my plan at any time?",
-      answer: "Yes, you can upgrade your plan at any time and the changes will take effect immediately. Downgrades will be applied at the start of your next billing cycle."
+      name: "Basic",
+      description: "Perfect for owner operators",
+      monthlyPrice: 20,
+      yearlyPrice: 16,
+      limits: "1 truck, 1 driver",
+      features: [
+        "50 loads/month",
+        "Basic invoicing",
+        "Expense tracking",
+        "Fuel logging",
+        "Customer management (50 max)",
+        "PDF exports",
+        "Email support"
+      ],
+      highlighted: false,
+      ctaText: "Start Free Trial",
+      href: "/signup?plan=basic"
     },
     {
-      question: "Do you offer discounts for annual payments?",
-      answer: "Yes, you'll save 20% when you choose annual billing for any of our plans."
+      name: "Premium",
+      description: "Most popular for growing operations",
+      monthlyPrice: 35,
+      yearlyPrice: 28,
+      limits: "3 trucks, 3 drivers",
+      features: [
+        "Unlimited loads",
+        "Advanced invoicing",
+        "IFTA calculator",
+        "Compliance tracking",
+        "State mileage reports",
+        "Unlimited customers",
+        "CSV exports",
+        "Priority email support"
+      ],
+      highlighted: true,
+      ctaText: "Start Free Trial",
+      href: "/signup?plan=premium"
     },
     {
-      question: "What happens after my free trial ends?",
-      answer: "After your 7-day free trial, you'll automatically be billed for the plan you selected. Don't worry - we'll send you a reminder before your trial ends."
+      name: "Fleet",
+      description: "For established small fleets",
+      monthlyPrice: 75,
+      yearlyPrice: 60,
+      limits: "12 trucks, 12 drivers",
+      features: [
+        "Everything in Premium",
+        "Maintenance scheduling",
+        "Fleet analytics",
+        "Multi-user access (6 users)",
+        "Excel exports",
+        "SMS notifications",
+        "Phone support",
+        "Priority support"
+      ],
+      highlighted: false,
+      ctaText: "Start Free Trial",
+      href: "/signup?plan=fleet"
+    }
+  ];
+
+  const faqs = [
+    {
+      question: "How does the free trial work?",
+      answer: "Your 7-day free trial gives you full access to all features of your chosen plan. No credit card required to start. You can cancel anytime during the trial period with no charges."
+    },
+    {
+      question: "Can I switch plans later?",
+      answer: "Absolutely! You can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features. When downgrading, changes take effect at your next billing cycle."
+    },
+    {
+      question: "How does IFTA reporting work?",
+      answer: "Our IFTA calculator automatically tracks your mileage by state based on your loads and fuel purchases. At the end of each quarter, you can generate a complete IFTA report ready for filing—no spreadsheets needed."
+    },
+    {
+      question: "Is my data secure?",
+      answer: "Yes. We use industry-standard encryption and secure cloud servers (powered by Supabase) to protect your data. Your information is backed up regularly and never shared with third parties."
+    },
+    {
+      question: "What if I need help getting started?",
+      answer: "We offer email support for all customers. Our support team consists of people who understand the trucking industry and can help you get set up quickly. Most users are up and running in under 10 minutes."
     },
     {
       question: "Can I get a refund if I'm not satisfied?",
@@ -73,265 +96,288 @@ export default function PricingPage() {
     }
   ];
 
+  const [openFaq, setOpenFaq] = useState(0);
+
   return (
-    <main className="min-h-screen bg-[#F5F5F5] text-[#222222]">
-      {/* Pricing Hero Section */}
-      <section className="relative py-16 px-6 bg-gradient-to-br from-blue-600 to-blue-400 text-white overflow-hidden">
-        <div className="max-w-6xl mx-auto text-center relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 inline-block relative">
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="py-16 md:py-20 px-6 bg-gradient-to-b from-blue-50 to-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Simple, Transparent Pricing
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-white bg-opacity-70 rounded"></div>
           </h1>
-          <p className="text-xl mb-8 max-w-3xl mx-auto">Choose the right plan for your trucking business. No hidden fees. No long-term contracts. Scale as you grow.</p>
-          
+          <p className="text-xl text-gray-600 mb-8">
+            Start with a 7-day free trial. No credit card required. Cancel anytime.
+          </p>
+
           {/* Billing Toggle */}
-          <BillingToggle billingCycle={billingCycle} setBillingCycle={setBillingCycle} />
+          <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                billingCycle === 'yearly'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Yearly <span className="text-green-600 text-xs ml-1">Save 20%</span>
+            </button>
+          </div>
         </div>
-        
-        {/* Background decorations */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full filter blur-3xl opacity-20 transform translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-300 rounded-full filter blur-3xl opacity-30 transform -translate-x-1/2 translate-y-1/2"></div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-20 px-6 -mt-6">
+      {/* Pricing Cards */}
+      <section className="py-12 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="space-y-16">
-            {/* Owner-Operators Section */}
-            <div>
-              <h3 className="text-3xl font-bold mb-8 text-center inline-block relative">
-                Owner-Operators <span className="text-gray-500">(1–2 Trucks)</span>
-                <div className="absolute bottom-0 left-0 right-0 w-full h-1 bg-blue-500 rounded"></div>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-                {/* Basic Plan */}
-                <PlanCard 
-                  name="Basic Plan"
-                  price={19}
-                  yearlyPrice={16}
-                  billingCycle={billingCycle}
-                  features={basicFeatures}
-                  ctaText="Start Free Trial"
-                  ctaLink="/signup"
-                  freeTrial={true}
-                />
-                
-                {/* Premium Plan */}
-                <PlanCard 
-                  name="Premium Plan"
-                  price={39}
-                  yearlyPrice={33}
-                  billingCycle={billingCycle}
-                  features={premiumFeatures}
-                  ctaText="Start Free Trial"
-                  ctaLink="/signup"
-                  freeTrial={true}
-                  highlighted={true}
-                />
-              </div>
-            </div>
-            
-            {/* Fleet Plans Section */}
-            <div>
-              <h3 className="text-3xl font-bold mb-8 text-center inline-block relative">
-                Fleet Plans
-                <div className="absolute bottom-0 left-0 right-0 w-full h-1 bg-blue-500 rounded"></div>
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
-                {/* Small Fleet */}
-                <PlanCard 
-                  name="Small Fleet"
-                  description="3–8 Trucks"
-                  price={69}
-                  yearlyPrice={55}
-                  billingCycle={billingCycle}
-                  features={smallFleetFeatures}
-                  ctaText="Get Started"
-                  ctaLink="/signup"
-                  freeTrial={false}
-                />
-                
-                {/* Medium Fleet */}
-                <PlanCard 
-                  name="Medium Fleet"
-                  description="9–14 Trucks"
-                  price={159}
-                  yearlyPrice={127}
-                  billingCycle={billingCycle}
-                  features={mediumFleetFeatures}
-                  ctaText="Get Started"
-                  ctaLink="/signup"
-                  freeTrial={false}
-                />
-                
-                {/* Large Fleet */}
-                <PlanCard 
-                  name="Large Fleet"
-                  description="15–24 Trucks"
-                  price={219}
-                  yearlyPrice={175}
-                  billingCycle={billingCycle}
-                  features={largeFleetFeatures}
-                  ctaText="Get Started"
-                  ctaLink="/signup"
-                  freeTrial={false}
-                />
-              </div>
-            </div>
-            
-            {/* Enterprise Plan Section */}
-            <div className="bg-gradient-to-r from-blue-800 to-indigo-900 rounded-xl text-white shadow-xl p-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl opacity-10 transform translate-x-1/2 -translate-y-1/2"></div>
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400 rounded-full filter blur-3xl opacity-10 transform -translate-x-1/3 translate-y-1/2"></div>
-              
-              <div className="max-w-4xl mx-auto relative z-10">
-                <div className="flex flex-col md:flex-row items-center justify-between">
-                  <div className="mb-8 md:mb-0 md:w-2/3">
-                    <div className="flex items-center">
-                      <div className="mr-4 p-2 bg-white bg-opacity-20 rounded-lg">
-                        <Star size={28} className="text-yellow-300" />
-                      </div>
-                      <h3 className="text-3xl font-bold">Enterprise Plan</h3>
-                    </div>
-                    <p className="mt-4 text-xl">For large operations with 25+ trucks</p>
-                    <ul className="mt-6 space-y-2">
-                      <li className="flex items-center">
-                        <Check size={20} className="text-green-400 mr-2" />
-                        <span>Customized Solutions & Pricing</span>
-                      </li>
-                      <li className="flex items-center">
-                        <Check size={20} className="text-green-400 mr-2" />
-                        <span>API Access & Custom Integrations</span>
-                      </li>
-                      <li className="flex items-center">
-                        <Check size={20} className="text-green-400 mr-2" />
-                        <span>AI-Powered Route Optimization</span>
-                      </li>
-                      <li className="flex items-center">
-                        <Check size={20} className="text-green-400 mr-2" />
-                        <span>White-Labeling Options</span>
-                      </li>
-                      <li className="flex items-center">
-                        <Check size={20} className="text-green-400 mr-2" />
-                        <span>Dedicated Account Manager</span>
-                      </li>
-                    </ul>
+          <div className="grid md:grid-cols-3 gap-8">
+            {plans.map((plan, index) => (
+              <div
+                key={index}
+                className={`relative rounded-2xl p-8 ${
+                  plan.highlighted
+                    ? 'bg-blue-600 text-white shadow-xl scale-105'
+                    : 'bg-white border border-gray-200 shadow-lg'
+                }`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-sm font-semibold px-4 py-1 rounded-full">
+                    Most Popular
                   </div>
-                  <div className="text-center bg-white bg-opacity-10 p-6 rounded-lg">
-                    <p className="text-lg font-semibold mb-4">Contact our sales team for a custom quote</p>
-                    <a
-                      href="/contact-sales"
-                      className="block w-full text-center px-6 py-3 bg-white text-blue-800 rounded-lg hover:bg-blue-50 transition-all duration-200 font-semibold transform hover:scale-105"
-                    >
-                      Request Demo
-                    </a>
-                  </div>
+                )}
+
+                <h3 className={`text-2xl font-bold mb-2 ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
+                  {plan.name}
+                </h3>
+                <p className={`text-sm mb-4 ${plan.highlighted ? 'text-blue-100' : 'text-gray-600'}`}>
+                  {plan.description}
+                </p>
+
+                <div className="mb-6">
+                  <span className={`text-4xl font-bold ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
+                    ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
+                  </span>
+                  <span className={plan.highlighted ? 'text-blue-100' : 'text-gray-500'}>
+                    /month
+                  </span>
+                  {billingCycle === 'yearly' && (
+                    <p className={`text-sm mt-1 ${plan.highlighted ? 'text-blue-100' : 'text-gray-500'}`}>
+                      Billed annually (${plan.yearlyPrice * 12}/year)
+                    </p>
+                  )}
                 </div>
+
+                <p className={`text-sm font-medium mb-6 ${plan.highlighted ? 'text-blue-100' : 'text-gray-700'}`}>
+                  {plan.limits}
+                </p>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check size={18} className={`flex-shrink-0 mt-0.5 ${plan.highlighted ? 'text-blue-200' : 'text-green-500'}`} />
+                      <span className={`text-sm ${plan.highlighted ? 'text-white' : 'text-gray-700'}`}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={plan.href}
+                  className={`block w-full text-center py-3 rounded-lg font-medium transition-all ${
+                    plan.highlighted
+                      ? 'bg-white text-blue-600 hover:bg-blue-50'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {plan.ctaText}
+                </Link>
               </div>
-            </div>
+            ))}
           </div>
-          
-          {/* Feature Comparison */}
-          <div className="mt-20">
-            <h3 className="text-3xl font-bold mb-8 text-center inline-block relative">
-              Feature Comparison
-              <div className="absolute bottom-0 left-0 right-0 w-full h-1 bg-blue-500 rounded"></div>
-            </h3>
-            <div className="overflow-x-auto mt-10">
-              <FeatureComparisonTable />
+
+          <p className="text-center text-gray-500 text-sm mt-8">
+            All plans include a 7-day free trial. No credit card required.
+          </p>
+        </div>
+      </section>
+
+      {/* Feature Comparison */}
+      <section className="py-16 px-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Compare Plans
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full bg-white rounded-xl shadow-lg">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="px-6 py-4 text-left text-gray-900 font-semibold">Feature</th>
+                  <th className="px-6 py-4 text-center text-gray-900 font-semibold">Basic</th>
+                  <th className="px-6 py-4 text-center text-blue-600 font-semibold bg-blue-50">Premium</th>
+                  <th className="px-6 py-4 text-center text-gray-900 font-semibold">Fleet</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Trucks & Drivers</td>
+                  <td className="px-6 py-4 text-center text-gray-600">1 each</td>
+                  <td className="px-6 py-4 text-center text-gray-600 bg-blue-50">3 each</td>
+                  <td className="px-6 py-4 text-center text-gray-600">12 each</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Loads per Month</td>
+                  <td className="px-6 py-4 text-center text-gray-600">50</td>
+                  <td className="px-6 py-4 text-center text-gray-600 bg-blue-50">Unlimited</td>
+                  <td className="px-6 py-4 text-center text-gray-600">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Invoicing</td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center bg-blue-50"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Expense Tracking</td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center bg-blue-50"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">IFTA Calculator</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Compliance Tracking</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">State Mileage Reports</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50"><Check size={20} className="text-green-500 mx-auto" /></td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Maintenance Scheduling</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50 text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">CSV/Excel Exports</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50 text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-gray-700">Priority Support</td>
+                  <td className="px-6 py-4 text-center text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center bg-blue-50 text-gray-400">—</td>
+                  <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Badges */}
+      <section className="py-12 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="flex flex-col items-center">
+              <Shield size={32} className="text-green-600 mb-2" />
+              <p className="text-sm text-gray-600">Bank-level Security</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <Clock size={32} className="text-blue-600 mb-2" />
+              <p className="text-sm text-gray-600">5-Minute Setup</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <Zap size={32} className="text-yellow-600 mb-2" />
+              <p className="text-sm text-gray-600">7-Day Free Trial</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <Award size={32} className="text-purple-600 mb-2" />
+              <p className="text-sm text-gray-600">30-Day Money Back</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <FAQSection faqs={pricingFAQs} background="gray" />
+      <section className="py-16 px-6 bg-gray-50">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Frequently Asked Questions
+          </h2>
 
-      {/* Call-to-Action Section */}
-      <CTASection
-        title="Start Managing Your Business Better"
-        description="Join thousands of trucking businesses that have increased their efficiency and profitability with Truck Command."
-        primaryButtonText="Start Your Free Trial"
-        secondaryButtonText="Request Demo"
-        secondaryButtonHref="/demo"
-        footnote="No credit card required • Cancel anytime"
-      />
-    </main>
-  );
-}
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? -1 : index)}
+                  className="w-full px-6 py-4 text-left flex items-center justify-between"
+                >
+                  <h4 className="font-semibold text-gray-900">{faq.question}</h4>
+                  <HelpCircle size={20} className={`text-gray-400 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaq === index && (
+                  <div className="px-6 pb-4">
+                    <p className="text-gray-600">{faq.answer}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-// Feature Comparison Table Component
-function FeatureComparisonTable() {
-  return (
-    <table className="w-full bg-white rounded-lg shadow-lg">
-      <thead>
-        <tr className="bg-gray-100">
-          <th className="px-6 py-4 text-left">Feature</th>
-          <th className="px-6 py-4 text-center">Basic</th>
-          <th className="px-6 py-4 text-center">Premium</th>
-          <th className="px-6 py-4 text-center">Fleet Plans</th>
-          <th className="px-6 py-4 text-center">Enterprise</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-200">
-        <tr>
-          <td className="px-6 py-4">Invoicing</td>
-          <td className="px-6 py-4 text-center">Basic</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Custom</td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">Dispatching</td>
-          <td className="px-6 py-4 text-center">Basic</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Custom</td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">Expense Tracking</td>
-          <td className="px-6 py-4 text-center">Basic</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Custom</td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">IFTA Calculator</td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">Fleet Tracking</td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center">Basic</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-          <td className="px-6 py-4 text-center">Advanced</td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">Multi-User Access</td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">API Access</td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center">Limited</td>
-          <td className="px-6 py-4 text-center">Full</td>
-        </tr>
-        <tr>
-          <td className="px-6 py-4">White-Labeling</td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><X size={20} className="text-red-500 mx-auto" /></td>
-          <td className="px-6 py-4 text-center"><Check size={20} className="text-green-500 mx-auto" /></td>
-        </tr>
-      </tbody>
-    </table>
+          <p className="text-center mt-8 text-gray-600">
+            Still have questions?{" "}
+            <Link href="/contact" className="text-blue-600 hover:underline">
+              Contact Our Support Team
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-16 px-6 bg-blue-600">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Ready to Simplify Your Trucking Business?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join truckers who&apos;ve ditched the spreadsheets and complicated software.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link
+              href="/signup"
+              className="px-8 py-4 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+            >
+              Start Your 7-Day Free Trial
+              <ArrowRight size={20} />
+            </Link>
+          </div>
+          <p className="text-blue-100 text-sm mt-4">
+            No credit card required • Cancel anytime
+          </p>
+        </div>
+      </section>
+
+    </div>
   );
 }

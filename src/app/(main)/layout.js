@@ -5,7 +5,7 @@ import Footer from '@/components/footer';
 
 export default function MainLayout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#F5F5F5] text-[#222222]">
+    <div className="min-h-screen flex flex-col bg-white">
       <Navigation />
       <main className="flex-grow">
         {children}
