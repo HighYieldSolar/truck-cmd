@@ -13,7 +13,8 @@ import {
   TrendingUp,
   DollarSign,
   Calendar,
-  Receipt
+  Receipt,
+  FolderArchive
 } from 'lucide-react';
 
 // Import services
@@ -39,6 +40,7 @@ import ExpenseItem from '@/components/expenses/ExpenseItem';
 import ExpenseCategories from '@/components/expenses/ExpenseCategories';
 import TopExpenses from '@/components/expenses/TopExpenses';
 import ExpenseChart from '@/components/expenses/ExpenseChart';
+import ReceiptDirectory from '@/components/expenses/ReceiptDirectory';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -650,6 +652,13 @@ export default function ExpensesPage() {
                   </div>
                 )}
               </div>
+
+              {/* Receipt Directory */}
+              <ReceiptDirectory
+                expenses={expenses}
+                onViewReceipt={handleViewReceipt}
+                isLoading={loading}
+              />
 
               {/* Expense Chart */}
               {expenses.length > 0 && (
