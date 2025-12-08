@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function SignupPage() {
+function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -544,5 +544,24 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SignupFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 via-white to-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupFallback />}>
+      <SignupPageContent />
+    </Suspense>
   );
 }
