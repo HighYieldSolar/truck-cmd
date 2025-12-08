@@ -16,13 +16,15 @@ import {
   Fuel,
   MapPin,
   Loader2,
-  Settings
+  Settings,
+  ShieldCheck,
+  UserCircle
 } from "lucide-react";
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
 import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
-export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit }) {
+export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit, drivers = [] }) {
   const initialFormData = {
     name: '',
     make: '',
@@ -37,7 +39,13 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     image: null,
     image_file: null,
     notes: '',
-    vehicle_id: ''
+    vehicle_id: '',
+    // Compliance fields
+    registration_expiry: '',
+    insurance_expiry: '',
+    inspection_expiry: '',
+    // Driver assignment
+    assigned_driver_id: ''
   };
 
   const formKey = truck ? `truckForm-${truck.id}` : 'truckForm-new';
@@ -56,7 +64,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
   // Define required fields per tab
   const requiredFieldsByTab = {
     basic: ['name', 'make', 'model', 'year'],
-    details: []
+    details: [],
+    compliance: []
   };
 
   // Field labels for error messages
@@ -86,7 +95,13 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         image: truck.image_url || null,
         image_file: null,
         notes: truck.notes || '',
-        vehicle_id: truck.vehicle_id || ''
+        vehicle_id: truck.vehicle_id || '',
+        // Compliance fields
+        registration_expiry: truck.registration_expiry || '',
+        insurance_expiry: truck.insurance_expiry || '',
+        inspection_expiry: truck.inspection_expiry || '',
+        // Driver assignment
+        assigned_driver_id: truck.assigned_driver_id || ''
       });
       localStorage.removeItem('truckForm-new');
     } else if (!initialDataLoaded) {
@@ -199,7 +214,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
     const allTabErrors = {};
     const tabsWithErrors = [];
 
-    ['basic', 'details'].forEach(tabId => {
+    ['basic', 'details', 'compliance'].forEach(tabId => {
       const requiredFields = requiredFieldsByTab[tabId] || [];
 
       // Check required fields
@@ -236,7 +251,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
     setErrors(allErrors);
     setTabErrors(allTabErrors);
-    setTouchedTabs({ basic: true, details: true });
+    setTouchedTabs({ basic: true, details: true, compliance: true });
 
     // If there are errors, navigate to the first tab with errors
     if (tabsWithErrors.length > 0) {
@@ -303,6 +318,12 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         fuel_type: formData.fuel_type,
         image_url: imageUrl,
         notes: formData.notes,
+        // Compliance fields
+        registration_expiry: formData.registration_expiry || null,
+        insurance_expiry: formData.insurance_expiry || null,
+        inspection_expiry: formData.inspection_expiry || null,
+        // Driver assignment
+        assigned_driver_id: formData.assigned_driver_id || null,
       };
 
       let result;
@@ -333,7 +354,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: <Truck size={16} /> },
-    { id: 'details', label: 'Details & Notes', icon: <Settings size={16} /> }
+    { id: 'details', label: 'Details & Notes', icon: <Settings size={16} /> },
+    { id: 'compliance', label: 'Compliance & Driver', icon: <ShieldCheck size={16} /> }
   ];
 
   return (
@@ -731,6 +753,102 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
                 <Wrench className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-3 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   Regular vehicle inspections and maintenance keep your fleet operating efficiently and safely. Keep odometer readings up-to-date for accurate IFTA reporting.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Compliance & Driver Tab */}
+          {activeTab === 'compliance' && (
+            <div className="space-y-6">
+              {/* Driver Assignment Section */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-5">
+                <h3 className="text-base font-semibold text-purple-800 dark:text-purple-200 mb-4 flex items-center">
+                  <UserCircle size={18} className="mr-2" />
+                  Driver Assignment
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Assign Driver
+                  </label>
+                  <select
+                    name="assigned_driver_id"
+                    value={formData.assigned_driver_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  >
+                    <option value="">No driver assigned</option>
+                    {drivers.map(driver => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.name} {driver.position ? `(${driver.position})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Assign a driver to this vehicle for dispatch and reporting purposes.
+                  </p>
+                </div>
+              </div>
+
+              {/* Document Expiration Section */}
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-5">
+                <h3 className="text-base font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center">
+                  <ShieldCheck size={18} className="mr-2" />
+                  Document Expiration Tracking
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Calendar size={14} className="inline mr-1.5" />
+                      Registration Expiry
+                    </label>
+                    <input
+                      type="date"
+                      name="registration_expiry"
+                      value={formData.registration_expiry}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Calendar size={14} className="inline mr-1.5" />
+                      Insurance Expiry
+                    </label>
+                    <input
+                      type="date"
+                      name="insurance_expiry"
+                      value={formData.insurance_expiry}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Calendar size={14} className="inline mr-1.5" />
+                      DOT Inspection Expiry
+                    </label>
+                    <input
+                      type="date"
+                      name="inspection_expiry"
+                      value={formData.inspection_expiry}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                    />
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                  Track document expirations to stay compliant with DOT regulations. You&apos;ll receive alerts when documents are expiring soon.
+                </p>
+              </div>
+
+              {/* Compliance Tip Box */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start">
+                <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Keeping your vehicle documents up-to-date is crucial for DOT compliance. Expired documents can result in fines and being put out of service.
                 </p>
               </div>
             </div>

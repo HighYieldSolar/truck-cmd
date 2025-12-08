@@ -77,7 +77,7 @@ export async function completeLoad(userId, loadId, completionData) {
       try {
         earnings = await recordFactoredEarnings(userId, loadId, totalRate, {
           date: deliveryDate || new Date().toISOString().split('T')[0],
-          description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
+          description: `Factored load #${load.load_number || 'N/A'}: ${load.origin} to ${load.destination}`,
           factoringCompany: factoringCompany
         });
       } catch (factorError) {
@@ -90,7 +90,7 @@ export async function completeLoad(userId, loadId, completionData) {
           markAsPaid: markPaid,
           dueInDays: 15,
           invoiceDate: new Date().toISOString().split('T')[0],
-          notes: `Invoice for Load #${load.load_number}: ${load.origin} to ${load.destination}`
+          notes: `Invoice for Load #${load.load_number || 'N/A'}: ${load.origin} to ${load.destination}`
         });
       } catch (invoiceError) {
         // Continue with the completion process even if invoice generation fails

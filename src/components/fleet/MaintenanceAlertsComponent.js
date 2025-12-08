@@ -42,11 +42,15 @@ export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
               const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
               return (
-                <div key={item.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors">
+                <Link
+                  key={item.id}
+                  href="/dashboard/fleet/maintenance"
+                  className="block p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.maintenance_type}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.trucks?.name || 'Unknown Vehicle'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.vehicles?.name || 'Unknown Vehicle'}</p>
                     </div>
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${daysLeft <= 7
                         ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
@@ -58,7 +62,7 @@ export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Due: {formatDate(item.due_date)}
                   </div>
-                </div>
+                </Link>
               );
             })}
 

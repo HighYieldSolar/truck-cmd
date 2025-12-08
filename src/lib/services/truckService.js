@@ -86,6 +86,12 @@ export async function createTruck(truckData) {
       tank_capacity: truckData.tank_capacity || null,
       notes: truckData.notes || null,
       image_url: truckData.image_url || null,
+      // Compliance fields
+      registration_expiry: truckData.registration_expiry || null,
+      insurance_expiry: truckData.insurance_expiry || null,
+      inspection_expiry: truckData.inspection_expiry || null,
+      // Driver assignment
+      assigned_driver_id: truckData.assigned_driver_id || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -127,6 +133,12 @@ export async function updateTruck(id, truckData) {
       tank_capacity: truckData.tank_capacity,
       notes: truckData.notes,
       image_url: truckData.image_url,
+      // Compliance fields
+      registration_expiry: truckData.registration_expiry,
+      insurance_expiry: truckData.insurance_expiry,
+      inspection_expiry: truckData.inspection_expiry,
+      // Driver assignment
+      assigned_driver_id: truckData.assigned_driver_id,
       updated_at: new Date().toISOString()
     };
 

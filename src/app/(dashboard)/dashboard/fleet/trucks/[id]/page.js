@@ -1,0 +1,27 @@
+"use client";
+
+import dynamic from 'next/dynamic';
+import { Suspense, use } from 'react';
+
+const VehicleDetailPage = dynamic(() => import('@/components/fleet/VehicleDetailPage'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  ),
+});
+
+export default function VehicleDetailRoute({ params }) {
+  const resolvedParams = use(params);
+
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
+      <VehicleDetailPage vehicleId={resolvedParams.id} />
+    </Suspense>
+  );
+}

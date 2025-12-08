@@ -14,9 +14,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 // Import custom components
 import FleetManagementHeader from "@/components/fleet/FleetManagementHeader";
 import FleetStatsComponent from "@/components/fleet/FleetStatsComponent";
-import DocumentAlertsComponent from "@/components/fleet/DocumentAlertsComponent";
-import MaintenanceAlertsComponent from "@/components/fleet/MaintenanceAlertsComponent";
-import QuickActionsComponent from "@/components/fleet/QuickActionsComponent";
+import FleetSidebarWidget from "@/components/fleet/FleetSidebarWidget";
 import VehicleListComponent from "@/components/fleet/VehicleListComponent";
 import DriverListComponent from "@/components/fleet/DriverListComponent";
 import FleetReportsComponent from "@/components/fleet/FleetReportsComponent";
@@ -83,8 +81,11 @@ export default function FleetManagementPage() {
 
   const [recentTrucks, setRecentTrucks] = useState([]);
   const [recentDrivers, setRecentDrivers] = useState([]);
+  const [allVehicles, setAllVehicles] = useState([]);
+  const [allDrivers, setAllDrivers] = useState([]);
   const [upcomingMaintenance, setUpcomingMaintenance] = useState([]);
   const [documentReminders, setDocumentReminders] = useState([]);
+  const [vehicleReminders, setVehicleReminders] = useState([]);
 
   // Get user and load initial data
   useEffect(() => {
@@ -116,27 +117,27 @@ export default function FleetManagementPage() {
         setTruckStats(truckStatsData);
         setDriverStats(driverStatsData);
 
-        // Load recent trucks
-        const { data: trucks, error: trucksError } = await supabase
+        // Load all vehicles for health score and assignments
+        const { data: allTrucksData, error: allTrucksError } = await supabase
           .from('vehicles')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(4);
+          .order('created_at', { ascending: false });
 
-        if (trucksError) throw trucksError;
-        setRecentTrucks(trucks || []);
+        if (allTrucksError) throw allTrucksError;
+        setAllVehicles(allTrucksData || []);
+        setRecentTrucks((allTrucksData || []).slice(0, 4));
 
-        // Load recent drivers
-        const { data: drivers, error: driversError } = await supabase
+        // Load all drivers for health score and assignments
+        const { data: allDriversData, error: allDriversError } = await supabase
           .from('drivers')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(4);
+          .order('created_at', { ascending: false });
 
-        if (driversError) throw driversError;
-        setRecentDrivers(drivers || []);
+        if (allDriversError) throw allDriversError;
+        setAllDrivers(allDriversData || []);
+        setRecentDrivers((allDriversData || []).slice(0, 4));
 
         // Load upcoming maintenance
         const { data: maintenance, error: maintenanceError } = await supabase
@@ -205,6 +206,67 @@ export default function FleetManagementPage() {
           setDocumentReminders(reminders);
         }
 
+        // Calculate vehicle document reminders
+        const vehicleDocReminders = [];
+        const nowDate = new Date();
+
+        allTrucksData?.forEach(vehicle => {
+          // Check registration expiry
+          if (vehicle.registration_expiry) {
+            const regExpiry = new Date(vehicle.registration_expiry);
+            const regExpiryDays = Math.floor((regExpiry - nowDate) / (1000 * 60 * 60 * 24));
+
+            if (regExpiryDays <= 30) {
+              vehicleDocReminders.push({
+                id: `reg-${vehicle.id}`,
+                vehicle: vehicle.name,
+                vehicleId: vehicle.id,
+                type: 'Registration',
+                expiryDate: vehicle.registration_expiry,
+                daysRemaining: regExpiryDays
+              });
+            }
+          }
+
+          // Check insurance expiry
+          if (vehicle.insurance_expiry) {
+            const insExpiry = new Date(vehicle.insurance_expiry);
+            const insExpiryDays = Math.floor((insExpiry - nowDate) / (1000 * 60 * 60 * 24));
+
+            if (insExpiryDays <= 30) {
+              vehicleDocReminders.push({
+                id: `ins-${vehicle.id}`,
+                vehicle: vehicle.name,
+                vehicleId: vehicle.id,
+                type: 'Insurance',
+                expiryDate: vehicle.insurance_expiry,
+                daysRemaining: insExpiryDays
+              });
+            }
+          }
+
+          // Check inspection expiry
+          if (vehicle.inspection_expiry) {
+            const inspExpiry = new Date(vehicle.inspection_expiry);
+            const inspExpiryDays = Math.floor((inspExpiry - nowDate) / (1000 * 60 * 60 * 24));
+
+            if (inspExpiryDays <= 30) {
+              vehicleDocReminders.push({
+                id: `insp-${vehicle.id}`,
+                vehicle: vehicle.name,
+                vehicleId: vehicle.id,
+                type: 'DOT Inspection',
+                expiryDate: vehicle.inspection_expiry,
+                daysRemaining: inspExpiryDays
+              });
+            }
+          }
+        });
+
+        // Sort vehicle reminders by days remaining
+        vehicleDocReminders.sort((a, b) => a.daysRemaining - b.daysRemaining);
+        setVehicleReminders(vehicleDocReminders);
+
         // Set up real-time subscriptions
         vehicleChannel = supabase
           .channel('fleet-vehicles-changes')
@@ -219,9 +281,9 @@ export default function FleetManagementPage() {
                 .from('vehicles')
                 .select('*')
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(4);
-              setRecentTrucks(trucks || []);
+                .order('created_at', { ascending: false });
+              setAllVehicles(trucks || []);
+              setRecentTrucks((trucks || []).slice(0, 4));
             }
           )
           .subscribe();
@@ -239,9 +301,9 @@ export default function FleetManagementPage() {
                 .from('drivers')
                 .select('*')
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(4);
-              setRecentDrivers(drivers || []);
+                .order('created_at', { ascending: false });
+              setAllDrivers(drivers || []);
+              setRecentDrivers((drivers || []).slice(0, 4));
             }
           )
           .subscribe();
@@ -312,19 +374,16 @@ export default function FleetManagementPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Left sidebar content */}
             <div className="lg:col-span-1">
-              {/* Document Expiry Alerts card */}
-              <DocumentAlertsComponent
+              {/* Consolidated Fleet Sidebar Widget */}
+              <FleetSidebarWidget
+                drivers={allDrivers}
+                vehicles={allVehicles}
                 documentReminders={documentReminders}
-                handleDriverSelect={handleDriverSelect}
-              />
-
-              {/* Upcoming Maintenance */}
-              <MaintenanceAlertsComponent
+                vehicleReminders={vehicleReminders}
                 upcomingMaintenance={upcomingMaintenance}
+                handleDriverSelect={handleDriverSelect}
+                handleVehicleSelect={handleTruckSelect}
               />
-
-              {/* Quick Actions */}
-              <QuickActionsComponent />
             </div>
 
             {/* Main Content */}

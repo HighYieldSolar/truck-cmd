@@ -37,6 +37,7 @@ export default function TrucksPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trucks, setTrucks] = useState([]);
+  const [drivers, setDrivers] = useState([]);
 
   // Feature access for resource limits
   const { checkResourceUpgrade, getResourceLimit } = useFeatureAccess();
@@ -222,6 +223,14 @@ export default function TrucksPage() {
 
         setUser(user);
         await loadTrucks(user.id);
+
+        // Load drivers for assignment dropdown
+        const { data: driversData } = await supabase
+          .from('drivers')
+          .select('id, name, position')
+          .eq('user_id', user.id)
+          .order('name', { ascending: true });
+        setDrivers(driversData || []);
 
         // Set up real-time subscription
         channel = supabase
@@ -939,6 +948,7 @@ export default function TrucksPage() {
         truck={truckToEdit}
         userId={user?.id}
         onSubmit={handleTruckSubmit}
+        drivers={drivers}
       />
 
       <DeleteConfirmationModal

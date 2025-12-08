@@ -58,7 +58,7 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
       tax_amount: 0,
       amount_paid: mergedOptions.markAsPaid ? totalAmount : 0,
       payment_date: mergedOptions.markAsPaid ? new Date().toISOString() : null,
-      notes: mergedOptions.notes || `Invoice for Load #${load.load_number}: ${load.origin} to ${load.destination}`,
+      notes: mergedOptions.notes || `Invoice for Load #${load.load_number || 'N/A'}: ${load.origin} to ${load.destination}`,
       created_at: new Date().toISOString()
     };
     

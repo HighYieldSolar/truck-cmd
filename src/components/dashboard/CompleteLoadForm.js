@@ -670,7 +670,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             markAsPaid: formData.markPaid,
             dueInDays: 15,
             invoiceDate: formData.deliveryDate || new Date().toISOString().split('T')[0],
-            notes: `Invoice for Load #${loadDetails.loadNumber}: ${loadDetails.origin} to ${loadDetails.destination}`
+            notes: `Invoice for Load #${loadDetails.loadNumber || 'N/A'}: ${loadDetails.origin} to ${loadDetails.destination}`
           });
 
           if (invoice) {
