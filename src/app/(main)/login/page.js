@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -21,6 +22,65 @@ export default function LoginPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState("password");
+  const [processingOAuth, setProcessingOAuth] = useState(false);
+
+  // Handle OAuth tokens in URL hash (from Google redirect)
+  useEffect(() => {
+    const handleHashTokens = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        setProcessingOAuth(true);
+        try {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          if (accessToken) {
+            const { data, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) {
+              console.error('Session error:', sessionError);
+              setError('Failed to complete sign in. Please try again.');
+              setProcessingOAuth(false);
+              // Clear the hash
+              window.history.replaceState(null, '', window.location.pathname);
+              return;
+            }
+
+            if (data.session) {
+              // Clear the hash and redirect to dashboard
+              window.history.replaceState(null, '', window.location.pathname);
+              router.push('/dashboard');
+              return;
+            }
+          }
+        } catch (err) {
+          console.error('OAuth processing error:', err);
+          setError('Authentication error. Please try again.');
+        }
+        setProcessingOAuth(false);
+        // Clear the hash
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+
+      // Check for error in query params
+      const errorParam = searchParams.get('error');
+      if (errorParam) {
+        if (errorParam === 'missing_params') {
+          setError('Authentication incomplete. Please try again.');
+        } else if (errorParam === 'auth_error') {
+          setError('Authentication failed. Please try again.');
+        } else {
+          setError('An error occurred during sign in.');
+        }
+      }
+    };
+
+    handleHashTokens();
+  }, [router, searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -148,7 +208,12 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {magicLinkSent ? (
+                {processingOAuth ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Completing sign in...</p>
+                  </div>
+                ) : magicLinkSent ? (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Mail size={32} className="text-blue-500" />

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [validEmail, setValidEmail] = useState(false);
   const [phone, setPhone] = useState("");
@@ -31,6 +32,50 @@ export default function SignupPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [step, setStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [processingOAuth, setProcessingOAuth] = useState(false);
+
+  // Handle OAuth tokens in URL hash (from Google redirect)
+  useEffect(() => {
+    const handleHashTokens = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        setProcessingOAuth(true);
+        try {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          if (accessToken) {
+            const { data, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (sessionError) {
+              console.error('Session error:', sessionError);
+              setError('Failed to complete sign in. Please try again.');
+              setProcessingOAuth(false);
+              window.history.replaceState(null, '', window.location.pathname);
+              return;
+            }
+
+            if (data.session) {
+              window.history.replaceState(null, '', window.location.pathname);
+              router.push('/dashboard');
+              return;
+            }
+          }
+        } catch (err) {
+          console.error('OAuth processing error:', err);
+          setError('Authentication error. Please try again.');
+        }
+        setProcessingOAuth(false);
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+
+    handleHashTokens();
+  }, [router]);
 
   // Validate Email
   const validateEmail = (email) => {
@@ -227,7 +272,12 @@ export default function SignupPage() {
                   </div>
                 )}
 
-                {formSubmitted ? (
+                {processingOAuth ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Completing sign in with Google...</p>
+                  </div>
+                ) : formSubmitted ? (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
