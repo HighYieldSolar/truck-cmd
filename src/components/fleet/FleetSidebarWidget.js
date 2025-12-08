@@ -41,7 +41,7 @@ export default function FleetSidebarWidget({
   handleDriverSelect,
   handleVehicleSelect
 }) {
-  const [activeTab, setActiveTab] = useState("health");
+  const [activeTab, setActiveTab] = useState("actions");
   const [healthData, setHealthData] = useState({
     score: 100,
     status: 'excellent',
@@ -196,10 +196,10 @@ export default function FleetSidebarWidget({
 
   // Tab configuration
   const tabs = [
+    { id: "actions", label: "Actions", icon: Zap },
     { id: "health", label: "Health", icon: ShieldCheck },
     { id: "assignments", label: "Assign", icon: Link2 },
-    { id: "alerts", label: "Alerts", icon: AlertTriangle, badge: alertCount > 0 ? alertCount : null },
-    { id: "actions", label: "Actions", icon: Zap }
+    { id: "alerts", label: "Alerts", icon: AlertTriangle, badge: alertCount > 0 ? alertCount : null }
   ];
 
   const getHealthConfig = () => {

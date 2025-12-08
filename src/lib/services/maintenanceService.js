@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { syncMaintenanceToExpense } from "./expenseMaintenanceIntegration";
 
 /**
  * Fetch all maintenance records for a user
@@ -50,8 +51,18 @@ export async function createMaintenanceRecord(recordData) {
 
 /**
  * Update an existing maintenance record
+ * Automatically syncs to expenses when status changes to "Completed" with a cost
  */
 export async function updateMaintenanceRecord(id, recordData) {
+  // First, get the current record to check if status is changing to Completed
+  const { data: existingRecord, error: fetchError } = await supabase
+    .from("maintenance_records")
+    .select("status, expense_id, user_id")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
   const { data, error } = await supabase
     .from("maintenance_records")
     .update({
@@ -63,13 +74,52 @@ export async function updateMaintenanceRecord(id, recordData) {
     .single();
 
   if (error) throw error;
+
+  // Check if status changed to "Completed" and has cost - sync to expenses
+  const isNewlyCompleted = recordData.status === "Completed" && existingRecord.status !== "Completed";
+  const hasCost = recordData.cost && parseFloat(recordData.cost) > 0;
+  const notAlreadySynced = !existingRecord.expense_id;
+
+  if (isNewlyCompleted && hasCost && notAlreadySynced) {
+    try {
+      const expenseResult = await syncMaintenanceToExpense(existingRecord.user_id, id);
+      return { ...data, expenseSync: expenseResult };
+    } catch (syncError) {
+      console.error('Failed to sync maintenance to expense:', syncError);
+      // Don't throw - the update was successful, expense sync is secondary
+    }
+  }
+
   return data;
 }
 
 /**
  * Delete a maintenance record
+ * Also deletes the linked expense if one exists
  */
-export async function deleteMaintenanceRecord(id) {
+export async function deleteMaintenanceRecord(id, deleteLinkedExpense = true) {
+  // First, check if there's a linked expense
+  const { data: record, error: fetchError } = await supabase
+    .from("maintenance_records")
+    .select("expense_id")
+    .eq("id", id)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+  // Delete linked expense if exists and requested
+  if (deleteLinkedExpense && record?.expense_id) {
+    const { error: expenseError } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", record.expense_id);
+
+    if (expenseError) {
+      console.error('Failed to delete linked expense:', expenseError);
+      // Continue with maintenance deletion even if expense deletion fails
+    }
+  }
+
   const { error } = await supabase
     .from("maintenance_records")
     .delete()
@@ -80,9 +130,22 @@ export async function deleteMaintenanceRecord(id) {
 }
 
 /**
- * Complete a maintenance record
+ * Complete a maintenance record and optionally sync to expenses
+ * @param {string} id - Maintenance record ID
+ * @param {Object} completionData - Completion details (cost, date, etc.)
+ * @param {boolean} syncToExpense - Whether to sync to expenses (default: true)
  */
-export async function completeMaintenanceRecord(id, completionData) {
+export async function completeMaintenanceRecord(id, completionData, syncToExpense = true) {
+  // First, get the maintenance record to get user_id
+  const { data: existingRecord, error: fetchError } = await supabase
+    .from("maintenance_records")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // Update the maintenance record
   const { data, error } = await supabase
     .from("maintenance_records")
     .update({
@@ -99,7 +162,19 @@ export async function completeMaintenanceRecord(id, completionData) {
     .single();
 
   if (error) throw error;
-  return data;
+
+  // Sync to expenses if requested and cost is provided
+  let expenseResult = null;
+  if (syncToExpense && completionData.cost && completionData.cost > 0) {
+    try {
+      expenseResult = await syncMaintenanceToExpense(existingRecord.user_id, id);
+    } catch (syncError) {
+      console.error('Failed to sync maintenance to expense:', syncError);
+      // Don't throw - the maintenance was completed successfully, expense sync is secondary
+    }
+  }
+
+  return { ...data, expenseSync: expenseResult };
 }
 
 /**

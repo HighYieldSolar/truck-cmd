@@ -58,13 +58,19 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
   // Load form data when editing
   useEffect(() => {
     if (record) {
+      // Check if this is a "Mark Complete" action
+      const isCompleting = record._completing === true;
+      const todayDate = new Date().toISOString().split('T')[0];
+
       setFormData({
         truck_id: record.truck_id || "",
         maintenance_type: record.maintenance_type || "Oil Change",
         description: record.description || "",
         due_date: record.due_date || "",
-        completed_date: record.completed_date || "",
-        status: record.status || "Pending",
+        // If completing, set completed_date to today if not already set
+        completed_date: isCompleting ? (record.completed_date || todayDate) : (record.completed_date || ""),
+        // If completing, set status to "Completed"
+        status: isCompleting ? "Completed" : (record.status || "Pending"),
         cost: record.cost || "",
         odometer_at_service: record.odometer_at_service || "",
         service_provider: record.service_provider || "",
@@ -187,10 +193,10 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {record ? "Edit Maintenance Record" : "Schedule Maintenance"}
+                  {record?._completing ? "Complete Maintenance" : record ? "Edit Maintenance Record" : "Schedule Maintenance"}
                 </h2>
                 <p className="text-blue-100 text-sm">
-                  {record ? "Update the maintenance details" : "Add a new maintenance task"}
+                  {record?._completing ? "Add completion details and save" : record ? "Update the maintenance details" : "Add a new maintenance task"}
                 </p>
               </div>
             </div>
@@ -486,7 +492,11 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
             type="submit"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors flex items-center disabled:opacity-60"
+            className={`px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center disabled:opacity-60 ${
+              record?._completing
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
           >
             {isSubmitting ? (
               <>
@@ -494,7 +504,10 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
                 Saving...
               </>
             ) : (
-              <>{record ? "Update Record" : "Create Record"}</>
+              <>
+                {record?._completing && <CheckCircle size={18} className="mr-2" />}
+                {record?._completing ? "Mark Complete" : record ? "Update Record" : "Create Record"}
+              </>
             )}
           </button>
         </div>
