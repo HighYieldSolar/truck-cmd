@@ -52,16 +52,17 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/acceptable-use" className="hover:text-white transition-colors">Acceptable Use</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} Truck Command. All rights reserved.
+            &copy; {new Date().getFullYear()} Truck Command LLC. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-sm">
             <span className="text-gray-500">support@truckcommand.com</span>
