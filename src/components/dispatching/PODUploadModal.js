@@ -4,6 +4,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Camera, FileText, Trash2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from "@/lib/supabaseClient";
+import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "@/lib/services/notificationService";
 
 export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess }) {
   const [files, setFiles] = useState([]);
@@ -75,6 +76,32 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
         .eq('id', loadId);
 
       if (updateError) throw updateError;
+
+      // Create notification for POD upload
+      try {
+        // Get load details for notification
+        const { data: loadDetails } = await supabase
+          .from('loads')
+          .select('origin, destination, customer')
+          .eq('id', loadId)
+          .single();
+
+        await NotificationService.createNotification({
+          userId: user.id,
+          title: `POD Uploaded - Load ${loadNumber}`,
+          message: loadDetails
+            ? `Proof of Delivery uploaded for ${loadDetails.customer || 'load'} (${loadDetails.origin} → ${loadDetails.destination}). ${newDocs.length} document(s) added.`
+            : `Proof of Delivery uploaded for load ${loadNumber}. ${newDocs.length} document(s) added.`,
+          type: NOTIFICATION_TYPES.DELIVERY_UPCOMING, // Using existing type for delivery-related
+          entityType: 'load',
+          entityId: loadId,
+          linkTo: `/dashboard/dispatching`,
+          urgency: URGENCY_LEVELS.NORMAL
+        });
+      } catch (notifError) {
+        // Don't fail the main operation if notification fails
+        console.error('Failed to create POD upload notification:', notifError);
+      }
 
       setSuccess(true);
       setFiles([]);

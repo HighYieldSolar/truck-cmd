@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { updateCompletedLoadEarnings, removeCompletedLoadEarnings } from "@/lib/services/loadService";
+import { updateCompletedLoadEarnings, removeCompletedLoadEarnings, assignDriver, updateLoadStatus } from "@/lib/services/loadService";
 import Link from "next/link";
 import { 
   X, 
@@ -120,9 +120,16 @@ export default function LoadDetailModal({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Prepare update data
+      // Check status and rate changes
+      const wasCompleted = load.status === "Completed";
+      const isNowCompleted = updatedLoad.status === "Completed";
+      const statusChanged = load.status !== updatedLoad.status;
+      const oldRate = parseFloat(load.rate || 0);
+      const newRate = parseFloat(updatedLoad.rate);
+      const rateChanged = oldRate !== newRate;
+
+      // First, update the non-status fields
       const updateData = {
-        status: updatedLoad.status,
         customer: updatedLoad.customer,
         origin: updatedLoad.origin,
         destination: updatedLoad.destination,
@@ -133,13 +140,10 @@ export default function LoadDetailModal({
         updated_at: new Date().toISOString()
       };
 
-      // Check status and rate changes
-      const wasCompleted = load.status === "Completed";
-      const isNowCompleted = updatedLoad.status === "Completed";
-      const statusChanged = load.status !== updatedLoad.status;
-      const oldRate = parseFloat(load.rate || 0);
-      const newRate = parseFloat(updatedLoad.rate);
-      const rateChanged = oldRate !== newRate;
+      // If status hasn't changed, include it in the update
+      if (!statusChanged) {
+        updateData.status = updatedLoad.status;
+      }
 
       const { data, error } = await supabase
         .from("loads")
@@ -150,12 +154,18 @@ export default function LoadDetailModal({
 
       if (error) throw error;
 
-      // Handle earnings based on status changes
+      // If status changed, use updateLoadStatus which triggers notifications
       if (statusChanged) {
+        const statusUpdateResult = await updateLoadStatus(load.id, updatedLoad.status);
+
+        if (!statusUpdateResult) {
+          throw new Error("Failed to update load status");
+        }
+
         if (wasCompleted && !isNowCompleted) {
           // Status changed from Completed to something else - remove earnings
           const earningsRemoved = await removeCompletedLoadEarnings(load.id);
-          
+
           if (!earningsRemoved) {
             setError("Load updated but earnings removal failed. Please check earnings manually.");
           } else {
@@ -172,7 +182,7 @@ export default function LoadDetailModal({
       } else if (wasCompleted && isNowCompleted && rateChanged) {
         // Status is still Completed but rate changed - update earnings
         const earningsUpdated = await updateCompletedLoadEarnings(load.id, oldRate, newRate);
-        
+
         if (!earningsUpdated) {
           setError("Load updated but earnings update failed. Please check earnings manually.");
         } else {
@@ -182,9 +192,9 @@ export default function LoadDetailModal({
       } else {
         setSuccess("Load details updated successfully");
       }
-      
+
       setEditMode(false);
-      
+
       // Call parent update function if provided
       if (onUpdate) {
         onUpdate(data);
@@ -227,32 +237,69 @@ export default function LoadDetailModal({
         }
       }
 
-      // Update assignment
-      const updateData = {
+      // Check if we're assigning a new driver (triggers notification)
+      const previousDriverId = load.driver_id || load.driverId;
+      const isNewDriverAssignment = selectedDriver && selectedDriver !== previousDriverId;
+
+      // If assigning a new driver, use the loadService which creates notifications
+      if (isNewDriverAssignment && driverName) {
+        // Use the assignDriver service function which creates the notification
+        const result = await assignDriver(load.id, driverName);
+
+        if (!result) {
+          throw new Error("Failed to assign driver");
+        }
+
+        // Also update driver_id and truck info separately
+        const { error: updateError } = await supabase
+          .from("loads")
+          .update({
+            driver_id: selectedDriver,
+            vehicle_id: selectedTruck || null,
+            truck_info: truckInfo,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", load.id);
+
+        if (updateError) throw updateError;
+
+      } else {
+        // No new driver assignment, just update fields directly
+        const updateData = {
+          driver_id: selectedDriver || null,
+          driver: driverName,
+          vehicle_id: selectedTruck || null,
+          truck_info: truckInfo,
+          status: selectedDriver ? "Assigned" : load.status,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from("loads")
+          .update(updateData)
+          .eq("id", load.id);
+
+        if (error) throw error;
+      }
+
+      // Get the updated load data
+      const { data: updatedData } = await supabase
+        .from("loads")
+        .select()
+        .eq("id", load.id)
+        .single();
+
+      setSuccess("Assignment updated successfully");
+      setShowAssignmentForm(false);
+
+      // Update local state
+      setUpdatedLoad(prev => ({
+        ...prev,
         driver_id: selectedDriver || null,
         driver: driverName,
         vehicle_id: selectedTruck || null,
         truck_info: truckInfo,
-        status: selectedDriver ? "Assigned" : load.status,
-        updated_at: new Date().toISOString()
-      };
-
-      const { data, error } = await supabase
-        .from("loads")
-        .update(updateData)
-        .eq("id", load.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setSuccess("Assignment updated successfully");
-      setShowAssignmentForm(false);
-      
-      // Update local state
-      setUpdatedLoad(prev => ({
-        ...prev,
-        ...updateData
+        status: selectedDriver ? "Assigned" : load.status
       }));
 
       // Call parent callbacks if provided
@@ -262,8 +309,8 @@ export default function LoadDetailModal({
       if (onAssignTruck && selectedTruck) {
         onAssignTruck(load.id, selectedTruck);
       }
-      if (onUpdate) {
-        onUpdate(data);
+      if (onUpdate && updatedData) {
+        onUpdate(updatedData);
       }
 
       // Refresh after a short delay

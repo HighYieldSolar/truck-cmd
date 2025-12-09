@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
+import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
 
 // ============================================
 // READ OPERATIONS
@@ -140,6 +141,32 @@ export async function createComplianceItem(complianceData) {
       .single();
 
     if (error) throw error;
+
+    // Create notification if item is expiring soon (within 30 days)
+    if (data && data.expiration_date && data.user_id) {
+      try {
+        const daysUntil = getDaysUntilExpiration(data.expiration_date);
+        if (daysUntil !== null && daysUntil <= 30) {
+          const urgency = daysUntil <= 7 ? URGENCY_LEVELS.HIGH : daysUntil <= 14 ? URGENCY_LEVELS.MEDIUM : URGENCY_LEVELS.NORMAL;
+          await NotificationService.createNotification({
+            userId: data.user_id,
+            title: `Compliance Item Added - ${data.title}`,
+            message: daysUntil <= 0
+              ? `${data.title} for ${data.entity_name || 'your business'} has expired! Immediate action required.`
+              : `${data.title} for ${data.entity_name || 'your business'} expires in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}. Renewal recommended.`,
+            type: NOTIFICATION_TYPES.DOCUMENT_EXPIRY_COMPLIANCE,
+            entityType: 'compliance',
+            entityId: data.id,
+            linkTo: `/dashboard/compliance`,
+            dueDate: data.expiration_date,
+            urgency: urgency
+          });
+        }
+      } catch (notifError) {
+        console.error('Failed to create compliance notification:', notifError);
+      }
+    }
+
     return data;
   } catch (error) {
     throw {
@@ -158,6 +185,13 @@ export async function createComplianceItem(complianceData) {
  */
 export async function updateComplianceItem(id, complianceData) {
   try {
+    // Get the old data first to check for status changes
+    const { data: oldData } = await supabase
+      .from('compliance_items')
+      .select('status, expiration_date, title, entity_name, user_id')
+      .eq('id', id)
+      .single();
+
     const { data, error } = await supabase
       .from('compliance_items')
       .update({
@@ -169,6 +203,38 @@ export async function updateComplianceItem(id, complianceData) {
       .single();
 
     if (error) throw error;
+
+    // Create notification if expiration date changed and item is now expiring soon
+    if (data && data.user_id && data.expiration_date) {
+      try {
+        const oldExpDate = oldData?.expiration_date;
+        const newExpDate = data.expiration_date;
+
+        // Only notify if expiration date was changed or extended
+        if (oldExpDate !== newExpDate) {
+          const daysUntil = getDaysUntilExpiration(newExpDate);
+          if (daysUntil !== null && daysUntil <= 30) {
+            const urgency = daysUntil <= 7 ? URGENCY_LEVELS.HIGH : daysUntil <= 14 ? URGENCY_LEVELS.MEDIUM : URGENCY_LEVELS.NORMAL;
+            await NotificationService.createNotification({
+              userId: data.user_id,
+              title: `Compliance Updated - ${data.title}`,
+              message: daysUntil <= 0
+                ? `${data.title} for ${data.entity_name || 'your business'} has expired! Immediate action required.`
+                : `${data.title} for ${data.entity_name || 'your business'} now expires in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}.`,
+              type: NOTIFICATION_TYPES.DOCUMENT_EXPIRY_COMPLIANCE,
+              entityType: 'compliance',
+              entityId: data.id,
+              linkTo: `/dashboard/compliance`,
+              dueDate: data.expiration_date,
+              urgency: urgency
+            });
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to create compliance update notification:', notifError);
+      }
+    }
+
     return data;
   } catch (error) {
     throw {

@@ -1,6 +1,7 @@
 // src/lib/services/loadInvoiceService.js
 import { supabase } from "../supabaseClient";
 import { generateInvoiceNumber } from "./invoiceService";
+import { NotificationService, URGENCY_LEVELS } from "./notificationService";
 
 /**
  * Creates an invoice from a completed load
@@ -111,7 +112,25 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
         description: 'Invoice created automatically upon load completion',
         created_at: new Date().toISOString()
       }]);
-    
+
+    // Create notification for invoice creation
+    try {
+      await NotificationService.createNotification({
+        userId: userId,
+        title: `Invoice ${invoiceNumber} Created`,
+        message: `Invoice for ${load.customer} ($${totalAmount.toLocaleString()}) has been created from load ${load.load_number || 'N/A'}. ${mergedOptions.markAsPaid ? 'Marked as paid.' : `Due: ${dueDate.toLocaleDateString()}`}`,
+        type: 'GENERAL_REMINDER',
+        entityType: 'invoice',
+        entityId: invoice[0].id,
+        linkTo: `/dashboard/invoices/${invoice[0].id}`,
+        dueDate: dueDate.toISOString(),
+        urgency: URGENCY_LEVELS.NORMAL
+      });
+    } catch (notifError) {
+      // Don't fail the main operation if notification fails
+      console.error('Failed to create invoice notification:', notifError);
+    }
+
     return invoice[0];
   } catch (error) {
     throw error;

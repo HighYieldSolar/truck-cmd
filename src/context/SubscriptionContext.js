@@ -6,6 +6,49 @@ import { supabase } from '@/lib/supabaseClient';
 // Create the context
 const SubscriptionContext = createContext();
 
+/**
+ * Trigger notification backfill for a user (runs once per 24 hours)
+ */
+async function triggerNotificationBackfill(userId) {
+  if (!userId) return;
+
+  try {
+    // Check if backfill was run recently (within 24 hours)
+    const lastBackfillKey = `notification_backfill_${userId}`;
+    const lastBackfill = localStorage.getItem(lastBackfillKey);
+
+    if (lastBackfill) {
+      const lastRun = new Date(lastBackfill);
+      const now = new Date();
+      const hoursSinceLastRun = (now - lastRun) / (1000 * 60 * 60);
+
+      // Skip if backfill ran within the last 24 hours
+      if (hoursSinceLastRun < 24) {
+        return;
+      }
+    }
+
+    // Run the backfill
+    const response = await fetch('/api/notifications/backfill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+
+    if (response.ok) {
+      // Store the timestamp of successful backfill
+      localStorage.setItem(lastBackfillKey, new Date().toISOString());
+      const result = await response.json();
+      if (result.totalCreated > 0) {
+        console.log(`Notification backfill: ${result.totalCreated} new alerts created`);
+      }
+    }
+  } catch (error) {
+    // Silently fail - backfill is not critical
+    console.error('Notification backfill failed:', error);
+  }
+}
+
 // Custom hook to use the subscription context
 export function useSubscription() {
   const context = useContext(SubscriptionContext);
@@ -52,6 +95,9 @@ export function SubscriptionProvider({ children }) {
       }
 
       setUser(user);
+
+      // Trigger notification backfill for any missing alerts (runs once per 24 hours)
+      triggerNotificationBackfill(user.id);
 
       // Fetch user profile data (including avatar_url)
       const { data: profileData } = await supabase

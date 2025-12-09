@@ -1,6 +1,36 @@
 import { supabase } from '@/lib/supabaseClient';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
 export class NotificationService {
+  /**
+   * Trigger email/SMS delivery for a notification
+   * @param {string} notificationId - Notification ID
+   * @param {string} userId - User ID
+   * @returns {Promise<{success: boolean, delivery?: object, error?: string}>}
+   */
+  static async triggerDelivery(notificationId, userId) {
+    try {
+      const response = await fetch(`${APP_URL}/api/notifications/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notificationId, userId })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Delivery failed' };
+      }
+
+      return { success: true, delivery: data.delivery };
+    } catch (err) {
+      console.error('Failed to trigger notification delivery:', err);
+      return { success: false, error: 'Failed to trigger delivery' };
+    }
+  }
   /**
    * Generate compliance expiration notifications
    * Checks for expiring compliance items and driver documents
@@ -60,9 +90,10 @@ export class NotificationService {
   }
 
   /**
-   * Create a custom notification
+   * Create a custom notification with optional email/SMS delivery
    * @param {object} notification - Notification details
-   * @returns {Promise<{success: boolean, error?: string}>}
+   * @param {boolean} triggerDelivery - Whether to trigger email/SMS delivery (default: true for HIGH/CRITICAL)
+   * @returns {Promise<{success: boolean, notificationId?: string, delivery?: object, error?: string}>}
    */
   static async createNotification({
     userId,
@@ -73,10 +104,12 @@ export class NotificationService {
     entityId = null,
     linkTo = null,
     dueDate = null,
-    urgency = 'NORMAL'
+    urgency = 'NORMAL',
+    triggerDelivery = null
   }) {
     try {
-      const { error } = await supabase.rpc('create_notification', {
+      // First create the notification
+      const { data, error } = await supabase.rpc('create_notification', {
         p_user_id: userId,
         p_title: title,
         p_message: message,
@@ -92,10 +125,48 @@ export class NotificationService {
         return { success: false, error: error.message };
       }
 
-      return { success: true };
+      // Get the notification ID from the most recent notification
+      const { data: notification, error: fetchError } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('title', title)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const notificationId = notification?.id;
+
+      // Determine if we should trigger delivery
+      // Default: trigger for HIGH and CRITICAL urgency
+      const shouldDeliver = triggerDelivery !== null
+        ? triggerDelivery
+        : ['HIGH', 'CRITICAL'].includes(urgency);
+
+      let deliveryResult = null;
+
+      if (shouldDeliver && notificationId) {
+        // Trigger delivery asynchronously (don't block the response)
+        deliveryResult = await this.triggerDelivery(notificationId, userId);
+      }
+
+      return {
+        success: true,
+        notificationId,
+        delivery: deliveryResult
+      };
     } catch (err) {
+      console.error('Failed to create notification:', err);
       return { success: false, error: 'Failed to create notification' };
     }
+  }
+
+  /**
+   * Create notification and trigger delivery (convenience method)
+   * Always triggers email/SMS delivery regardless of urgency
+   */
+  static async createAndDeliver(params) {
+    return this.createNotification({ ...params, triggerDelivery: true });
   }
 
   /**
@@ -245,16 +316,30 @@ export class NotificationService {
 
 // Notification types enum for consistency
 export const NOTIFICATION_TYPES = {
+  // Compliance & Documents
   DOCUMENT_EXPIRY_COMPLIANCE: 'DOCUMENT_EXPIRY_COMPLIANCE',
   DOCUMENT_EXPIRY_DRIVER_LICENSE: 'DOCUMENT_EXPIRY_DRIVER_LICENSE',
   DOCUMENT_EXPIRY_DRIVER_MEDICAL: 'DOCUMENT_EXPIRY_DRIVER_MEDICAL',
-  GENERAL_REMINDER: 'GENERAL_REMINDER',
-  SYSTEM_ERROR: 'SYSTEM_ERROR',
-  MAINTENANCE_DUE: 'MAINTENANCE_DUE',
-  IFTA_DEADLINE: 'IFTA_DEADLINE',
+
+  // Load Management
   LOAD_ASSIGNED: 'LOAD_ASSIGNED',
   LOAD_STATUS_UPDATE: 'LOAD_STATUS_UPDATE',
-  DELIVERY_UPCOMING: 'DELIVERY_UPCOMING'
+  DELIVERY_UPCOMING: 'DELIVERY_UPCOMING',
+
+  // Invoicing & Payments
+  INVOICE_OVERDUE: 'INVOICE_OVERDUE',
+  PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',
+
+  // Fleet & Maintenance
+  MAINTENANCE_DUE: 'MAINTENANCE_DUE',
+  FUEL_REMINDER: 'FUEL_REMINDER',
+
+  // IFTA & Tax
+  IFTA_DEADLINE: 'IFTA_DEADLINE',
+
+  // System
+  GENERAL_REMINDER: 'GENERAL_REMINDER',
+  SYSTEM_ERROR: 'SYSTEM_ERROR'
 };
 
 // Urgency levels enum

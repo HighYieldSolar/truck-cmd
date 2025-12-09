@@ -1,5 +1,6 @@
 // src/lib/services/invoiceService.js
 import { supabase } from "../supabaseClient";
+import { NotificationService, URGENCY_LEVELS } from "./notificationService";
 
 /**
  * Fetch all invoices for the current user with optional filters
@@ -516,7 +517,36 @@ export async function recordPayment(invoiceId, paymentData) {
         user_id: user?.id,
         user_name: user?.email
       }]);
-    
+
+    // Create notification for payment received
+    try {
+      // Get invoice details for notification
+      const { data: invoiceDetails } = await supabase
+        .from('invoices')
+        .select('invoice_number, customer, total')
+        .eq('id', invoiceId)
+        .single();
+
+      if (invoiceDetails) {
+        const isFullyPaid = newStatus === 'Paid';
+        await NotificationService.createNotification({
+          userId: user?.id,
+          title: isFullyPaid ? 'Invoice Paid in Full' : 'Payment Received',
+          message: isFullyPaid
+            ? `Invoice ${invoiceDetails.invoice_number} for ${invoiceDetails.customer} has been paid in full ($${invoiceDetails.total?.toLocaleString()}).`
+            : `Payment of $${adjustedPaymentAmount.toFixed(2)} received for invoice ${invoiceDetails.invoice_number} (${invoiceDetails.customer}). Remaining: $${(invoiceDetails.total - newAmountPaid).toFixed(2)}`,
+          type: 'PAYMENT_RECEIVED',
+          entityType: 'invoice',
+          entityId: invoiceId,
+          linkTo: `/dashboard/invoices/${invoiceId}`,
+          urgency: URGENCY_LEVELS.LOW
+        });
+      }
+    } catch (notifError) {
+      // Don't fail the main operation if notification fails
+      console.error('Failed to create payment notification:', notifError);
+    }
+
     return payment?.[0] || null;
   } catch (error) {
     throw error;
@@ -693,29 +723,61 @@ export async function duplicateInvoice(invoiceId, overrides = {}) {
 export async function checkAndUpdateOverdueInvoices(userId) {
   try {
     const today = new Date().toISOString().split('T')[0];
-    
-    // Find pending invoices that are now overdue
+
+    // Find pending invoices that are now overdue (include more details for notifications)
     const { data: overdueInvoices, error } = await supabase
       .from('invoices')
-      .select('id')
+      .select('id, invoice_number, customer, total, due_date')
       .eq('user_id', userId)
-      .eq('status', 'Pending')
+      .in('status', ['Pending', 'Sent'])
       .lt('due_date', today);
-      
+
     if (error) throw error;
-    
+
     if (!overdueInvoices || overdueInvoices.length === 0) return 0;
-    
+
     // Update them to 'Overdue' status
     const ids = overdueInvoices.map(invoice => invoice.id);
-    
+
     const { error: updateError } = await supabase
       .from('invoices')
       .update({ status: 'Overdue' })
       .in('id', ids);
-      
+
     if (updateError) throw updateError;
-    
+
+    // Create notifications for each overdue invoice
+    for (const invoice of overdueInvoices) {
+      try {
+        // Check if notification already exists for this invoice (avoid duplicates)
+        const { data: existingNotif } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('entity_id', invoice.id)
+          .eq('notification_type', 'INVOICE_OVERDUE')
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Within last 7 days
+          .maybeSingle();
+
+        if (!existingNotif) {
+          const daysPastDue = Math.floor((new Date() - new Date(invoice.due_date)) / (1000 * 60 * 60 * 24));
+          await NotificationService.createNotification({
+            userId: userId,
+            title: `Invoice ${invoice.invoice_number} Overdue`,
+            message: `Invoice for ${invoice.customer} ($${invoice.total?.toLocaleString()}) is ${daysPastDue} day${daysPastDue > 1 ? 's' : ''} past due. Due date was ${new Date(invoice.due_date).toLocaleDateString()}.`,
+            type: 'INVOICE_OVERDUE',
+            entityType: 'invoice',
+            entityId: invoice.id,
+            linkTo: `/dashboard/invoices/${invoice.id}`,
+            dueDate: invoice.due_date,
+            urgency: daysPastDue > 30 ? URGENCY_LEVELS.CRITICAL : daysPastDue > 7 ? URGENCY_LEVELS.HIGH : URGENCY_LEVELS.MEDIUM
+          });
+        }
+      } catch (notifError) {
+        console.error('Failed to create overdue invoice notification:', notifError);
+      }
+    }
+
     return overdueInvoices.length;
   } catch (error) {
     throw error;

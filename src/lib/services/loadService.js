@@ -1,5 +1,6 @@
 // src/lib/services/loadService.js
 import { supabase } from "../supabaseClient";
+import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
 
 /**
  * Fetch all loads for the current user with optional filters
@@ -290,26 +291,46 @@ export async function assignDriver(loadId, driverName) {
       })
       .eq('id', loadId)
       .select();
-      
+
     if (error) throw error;
-    
+
     if (!data || data.length === 0) return null;
-    
+
+    const load = data[0];
+
+    // Create notification for driver assignment
+    try {
+      await NotificationService.createNotification({
+        userId: load.user_id,
+        title: `Load ${load.load_number} Assigned`,
+        message: `Driver ${driverName} has been assigned to load ${load.load_number} (${load.origin} → ${load.destination}). Pickup: ${load.pickup_date ? new Date(load.pickup_date).toLocaleDateString() : 'TBD'}`,
+        type: NOTIFICATION_TYPES.LOAD_ASSIGNED,
+        entityType: 'load',
+        entityId: load.id,
+        linkTo: `/dashboard/dispatching`,
+        dueDate: load.pickup_date,
+        urgency: URGENCY_LEVELS.NORMAL
+      });
+    } catch (notifError) {
+      // Don't fail the main operation if notification fails
+      console.error('Failed to create load assignment notification:', notifError);
+    }
+
     // Return the updated load in component-friendly format
     return {
-      id: data[0].id,
-      loadNumber: data[0].load_number,
-      customer: data[0].customer,
-      origin: data[0].origin,
-      destination: data[0].destination,
-      pickupDate: data[0].pickup_date,
-      deliveryDate: data[0].delivery_date,
-      status: data[0].status,
-      driver: data[0].driver || "",
-      rate: data[0].rate || 0,
-      distance: data[0].distance || 0,
-      description: data[0].description || "",
-      notes: data[0].notes || ""
+      id: load.id,
+      loadNumber: load.load_number,
+      customer: load.customer,
+      origin: load.origin,
+      destination: load.destination,
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
+      status: load.status,
+      driver: load.driver || "",
+      rate: load.rate || 0,
+      distance: load.distance || 0,
+      description: load.description || "",
+      notes: load.notes || ""
     };
   } catch (error) {
     return null;
@@ -329,26 +350,77 @@ export async function updateLoadStatus(loadId, status) {
       .update({ status })
       .eq('id', loadId)
       .select();
-      
+
     if (error) throw error;
-    
+
     if (!data || data.length === 0) return null;
-    
+
+    const load = data[0];
+
+    // Create notification for significant status changes
+    try {
+      let notificationTitle = '';
+      let notificationMessage = '';
+      let urgency = URGENCY_LEVELS.NORMAL;
+
+      switch (status) {
+        case 'In Transit':
+          notificationTitle = `Load ${load.load_number} In Transit`;
+          notificationMessage = `Load ${load.load_number} is now in transit from ${load.origin} to ${load.destination}.`;
+          urgency = URGENCY_LEVELS.NORMAL;
+          break;
+        case 'Delivered':
+          notificationTitle = `Load ${load.load_number} Delivered`;
+          notificationMessage = `Load ${load.load_number} has been delivered to ${load.destination}. Ready for invoicing.`;
+          urgency = URGENCY_LEVELS.NORMAL;
+          break;
+        case 'Completed':
+          notificationTitle = `Load ${load.load_number} Completed`;
+          notificationMessage = `Load ${load.load_number} has been completed. Rate: $${load.rate?.toLocaleString() || 0}`;
+          urgency = URGENCY_LEVELS.LOW;
+          break;
+        case 'Cancelled':
+          notificationTitle = `Load ${load.load_number} Cancelled`;
+          notificationMessage = `Load ${load.load_number} (${load.origin} → ${load.destination}) has been cancelled.`;
+          urgency = URGENCY_LEVELS.MEDIUM;
+          break;
+        default:
+          // Don't create notification for other status changes
+          notificationTitle = null;
+      }
+
+      if (notificationTitle) {
+        await NotificationService.createNotification({
+          userId: load.user_id,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: NOTIFICATION_TYPES.LOAD_STATUS_UPDATE,
+          entityType: 'load',
+          entityId: load.id,
+          linkTo: `/dashboard/dispatching`,
+          urgency: urgency
+        });
+      }
+    } catch (notifError) {
+      // Don't fail the main operation if notification fails
+      console.error('Failed to create load status notification:', notifError);
+    }
+
     // Return the updated load in component-friendly format
     return {
-      id: data[0].id,
-      loadNumber: data[0].load_number,
-      customer: data[0].customer,
-      origin: data[0].origin,
-      destination: data[0].destination,
-      pickupDate: data[0].pickup_date,
-      deliveryDate: data[0].delivery_date,
-      status: data[0].status,
-      driver: data[0].driver || "",
-      rate: data[0].rate || 0,
-      distance: data[0].distance || 0,
-      description: data[0].description || "",
-      notes: data[0].notes || ""
+      id: load.id,
+      loadNumber: load.load_number,
+      customer: load.customer,
+      origin: load.origin,
+      destination: load.destination,
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
+      status: load.status,
+      driver: load.driver || "",
+      rate: load.rate || 0,
+      distance: load.distance || 0,
+      description: load.description || "",
+      notes: load.notes || ""
     };
   } catch (error) {
     return null;

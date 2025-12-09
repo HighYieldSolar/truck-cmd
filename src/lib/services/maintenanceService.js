@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { syncMaintenanceToExpense } from "./expenseMaintenanceIntegration";
+import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
 
 /**
  * Fetch all maintenance records for a user
@@ -42,10 +43,46 @@ export async function createMaintenanceRecord(recordData) {
   const { data, error } = await supabase
     .from("maintenance_records")
     .insert([recordData])
-    .select()
+    .select(`
+      *,
+      trucks:truck_id (id, name, make, model)
+    `)
     .single();
 
   if (error) throw error;
+
+  // Create notification if maintenance is due soon (within 14 days)
+  if (data && data.user_id && data.due_date) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(data.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      const daysUntil = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+
+      if (daysUntil <= 14) {
+        const urgency = daysUntil <= 0 ? URGENCY_LEVELS.HIGH : daysUntil <= 3 ? URGENCY_LEVELS.MEDIUM : URGENCY_LEVELS.NORMAL;
+        const truckName = data.trucks?.name || data.trucks?.make || 'Vehicle';
+
+        await NotificationService.createNotification({
+          userId: data.user_id,
+          title: `Maintenance Scheduled - ${data.maintenance_type}`,
+          message: daysUntil <= 0
+            ? `${data.maintenance_type} for ${truckName} is overdue! Service was due ${Math.abs(daysUntil)} day${Math.abs(daysUntil) !== 1 ? 's' : ''} ago.`
+            : `${data.maintenance_type} for ${truckName} is due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}. Schedule service soon.`,
+          type: NOTIFICATION_TYPES.MAINTENANCE_DUE,
+          entityType: 'maintenance',
+          entityId: data.id,
+          linkTo: `/dashboard/fleet?tab=maintenance`,
+          dueDate: data.due_date,
+          urgency: urgency
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to create maintenance notification:', notifError);
+    }
+  }
+
   return data;
 }
 
@@ -57,7 +94,10 @@ export async function updateMaintenanceRecord(id, recordData) {
   // First, get the current record to check if status is changing to Completed
   const { data: existingRecord, error: fetchError } = await supabase
     .from("maintenance_records")
-    .select("status, expense_id, user_id")
+    .select(`
+      status, expense_id, user_id, maintenance_type,
+      trucks:truck_id (id, name, make, model)
+    `)
     .eq("id", id)
     .single();
 
@@ -80,17 +120,38 @@ export async function updateMaintenanceRecord(id, recordData) {
   const hasCost = recordData.cost && parseFloat(recordData.cost) > 0;
   const notAlreadySynced = !existingRecord.expense_id;
 
+  let expenseResult = null;
   if (isNewlyCompleted && hasCost && notAlreadySynced) {
     try {
-      const expenseResult = await syncMaintenanceToExpense(existingRecord.user_id, id);
-      return { ...data, expenseSync: expenseResult };
+      expenseResult = await syncMaintenanceToExpense(existingRecord.user_id, id);
     } catch (syncError) {
       console.error('Failed to sync maintenance to expense:', syncError);
       // Don't throw - the update was successful, expense sync is secondary
     }
   }
 
-  return data;
+  // Create notification when status changes to Completed
+  if (isNewlyCompleted && existingRecord?.user_id) {
+    try {
+      const truckName = existingRecord.trucks?.name || existingRecord.trucks?.make || 'Vehicle';
+      const costText = recordData.cost ? ` Cost: $${parseFloat(recordData.cost).toLocaleString()}` : '';
+
+      await NotificationService.createNotification({
+        userId: existingRecord.user_id,
+        title: `Maintenance Completed - ${existingRecord.maintenance_type}`,
+        message: `${existingRecord.maintenance_type} for ${truckName} has been completed.${costText}${expenseResult ? ' Expense record created.' : ''}`,
+        type: NOTIFICATION_TYPES.MAINTENANCE_DUE,
+        entityType: 'maintenance',
+        entityId: data.id,
+        linkTo: `/dashboard/fleet?tab=maintenance`,
+        urgency: URGENCY_LEVELS.LOW
+      });
+    } catch (notifError) {
+      console.error('Failed to create maintenance completion notification:', notifError);
+    }
+  }
+
+  return expenseResult ? { ...data, expenseSync: expenseResult } : data;
 }
 
 /**
@@ -136,10 +197,13 @@ export async function deleteMaintenanceRecord(id, deleteLinkedExpense = true) {
  * @param {boolean} syncToExpense - Whether to sync to expenses (default: true)
  */
 export async function completeMaintenanceRecord(id, completionData, syncToExpense = true) {
-  // First, get the maintenance record to get user_id
+  // First, get the maintenance record to get user_id and other details
   const { data: existingRecord, error: fetchError } = await supabase
     .from("maintenance_records")
-    .select("user_id")
+    .select(`
+      user_id, maintenance_type,
+      trucks:truck_id (id, name, make, model)
+    `)
     .eq("id", id)
     .single();
 
@@ -171,6 +235,27 @@ export async function completeMaintenanceRecord(id, completionData, syncToExpens
     } catch (syncError) {
       console.error('Failed to sync maintenance to expense:', syncError);
       // Don't throw - the maintenance was completed successfully, expense sync is secondary
+    }
+  }
+
+  // Create notification for maintenance completion
+  if (existingRecord?.user_id) {
+    try {
+      const truckName = existingRecord.trucks?.name || existingRecord.trucks?.make || 'Vehicle';
+      const costText = completionData.cost ? ` Cost: $${parseFloat(completionData.cost).toLocaleString()}` : '';
+
+      await NotificationService.createNotification({
+        userId: existingRecord.user_id,
+        title: `Maintenance Completed - ${existingRecord.maintenance_type}`,
+        message: `${existingRecord.maintenance_type} for ${truckName} has been completed.${costText}${expenseResult ? ' Expense record created.' : ''}`,
+        type: NOTIFICATION_TYPES.MAINTENANCE_DUE,
+        entityType: 'maintenance',
+        entityId: data.id,
+        linkTo: `/dashboard/fleet?tab=maintenance`,
+        urgency: URGENCY_LEVELS.LOW
+      });
+    } catch (notifError) {
+      console.error('Failed to create maintenance completion notification:', notifError);
     }
   }
 
