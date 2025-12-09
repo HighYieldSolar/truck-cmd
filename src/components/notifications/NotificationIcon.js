@@ -11,7 +11,7 @@ export default function NotificationIcon({ onIconClick, hasUnread }) {
     >
       <Bell size={20} />
       {hasUnread && (
-        <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-red-500"></span>
+        <span className="absolute top-1 right-1.5 block h-2 w-2 rounded-full bg-red-500"></span>
       )}
     </button>
   );
