@@ -23,6 +23,8 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState("password");
   const [processingOAuth, setProcessingOAuth] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Handle OAuth tokens in URL hash (from Google redirect)
   useEffect(() => {
@@ -147,6 +149,37 @@ function LoginPageContent() {
     }
   };
 
+  const handleOtpVerify = async (e) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length !== 6) {
+      setError("Please enter the 6-digit code from your email");
+      return;
+    }
+
+    setError(null);
+    setVerifyingOtp(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email'
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      setError(error.message || "Invalid code. Please try again.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-b from-blue-50 via-white to-white">
       <div className="pt-8 pb-16 px-6">
@@ -214,21 +247,71 @@ function LoginPageContent() {
                     <p className="text-gray-600">Completing sign in...</p>
                   </div>
                 ) : magicLinkSent ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-4">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Mail size={32} className="text-blue-500" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-800 mb-2">Check your email</h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-gray-600 mb-4">
                       We&apos;ve sent a magic link to <strong>{email}</strong>.
-                      Click the link in the email to sign in.
                     </p>
-                    <button
-                      onClick={() => setMagicLinkSent(false)}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      Back to login
-                    </button>
+
+                    <p className="text-gray-500 text-sm mb-4">
+                      Click the link in the email, or enter the 6-digit code below:
+                    </p>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
+                        {error}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleOtpVerify} className="space-y-4">
+                      <div>
+                        <input
+                          type="text"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="000000"
+                          maxLength={6}
+                          autoComplete="one-time-code"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={verifyingOtp || otpCode.length !== 6}
+                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {verifyingOtp ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Verifying...
+                          </>
+                        ) : (
+                          <>
+                            Verify Code
+                            <ArrowRight size={18} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          setMagicLinkSent(false);
+                          setOtpCode("");
+                          setError(null);
+                        }}
+                        className="text-blue-600 hover:underline font-medium text-sm"
+                      >
+                        Back to login
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>

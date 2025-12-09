@@ -33,6 +33,7 @@ function SignupPageContent() {
   const [step, setStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [processingOAuth, setProcessingOAuth] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Handle OAuth tokens in URL hash (from Google redirect)
   useEffect(() => {
@@ -113,13 +114,54 @@ function SignupPageContent() {
     );
   };
 
-  const handleContinue = (e) => {
+  // Check if email already exists in the database
+  const checkEmailExists = async (emailToCheck) => {
+    try {
+      // Check the users table for existing email
+      const { data, error } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', emailToCheck.toLowerCase())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking email:', error);
+        return false; // Allow to proceed if check fails
+      }
+
+      return !!data; // Returns true if email exists
+    } catch (err) {
+      console.error('Email check error:', err);
+      return false;
+    }
+  };
+
+  const handleContinue = async (e) => {
     e.preventDefault();
     if (!validEmail) {
       setError("Please enter a valid email address");
       return;
     }
-    setStep(2);
+
+    setError(null);
+    setCheckingEmail(true);
+
+    try {
+      // Check if email already exists
+      const emailExists = await checkEmailExists(email);
+
+      if (emailExists) {
+        setError("This email is already registered. Please use a different email or log in to your existing account.");
+        setCheckingEmail(false);
+        return;
+      }
+
+      setStep(2);
+    } catch (err) {
+      setError("Unable to verify email. Please try again.");
+    } finally {
+      setCheckingEmail(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -153,6 +195,14 @@ function SignupPageContent() {
     setLoading(true);
 
     try {
+      // Double-check email doesn't exist before signup
+      const emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        setError("This email is already registered. Please use a different email or log in to your existing account.");
+        setLoading(false);
+        return;
+      }
+
       const cleanedPhone = phone.replace(/\D/g, '');
 
       const { data, error } = await supabase.auth.signUp({
@@ -169,11 +219,18 @@ function SignupPageContent() {
       });
 
       if (error) {
-        if (error.message.includes("already registered")) {
-          setError("This email is already registered. Please use a different email or login.");
+        if (error.message.toLowerCase().includes("already registered") ||
+          error.message.toLowerCase().includes("user already registered")) {
+          setError("This email is already registered. Please use a different email or log in to your existing account.");
           return;
         }
         throw error;
+      }
+
+      // Check if Supabase returned a user but with identities array empty (email already exists)
+      if (data?.user && data.user.identities && data.user.identities.length === 0) {
+        setError("This email is already registered. Please use a different email or log in to your existing account.");
+        return;
       }
 
       setFormSubmitted(true);
@@ -307,10 +364,10 @@ function SignupPageContent() {
                         </svg>
                       ) : (
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
                       )}
                       <span>Continue with Google</span>
@@ -341,13 +398,12 @@ function SignupPageContent() {
                               placeholder="you@company.com"
                               value={email}
                               onChange={(e) => validateEmail(e.target.value)}
-                              className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                email
-                                  ? validEmail
-                                    ? 'border-green-300 bg-green-50'
-                                    : 'border-red-300 bg-red-50'
-                                  : 'border-gray-300'
-                              }`}
+                              className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${email
+                                ? validEmail
+                                  ? 'border-green-300 bg-green-50'
+                                  : 'border-red-300 bg-red-50'
+                                : 'border-gray-300'
+                                }`}
                               required
                             />
                             {email && !validEmail && (
@@ -357,15 +413,26 @@ function SignupPageContent() {
 
                           <button
                             onClick={handleContinue}
-                            disabled={loading || !validEmail}
-                            className={`w-full py-3 rounded-lg mt-4 font-medium transition-colors flex items-center justify-center gap-2 ${
-                              loading || !validEmail
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
+                            disabled={loading || !validEmail || checkingEmail}
+                            className={`w-full py-3 rounded-lg mt-4 font-medium transition-colors flex items-center justify-center gap-2 ${loading || !validEmail || checkingEmail
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
                           >
-                            Continue
-                            <ArrowRight size={18} />
+                            {checkingEmail ? (
+                              <>
+                                <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Checking...
+                              </>
+                            ) : (
+                              <>
+                                Continue
+                                <ArrowRight size={18} />
+                              </>
+                            )}
                           </button>
                         </motion.div>
                       ) : (
@@ -392,7 +459,7 @@ function SignupPageContent() {
                               <label className="block text-gray-700 font-medium mb-1 text-sm">Full Name</label>
                               <input
                                 type="text"
-                                placeholder="John Doe"
+                                placeholder="Name"
                                 value={fullName}
                                 onChange={(e) => setFullName(e.target.value)}
                                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -403,16 +470,15 @@ function SignupPageContent() {
                               <label className="block text-gray-700 font-medium mb-1 text-sm">Phone</label>
                               <input
                                 type="tel"
-                                placeholder="(555) 123-4567"
+                                placeholder="(555) 555-5555"
                                 value={phone}
                                 onChange={(e) => validatePhone(e.target.value)}
-                                className={`w-full px-3 py-2.5 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 ${
-                                  phone
-                                    ? validPhone
-                                      ? 'border-green-300 bg-green-50'
-                                      : 'border-red-300 bg-red-50'
-                                    : 'border-gray-300'
-                                }`}
+                                className={`w-full px-3 py-2.5 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 ${phone
+                                  ? validPhone
+                                    ? 'border-green-300 bg-green-50'
+                                    : 'border-red-300 bg-red-50'
+                                  : 'border-gray-300'
+                                  }`}
                                 required
                               />
                             </div>
@@ -462,9 +528,8 @@ function SignupPageContent() {
                                 placeholder="Confirm your password"
                                 value={confirmPassword}
                                 onChange={(e) => checkPasswordMatch(e.target.value)}
-                                className={`w-full px-3 py-2.5 border rounded-lg text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500 ${
-                                  confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-3 py-2.5 border rounded-lg text-gray-900 pr-10 focus:ring-2 focus:ring-blue-500 ${confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-300'
+                                  }`}
                                 required
                               />
                               <button
@@ -499,11 +564,10 @@ function SignupPageContent() {
                           <button
                             type="button"
                             onClick={handleSignup}
-                            className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                              loading || !isFormValid()
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
+                            className={`w-full py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${loading || !isFormValid()
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
                             disabled={loading || !isFormValid()}
                           >
                             {loading ? (
