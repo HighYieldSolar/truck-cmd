@@ -18,18 +18,16 @@ import { useSidebar } from "@/context/SidebarContext";
 import UserDropdown from "@/components/UserDropdown";
 import NotificationIcon from "@/components/notifications/NotificationIcon";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import GlobalSearch, { useGlobalSearchShortcut } from "@/components/search/GlobalSearch";
 
 export default function DashboardLayout({ activePage = "dashboard", children, pageTitle }) {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const pathname = usePathname();
   const notificationsContainerRef = useRef(null);
-  const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   const {
@@ -47,6 +45,10 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   const [notificationsData, setNotificationsData] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationError, setNotificationError] = useState(null);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+
+  // Keyboard shortcut for global search (Cmd+K / Ctrl+K)
+  useGlobalSearchShortcut(() => setGlobalSearchOpen(true));
 
   // Handle mounting to prevent hydration mismatch
   useEffect(() => {
@@ -176,7 +178,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   useEffect(() => {
     setMobileMenuOpen(false);
     setNotificationsOpen(false);
-    setSearchOpen(false);
+    setGlobalSearchOpen(false);
   }, [pathname]);
 
   // Close dropdowns when clicking outside
@@ -185,11 +187,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       // Close notifications dropdown when clicking outside
       if (notificationsOpen && notificationsContainerRef.current && !notificationsContainerRef.current.contains(event.target)) {
         setNotificationsOpen(false);
-      }
-
-      // Close search dropdown when clicking outside
-      if (searchOpen && searchRef.current && !searchRef.current.contains(event.target)) {
-        setSearchOpen(false);
       }
 
       // Close mobile menu when clicking outside
@@ -205,7 +202,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [notificationsOpen, searchOpen, mobileMenuOpen]);
+  }, [notificationsOpen, mobileMenuOpen]);
 
   // Base menu items definition (keyed by ID for lookup)
   const baseMenuItems = {
@@ -562,18 +559,16 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           <div className="p-2">
             {/* Mobile Search Bar */}
             <div className="px-2 py-3">
-              <div className="relative w-full">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm text-gray-900 dark:text-gray-100"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+              <button
+                className="w-full flex items-center px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none transition-colors"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setGlobalSearchOpen(true);
+                }}
+              >
+                <Search size={18} className="text-gray-400 dark:text-gray-500 mr-2" />
+                Search loads, invoices...
+              </button>
             </div>
 
             {/* Main Navigation */}
@@ -713,58 +708,19 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
               {/* Right side: Search, Notifications, User Dropdown */}
               <div className="flex items-center space-x-3">
-                {/* Desktop Search */}
-                <div className="hidden md:block relative" ref={searchRef}>
+                {/* Desktop Search Button */}
+                <div className="hidden md:block">
                   <button
-                    className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none"
-                    onClick={() => setSearchOpen(!searchOpen)}
+                    className="flex items-center px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg focus:outline-none transition-colors"
+                    onClick={() => setGlobalSearchOpen(true)}
                     aria-label="Search"
                   >
-                    <Search size={20} />
+                    <Search size={16} className="mr-2" />
+                    <span className="hidden lg:inline">Search...</span>
+                    <kbd className="hidden lg:inline ml-3 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded">
+                      {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}K
+                    </kbd>
                   </button>
-
-                  {/* Search Dropdown */}
-                  {searchOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg p-4 border border-gray-200 dark:border-gray-700 z-20">
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Search size={18} className="text-gray-400 dark:text-gray-500" />
-                        </div>
-                        <input
-                          type="text"
-                          className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:border-blue-400 sm:text-sm text-gray-900 dark:text-gray-100"
-                          placeholder="Search"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          autoFocus
-                        />
-                      </div>
-
-                      <div className="mt-3">
-                        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                          Quick Links
-                        </h3>
-                        <div className="space-y-1">
-                          {[
-                            { name: 'Create Invoice', href: '/dashboard/invoices/new', icon: <FileText size={16} /> },
-                            { name: 'Add Load', href: '/dashboard/dispatching/new', icon: <Truck size={16} /> },
-                            { name: 'Record Expense', href: '/dashboard/expenses/new', icon: <Wallet size={16} /> },
-                            { name: 'IFTA Report', href: '/dashboard/ifta', icon: <Calculator size={16} /> }
-                          ].map((item, i) => (
-                            <Link
-                              key={i}
-                              href={item.href}
-                              className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                              onClick={() => setSearchOpen(false)}
-                            >
-                              <span className="text-gray-500 dark:text-gray-400 mr-3">{item.icon}</span>
-                              {item.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Notifications */}
@@ -841,6 +797,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
           </footer>
         </div>
       </div>
+
+      {/* Global Search Modal */}
+      <GlobalSearch
+        isOpen={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+      />
     </div>
   );
 }
