@@ -146,14 +146,15 @@ export async function getInvoiceById(id) {
 }
 
 /**
- * Generate an invoice number
+ * Generate an invoice number with collision avoidance
  * @param {string} userId - User ID for querying existing invoice numbers
+ * @param {number} attempt - Current attempt number (for retry logic)
  * @returns {Promise<string>} - Generated invoice number
  */
-export async function generateInvoiceNumber(userId) {
+export async function generateInvoiceNumber(userId, attempt = 0) {
   try {
     const currentYear = new Date().getFullYear();
-    
+
     // Get the highest invoice number for the current year
     const { data, error } = await supabase
       .from('invoices')
@@ -162,27 +163,49 @@ export async function generateInvoiceNumber(userId) {
       .ilike('invoice_number', `INV-${currentYear}-%`)
       .order('invoice_number', { ascending: false })
       .limit(1);
-      
+
     if (error) throw error;
-    
+
     let nextNumber = 1;
-    
+
     if (data && data.length > 0) {
       // Extract the numeric part from the highest invoice number
       const lastInvoice = data[0].invoice_number;
       const matches = lastInvoice.match(/-(\d+)$/);
-      
+
       if (matches && matches[1]) {
         nextNumber = parseInt(matches[1], 10) + 1;
       }
     }
-    
+
+    // Add attempt offset to handle concurrent requests
+    nextNumber += attempt;
+
     // Format with leading zeros for at least 4 digits
     return `INV-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
   } catch (error) {
-    // Fallback to a timestamp-based number if there's an error
-    return `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`;
+    // Fallback to a timestamp-based number with random suffix if there's an error
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}${randomSuffix}`;
   }
+}
+
+/**
+ * Check if an invoice number already exists for a user
+ * @param {string} userId - User ID
+ * @param {string} invoiceNumber - Invoice number to check
+ * @returns {Promise<boolean>} - True if exists, false otherwise
+ */
+async function invoiceNumberExists(userId, invoiceNumber) {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('invoice_number', invoiceNumber)
+    .limit(1);
+
+  if (error) return false;
+  return data && data.length > 0;
 }
 
 /**
@@ -238,12 +261,15 @@ export async function checkInvoiceLimitForUser(userId, userPlan) {
 }
 
 /**
- * Create a new invoice
+ * Create a new invoice with retry logic for duplicate invoice numbers
  * @param {Object} invoiceData - Invoice data
  * @param {string} userPlan - User's subscription plan (optional, for limit checking)
+ * @param {number} retryAttempt - Current retry attempt (internal use)
  * @returns {Promise<Object|null>} - Created invoice or null
  */
-export async function createInvoice(invoiceData, userPlan = null) {
+export async function createInvoice(invoiceData, userPlan = null, retryAttempt = 0) {
+  const MAX_RETRIES = 3;
+
   try {
     const { supabase } = await import('../supabaseClient');
 
@@ -257,26 +283,44 @@ export async function createInvoice(invoiceData, userPlan = null) {
 
     // Extract items
     const items = invoiceData.items || [];
-    
+
     // Remove items from main invoice data
     const { items: _, ...invoiceDataWithoutItems } = invoiceData;
-    
-    // Begin a transaction using supabase (although not natively supported, we can mimic it)
-    
+
+    // If invoice_number might conflict, check and regenerate if needed
+    if (invoiceDataWithoutItems.invoice_number && retryAttempt > 0) {
+      // Regenerate invoice number with attempt offset
+      invoiceDataWithoutItems.invoice_number = await generateInvoiceNumber(
+        invoiceDataWithoutItems.user_id,
+        retryAttempt
+      );
+    }
+
     // 1. Insert the invoice
     const { data: invoice, error } = await supabase
       .from('invoices')
       .insert([invoiceDataWithoutItems])
       .select();
-      
-    if (error) throw error;
-    
+
+    // Handle duplicate key error (invoice number collision)
+    if (error) {
+      const isDuplicateError = error.code === '23505' ||
+        error.message?.includes('duplicate') ||
+        error.message?.includes('unique');
+
+      if (isDuplicateError && retryAttempt < MAX_RETRIES) {
+        // Retry with a new invoice number
+        return createInvoice(invoiceData, userPlan, retryAttempt + 1);
+      }
+      throw error;
+    }
+
     if (!invoice || invoice.length === 0) {
       throw new Error('Failed to create invoice');
     }
-    
+
     const invoiceId = invoice[0].id;
-    
+
     // 2. Insert invoice items if there are any
     if (items.length > 0) {
       // Add invoice_id to each item
@@ -284,18 +328,18 @@ export async function createInvoice(invoiceData, userPlan = null) {
         ...item,
         invoice_id: invoiceId
       }));
-      
+
       const { error: itemsError } = await supabase
         .from('invoice_items')
         .insert(itemsWithInvoiceId);
-        
+
       if (itemsError) {
         // If there's an error inserting items, delete the invoice
         await supabase.from('invoices').delete().eq('id', invoiceId);
         throw itemsError;
       }
     }
-    
+
     // 3. Record the activity
     await supabase
       .from('invoice_activities')
@@ -304,9 +348,9 @@ export async function createInvoice(invoiceData, userPlan = null) {
         activity_type: 'created',
         description: 'Invoice created',
         user_id: invoiceData.user_id,
-        user_name: 'User' // This would ideally be fetched from the user profile
+        user_name: 'User'
       }]);
-    
+
     // Return the created invoice
     return await getInvoiceById(invoiceId);
   } catch (error) {

@@ -34,8 +34,8 @@ const defaultFormData = {
   
 
 
-export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) { 
-  
+export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) {
+
   const formKey = fuelEntry ? `fuelEntry-${fuelEntry.id}` : `fuelEntry-${uuidv4()}`;
   const storedData = localStorage.getItem(formKey);
   const initialData = storedData ? JSON.parse(storedData) : defaultFormData;
@@ -44,6 +44,16 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
   // State to manage form data, initialized from local storage or defaults
 
   const [formData, setFormData] = useState(initialData);
+
+  // Cleanup object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Revoke the object URL when component unmounts
+      if (formData.receipt_preview && formData.receipt_preview.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.receipt_preview);
+      }
+    };
+  }, [formData.receipt_preview]);
   
   // Save form data to local storage whenever it changes
   useEffect(() => {
@@ -125,9 +135,15 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     
     if (type === 'file' && files && files[0]) {
       const file = files[0];
+
+      // Revoke the old preview URL to prevent memory leak
+      if (formData.receipt_preview && formData.receipt_preview.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.receipt_preview);
+      }
+
       // Create a preview URL for the image
       const previewUrl = URL.createObjectURL(file);
-      
+
       setFormData({
         ...formData,
         receipt_file: file,
