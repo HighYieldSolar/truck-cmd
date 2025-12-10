@@ -1175,28 +1175,28 @@ export default function InvoiceDetail({ invoiceId }) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap items-center justify-end gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 mb-6">
         <Link
           href={`/dashboard/invoices/${invoiceId}/edit`}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors min-h-[44px]"
         >
-          <Edit size={16} className="mr-2" />
+          <Edit size={18} className="mr-1.5 sm:mr-2" />
           Edit
         </Link>
         {!isPaid && (
           <button
             onClick={() => setPaymentModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors"
+            className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors min-h-[44px]"
           >
-            <DollarSign size={16} className="mr-2" />
-            Record Payment
+            <DollarSign size={18} className="mr-1.5 sm:mr-2" />
+            <span className="hidden sm:inline">Record </span>Payment
           </button>
         )}
         <button
           onClick={() => setEmailModalOpen(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors min-h-[44px]"
         >
-          <Send size={16} className="mr-2" />
+          <Send size={18} className="mr-1.5 sm:mr-2" />
           Send
         </button>
         {/* Hidden buttons for PDF generator to target */}
@@ -1216,10 +1216,11 @@ export default function InvoiceDetail({ invoiceId }) {
         </div>
         <button
           onClick={() => handleAction('download')}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors min-h-[44px]"
         >
-          <Download size={16} className="mr-2" />
-          Download
+          <Download size={18} className="mr-1.5 sm:mr-2" />
+          <span className="hidden sm:inline">Download</span>
+          <span className="sm:hidden">PDF</span>
         </button>
         <ActionsDropdown onAction={handleAction} isPaid={isPaid} />
       </div>

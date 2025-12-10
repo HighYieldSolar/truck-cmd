@@ -446,7 +446,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               </div>
 
               {/* City, State, ZIP */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     City

@@ -852,11 +852,11 @@ export default function NewLoadForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl text-white z-10">
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold flex items-center">
                 <Route size={20} className="mr-2" />
@@ -864,10 +864,11 @@ export default function NewLoadForm({
               </h2>
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-blue-500 rounded-full transition-colors"
+                className="p-2.5 sm:p-2 hover:bg-blue-500 rounded-full transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                 disabled={saving}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={22} className="sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>

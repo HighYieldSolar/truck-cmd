@@ -512,7 +512,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -520,15 +520,15 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
         className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header with Progress */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6">
           <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl sm:text-2xl font-bold">
               {initialData ? 'Edit Customer' : 'Create New Customer'}
             </h2>
             <button
               onClick={handleClose}
               aria-label="Close"
-              className="text-white hover:bg-white/20 p-1 rounded transition-colors"
+              className="text-white hover:bg-white/20 p-2.5 sm:p-1 rounded transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
             >
               <X size={24} />
             </button>
