@@ -49,7 +49,6 @@ export default function EnhancedIFTAFuelSync({
   // Manual sync handler
   const handleManualSync = () => {
     if (userId && quarter) {
-      console.log("Running manual fuel data analysis...");
       runAnalysis();
     }
   };
@@ -59,7 +58,6 @@ export default function EnhancedIFTAFuelSync({
     if (!userId || !quarter) return;
 
     try {
-      console.log("Running fuel data analysis for vehicle:", selectedVehicle);
 
       // Group fuel entries by state
       const fuelStateMap = {};
@@ -107,7 +105,6 @@ export default function EnhancedIFTAFuelSync({
 
       return fuelStateMap;
     } catch (error) {
-      console.error("Error analyzing fuel data:", error);
       setErrorDetails(error.message || "An error occurred while analyzing fuel data");
       setSyncStatus('error');
 

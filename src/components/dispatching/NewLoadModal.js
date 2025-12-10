@@ -32,7 +32,7 @@ const getFormDataFromLocalStorage = (formKey) => {
     const formDataString = localStorage.getItem(formKey);
     return formDataString ? JSON.parse(formDataString) : null;
   } catch (error) {
-    console.error("Error retrieving from localStorage:", error);
+    // Silently fail for localStorage errors
     return null;
   }
 };
@@ -44,7 +44,7 @@ const setFormDataToLocalStorage = (formKey, data) => {
 
     localStorage.setItem(formKey, JSON.stringify(data));
   } catch (error) {
-    console.error("Error saving to localStorage:", error);
+    // Silently fail for localStorage errors
   }
 };
 
@@ -55,7 +55,7 @@ const clearFormDataFromLocalStorage = (formKey) => {
 
     localStorage.removeItem(formKey);
   } catch (error) {
-    console.error("Error clearing localStorage:", error);
+    // Silently fail for localStorage errors
   }
 };
 

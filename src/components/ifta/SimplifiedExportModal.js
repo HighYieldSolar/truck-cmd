@@ -207,7 +207,6 @@ export default function SimplifiedExportModal({
         onClose();
       }, 1500);
     } catch (error) {
-      console.error('Error exporting to CSV:', error);
       setExportState('error');
       setError('Failed to export data. Please try again.');
     }
@@ -262,7 +261,6 @@ export default function SimplifiedExportModal({
         onClose();
       }, 1500);
     } catch (error) {
-      console.error('Error exporting to TXT:', error);
       setExportState('error');
       setError('Failed to export data. Please try again.');
     }
@@ -273,8 +271,6 @@ export default function SimplifiedExportModal({
     try {
       setExportState('loading');
       setError(null);
-
-      console.log("Starting PDF generation for IFTA summary");
 
       // Dynamically import jsPDF and jsPDF-AutoTable
       const [jsPDFModule, autoTableModule] = await Promise.all([
@@ -335,7 +331,7 @@ export default function SimplifiedExportModal({
           doc.text('TRUCK COMMAND', margin + 24, 14, { align: 'center' });
         }
       } catch (logoError) {
-        console.log('Logo error:', logoError);
+        // Logo failed to load, continue without it
       }
 
       // Report title on header
@@ -573,14 +569,11 @@ export default function SimplifiedExportModal({
       const filename = `IFTA_Report_${quarter}_${selectedVehicle === "all" ? "All_Vehicles" : selectedVehicle}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
 
-      console.log(`IFTA PDF saved as: ${filename}`);
-
       setExportState('success');
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error) {
-      console.error('Error generating PDF:', error);
       setExportState('error');
       setError('Failed to generate PDF. Please try again.');
     }
@@ -599,7 +592,6 @@ export default function SimplifiedExportModal({
         }, 500);
       });
     } catch (error) {
-      console.error('Error printing:', error);
       setExportState('error');
       setError('Failed to print. Please try again.');
     }

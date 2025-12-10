@@ -36,7 +36,7 @@ export default function SupabaseImage({
       const filePath = restParts.join('/');
       return { bucket, filePath };
     } catch (err) {
-      console.error('Error parsing Supabase URL:', err);
+      // Silently fail for invalid URLs
       return null;
     }
   };
@@ -62,9 +62,8 @@ export default function SupabaseImage({
         const cacheKey = timestamp ? `${src}?t=${timestamp}` : src;
         // Check cache first to prevent unnecessary fetches
         if (urlCacheRef.current.has(cacheKey)) {
-          const cachedUrl = urlCacheRef.current.get(cacheKey); // Use cacheKey here
-          console.log('Using cached URL:', cachedUrl);
-          if (mountedRef.current) { // Check mountedRef before setting state
+          const cachedUrl = urlCacheRef.current.get(cacheKey);
+          if (mountedRef.current) {
              setObjectUrl(cachedUrl);
              setLoading(false);
           }
@@ -79,21 +78,17 @@ export default function SupabaseImage({
 
         // Handle Supabase storage URLs
         if (src.includes('supabase.co/storage/v1/object/public')) {
-           // *** MODIFICATION START ***
-           // Directly use the public URL since download button works
-           console.log('Using public Supabase URL directly:', src);
-           const imageUrl = timestamp ? `${src}?t=${timestamp}` : src; // Add timestamp for cache busting
+           // Directly use the public URL
+           const imageUrl = timestamp ? `${src}?t=${timestamp}` : src;
            urlCacheRef.current.set(cacheKey, imageUrl); // Cache the direct URL
  
            if (mountedRef.current) {
              setObjectUrl(imageUrl); // Use the direct URL
              setLoading(false);
            }
-           // *** MODIFICATION END ***
         } else {
-          // For regular URLs, use as is (existing logic)
-          console.log('Using regular URL:', src);
-          const imageUrl = timestamp ? `${src}?t=${timestamp}` : src; // Add timestamp for cache busting
+          // For regular URLs, use as is
+          const imageUrl = timestamp ? `${src}?t=${timestamp}` : src;
           urlCacheRef.current.set(cacheKey, imageUrl); // Cache the URL
           if (mountedRef.current) {
             setObjectUrl(imageUrl);
@@ -101,7 +96,6 @@ export default function SupabaseImage({
           }
         }
       } catch (err) {
-        console.error('Error processing image source:', err);
         if (mountedRef.current) {
           setError(true);
           setLoading(false);
@@ -137,7 +131,6 @@ export default function SupabaseImage({
   };
 
   const handleError = (e) => {
-     console.error("Image failed to load:", src, e)
     if (mountedRef.current) {
        setError(true);
        setLoading(false);
