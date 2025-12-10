@@ -119,7 +119,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full shadow-xl">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">

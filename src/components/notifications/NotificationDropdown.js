@@ -70,9 +70,9 @@ export default function NotificationDropdown({
   const hasUnread = notifications.some(n => !n.is_read) || unreadCount > 0;
 
   return (
-    <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
+    <div className="fixed sm:absolute inset-x-2 sm:inset-x-auto sm:right-0 top-16 sm:top-auto sm:mt-2 w-auto sm:w-96 max-w-none sm:max-w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
+      <div className="px-3 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
         <div className="flex items-center gap-2">
           <Bell size={18} className="text-white" />
           <h3 className="text-sm font-semibold text-white">Notifications</h3>
@@ -85,10 +85,11 @@ export default function NotificationDropdown({
         {hasUnread && (
           <button
             onClick={onMarkAllReadClick}
-            className="text-xs text-white/90 hover:text-white flex items-center gap-1 transition-colors"
+            className="text-xs text-white/90 hover:text-white flex items-center gap-1 transition-colors p-2 -mr-2 rounded-lg hover:bg-white/10 min-h-[36px]"
           >
-            <CheckCircle size={12} />
-            Mark all read
+            <CheckCircle size={14} />
+            <span className="hidden sm:inline">Mark all read</span>
+            <span className="sm:hidden">Read all</span>
           </button>
         )}
       </div>
@@ -126,7 +127,7 @@ export default function NotificationDropdown({
               return (
                 <div
                   key={notification.id}
-                  className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors ${
+                  className={`px-3 sm:px-4 py-3.5 sm:py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors ${
                     !notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                   }`}
                   onClick={() => onNotificationItemClick(notification)}
@@ -180,10 +181,10 @@ export default function NotificationDropdown({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <button
           onClick={onViewAllClick}
-          className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+          className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors py-2 min-h-[44px] flex items-center justify-center"
         >
           View all notifications
         </button>
