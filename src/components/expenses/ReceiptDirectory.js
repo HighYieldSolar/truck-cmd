@@ -213,7 +213,7 @@ export default function ReceiptDirectory({
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed:', error);
+      // Download failed silently - user sees no file downloaded
     }
   };
 
@@ -265,7 +265,7 @@ export default function ReceiptDirectory({
           zip.file(filename, blob);
           setDownloadProgress({ current: i + 1, total: receiptsToDownload.length });
         } catch (err) {
-          console.error(`Failed to download receipt ${expense.id}:`, err);
+          // Skip failed receipt, continue with others
         }
       }
 
@@ -280,7 +280,7 @@ export default function ReceiptDirectory({
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('ZIP download failed:', error);
+      // ZIP download failed - no user feedback needed as download simply won't appear
     } finally {
       setIsDownloading(false);
       setDownloadProgress({ current: 0, total: 0 });
@@ -319,7 +319,7 @@ export default function ReceiptDirectory({
           zip.file(filename, blob);
           setDownloadProgress({ current: i + 1, total: receiptsToDownload.length });
         } catch (err) {
-          console.error(`Failed to download receipt ${expense.id}:`, err);
+          // Skip failed receipt, continue with others
         }
       }
 
@@ -336,7 +336,7 @@ export default function ReceiptDirectory({
       // Clear selections after download
       clearSelections();
     } catch (error) {
-      console.error('ZIP download failed:', error);
+      // ZIP download failed - no user feedback needed as download simply won't appear
     } finally {
       setIsDownloading(false);
       setDownloadProgress({ current: 0, total: 0 });

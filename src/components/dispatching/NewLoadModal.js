@@ -157,7 +157,6 @@ export default function NewLoadForm({
 
         setCustomers(data || []);
       } catch (err) {
-        console.error("Error loading customers:", err);
         setError("Failed to load customers. You can still enter customer name manually.");
       } finally {
         setCustomersLoading(false);
@@ -187,7 +186,7 @@ export default function NewLoadForm({
 
         setDrivers(data || []);
       } catch (err) {
-        console.error("Error loading drivers:", err);
+        // Silent fail - drivers dropdown will be empty
       } finally {
         setDriversLoading(false);
       }
@@ -213,13 +212,12 @@ export default function NewLoadForm({
           .order("name");
 
         if (error) {
-          console.error("Supabase error loading vehicles:", error);
           throw error;
         }
 
         setTrucks(data || []);
       } catch (err) {
-        console.error("Error loading trucks:", err);
+        // Silent fail - trucks dropdown will be empty
       } finally {
         setTrucksLoading(false);
       }
@@ -369,7 +367,7 @@ export default function NewLoadForm({
         try {
           onSubmit(data);
         } catch (submitError) {
-          console.error("Error in onSubmit callback:", submitError);
+          // Callback error - non-critical
         }
       }
 
@@ -381,7 +379,6 @@ export default function NewLoadForm({
       // Refresh the page to show the new load
       window.location.reload();
     } catch (err) {
-      console.error("Error creating load:", err);
       setError(err.message || "Failed to create load");
     } finally {
       setSaving(false);

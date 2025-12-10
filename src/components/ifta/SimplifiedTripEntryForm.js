@@ -161,7 +161,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         setTimeout(() => setSuccessMessage(null), 3000);
       }
     } catch (error) {
-      console.error("Error adding trip:", error);
+      setErrors(prev => ({ ...prev, submit: error.message || 'Failed to add trip' }));
     } finally {
       setIsSubmitting(false);
     }

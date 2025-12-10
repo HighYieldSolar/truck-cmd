@@ -100,7 +100,6 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
         });
       } catch (notifError) {
         // Don't fail the main operation if notification fails
-        console.error('Failed to create POD upload notification:', notifError);
       }
 
       setSuccess(true);
@@ -113,7 +112,6 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
       }, 1500);
 
     } catch (err) {
-      console.error('Error uploading POD:', err);
       setError(err.message || 'Failed to upload documents. Please try again.');
     } finally {
       setUploading(false);

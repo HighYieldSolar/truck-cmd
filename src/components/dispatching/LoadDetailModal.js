@@ -100,7 +100,7 @@ export default function LoadDetailModal({
         setAvailableTrucks(trucksData);
       }
     } catch (err) {
-      console.error("Error loading fleet data:", err);
+      // Fleet data load failed - selects will be empty
     } finally {
       setLoadingFleet(false);
     }
@@ -255,7 +255,6 @@ export default function LoadDetailModal({
       }, 1000);
 
     } catch (err) {
-      console.error("Error updating load:", err);
       setError(err.message || "Failed to update load");
     } finally {
       setIsSubmitting(false);
@@ -368,7 +367,6 @@ export default function LoadDetailModal({
       }, 1000);
 
     } catch (err) {
-      console.error("Error updating assignment:", err);
       setError(err.message || "Failed to update assignment");
     } finally {
       setIsSubmitting(false);

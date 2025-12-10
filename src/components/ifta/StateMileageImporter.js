@@ -119,7 +119,6 @@ export default function StateMileageImporter({
             .order('timestamp', { ascending: true });
 
           if (crossingsError) {
-            console.error('Error fetching crossings for trip:', trip.id, crossingsError);
             return null;
           }
 
@@ -164,7 +163,6 @@ export default function StateMileageImporter({
       setLoadData(validTrips);
       setSuccess(false);
     } catch (err) {
-      console.error('Error fetching trips:', err);
       setError('Failed to fetch available trips');
     } finally {
       setLoading(false);
@@ -326,7 +324,6 @@ export default function StateMileageImporter({
         .select();
 
       if (insertError) {
-        console.error('Supabase error when inserting trips:', insertError);
         throw new Error(insertError.message || 'Database error occurred');
       }
 
@@ -361,7 +358,6 @@ export default function StateMileageImporter({
         onImportComplete();
       }
     } catch (err) {
-      console.error('Error importing trips:', err);
       setError(`Failed to import trips to IFTA: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -437,12 +433,6 @@ export default function StateMileageImporter({
               <div>
                 <p className="text-sm font-medium text-red-700">Error importing trips</p>
                 <p className="text-sm text-red-600">{error}</p>
-                <button
-                  onClick={() => console.log('Last attempted import:', tripsToInsert)}
-                  className="text-xs text-red-700 underline mt-1"
-                >
-                  Debug in Console
-                </button>
               </div>
             </div>
           )}

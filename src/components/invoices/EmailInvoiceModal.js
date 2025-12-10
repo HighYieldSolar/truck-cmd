@@ -116,7 +116,6 @@ Your Company Name
         onClose();
       }, 2000);
     } catch (err) {
-      console.error('Error sending invoice:', err);
       setError('Failed to send invoice. Please try again.');
     } finally {
       setLoading(false);

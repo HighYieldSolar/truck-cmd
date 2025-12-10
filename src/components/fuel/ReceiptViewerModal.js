@@ -33,8 +33,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
     try {
       new URL(receipt.receipt_image);
     } catch (_) {
-      console.error("Invalid image URL:", receipt.receipt_image);
-      return;
+      return; // Invalid URL - silently abort download
     }
 
     setIsDownloading(true);
@@ -74,14 +73,13 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
       // Clean up blob URL
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed:', error);
       // Fallback: open in new tab if blob download fails
       window.open(receipt.receipt_image, '_blank');
     } finally {
       setIsDownloading(false);
     }
   };
-  
+
   const handlePrint = () => {
     // Create a temporary window for printing just the receipt
     const printWindow = window.open('', '_blank');
@@ -172,7 +170,6 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
           text: `Fuel receipt from ${receipt.location} on ${new Date(receipt.date).toLocaleDateString()}: $${receipt.total_amount.toFixed(2)} for ${receipt.gallons.toFixed(3)} gallons`
         });
       } catch (shareError) {
-        console.error('Error sharing receipt:', shareError);
         alert('Unable to share the receipt.');
       }
     } else {

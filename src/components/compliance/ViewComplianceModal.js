@@ -136,7 +136,6 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
       // Clean up blob URL
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed:', error);
       // Fallback: open in new tab if blob download fails
       window.open(compliance.document_url, '_blank');
     } finally {

@@ -226,7 +226,6 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
         setError("No results found");
       }
     } catch (err) {
-      console.error("Search error:", err);
       setError(err.message || "Search failed");
       setResults({});
     } finally {

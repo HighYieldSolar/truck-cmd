@@ -184,7 +184,6 @@ export default function SimplifiedIFTASummary({
       document.body.removeChild(link);
 
     } catch (err) {
-      console.error("Error exporting report:", err);
       alert("Failed to export report. Please try again.");
     }
   };

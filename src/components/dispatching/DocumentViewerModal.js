@@ -44,7 +44,6 @@ export default function DocumentViewerModal({ loadId, onClose }) {
         setLoadDetails(loadData);
 
       } catch (err) {
-        console.error('Error fetching documents:', err);
         setError('Failed to load documents. Please try again.');
       } finally {
         setLoading(false);

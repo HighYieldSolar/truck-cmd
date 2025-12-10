@@ -103,7 +103,6 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
       // Clean up the blob URL
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      console.error('Download failed:', err);
       // Fallback: open in new tab if blob download fails
       window.open(receipt.receipt_image, '_blank');
     } finally {

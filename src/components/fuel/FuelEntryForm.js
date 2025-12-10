@@ -291,7 +291,6 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
       // Close the modal
       onClose();
     } catch (error) {
-      console.error('Error saving fuel entry:', error);
       setErrors(prev => ({
         ...prev,
         form: 'Failed to save fuel entry. Please try again.'
