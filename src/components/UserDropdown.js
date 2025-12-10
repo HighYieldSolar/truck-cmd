@@ -329,6 +329,28 @@ export default function UserDropdown() {
             >
               Privacy Policy
             </Link>
+            <Link
+              href="/cookies"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+              onClick={() => {
+                setIsOpen(false);
+                setShowLearnMoreMenu(false);
+                setLearnMoreMenuClicked(false);
+              }}
+            >
+              Cookie Policy
+            </Link>
+            <Link
+              href="/acceptable-use"
+              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+              onClick={() => {
+                setIsOpen(false);
+                setShowLearnMoreMenu(false);
+                setLearnMoreMenuClicked(false);
+              }}
+            >
+              Acceptable Use
+            </Link>
           </div>
         )}
         </>

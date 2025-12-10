@@ -10,8 +10,10 @@ import {
   Shield,
   Eye,
   Download,
-  Info
+  Info,
+  ExternalLink
 } from "lucide-react";
+import Link from "next/link";
 
 export default function PrivacySettings() {
   const [loading, setLoading] = useState(true);
@@ -340,6 +342,49 @@ export default function PrivacySettings() {
                 </>
               )}
             </button>
+          </div>
+        </div>
+
+        {/* Legal Documents */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
+            <h3 className="text-lg font-medium text-white">Legal Documents</h3>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Review our legal documents to understand how we collect, use, and protect your data.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                href="/privacy"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Privacy Policy</span>
+                <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
+              </Link>
+              <Link
+                href="/cookies"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Cookie Policy</span>
+                <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
+              </Link>
+              <Link
+                href="/terms"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Terms of Service</span>
+                <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
+              </Link>
+              <Link
+                href="/acceptable-use"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Acceptable Use Policy</span>
+                <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
+              </Link>
+            </div>
           </div>
         </div>
 

@@ -995,6 +995,13 @@ export default function BillingSettings() {
                 <FileText size={16} className="mr-2" />
                 Billing FAQ
               </Link>
+              <Link
+                href="/terms"
+                className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                <FileText size={16} className="mr-2" />
+                Terms of Service
+              </Link>
               {subscriptionStatus === 'active' && (
                 <button
                   onClick={handleStripePortal}

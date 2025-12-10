@@ -10,8 +10,10 @@ import {
   Key,
   LogOut,
   Trash2,
-  Shield
+  Shield,
+  ExternalLink
 } from "lucide-react";
+import Link from "next/link";
 
 export default function AccountSettings() {
   const [loading, setLoading] = useState(true);
@@ -323,6 +325,13 @@ export default function AccountSettings() {
               <h4 className="font-medium text-gray-900 dark:text-white">Delete Your Account</h4>
               <p className="text-gray-600 dark:text-gray-300 mt-1">
                 Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Review our{' '}
+                <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">Terms of Service</Link>
+                {' '}and{' '}
+                <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</Link>
+                {' '}for information about data retention and your rights.
               </p>
             </div>
           </div>

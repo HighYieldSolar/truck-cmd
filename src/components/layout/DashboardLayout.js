@@ -779,14 +779,20 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             <div className="container mx-auto">
               <div className="flex flex-col sm:flex-row items-center justify-between">
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-                  &copy; {new Date().getFullYear()} Truck Command. All rights reserved.
+                  &copy; {new Date().getFullYear()} Truck Command LLC. All rights reserved.
                 </div>
-                <div className="flex space-x-4">
-                  <Link href="/privacy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Privacy Policy
-                  </Link>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
                   <Link href="/terms" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Terms of Service
+                    Terms
+                  </Link>
+                  <Link href="/privacy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                    Privacy
+                  </Link>
+                  <Link href="/cookies" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                    Cookies
+                  </Link>
+                  <Link href="/acceptable-use" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                    Acceptable Use
                   </Link>
                   <Link href="/contact" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                     Contact
