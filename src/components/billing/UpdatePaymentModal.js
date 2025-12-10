@@ -87,8 +87,9 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
         onSuccess(setupIntent.payment_method);
       }
     } catch (err) {
-      setError(err.message);
-      onError(err.message);
+      const userMessage = 'Failed to update payment method. Please try again or contact support.';
+      setError(userMessage);
+      onError(userMessage);
     } finally {
       setProcessing(false);
     }

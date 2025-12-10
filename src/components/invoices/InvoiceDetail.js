@@ -839,7 +839,7 @@ export default function InvoiceDetail({ invoiceId }) {
         
         setLoading(false);
       } catch (err) {
-        setError("Failed to load invoice data: " + err.message);
+        setError("Failed to load invoice data. Please try again or contact support if the issue persists.");
         setLoading(false);
       }
     }

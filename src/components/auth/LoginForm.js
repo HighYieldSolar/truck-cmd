@@ -27,7 +27,8 @@ export default function LoginForm() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      // Supabase auth errors are user-friendly, but provide fallback for edge cases
+      setError(error.message || 'Login failed. Please check your credentials and try again.');
     } else {
       router.push("/dashboard");
     }
@@ -57,7 +58,8 @@ export default function LoginForm() {
 
       setMagicLinkSent(true);
     } catch (error) {
-      setError(error.message);
+      // Supabase auth errors are user-friendly, but provide fallback for edge cases
+      setError(error.message || 'Failed to send magic link. Please try again.');
     } finally {
       setMagicLinkLoading(false);
     }

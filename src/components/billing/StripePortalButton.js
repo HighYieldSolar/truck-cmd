@@ -44,7 +44,7 @@ export default function StripePortalButton({
       window.location.href = url;
 
     } catch (err) {
-      setError(err.message);
+      setError('Unable to access billing portal. Please try again or contact support.');
     } finally {
       setLoading(false);
     }

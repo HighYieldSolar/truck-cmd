@@ -72,7 +72,7 @@ export default function VehicleSelector({
           processPassedVehicles();
         }
       } catch (err) {
-        setError(err.message);
+        setError('Failed to load vehicles. Please try again.');
         // Fall back to passed vehicles on error
         processPassedVehicles();
       } finally {
