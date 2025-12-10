@@ -266,3 +266,12 @@ export async function PUT(request) {
     );
   }
 }
+
+/**
+ * GET handler for Vercel Cron
+ * Triggers batch sending of pending high-priority notifications
+ */
+export async function GET(request) {
+  // Reuse PUT logic for cron
+  return PUT(request);
+}
