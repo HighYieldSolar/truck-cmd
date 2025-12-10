@@ -873,18 +873,20 @@ export default function TrucksPage() {
                             <Calendar size={12} className="mr-1" />
                             Added {formatDate(truck.created_at)}
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-3">
                             <button
                               onClick={() => handleEditTruck(truck)}
-                              className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                              className="p-3 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Edit vehicle"
                             >
-                              <Edit size={18} />
+                              <Edit size={20} />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(truck)}
-                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                              className="p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Delete vehicle"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={20} />
                             </button>
                           </div>
                         </div>

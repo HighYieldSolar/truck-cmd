@@ -604,7 +604,7 @@ export default function DriversPage() {
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
+                  className="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto transition-colors min-h-[44px]"
                 >
                   <option value="all">All Statuses</option>
                   <option value="Active">Active</option>
@@ -615,7 +615,7 @@ export default function DriversPage() {
                 <select
                   value={filters.documentStatus}
                   onChange={(e) => setFilters(prev => ({ ...prev, documentStatus: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[160px] transition-colors"
+                  className="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto transition-colors min-h-[44px]"
                 >
                   <option value="all">All Documents</option>
                   <option value="valid">Valid</option>
@@ -876,18 +876,20 @@ export default function DriversPage() {
                         <p><span className="font-medium">Phone:</span> {driver.phone || 'N/A'}</p>
                         <p><span className="font-medium">Documents:</span> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${docStatus.class}`}>{docStatus.text}</span></p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
+                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-3">
                         <button
                           onClick={() => handleEditDriver(driver)}
-                          className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"
+                          className="p-3 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          aria-label="Edit driver"
                         >
-                          <Edit size={18} />
+                          <Edit size={20} />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(driver)}
-                          className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
+                          className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          aria-label="Delete driver"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </div>

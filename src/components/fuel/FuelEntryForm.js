@@ -309,8 +309,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
 if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl p-6 overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
             <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
@@ -454,7 +454,7 @@ if (!isOpen) return null;
                 )}
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="price_per_gallon" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <DollarSign size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Price/Gallon *
@@ -665,7 +665,7 @@ if (!isOpen) return null;
                       <Maximize2 size={16} />
                     </button>
                   </div>
-                  <div className="relative aspect-[3/4] max-h-96 overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center">
+                  <div className="relative aspect-[3/4] max-h-64 sm:max-h-96 overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center">
                     <img
                       src={formData.receipt_preview}
                       alt="Receipt preview"

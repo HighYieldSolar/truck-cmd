@@ -962,26 +962,29 @@ export default function MaintenancePage() {
                               <span>Provider: {record.service_provider}</span>
                             )}
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-3">
                             {record.status !== 'Completed' && record.status !== 'Cancelled' && (
                               <button
                                 onClick={() => handleCompleteClick(record)}
-                                className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                className="p-3 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                aria-label="Complete maintenance"
                               >
-                                <CheckCircle size={18} />
+                                <CheckCircle size={20} />
                               </button>
                             )}
                             <button
                               onClick={() => handleEditRecord(record)}
-                              className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                              className="p-3 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Edit maintenance"
                             >
-                              <Edit size={18} />
+                              <Edit size={20} />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(record)}
-                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                              className="p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                              aria-label="Delete maintenance"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={20} />
                             </button>
                           </div>
                         </div>

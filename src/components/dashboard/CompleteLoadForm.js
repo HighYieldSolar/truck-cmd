@@ -64,7 +64,7 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
           onClick={() => !disabled && setRating(star)}
           onMouseEnter={() => !disabled && setHoverRating(star)}
           onMouseLeave={() => !disabled && setHoverRating(0)}
-          className={`${disabled ? 'cursor-default' : 'cursor-pointer'} focus:outline-none p-1`}
+          className={`${disabled ? 'cursor-default' : 'cursor-pointer'} focus:outline-none p-2 sm:p-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center`}
           disabled={disabled}
           aria-label={`${star} stars`}
         >
@@ -1082,7 +1082,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                       </h4>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Additional Mileage */}
                       <div>
                         <label htmlFor="additionalMileage" className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">

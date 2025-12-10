@@ -337,7 +337,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
           </div>
 
           {/* Content */}
-          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="p-4 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
             {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
@@ -402,7 +402,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Date <span className="text-red-500">*</span>
@@ -527,7 +527,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                         Remove
                       </button>
                     </div>
-                    <div className="relative aspect-video max-h-48 overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                    <div className="relative aspect-[3/4] max-h-32 sm:max-h-48 overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                       <img
                         src={formData.receipt_image}
                         alt="Receipt preview"

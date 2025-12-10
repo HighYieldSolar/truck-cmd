@@ -78,7 +78,7 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
       </div>
       
       {/* Chart display */}
-      <div className="w-full h-80">
+      <div className="w-full h-64 sm:h-80">
         {chartData.length === 0 ? (
           <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-gray-500">No data available for chart</p>

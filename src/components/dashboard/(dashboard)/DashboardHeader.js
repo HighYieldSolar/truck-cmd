@@ -21,9 +21,9 @@ export default function DashboardHeader({ user }) {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/dashboard/dispatching"
-            className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
+            className="px-4 py-3 sm:py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium min-h-[44px]"
           >
-            <Plus size={18} className="mr-2" />
+            <Plus size={20} className="mr-2 sm:mr-2" />
             New Load
           </Link>
         </div>
