@@ -24,6 +24,10 @@ export default function PrivacySettings() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [exportingData, setExportingData] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportPassword, setExportPassword] = useState('');
+  const [confirmExportPassword, setConfirmExportPassword] = useState('');
+  const [exportFormat, setExportFormat] = useState('encrypted'); // 'encrypted' or 'plain'
 
   // Privacy settings - only what's actually used
   const [privacySettings, setPrivacySettings] = useState({
@@ -104,8 +108,74 @@ export default function PrivacySettings() {
     }
   };
 
+  // Encryption helper function using Web Crypto API
+  const encryptData = async (data, password) => {
+    const encoder = new TextEncoder();
+    const dataString = JSON.stringify(data, null, 2);
+    const dataBuffer = encoder.encode(dataString);
+
+    // Derive a key from the password using PBKDF2
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const passwordKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      passwordKey,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    );
+
+    // Generate IV and encrypt
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encryptedData = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      dataBuffer
+    );
+
+    // Combine salt + iv + encrypted data
+    const combined = new Uint8Array(salt.length + iv.length + encryptedData.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(encryptedData), salt.length + iv.length);
+
+    return combined;
+  };
+
+  // Open export modal
+  const openExportModal = () => {
+    setExportPassword('');
+    setConfirmExportPassword('');
+    setExportFormat('encrypted');
+    setShowExportModal(true);
+  };
+
   // Export user data (CCPA compliance)
   const handleDataExport = async () => {
+    // Validate passwords for encrypted export
+    if (exportFormat === 'encrypted') {
+      if (!exportPassword || exportPassword.length < 8) {
+        setErrorMessage('Password must be at least 8 characters long.');
+        return;
+      }
+      if (exportPassword !== confirmExportPassword) {
+        setErrorMessage('Passwords do not match.');
+        return;
+      }
+    }
+
     try {
       setExportingData(true);
       setErrorMessage(null);
@@ -153,22 +223,42 @@ export default function PrivacySettings() {
         }
       };
 
-      // Create and download JSON file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      let blob;
+      let filename;
+
+      if (exportFormat === 'encrypted') {
+        // Encrypt the data
+        const encryptedBuffer = await encryptData(exportData, exportPassword);
+        blob = new Blob([encryptedBuffer], { type: 'application/octet-stream' });
+        filename = `truck-command-data-export-${new Date().toISOString().split('T')[0]}.encrypted`;
+      } else {
+        // Plain JSON export (user acknowledged the warning)
+        blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        filename = `truck-command-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      }
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `truck-command-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      setSuccessMessage('Your data has been exported successfully!');
+      setShowExportModal(false);
+      setExportPassword('');
+      setConfirmExportPassword('');
+
+      setSuccessMessage(
+        exportFormat === 'encrypted'
+          ? 'Your encrypted data has been exported. Keep your password safe - you will need it to decrypt the file.'
+          : 'Your data has been exported successfully!'
+      );
 
       setTimeout(() => {
         setSuccessMessage(null);
-      }, 5000);
+      }, 7000);
 
     } catch (error) {
       setErrorMessage('Failed to export data. Please try again or contact support.');
@@ -347,21 +437,11 @@ export default function PrivacySettings() {
             </div>
             <button
               type="button"
-              onClick={handleDataExport}
-              disabled={exportingData}
-              className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={openExportModal}
+              className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
-              {exportingData ? (
-                <>
-                  <RefreshCw size={18} className="animate-spin mr-2" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download size={18} className="mr-2" />
-                  Export Data
-                </>
-              )}
+              <Download size={18} className="mr-2" />
+              Export Data
             </button>
           </div>
 
@@ -448,6 +528,143 @@ export default function PrivacySettings() {
           </div>
         </div>
       </div>
+
+      {/* Export Data Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowExportModal(false)} />
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Download size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
+                Export Your Data
+              </h3>
+
+              <div className="space-y-4">
+                {/* Export Format Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Export Format
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-start p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <input
+                        type="radio"
+                        name="exportFormat"
+                        value="encrypted"
+                        checked={exportFormat === 'encrypted'}
+                        onChange={() => setExportFormat('encrypted')}
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300"
+                      />
+                      <div className="ml-3">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                          <Shield size={14} className="mr-1 text-green-500" />
+                          Encrypted (Recommended)
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Password-protected with AES-256 encryption
+                        </p>
+                      </div>
+                    </label>
+                    <label className="flex items-start p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <input
+                        type="radio"
+                        name="exportFormat"
+                        value="plain"
+                        checked={exportFormat === 'plain'}
+                        onChange={() => setExportFormat('plain')}
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300"
+                      />
+                      <div className="ml-3">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                          <AlertCircle size={14} className="mr-1 text-yellow-500" />
+                          Plain JSON
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Unencrypted, readable by anyone with the file
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Password fields for encrypted export */}
+                {exportFormat === 'encrypted' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Create a Password
+                      </label>
+                      <input
+                        type="password"
+                        value={exportPassword}
+                        onChange={(e) => setExportPassword(e.target.value)}
+                        placeholder="Minimum 8 characters"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Confirm Password
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmExportPassword}
+                        onChange={(e) => setConfirmExportPassword(e.target.value)}
+                        placeholder="Re-enter password"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start">
+                      <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
+                      Keep this password safe. You will need it to decrypt your data. We cannot recover lost passwords.
+                    </p>
+                  </div>
+                )}
+
+                {/* Warning for plain export */}
+                {exportFormat === 'plain' && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start">
+                      <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+                      Warning: Plain JSON files contain sensitive business data that anyone can read. Only use this if you understand the risks.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowExportModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDataExport}
+                  disabled={exportingData || (exportFormat === 'encrypted' && (!exportPassword || exportPassword.length < 8 || exportPassword !== confirmExportPassword))}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {exportingData ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin mr-2" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} className="mr-2" />
+                      Export
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
