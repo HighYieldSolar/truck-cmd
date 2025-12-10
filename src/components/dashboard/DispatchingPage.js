@@ -857,6 +857,7 @@ export default function DispatchingPage() {
           load={selectedLoad}
           onClose={handleCloseModal}
           onStatusChange={handleStatusChange}
+          onUpdate={handleStatusChange}
           drivers={drivers}
           trucks={trucks}
           onAssignDriver={handleAssignDriver}
@@ -870,9 +871,7 @@ export default function DispatchingPage() {
             setShowNewLoadModal(false);
             setEditingLoad(null);
           }}
-          onSave={handleSaveLoad}
-          customers={customers}
-          editLoad={editingLoad}
+          onSubmit={handleSaveLoad}
         />
       )}
 

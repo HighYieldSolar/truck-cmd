@@ -375,9 +375,6 @@ export default function NewLoadForm({
       if (typeof onClose === 'function') {
         onClose();
       }
-
-      // Refresh the page to show the new load
-      window.location.reload();
     } catch (err) {
       setError(err.message || "Failed to create load");
     } finally {

@@ -249,11 +249,6 @@ export default function LoadDetailModal({
         onUpdate(data);
       }
 
-      // Refresh the page after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-
     } catch (err) {
       setError(err.message || "Failed to update load");
     } finally {
@@ -360,11 +355,6 @@ export default function LoadDetailModal({
       if (onUpdate && updatedData) {
         onUpdate(updatedData);
       }
-
-      // Refresh after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
 
     } catch (err) {
       setError(err.message || "Failed to update assignment");
@@ -891,12 +881,24 @@ export default function LoadDetailModal({
           loadId={load.id}
           loadNumber={load.load_number || load.loadNumber}
           onClose={() => setShowPodUpload(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             setSuccess("Documents uploaded successfully");
-            // Refresh the page after a delay
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
+            setShowPodUpload(false);
+            // Refetch load data to show new documents
+            if (onUpdate) {
+              try {
+                const { data: updatedLoad } = await supabase
+                  .from('loads')
+                  .select('*')
+                  .eq('id', load.id)
+                  .single();
+                if (updatedLoad) {
+                  onUpdate(updatedLoad);
+                }
+              } catch {
+                // Silently fail - documents were uploaded, just not reflected immediately
+              }
+            }
           }}
         />
       )}

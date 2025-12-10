@@ -273,7 +273,6 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
       }
     } catch (error) {
       setError('Failed to generate PDF. Please try again.');
-      alert('Error generating PDF: ' + error.message);
     } finally {
       setLoading(false);
     }

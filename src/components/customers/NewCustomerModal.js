@@ -200,11 +200,6 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
       // Notify parent and close
       onCustomerCreated?.();
       onClose();
-
-      // Refresh the page to show the new customer
-      if (!initialData) {
-        window.location.reload();
-      }
     } catch (error) {
       setErrors({ submit: getUserFriendlyError(error) });
     } finally {
