@@ -111,8 +111,13 @@ export function ResourceLimitGate({
 }) {
   const { checkResourceUpgrade, loading } = useFeatureAccess();
 
+  // Show loading state instead of allowing action during load
   if (loading) {
-    return <>{children}</>;
+    return (
+      <div className={`opacity-50 pointer-events-none ${className}`}>
+        {children}
+      </div>
+    );
   }
 
   const { needsUpgrade, limit, nextTier, remaining } = checkResourceUpgrade(limitName, currentCount);
@@ -183,16 +188,27 @@ export function TierGate({
 /**
  * Hook-style gate check for use in event handlers
  * Returns a function that either executes the action or shows upgrade modal
+ *
+ * IMPORTANT: The action will ONLY execute if user has access.
+ * If no access, only the modal is shown - the action is NOT executed.
  */
 export function useGatedAction(feature) {
-  const { canAccess, currentTier } = useFeatureAccess();
+  const { canAccess, currentTier, loading } = useFeatureAccess();
   const [showModal, setShowModal] = useState(false);
 
   const executeOrPrompt = (action) => {
+    // Don't execute anything while loading - wait for subscription check
+    if (loading) {
+      return false;
+    }
+
     if (canAccess(feature)) {
       action();
+      return true;
     } else {
+      // Only show modal, do NOT execute the action
       setShowModal(true);
+      return false;
     }
   };
 
@@ -205,7 +221,8 @@ export function useGatedAction(feature) {
     />
   );
 
-  return { executeOrPrompt, Modal, hasAccess: canAccess(feature) };
+  // During loading, hasAccess is false to prevent premature access
+  return { executeOrPrompt, Modal, hasAccess: loading ? false : canAccess(feature), loading };
 }
 
 /**
