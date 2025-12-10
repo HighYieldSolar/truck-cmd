@@ -157,6 +157,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
             </div>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
             >
               <X size={24} />

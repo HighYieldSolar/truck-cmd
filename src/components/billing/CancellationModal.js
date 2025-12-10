@@ -43,6 +43,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
             <h3 className="text-xl font-bold text-white">Cancel Subscription</h3>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="text-white/80 hover:text-white transition-colors"
             >
               <X size={24} />

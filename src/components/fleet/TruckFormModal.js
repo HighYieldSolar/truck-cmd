@@ -415,6 +415,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
             <button
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label="Close"
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
             >
               <X size={22} className="text-white" />

@@ -360,6 +360,7 @@ export default function UpdatePaymentModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X size={20} />

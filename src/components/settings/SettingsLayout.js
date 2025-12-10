@@ -76,6 +76,7 @@ export default function SettingsLayout({ children }) {
                     <Link
                       key={item.name}
                       href={item.href}
+                      aria-current={item.active ? "page" : undefined}
                       className={`flex items-center px-4 py-3 rounded-lg transition-colors ${item.active
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"

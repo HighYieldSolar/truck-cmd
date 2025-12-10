@@ -318,6 +318,7 @@ if (!isOpen) return null;
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             disabled={isSubmitting}
           >

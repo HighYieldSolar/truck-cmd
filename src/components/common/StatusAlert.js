@@ -85,6 +85,7 @@ export default function StatusAlert({
         <div>
           <button
             onClick={handleClose}
+            aria-label="Dismiss alert"
             className={`inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           >
             <X className={`h-5 w-5 ${styles.text}`} />

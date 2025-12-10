@@ -417,6 +417,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             </h2>
             <button
               onClick={handleClose}
+              aria-label="Close"
               className="text-white hover:bg-white/20 p-1 rounded transition-colors"
             >
               <X size={24} />

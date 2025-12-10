@@ -206,6 +206,7 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-1 rounded-full"
           >
             <X size={20} />

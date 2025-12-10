@@ -269,6 +269,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                 </div>
                 <button
                   onClick={handleClose}
+                  aria-label="Close"
                   className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <X size={20} />

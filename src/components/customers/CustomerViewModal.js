@@ -104,6 +104,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Close"
                   className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                 >
                   <X size={20} />

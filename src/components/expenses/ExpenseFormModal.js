@@ -329,6 +329,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
             <button
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label="Close"
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
             >
               <X className="h-5 w-5" />

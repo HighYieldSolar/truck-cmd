@@ -421,11 +421,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     <Link
                       key={item.name}
                       href={isDisabled ? "/dashboard/upgrade" : item.href}
-                      className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all 
+                      aria-current={item.active ? "page" : undefined}
+                      className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all
                         ${item.active
                           ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
-                        } 
+                        }
                         ${isDisabled ? "opacity-50" : ""}`}
                     >
                       <div
@@ -450,6 +451,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   <Link
                     key={item.name}
                     href={item.href}
+                    aria-current={item.active ? "page" : undefined}
                     className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${item.active
                       ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
@@ -584,11 +586,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   <Link
                     key={item.name}
                     href={isDisabled ? "/dashboard/upgrade" : item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 
+                    aria-current={item.active ? "page" : undefined}
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5
                       ${item.active
                         ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"
-                      } 
+                      }
                       ${isDisabled ? "opacity-50" : ""}`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -611,6 +614,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={item.active ? "page" : undefined}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all my-0.5 ${item.active
                     ? "bg-blue-50 dark:bg-blue-900/20 text-[#007BFF] dark:text-blue-400"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-[#007BFF] dark:hover:text-blue-400"

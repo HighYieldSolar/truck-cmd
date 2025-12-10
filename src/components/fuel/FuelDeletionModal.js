@@ -40,6 +40,7 @@ export default function FuelDeletionModal({
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             disabled={isDeleting}
           >

@@ -153,6 +153,7 @@ export function UpgradeModal({
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-6 text-white">
           <button
             onClick={onClose}
+            aria-label="Close"
             className="absolute top-4 right-4 text-white/80 hover:text-white"
           >
             <XMarkIcon className="w-6 h-6" />

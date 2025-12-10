@@ -126,6 +126,9 @@ export default function UserDropdown() {
       <button
         className="flex items-center space-x-1 focus:outline-none group"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-label="User menu"
+        aria-haspopup="true"
       >
         <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-400 font-semibold ring-2 ring-transparent group-hover:ring-blue-400 dark:group-hover:ring-blue-500 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-all duration-200 ease-in-out overflow-hidden">
           {userProfile?.avatarUrl ? (

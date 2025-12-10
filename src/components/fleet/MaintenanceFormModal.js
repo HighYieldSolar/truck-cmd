@@ -214,6 +214,7 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
             <button
               onClick={onClose}
               disabled={isSubmitting}
+              aria-label="Close"
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
             >
               <X size={22} className="text-white" />

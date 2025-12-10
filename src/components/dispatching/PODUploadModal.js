@@ -134,6 +134,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
           <button
             onClick={onClose}
             disabled={uploading}
+            aria-label="Close"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-full disabled:opacity-50"
           >
             <X size={20} />

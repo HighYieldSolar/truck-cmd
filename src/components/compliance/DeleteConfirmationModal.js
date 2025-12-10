@@ -16,6 +16,7 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, co
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-white hover:bg-red-600 dark:hover:bg-red-700 p-1 rounded-full focus:outline-none transition-colors"
             disabled={isDeleting}
           >
