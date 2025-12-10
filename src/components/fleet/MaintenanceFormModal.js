@@ -89,7 +89,7 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
       const data = await fetchTrucks(userId);
       setLocalTrucks(data);
     } catch (error) {
-      console.error("Error loading trucks:", error);
+      // Failed to load trucks - handle silently as dropdown will be empty
     }
   };
 
@@ -123,11 +123,23 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
     }
 
     // Format validations
-    if (formData.cost && isNaN(parseFloat(formData.cost))) {
-      newErrors.cost = "Cost must be a valid number";
+    if (formData.cost) {
+      const costNum = parseFloat(formData.cost);
+      if (isNaN(costNum)) {
+        newErrors.cost = "Cost must be a valid number";
+      } else if (costNum < 0) {
+        newErrors.cost = "Cost cannot be negative";
+      } else if (costNum > 1000000) {
+        newErrors.cost = "Cost value seems too high";
+      }
     }
-    if (formData.odometer_at_service && isNaN(parseFloat(formData.odometer_at_service))) {
-      newErrors.odometer_at_service = "Odometer must be a valid number";
+    if (formData.odometer_at_service) {
+      const odometerNum = parseFloat(formData.odometer_at_service);
+      if (isNaN(odometerNum)) {
+        newErrors.odometer_at_service = "Odometer must be a valid number";
+      } else if (odometerNum < 0) {
+        newErrors.odometer_at_service = "Odometer cannot be negative";
+      }
     }
 
     setErrors(newErrors);
@@ -172,7 +184,6 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
         onClose();
       }, 1500);
     } catch (error) {
-      console.error("Error saving maintenance record:", error);
       setSubmitMessage({ type: "error", text: error.message || "Failed to save maintenance record" });
     } finally {
       setIsSubmitting(false);

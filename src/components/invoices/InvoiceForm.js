@@ -378,6 +378,9 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
     }
   };
 
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   // Validate step
   const validateStep = (step) => {
     const newErrors = {};
@@ -386,6 +389,10 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
       case 1:
         if (!invoice.customer.trim()) {
           newErrors.customer = 'Customer is required';
+        }
+        // Validate email format if provided
+        if (invoice.customer_email && invoice.customer_email.trim() && !emailRegex.test(invoice.customer_email.trim())) {
+          newErrors.customer_email = 'Please enter a valid email address';
         }
         break;
       case 2:
@@ -515,10 +522,13 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                     name="customer_email"
                     value={invoice.customer_email}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                    className={`block w-full pl-10 pr-4 py-3 border ${errors.customer_email ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
                     placeholder="customer@example.com"
                   />
                 </div>
+                {errors.customer_email && (
+                  <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.customer_email}</p>
+                )}
               </div>
 
               <div>

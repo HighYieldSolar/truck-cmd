@@ -183,8 +183,16 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
     // Additional format validations
     if (tabId === 'basic') {
-      if (formData.year && !/^\d{4}$/.test(formData.year)) {
-        newErrors.year = 'Please enter a valid 4-digit year';
+      if (formData.year) {
+        if (!/^\d{4}$/.test(formData.year)) {
+          newErrors.year = 'Please enter a valid 4-digit year';
+        } else {
+          const yearNum = parseInt(formData.year, 10);
+          const currentYear = new Date().getFullYear();
+          if (yearNum < 1900 || yearNum > currentYear + 2) {
+            newErrors.year = `Year must be between 1900 and ${currentYear + 2}`;
+          }
+        }
       }
     }
 
@@ -192,8 +200,15 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
       if (formData.vin && formData.vin.length > 0 && formData.vin.length !== 17) {
         newErrors.vin = 'VIN must be 17 characters';
       }
-      if (formData.odometer && isNaN(formData.odometer)) {
-        newErrors.odometer = 'Odometer must be a number';
+      if (formData.odometer) {
+        const odometerNum = parseFloat(formData.odometer);
+        if (isNaN(odometerNum)) {
+          newErrors.odometer = 'Odometer must be a number';
+        } else if (odometerNum < 0) {
+          newErrors.odometer = 'Odometer cannot be negative';
+        } else if (odometerNum > 10000000) {
+          newErrors.odometer = 'Odometer value seems too high';
+        }
       }
     }
 
@@ -228,10 +243,20 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
       // Format validations
       if (tabId === 'basic') {
-        if (formData.year && !/^\d{4}$/.test(formData.year)) {
-          allErrors.year = 'Please enter a valid 4-digit year';
-          allTabErrors[tabId] = true;
-          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        if (formData.year) {
+          if (!/^\d{4}$/.test(formData.year)) {
+            allErrors.year = 'Please enter a valid 4-digit year';
+            allTabErrors[tabId] = true;
+            if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+          } else {
+            const yearNum = parseInt(formData.year, 10);
+            const currentYear = new Date().getFullYear();
+            if (yearNum < 1900 || yearNum > currentYear + 2) {
+              allErrors.year = `Year must be between 1900 and ${currentYear + 2}`;
+              allTabErrors[tabId] = true;
+              if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+            }
+          }
         }
       }
 
@@ -241,10 +266,21 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
           allTabErrors[tabId] = true;
           if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
         }
-        if (formData.odometer && isNaN(formData.odometer)) {
-          allErrors.odometer = 'Odometer must be a number';
-          allTabErrors[tabId] = true;
-          if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+        if (formData.odometer) {
+          const odometerNum = parseFloat(formData.odometer);
+          if (isNaN(odometerNum)) {
+            allErrors.odometer = 'Odometer must be a number';
+            allTabErrors[tabId] = true;
+            if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+          } else if (odometerNum < 0) {
+            allErrors.odometer = 'Odometer cannot be negative';
+            allTabErrors[tabId] = true;
+            if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+          } else if (odometerNum > 10000000) {
+            allErrors.odometer = 'Odometer value seems too high';
+            allTabErrors[tabId] = true;
+            if (!tabsWithErrors.includes(tabId)) tabsWithErrors.push(tabId);
+          }
         }
       }
     });
@@ -343,7 +379,6 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
       setTimeout(() => onClose(), 1500);
     } catch (error) {
-      console.error('Error saving truck:', error);
       setSubmitMessage({ type: 'error', text: error.message || 'Failed to save vehicle. Please try again.' });
     } finally {
       setIsSubmitting(false);

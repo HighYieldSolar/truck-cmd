@@ -112,8 +112,57 @@ export default function LoadDetailModal({
     return formatDateForDisplayMMDDYYYY(dateString);
   };
 
+  // Validate edit mode form fields
+  const validateEditForm = () => {
+    const errors = [];
+
+    // Customer validation
+    if (!updatedLoad.customer || !updatedLoad.customer.trim()) {
+      errors.push("Customer is required");
+    }
+
+    // Origin validation
+    if (!updatedLoad.origin || !updatedLoad.origin.trim()) {
+      errors.push("Origin is required");
+    }
+
+    // Destination validation
+    if (!updatedLoad.destination || !updatedLoad.destination.trim()) {
+      errors.push("Destination is required");
+    }
+
+    // Rate validation
+    const rate = parseFloat(updatedLoad.rate);
+    if (isNaN(rate)) {
+      errors.push("Rate must be a valid number");
+    } else if (rate < 0) {
+      errors.push("Rate cannot be negative");
+    } else if (rate > 1000000) {
+      errors.push("Rate value seems too high");
+    }
+
+    // Date validation
+    if (updatedLoad.pickup_date && updatedLoad.delivery_date) {
+      const pickup = new Date(updatedLoad.pickup_date);
+      const delivery = new Date(updatedLoad.delivery_date);
+      if (delivery < pickup) {
+        errors.push("Delivery date cannot be before pickup date");
+      }
+    }
+
+    return errors;
+  };
+
   const handleSave = async () => {
     setError("");
+
+    // Validate form before submission
+    const validationErrors = validateEditForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(". "));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

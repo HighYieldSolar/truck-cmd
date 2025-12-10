@@ -113,6 +113,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
   // Validation patterns
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Phone must contain at least 10 digits, can include formatting characters
   const phoneRegex = /^[\d\s\-\(\)\+\.]+$/;
 
   const validateStep = (step) => {
