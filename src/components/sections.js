@@ -258,6 +258,7 @@ export function FAQItem({ question, answer }) {
       <button
         className="flex justify-between items-center w-full text-left focus:outline-none"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
       >
         <h4 className="text-xl font-medium text-gray-800">{question}</h4>
         <ChevronDown className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />

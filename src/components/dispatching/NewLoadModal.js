@@ -678,6 +678,7 @@ export default function NewLoadForm({
                 <button
                   type="button"
                   onClick={() => setShowOptionalFields(!showOptionalFields)}
+                  aria-expanded={showOptionalFields}
                   className={`
                     w-full p-4 flex items-center justify-between rounded-lg transition-all
                     ${showOptionalFields ? 'bg-blue-100 dark:bg-blue-900/50' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
