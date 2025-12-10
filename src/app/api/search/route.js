@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { globalSearch, SEARCH_ENTITY_TYPES } from '@/lib/services/searchService';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[search]', ...args);
+
 // Create an authenticated Supabase client with the user's token
 function createAuthenticatedClient(accessToken) {
   return createClient(
@@ -86,7 +89,7 @@ export async function POST(request) {
     return NextResponse.json(searchResults);
 
   } catch (error) {
-    console.error('Search API error:', error);
+    log('Search API error:', error);
     return NextResponse.json({
       error: 'Internal server error',
       message: error.message
@@ -158,7 +161,7 @@ export async function GET(request) {
     return NextResponse.json(searchResults);
 
   } catch (error) {
-    console.error('Search API error:', error);
+    log('Search API error:', error);
     return NextResponse.json({
       error: 'Internal server error',
       message: error.message

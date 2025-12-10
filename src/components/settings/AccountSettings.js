@@ -71,6 +71,12 @@ export default function AccountSettings() {
     e.preventDefault();
 
     try {
+      // Validate current password is provided
+      if (!passwordData.currentPassword) {
+        setErrorMessage("Please enter your current password.");
+        return;
+      }
+
       // Validate passwords
       if (passwordData.newPassword !== passwordData.confirmPassword) {
         setErrorMessage("New passwords don't match.");
@@ -86,7 +92,19 @@ export default function AccountSettings() {
       setSuccessMessage(null);
       setErrorMessage(null);
 
-      // Update password with Supabase
+      // First verify the current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordData.currentPassword
+      });
+
+      if (signInError) {
+        setErrorMessage("Current password is incorrect.");
+        setSaving(false);
+        return;
+      }
+
+      // Now update to the new password
       const { error } = await supabase.auth.updateUser({
         password: passwordData.newPassword
       });
@@ -125,14 +143,36 @@ export default function AccountSettings() {
       setSaving(true);
       setErrorMessage(null);
 
-      // In a real app, you would call an API endpoint to properly handle account deletion
-      // This would involve both auth and database cleanup
+      // Get current session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
 
-      // For demo purposes, we'll just sign out
+      if (!session?.access_token) {
+        setErrorMessage('Session expired. Please log in again.');
+        setSaving(false);
+        return;
+      }
+
+      // Call the delete account API
+      const response = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          confirmation: deleteConfirmation
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to delete account');
+      }
+
+      // Sign out locally and redirect
       await supabase.auth.signOut();
-
-      // Redirect to homepage
-      window.location.href = '/';
+      window.location.href = '/?deleted=true';
 
     } catch (error) {
       setErrorMessage(`Failed to delete account: ${error.message}`);

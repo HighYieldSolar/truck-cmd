@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendDigestEmail } from '@/lib/services/emailService';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[cron/digest]', ...args);
+
 /**
  * Cron job endpoint for sending digest emails
  * Runs daily at 8 AM to send daily digests
@@ -23,11 +26,20 @@ function getSupabaseAdmin() {
 
 export async function GET(request) {
   try {
-    // Verify cron secret for security
+    // Verify cron secret for security - REQUIRED in production
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // SECURITY: Always require CRON_SECRET - do not allow bypass
+    if (!cronSecret) {
+      log('CRON_SECRET environment variable is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error: CRON_SECRET not set' },
+        { status: 500 }
+      );
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -142,7 +154,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('Digest cron error:', error);
+    log('Digest cron error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

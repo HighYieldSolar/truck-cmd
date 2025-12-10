@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
 
 export async function POST(request) {
   try {
@@ -13,6 +14,14 @@ export async function POST(request) {
         error: 'Missing required fields',
         details: { received: body }
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, body.userId);
+    if (!authorized) {
+      return NextResponse.json({
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     // Initialize Stripe

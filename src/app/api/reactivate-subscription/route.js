@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[reactivate-subscription]', ...args);
 
 export async function POST(request) {
   try {
-    const { userId } = await request.json();
+    const body = await request.json();
+    const { userId } = body;
 
     if (!userId) {
       return NextResponse.json({
         success: false,
         error: 'Missing userId'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        success: false,
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     // Initialize Stripe
@@ -64,7 +78,7 @@ export async function POST(request) {
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error updating subscription in database:', updateError);
+        log('Error updating subscription in database:', updateError);
         // Don't fail since Stripe update succeeded
       }
 
@@ -80,7 +94,7 @@ export async function POST(request) {
       });
 
     } catch (stripeError) {
-      console.error('Stripe error reactivating subscription:', stripeError);
+      log('Stripe error reactivating subscription:', stripeError);
       return NextResponse.json({
         success: false,
         error: 'Failed to reactivate subscription with Stripe'
@@ -88,7 +102,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
-    console.error('Error reactivating subscription:', error);
+    log('Error reactivating subscription:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to reactivate subscription'

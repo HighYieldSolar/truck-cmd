@@ -118,15 +118,17 @@ export async function fetchExpenses(userId, filters = {}) {
 
 /**
  * Get expense by ID
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Expense ID
  * @returns {Promise<Object|null>} - Expense object or null
  */
-export async function getExpenseById(id) {
+export async function getExpenseById(userId, id) {
   try {
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
       
     if (error) throw error;
@@ -165,22 +167,24 @@ export async function createExpense(expenseData) {
 
 /**
  * Update an existing expense
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Expense ID
  * @param {Object} expenseData - Updated expense data
  * @returns {Promise<Object|null>} - Updated expense or null
  */
-export async function updateExpense(id, expenseData) {
+export async function updateExpense(userId, id, expenseData) {
   try {
     // Format the date properly before submitting
     const formattedData = {
       ...expenseData,
       date: formatDateForStorage(expenseData.date)
     };
-    
+
     const { data, error } = await supabase
       .from('expenses')
       .update(formattedData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
       
     if (error) throw error;
@@ -193,15 +197,17 @@ export async function updateExpense(id, expenseData) {
 
 /**
  * Delete an expense
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Expense ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteExpense(id) {
+export async function deleteExpense(userId, id) {
   try {
     const { error } = await supabase
       .from('expenses')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
       
     if (error) throw error;
     

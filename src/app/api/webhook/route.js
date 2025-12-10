@@ -3,6 +3,10 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
 
+// Enable verbose logging only in development
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log(...args);
+
 export async function POST(req) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature");
@@ -11,21 +15,19 @@ export async function POST(req) {
   // Initialize Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-  console.log("Webhook received, verifying signature...");
-
   let event;
   try {
     if (!signature || !webhookSecret) {
-      console.error("Missing signature or webhook secret");
+      log("Webhook Error: Missing signature or secret");
       return new Response("Webhook Error: Missing signature or secret", { status: 400 });
     }
 
     // Verify the event
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    console.log(`✅ Verified webhook event: ${event.type}`);
+    log(`Verified webhook event: ${event.type}`);
 
   } catch (err) {
-    console.error(`❌ Webhook Verification Error:`, err);
+    log(`Webhook Verification Error:`, err.message);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
@@ -49,8 +51,10 @@ export async function POST(req) {
         await handleInvoicePaymentSucceeded(event, stripe);
         break;
 
+      // Note: invoice.paid is deprecated in favor of invoice.payment_succeeded
+      // Keep minimal handler for backwards compatibility during transition
       case "invoice.paid":
-        await handleInvoicePaymentSucceeded(event, stripe);
+        log(`Received deprecated invoice.paid event, use invoice.payment_succeeded instead`);
         break;
 
       case "subscription_schedule.completed":
@@ -58,17 +62,16 @@ export async function POST(req) {
         break;
 
       case "subscription_schedule.updated":
-        // Log schedule updates for debugging
-        console.log("Subscription schedule updated:", event.data.object.id);
+        log("Subscription schedule updated:", event.data.object.id);
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        log(`Unhandled event type: ${event.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }));
   } catch (error) {
-    console.error(`Error processing webhook: ${error.message}`);
+    log(`Error processing webhook: ${error.message}`);
     return new Response(`Webhook processing error: ${error.message}`, { status: 500 });
   }
 }
@@ -77,23 +80,25 @@ export async function POST(req) {
  * Handle subscription created or updated events
  */
 async function handleSubscriptionUpdate(event) {
-  console.log("Processing subscription update...");
-
   const subscription = event.data.object;
   const subscriptionId = subscription.id;
   const stripeCustomerId = subscription.customer;
   const status = subscription.status;
   const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
-  console.log(`Subscription: ${subscriptionId}, Customer: ${stripeCustomerId}, Status: ${status}`);
+  log(`Subscription update: ${subscriptionId}, Status: ${status}`);
 
   // Get plan info from the subscription items
+  // Handle subscriptions with no items or multiple items safely
+  const subscriptionItems = subscription.items?.data || [];
+  const primaryItem = subscriptionItems[0]; // Primary subscription item
+
   let planId = null;
-  let billingCycle = subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly';
+  let billingCycle = primaryItem?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly';
 
   try {
     // Get the product ID from the subscription
-    const priceId = subscription.items.data[0]?.price?.id;
+    const priceId = primaryItem?.price?.id;
 
     if (priceId) {
       // Map Stripe price IDs to plan names
@@ -119,22 +124,15 @@ async function handleSubscriptionUpdate(event) {
         const product = price.product;
         if (product && typeof product !== 'string') {
           planId = product.metadata?.plan_id || product.name?.toLowerCase()?.replace(/\s+(plan|subscription)/gi, '').trim() || 'premium';
-          console.log(`Mapped to plan from product: ${planId}`);
         }
-      } else {
-        console.log(`Mapped to plan from price ID: ${planId}`);
       }
     }
   } catch (error) {
-    console.error(`Error getting plan info: ${error.message}`);
-    // Default to premium plan if we can't determine it
+    log(`Error getting plan info: ${error.message}`);
     planId = 'premium';
   }
 
   // Find the user in Supabase
-  console.log(`Looking up user with Stripe customer ID: ${stripeCustomerId}`);
-
-  // First try to find the user in the users table
   let { data: userData, error: userError } = await supabase
     .from("users")
     .select("id")
@@ -143,7 +141,6 @@ async function handleSubscriptionUpdate(event) {
 
   // If not found in users table, try the subscriptions table
   if (userError) {
-    console.log(`User not found in users table, checking subscriptions table...`);
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .select("user_id")
@@ -151,8 +148,7 @@ async function handleSubscriptionUpdate(event) {
       .single();
 
     if (subError) {
-      console.error(`Could not find user for Stripe customer: ${stripeCustomerId}`);
-      console.error(subError);
+      log(`User not found for Stripe customer: ${stripeCustomerId}`);
       throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
     }
 
@@ -160,11 +156,8 @@ async function handleSubscriptionUpdate(event) {
   }
 
   const userId = userData.id;
-  console.log(`Found user: ${userId}`);
 
   // Update the subscription in Supabase
-  console.log(`Updating subscription for user ${userId} with status ${status}`);
-
   const updateData = {
     status: status,
     stripe_subscription_id: subscriptionId,
@@ -175,19 +168,15 @@ async function handleSubscriptionUpdate(event) {
     updated_at: new Date().toISOString()
   };
 
-  // Add plan and billing cycle if we have them
   if (planId) updateData.plan = planId;
   if (billingCycle) updateData.billing_cycle = billingCycle;
 
-  // Add amount if available - use Math.round to avoid floating point issues
-  if (subscription.items.data[0]?.price?.unit_amount) {
-    updateData.amount = Math.round(subscription.items.data[0].price.unit_amount) / 100; // Convert from cents to dollars
+  if (primaryItem?.price?.unit_amount) {
+    updateData.amount = Math.round(primaryItem.price.unit_amount) / 100;
   }
 
-  // Check if this subscription update is from a schedule (scheduled downgrade taking effect)
-  // If the subscription no longer has a schedule attached, clear the scheduled fields
+  // Check if scheduled change has taken effect
   if (!subscription.schedule) {
-    // Get current subscription data to check for scheduled changes
     const { data: currentSub } = await supabase
       .from("subscriptions")
       .select("scheduled_plan, scheduled_billing_cycle")
@@ -195,20 +184,16 @@ async function handleSubscriptionUpdate(event) {
       .single();
 
     if (currentSub?.scheduled_plan) {
-      // The scheduled change has taken effect, clear the scheduled fields
       updateData.scheduled_plan = null;
       updateData.scheduled_billing_cycle = null;
       updateData.scheduled_amount = null;
-      console.log(`Clearing scheduled plan fields - scheduled change has taken effect`);
     }
   }
 
-  // Clear trial_ends_at if subscription is active (no longer in trial)
   if (status === 'active') {
     updateData.trial_ends_at = null;
   }
 
-  // If subscription is canceled, set canceled_at
   if (subscription.canceled_at) {
     updateData.canceled_at = new Date(subscription.canceled_at * 1000).toISOString();
   }
@@ -219,29 +204,22 @@ async function handleSubscriptionUpdate(event) {
     .eq("user_id", userId);
 
   if (updateError) {
-    console.error(`Error updating subscription in database: ${updateError.message}`);
+    log(`Error updating subscription: ${updateError.message}`);
     throw updateError;
   }
 
-  console.log(`✅ Successfully updated subscription for user ${userId}`);
+  log(`Updated subscription for user ${userId}`);
 }
 
 /**
  * Handle subscription cancellation
  */
 async function handleSubscriptionCancellation(event) {
-  console.log("Processing subscription cancellation...");
-
   const subscription = event.data.object;
-  const subscriptionId = subscription.id;
   const stripeCustomerId = subscription.customer;
-
-  // Find the user in Supabase
-  console.log(`Looking up user with Stripe customer ID: ${stripeCustomerId}`);
 
   let userId;
 
-  // First try to find in users table
   const { data: userData, error: userError } = await supabase
     .from("users")
     .select("id")
@@ -249,7 +227,6 @@ async function handleSubscriptionCancellation(event) {
     .single();
 
   if (userError) {
-    // If not found, try the subscriptions table
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .select("user_id")
@@ -257,8 +234,7 @@ async function handleSubscriptionCancellation(event) {
       .single();
 
     if (subError) {
-      console.error(`Could not find user for Stripe customer: ${stripeCustomerId}`);
-      console.error(subError);
+      log(`User not found for Stripe customer: ${stripeCustomerId}`);
       throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
     }
 
@@ -266,11 +242,6 @@ async function handleSubscriptionCancellation(event) {
   } else {
     userId = userData.id;
   }
-
-  console.log(`Found user: ${userId}`);
-
-  // Update the subscription to canceled status
-  console.log(`Updating subscription for user ${userId} to canceled`);
 
   const { error: updateError } = await supabase
     .from("subscriptions")
@@ -281,103 +252,79 @@ async function handleSubscriptionCancellation(event) {
     .eq("user_id", userId);
 
   if (updateError) {
-    console.error(`Error updating subscription in database: ${updateError.message}`);
+    log(`Error updating subscription: ${updateError.message}`);
     throw updateError;
   }
 
-  console.log(`✅ Successfully marked subscription as canceled for user ${userId}`);
+  log(`Subscription canceled for user ${userId}`);
 }
 
 /**
  * Handle checkout completed event
  */
 async function handleCheckoutCompleted(event, stripe) {
-  console.log("Processing checkout completed...");
-
   const session = event.data.object;
 
-  // Skip if not a subscription checkout
   if (session.mode !== 'subscription') {
-    console.log('Not a subscription checkout, skipping');
     return;
   }
 
   const stripeCustomerId = session.customer;
-  const subscriptionId = session.subscription; // Get the subscription ID directly from the session
+  const subscriptionId = session.subscription;
   const userId = session.client_reference_id || session.metadata?.userId;
   const plan = session.metadata?.plan || 'premium';
   const billingCycle = session.metadata?.billingCycle || 'monthly';
   const sessionId = session.id;
 
-  // Extract string IDs from objects (Stripe sometimes returns full objects)
   const customerIdString = typeof stripeCustomerId === 'string' ? stripeCustomerId : stripeCustomerId?.id;
   const subscriptionIdString = typeof subscriptionId === 'string' ? subscriptionId : subscriptionId?.id;
 
-  console.log(`Checkout completed for user ${userId}, customer ${customerIdString}, subscription ${subscriptionIdString}`);
-
-  // If we don't have a userId, we need to handle that case
   if (!userId) {
-    console.log('No user ID found in session, cannot update subscription');
+    log('No user ID found in session');
     return;
   }
 
-  // Check if this session has already been processed by the success page
+  // Check if already processed
   try {
-    const { data: processedSession, error: processedError } = await supabase
+    const { data: processedSession } = await supabase
       .from('processed_sessions')
       .select('id')
       .eq('idempotency_key', `${userId}_${sessionId}`)
       .single();
 
     if (processedSession) {
-      console.log(`Session ${sessionId} already processed by success page, skipping webhook processing`);
+      log(`Session ${sessionId} already processed`);
       return;
     }
-
-    if (processedError && processedError.code !== 'PGRST116') {
-      console.error('Error checking processed sessions:', processedError);
-      // Continue processing in case of error
-    }
   } catch (err) {
-    console.log('Could not check processed sessions table, continuing with webhook processing');
+    // Continue processing
   }
 
-  // Update the user's Stripe customer ID
   await updateUserStripeInfo(userId, customerIdString);
 
-  // Now retrieve the subscription from Stripe to get its current status
   try {
-    console.log(`Retrieving subscription ${subscriptionIdString} from Stripe`);
     const subscription = await stripe.subscriptions.retrieve(subscriptionIdString);
     const status = subscription.status;
     const currentPeriodStart = new Date(subscription.current_period_start * 1000).toISOString();
     const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
 
-    console.log(`Subscription status from Stripe: ${status}`);
-
-    // Calculate amount based on plan and billing cycle (in cents)
     const calculateAmount = (plan, billingCycle) => {
       const pricing = {
-        basic: { monthly: 2000, yearly: 19200 },    // $20/month or $192/year
-        premium: { monthly: 3500, yearly: 33600 },  // $35/month or $336/year
-        fleet: { monthly: 7500, yearly: 72000 }     // $75/month or $720/year
+        basic: { monthly: 2000, yearly: 19200 },
+        premium: { monthly: 3500, yearly: 33600 },
+        fleet: { monthly: 7500, yearly: 72000 }
       };
       return pricing[plan]?.[billingCycle] || pricing.premium[billingCycle] || 3500;
     };
 
-    // Update subscription with complete information
     const { data: existingSubscriptions, error: queryError } = await supabase
       .from("subscriptions")
       .select("id")
       .eq("user_id", userId);
 
-    if (queryError) {
-      console.error(`Error querying subscriptions: ${queryError.message}`);
-      throw queryError;
-    }
+    if (queryError) throw queryError;
 
     if (existingSubscriptions && existingSubscriptions.length > 0) {
-      // Find the latest subscription to update
       const { data: latestSub, error: latestError } = await supabase
         .from("subscriptions")
         .select("id")
@@ -386,12 +333,8 @@ async function handleCheckoutCompleted(event, stripe) {
         .limit(1)
         .single();
 
-      if (latestError) {
-        console.error(`Error finding latest subscription: ${latestError.message}`);
-        throw latestError;
-      }
+      if (latestError) throw latestError;
 
-      // Update only the latest subscription
       const { error: subError } = await supabase
         .from("subscriptions")
         .update({
@@ -408,32 +351,20 @@ async function handleCheckoutCompleted(event, stripe) {
         })
         .eq("id", latestSub.id);
 
-      if (subError) {
-        console.error(`Error updating subscription in database: ${subError.message}`);
-        throw subError;
-      }
+      if (subError) throw subError;
 
-      // Clean up any duplicates if needed
+      // Clean up duplicates
       if (existingSubscriptions.length > 1) {
         const duplicateIds = existingSubscriptions
           .map(sub => sub.id)
           .filter(id => id !== latestSub.id);
 
-        console.log(`Cleaning up ${duplicateIds.length} duplicate subscription records`);
-
-        const { error: deleteError } = await supabase
+        await supabase
           .from("subscriptions")
           .delete()
           .in('id', duplicateIds);
-
-        if (deleteError) {
-          console.warn('Warning: Could not clean up duplicate subscriptions:', deleteError.message);
-        } else {
-          console.log(`Successfully removed ${duplicateIds.length} duplicate subscription records`);
-        }
       }
     } else {
-      // No existing subscriptions, create a new one
       const { error: insertError } = await supabase
         .from("subscriptions")
         .insert({
@@ -451,15 +382,12 @@ async function handleCheckoutCompleted(event, stripe) {
           updated_at: new Date().toISOString()
         });
 
-      if (insertError) {
-        console.error(`Error creating subscription in database: ${insertError.message}`);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
     }
 
-    console.log(`✅ Successfully updated subscription status to ${status} for user ${userId} via webhook`);
+    log(`Checkout completed for user ${userId}`);
 
-    // Mark this session as processed to prevent duplicate processing
+    // Mark session as processed
     try {
       await supabase
         .from('processed_sessions')
@@ -470,18 +398,17 @@ async function handleCheckoutCompleted(event, stripe) {
           processed_at: new Date().toISOString()
         }]);
     } catch (err) {
-      console.log('Could not mark session as processed:', err);
+      // Non-critical
     }
 
   } catch (error) {
-    console.error(`Error retrieving subscription from Stripe: ${error.message}`);
+    log(`Error retrieving subscription: ${error.message}`);
 
-    // If we can't get the subscription from Stripe, still try to update our database
-    // with the information we have from the checkout session
-    const { error: updateError } = await supabase
+    // Fallback update
+    await supabase
       .from("subscriptions")
       .update({
-        status: "active", // Default to active if we can't get status from Stripe
+        status: "active",
         stripe_subscription_id: subscriptionIdString,
         stripe_customer_id: customerIdString,
         plan: plan,
@@ -490,12 +417,6 @@ async function handleCheckoutCompleted(event, stripe) {
         updated_at: new Date().toISOString()
       })
       .eq("user_id", userId);
-
-    if (updateError) {
-      console.error(`Error updating subscription in database: ${updateError.message}`);
-    } else {
-      console.log(`✅ Successfully updated subscription status to active for user ${userId} (webhook fallback)`);
-    }
   }
 }
 
@@ -503,9 +424,6 @@ async function handleCheckoutCompleted(event, stripe) {
  * Update user with Stripe customer info
  */
 async function updateUserStripeInfo(userId, stripeCustomerId) {
-  console.log(`Updating user ${userId} with Stripe customer ID ${stripeCustomerId}`);
-
-  // First check if the user has subscription records
   const { data: subData, error: subError } = await supabase
     .from("subscriptions")
     .select("*")
@@ -513,13 +431,12 @@ async function updateUserStripeInfo(userId, stripeCustomerId) {
     .order('created_at', { ascending: false });
 
   if (subError) {
-    console.error(`Error checking for subscription: ${subError.message}`);
+    log(`Error checking subscription: ${subError.message}`);
     return { error: subError };
   }
 
-  // If we found any subscriptions, update the most recent one with the customer ID
   if (subData && subData.length > 0) {
-    const latestSubscription = subData[0]; // Get the most recent subscription
+    const latestSubscription = subData[0];
 
     const { error: updateError } = await supabase
       .from("subscriptions")
@@ -530,79 +447,58 @@ async function updateUserStripeInfo(userId, stripeCustomerId) {
       .eq("id", latestSubscription.id);
 
     if (updateError) {
-      console.error(`Error updating subscription with customer ID: ${updateError.message}`);
+      log(`Error updating subscription: ${updateError.message}`);
       return { error: updateError };
     }
 
-    // Clean up any duplicate subscriptions if they exist
+    // Clean up duplicates
     if (subData.length > 1) {
       const duplicateIds = subData.slice(1).map(sub => sub.id);
-      console.log(`Cleaning up ${duplicateIds.length} older subscription records`);
-
-      const { error: deleteError } = await supabase
+      await supabase
         .from("subscriptions")
         .delete()
         .in('id', duplicateIds);
-
-      if (deleteError) {
-        console.warn('Warning: Could not clean up older subscriptions:', deleteError.message);
-      } else {
-        console.log(`Successfully removed ${duplicateIds.length} older subscription records`);
-      }
     }
   } else {
-    // Otherwise create a new subscription record
     const { error: insertError } = await supabase
       .from("subscriptions")
       .insert({
         user_id: userId,
         stripe_customer_id: stripeCustomerId,
-        status: 'incomplete', // Will be updated by subscription events
+        status: 'incomplete',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
 
     if (insertError) {
-      console.error(`Error creating subscription record: ${insertError.message}`);
+      log(`Error creating subscription: ${insertError.message}`);
       return { error: insertError };
     }
   }
 
-  // Also update the users table if you store stripe_customer_id there
+  // Update users table
   try {
-    const { error: userUpdateError } = await supabase
+    await supabase
       .from("users")
       .update({
         stripe_customer_id: stripeCustomerId,
         updated_at: new Date().toISOString()
       })
       .eq("id", userId);
-
-    if (userUpdateError) {
-      console.log(`Note: Could not update users table: ${userUpdateError.message}`);
-      // Not critical, as we already updated the subscriptions table
-    }
   } catch (error) {
-    console.log('Note: Users table might not have these columns, skipping update there');
+    // Non-critical
   }
 
-  console.log(`✅ Successfully updated Stripe customer info for user ${userId}`);
   return { error: null };
 }
 
 /**
  * Handle invoice payment succeeded event
- * This is triggered when a subscription payment succeeds (including the first payment)
- * Also handles applying scheduled downgrades at renewal time
  */
 async function handleInvoicePaymentSucceeded(event, stripe) {
-  console.log("Processing invoice payment succeeded...");
-
   const invoice = event.data.object;
 
-  // Only process subscription invoices
   if (!invoice.subscription) {
-    console.log("Not a subscription invoice, skipping");
     return;
   }
 
@@ -613,17 +509,12 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
     ? invoice.customer
     : invoice.customer?.id;
 
-  console.log(`Invoice paid for subscription ${subscriptionId}, customer ${stripeCustomerId}`);
-
   try {
-    // Get the subscription from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-    // Find user by customer ID and get their subscription data including scheduled changes
     let userId;
     let dbSubscription;
 
-    // First try subscriptions table
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .select("user_id, scheduled_plan, scheduled_billing_cycle, scheduled_amount")
@@ -634,7 +525,6 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
       userId = subData.user_id;
       dbSubscription = subData;
     } else {
-      // Try users table
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id")
@@ -643,7 +533,6 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
 
       if (!userError && userData) {
         userId = userData.id;
-        // Get subscription data separately
         const { data: subDataById } = await supabase
           .from("subscriptions")
           .select("scheduled_plan, scheduled_billing_cycle, scheduled_amount")
@@ -654,57 +543,46 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
     }
 
     if (!userId) {
-      // Try to get from subscription metadata
       userId = stripeSubscription.metadata?.userId;
     }
 
     if (!userId) {
-      console.log("Could not find user for invoice payment, skipping update");
+      log("Could not find user for invoice payment");
       return;
     }
 
-    console.log(`Found user ${userId} for invoice payment`);
-
-    // Check if there's a scheduled downgrade that needs to be applied
+    // Check for scheduled downgrade
     const hasScheduledDowngrade = dbSubscription?.scheduled_plan ||
       stripeSubscription.metadata?.scheduled_downgrade === 'true';
 
     if (hasScheduledDowngrade) {
-      console.log(`Applying scheduled downgrade for user ${userId}`);
-
       const newPlan = dbSubscription?.scheduled_plan || stripeSubscription.metadata?.scheduled_plan;
       const newBillingCycle = dbSubscription?.scheduled_billing_cycle || stripeSubscription.metadata?.scheduled_billing_cycle;
       const scheduledPriceId = stripeSubscription.metadata?.scheduled_price_id;
 
       if (scheduledPriceId) {
-        // Apply the scheduled price change to Stripe now
-        const subscriptionItemId = stripeSubscription.items.data[0]?.id;
+        const stripeSubItems = stripeSubscription.items?.data || [];
+        const subscriptionItemId = stripeSubItems[0]?.id;
 
         if (subscriptionItemId) {
-          console.log(`Updating Stripe subscription to new price ${scheduledPriceId}`);
-
           await stripe.subscriptions.update(subscriptionId, {
             items: [{
               id: subscriptionItemId,
               price: scheduledPriceId
             }],
-            proration_behavior: 'none', // No proration since this is a scheduled change
+            proration_behavior: 'none',
             metadata: {
               plan: newPlan,
               billingCycle: newBillingCycle,
-              // Clear the scheduled downgrade metadata (use empty string, not null)
               scheduled_downgrade: '',
               scheduled_plan: '',
               scheduled_billing_cycle: '',
               scheduled_price_id: ''
             }
           });
-
-          console.log(`✅ Applied scheduled downgrade to ${newPlan} in Stripe`);
         }
       }
 
-      // Update our database to reflect the new plan and clear scheduled fields
       const { error: updateError } = await supabase
         .from("subscriptions")
         .update({
@@ -716,7 +594,6 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
           stripe_customer_id: stripeCustomerId,
           current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
           current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-          // Clear scheduled fields
           scheduled_plan: null,
           scheduled_billing_cycle: null,
           scheduled_amount: null,
@@ -725,25 +602,20 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
         })
         .eq("user_id", userId);
 
-      if (updateError) {
-        console.error(`Error applying scheduled downgrade: ${updateError.message}`);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
-      console.log(`✅ Successfully applied scheduled downgrade to ${newPlan} for user ${userId}`);
+      log(`Applied scheduled downgrade for user ${userId}`);
       return;
     }
 
-    // No scheduled downgrade - normal invoice payment processing
-    // Extract plan info from metadata or subscription
+    // Normal payment processing
     const plan = stripeSubscription.metadata?.plan || 'premium';
+    const invoiceSubItems = stripeSubscription.items?.data || [];
+    const invoicePrimaryItem = invoiceSubItems[0];
     const billingCycle = stripeSubscription.metadata?.billingCycle ||
-      (stripeSubscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly');
+      (invoicePrimaryItem?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly');
+    const amount = invoice.amount_paid || invoicePrimaryItem?.price?.unit_amount || 0;
 
-    // Calculate amount
-    const amount = invoice.amount_paid || stripeSubscription.items.data[0]?.price?.unit_amount || 0;
-
-    // Update subscription to active status
     const { error: updateError } = await supabase
       .from("subscriptions")
       .update({
@@ -752,54 +624,41 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
         stripe_customer_id: stripeCustomerId,
         plan: plan,
         billing_cycle: billingCycle,
-        amount: Math.round(amount) / 100, // Convert from cents
+        amount: Math.round(amount) / 100,
         current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
         current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-        trial_ends_at: null, // Clear trial as payment succeeded
+        trial_ends_at: null,
         updated_at: new Date().toISOString()
       })
       .eq("user_id", userId);
 
-    if (updateError) {
-      console.error(`Error updating subscription after invoice payment: ${updateError.message}`);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
-    console.log(`✅ Successfully updated subscription to ${stripeSubscription.status} after invoice payment for user ${userId}`);
+    log(`Invoice payment succeeded for user ${userId}`);
 
   } catch (error) {
-    console.error(`Error processing invoice payment succeeded: ${error.message}`);
+    log(`Error processing invoice payment: ${error.message}`);
     throw error;
   }
 }
 
 /**
  * Handle subscription schedule completed event
- * This fires when a subscription schedule finishes all its phases
- * For downgrades, this means the scheduled plan change has taken effect
  */
 async function handleSubscriptionScheduleCompleted(event, stripe) {
-  console.log("Processing subscription schedule completed...");
-
   const schedule = event.data.object;
   const subscriptionId = schedule.subscription;
   const stripeCustomerId = schedule.customer;
 
-  console.log(`Schedule ${schedule.id} completed for subscription ${subscriptionId}`);
-
-  // Get the new plan info from schedule metadata
   const newPlan = schedule.metadata?.new_plan;
   const newBillingCycle = schedule.metadata?.new_billing_cycle;
 
   if (!newPlan) {
-    console.log("No new_plan in schedule metadata, skipping database update");
     return;
   }
 
-  // Find user by subscription ID or customer ID
   let userId;
 
-  // Try subscriptions table first
   const { data: subData, error: subError } = await supabase
     .from("subscriptions")
     .select("user_id, scheduled_plan, scheduled_billing_cycle, scheduled_amount")
@@ -809,7 +668,6 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
   if (!subError && subData) {
     userId = subData.user_id;
   } else {
-    // Try by customer ID
     const { data: custData, error: custError } = await supabase
       .from("subscriptions")
       .select("user_id")
@@ -822,13 +680,10 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
   }
 
   if (!userId) {
-    console.log("Could not find user for schedule completion, skipping");
+    log("Could not find user for schedule completion");
     return;
   }
 
-  console.log(`Found user ${userId}, applying scheduled plan change to ${newPlan}`);
-
-  // Pricing in dollars
   const pricing = {
     basic: { monthly: 20, yearly: 192 },
     premium: { monthly: 35, yearly: 336 },
@@ -837,14 +692,12 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
 
   const amount = pricing[newPlan]?.[newBillingCycle] || subData?.scheduled_amount;
 
-  // Now update the subscription to apply the scheduled change
   const { error: updateError } = await supabase
     .from("subscriptions")
     .update({
       plan: newPlan,
       billing_cycle: newBillingCycle,
       amount: amount,
-      // Clear scheduled fields since the change has now taken effect
       scheduled_plan: null,
       scheduled_billing_cycle: null,
       scheduled_amount: null,
@@ -853,9 +706,9 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
     .eq("user_id", userId);
 
   if (updateError) {
-    console.error(`Error updating subscription after schedule completion: ${updateError.message}`);
+    log(`Error updating subscription: ${updateError.message}`);
     throw updateError;
   }
 
-  console.log(`✅ Successfully applied scheduled plan change to ${newPlan} for user ${userId}`);
+  log(`Schedule completed for user ${userId}`);
 }

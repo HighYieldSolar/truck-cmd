@@ -2,15 +2,28 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[update-payment-method]', ...args);
 
 export async function POST(request) {
   try {
-    const { userId, paymentMethodId } = await request.json();
+    const body = await request.json();
+    const { userId, paymentMethodId } = body;
 
     if (!userId || !paymentMethodId) {
       return NextResponse.json({
         error: 'Missing required fields'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -36,7 +49,7 @@ export async function POST(request) {
     } catch (attachError) {
       // Payment method might already be attached, that's okay
       if (attachError.code !== 'resource_already_exists') {
-        console.error('Error attaching payment method:', attachError);
+        log('Error attaching payment method:', attachError);
       }
     }
 
@@ -98,7 +111,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error updating payment method:', error);
+    log('Error updating payment method:', error);
     return NextResponse.json({
       error: error.message || 'Failed to update payment method'
     }, { status: 500 });

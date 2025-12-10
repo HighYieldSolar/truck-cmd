@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { sendNotificationEmail, isEmailServiceConfigured } from '@/lib/services/emailService';
 import { sendNotificationSMS, isSMSServiceConfigured, formatPhoneE164 } from '@/lib/services/smsService';
+import { verifyAuth } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[notifications/test]', ...args);
 
 /**
  * Test endpoint for notification delivery
@@ -15,6 +19,15 @@ import { sendNotificationSMS, isSMSServiceConfigured, formatPhoneE164 } from '@/
  */
 export async function POST(request) {
   try {
+    // Verify user is authenticated
+    const { userId, error: authError } = await verifyAuth(request);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: authError || 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { email, phone, testEmail = true, testSMS = false } = body;
 
@@ -87,7 +100,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Notification test error:', error);
+    log('Notification test error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -98,7 +111,16 @@ export async function POST(request) {
 /**
  * GET handler to check configuration status
  */
-export async function GET() {
+export async function GET(request) {
+  // Verify user is authenticated
+  const { userId, error: authError } = await verifyAuth(request);
+  if (!userId) {
+    return NextResponse.json(
+      { error: authError || 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
   return NextResponse.json({
     emailConfigured: isEmailServiceConfigured(),
     smsConfigured: isSMSServiceConfigured(),

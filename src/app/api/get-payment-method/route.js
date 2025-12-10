@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[get-payment-method]', ...args);
 
 export async function POST(request) {
   try {
-    const { userId } = await request.json();
+    const body = await request.json();
+    const { userId } = body;
 
     if (!userId) {
       return NextResponse.json({
         success: false,
         error: 'Missing userId'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        success: false,
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     // Initialize Stripe
@@ -50,7 +64,7 @@ export async function POST(request) {
             customer.invoice_settings.default_payment_method
           );
         } catch (err) {
-          console.error('Error retrieving payment method:', err);
+          log('Error retrieving payment method:', err);
         }
       }
 
@@ -67,7 +81,7 @@ export async function POST(request) {
             );
           }
         } catch (err) {
-          console.error('Error retrieving subscription payment method:', err);
+          log('Error retrieving subscription payment method:', err);
         }
       }
 
@@ -95,7 +109,7 @@ export async function POST(request) {
             };
           }
         } catch (err) {
-          console.error('Error retrieving source:', err);
+          log('Error retrieving source:', err);
         }
       }
 
@@ -138,7 +152,7 @@ export async function POST(request) {
       });
 
     } catch (stripeError) {
-      console.error('Stripe error fetching payment method:', stripeError);
+      log('Stripe error fetching payment method:', stripeError);
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch payment method from Stripe'
@@ -146,7 +160,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
-    console.error('Error fetching payment method:', error);
+    log('Error fetching payment method:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to fetch payment method'

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[cron/notifications]', ...args);
+
 /**
  * Cron job endpoint for automated notification generation
  * This should be called daily (e.g., via Vercel Cron or external scheduler)
@@ -16,12 +19,20 @@ import { createClient } from '@supabase/supabase-js';
  */
 export async function GET(request) {
   try {
-    // Verify cron secret for security
+    // Verify cron secret for security - REQUIRED in production
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
-    // Allow execution if no secret is set (development) or secret matches
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // SECURITY: Always require CRON_SECRET - do not allow bypass
+    if (!cronSecret) {
+      log('CRON_SECRET environment variable is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error: CRON_SECRET not set' },
+        { status: 500 }
+      );
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -57,7 +68,7 @@ export async function GET(request) {
       results.compliance.count = complianceCount || 0;
     } catch (err) {
       results.compliance.error = err.message;
-      console.error('Compliance notifications error:', err);
+      log('Compliance notifications error:', err);
     }
 
     // 2. Check for overdue invoices and create notifications
@@ -66,7 +77,7 @@ export async function GET(request) {
       results.overdueInvoices.count = overdueCount;
     } catch (err) {
       results.overdueInvoices.error = err.message;
-      console.error('Overdue invoices error:', err);
+      log('Overdue invoices error:', err);
     }
 
     // 3. Generate IFTA deadline notifications
@@ -75,7 +86,7 @@ export async function GET(request) {
       results.iftaDeadlines.count = iftaCount;
     } catch (err) {
       results.iftaDeadlines.error = err.message;
-      console.error('IFTA deadlines error:', err);
+      log('IFTA deadlines error:', err);
     }
 
     // 4. Generate upcoming delivery reminders
@@ -84,7 +95,7 @@ export async function GET(request) {
       results.upcomingDeliveries.count = deliveryCount;
     } catch (err) {
       results.upcomingDeliveries.error = err.message;
-      console.error('Upcoming deliveries error:', err);
+      log('Upcoming deliveries error:', err);
     }
 
     // 5. Generate maintenance due notifications
@@ -93,7 +104,7 @@ export async function GET(request) {
       results.maintenanceDue.count = maintenanceCount;
     } catch (err) {
       results.maintenanceDue.error = err.message;
-      console.error('Maintenance due error:', err);
+      log('Maintenance due error:', err);
     }
 
     // 6. Cleanup old read notifications
@@ -103,7 +114,7 @@ export async function GET(request) {
       results.cleanup.count = cleanupCount || 0;
     } catch (err) {
       results.cleanup.error = err.message;
-      console.error('Cleanup error:', err);
+      log('Cleanup error:', err);
     }
 
     // Calculate total notifications created
@@ -122,7 +133,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('Cron job error:', error);
+    log('Cron job error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

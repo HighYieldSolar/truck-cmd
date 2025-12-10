@@ -1,6 +1,10 @@
 // src/app/api/activate-subscription/route.js
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[activate-subscription]', ...args);
 
 /**
  * Helper function to generate a consistent ID for deduplication
@@ -25,7 +29,7 @@ async function hasProcessedSession(userId, sessionId) {
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned"
-      console.error('Error checking for processed session:', error);
+      log('Error checking for processed session:', error);
       // If there's an error, assume we haven't processed it yet
       return false;
     }
@@ -33,7 +37,7 @@ async function hasProcessedSession(userId, sessionId) {
     // If we found a record, this session has already been processed
     return !!data;
   } catch (err) {
-    console.error('Error in hasProcessedSession:', err);
+    log('Error in hasProcessedSession:', err);
     // If the processed_sessions table doesn't exist yet, assume not processed
     return false;
   }
@@ -57,11 +61,11 @@ async function markSessionAsProcessed(userId, sessionId) {
       }]);
 
     if (error) {
-      console.error('Error marking session as processed:', error);
+      log('Error marking session as processed:', error);
     }
   } catch (err) {
     // If the table doesn't exist, that's ok for now
-    console.warn('Could not mark session as processed:', err);
+    log('Could not mark session as processed:', err);
   }
 }
 
@@ -81,17 +85,27 @@ function calculateAmount(plan, billingCycle) {
 export async function POST(request) {
   try {
     // Get data from the request
-    const { userId, sessionId, verificationData } = await request.json();
+    const body = await request.json();
+    const { userId, sessionId, verificationData } = body;
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
     }
 
-    console.log(`Checking if subscription for user ${userId} with session ${sessionId} has already been processed`);
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        success: false,
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
+    }
+
+    log(`Checking if subscription for user ${userId} with session ${sessionId} has already been processed`);
 
     // Check if we've already processed this session for this user
     if (await hasProcessedSession(userId, sessionId)) {
-      console.log(`Session ${sessionId} has already been processed for user ${userId}, skipping`);
+      log(`Session ${sessionId} has already been processed for user ${userId}, skipping`);
       return NextResponse.json({
         success: true,
         message: 'Session already processed',
@@ -99,7 +113,7 @@ export async function POST(request) {
       });
     }
 
-    console.log(`Activating subscription for user ${userId} with verification data:`, verificationData);
+    log(`Activating subscription for user ${userId} with verification data:`, verificationData);
 
     // Prepare subscription data with complete information
     const subscriptionData = {
@@ -123,7 +137,7 @@ export async function POST(request) {
       updated_at: new Date().toISOString()
     };
 
-    console.log('Prepared subscription data:', {
+    log('Prepared subscription data:', {
       ...subscriptionData,
       // Don't log the full objects to avoid clutter
       stripe_customer_id: subscriptionData.stripe_customer_id,
@@ -137,11 +151,11 @@ export async function POST(request) {
       .eq('user_id', userId);
 
     if (queryError) {
-      console.error('Error querying subscriptions:', queryError);
+      log('Error querying subscriptions:', queryError);
       return NextResponse.json({ success: false, error: queryError.message }, { status: 500 });
     }
 
-    console.log('Existing subscriptions:', existingSubscriptions);
+    log('Existing subscriptions:', existingSubscriptions);
 
     let result;
 
@@ -151,7 +165,7 @@ export async function POST(request) {
       const latestSubscription = existingSubscriptions.reduce((latest, current) =>
         !latest || current.id > latest.id ? current : latest, null);
 
-      console.log(`Found ${existingSubscriptions.length} subscription records, updating only the latest one with ID: ${latestSubscription.id}`);
+      log(`Found ${existingSubscriptions.length} subscription records, updating only the latest one with ID: ${latestSubscription.id}`);
 
       // Update only the latest subscription record
       const { error: updateError } = await supabase
@@ -160,7 +174,7 @@ export async function POST(request) {
         .eq('id', latestSubscription.id);
 
       if (updateError) {
-        console.error('Error updating subscription:', updateError);
+        log('Error updating subscription:', updateError);
         return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
       }
 
@@ -170,7 +184,7 @@ export async function POST(request) {
           .filter(sub => sub.id !== latestSubscription.id)
           .map(sub => sub.id);
 
-        console.log(`Cleaning up ${otherSubscriptionIds.length} duplicate subscription records`);
+        log(`Cleaning up ${otherSubscriptionIds.length} duplicate subscription records`);
 
         const { error: deleteError } = await supabase
           .from('subscriptions')
@@ -178,14 +192,14 @@ export async function POST(request) {
           .in('id', otherSubscriptionIds);
 
         if (deleteError) {
-          console.warn('Warning: Could not clean up duplicate subscriptions:', deleteError.message);
+          log('Warning: Could not clean up duplicate subscriptions:', deleteError.message);
           // Not critical, continue with the process
         } else {
-          console.log(`Successfully removed ${otherSubscriptionIds.length} duplicate subscription records`);
+          log(`Successfully removed ${otherSubscriptionIds.length} duplicate subscription records`);
         }
       }
 
-      console.log('Updated subscription record with complete data');
+      log('Updated subscription record with complete data');
       result = { success: true, message: 'Subscription record updated with complete data' };
     } else {
       // No records found, create a new one with complete data
@@ -196,11 +210,11 @@ export async function POST(request) {
         .insert([subscriptionData]);
 
       if (insertError) {
-        console.error('Error creating subscription:', insertError);
+        log('Error creating subscription:', insertError);
         return NextResponse.json({ success: false, error: insertError.message }, { status: 500 });
       }
 
-      console.log('Created new subscription record with complete data');
+      log('Created new subscription record with complete data');
       result = { success: true, message: 'New subscription record created with complete data' };
     }
 
@@ -220,13 +234,13 @@ export async function POST(request) {
         .eq('id', userId);
 
       if (userUpdateError) {
-        console.log('Note: Could not update users table:', userUpdateError.message);
+        log('Note: Could not update users table:', userUpdateError.message);
         // Not critical, continue
       } else {
-        console.log('Updated users table with subscription info');
+        log('Updated users table with subscription info');
       }
     } catch (err) {
-      console.log('Note: Users table update failed:', err.message);
+      log('Note: Users table update failed:', err.message);
     }
 
     // Mark this session as processed to prevent duplicate processing
@@ -234,7 +248,7 @@ export async function POST(request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error processing request:', error);
+    log('Error processing request:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

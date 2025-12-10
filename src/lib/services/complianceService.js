@@ -179,17 +179,19 @@ export async function createComplianceItem(complianceData) {
 
 /**
  * Update an existing compliance item
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Compliance item ID
  * @param {object} complianceData - Updated compliance data
  * @returns {Promise<object>} - Updated compliance item
  */
-export async function updateComplianceItem(id, complianceData) {
+export async function updateComplianceItem(userId, id, complianceData) {
   try {
     // Get the old data first to check for status changes
     const { data: oldData } = await supabase
       .from('compliance_items')
       .select('status, expiration_date, title, entity_name, user_id')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
 
     const { data, error } = await supabase
@@ -199,6 +201,7 @@ export async function updateComplianceItem(id, complianceData) {
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
 
@@ -247,15 +250,17 @@ export async function updateComplianceItem(id, complianceData) {
 
 /**
  * Delete a compliance item
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Compliance item ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteComplianceItem(id) {
+export async function deleteComplianceItem(userId, id) {
   try {
     const { error } = await supabase
       .from('compliance_items')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
 
     if (error) throw error;
     return true;

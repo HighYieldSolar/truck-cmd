@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[create-subscription-intent]', ...args);
+
 // Valid plans and billing cycles
 const VALID_PLANS = ['basic', 'premium', 'fleet'];
 const VALID_BILLING_CYCLES = ['monthly', 'yearly'];
@@ -272,24 +275,40 @@ export async function POST(request) {
           coupon = await stripe.coupons.retrieve(couponCode.trim());
         } catch (exactErr) {
           if (exactErr.code === 'resource_missing') {
-            coupon = await stripe.coupons.retrieve(couponCode.trim().toUpperCase());
+            try {
+              coupon = await stripe.coupons.retrieve(couponCode.trim().toUpperCase());
+            } catch (upperErr) {
+              // Coupon not found with either case
+              return NextResponse.json({
+                error: 'Invalid coupon code. Please check the code and try again.',
+                code: 'INVALID_COUPON'
+              }, { status: 400 });
+            }
           } else {
             throw exactErr;
           }
         }
 
-        if (coupon && coupon.valid) {
-          subscriptionParams.coupon = coupon.id;
-          appliedCoupon = {
-            id: coupon.id,
-            name: coupon.name,
-            percentOff: coupon.percent_off,
-            amountOff: coupon.amount_off ? coupon.amount_off / 100 : null
-          };
+        if (!coupon || !coupon.valid) {
+          return NextResponse.json({
+            error: 'This coupon has expired or is no longer valid.',
+            code: 'EXPIRED_COUPON'
+          }, { status: 400 });
         }
+
+        subscriptionParams.coupon = coupon.id;
+        appliedCoupon = {
+          id: coupon.id,
+          name: coupon.name,
+          percentOff: coupon.percent_off,
+          amountOff: coupon.amount_off ? coupon.amount_off / 100 : null
+        };
       } catch (couponError) {
-        console.log('Coupon not found or invalid:', couponCode);
-        // Continue without coupon - don't fail the subscription creation
+        log('Coupon validation error:', couponCode, couponError.message);
+        return NextResponse.json({
+          error: 'Unable to validate coupon. Please try again.',
+          code: 'COUPON_ERROR'
+        }, { status: 400 });
       }
     }
 
@@ -328,7 +347,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error creating subscription intent:', error);
+    log('Error creating subscription intent:', error);
     return NextResponse.json({
       error: error.message || 'An error occurred while creating subscription'
     }, { status: 500 });

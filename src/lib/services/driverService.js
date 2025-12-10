@@ -44,15 +44,17 @@ export async function fetchDrivers(userId, filters = {}) {
 
 /**
  * Get driver by ID
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Driver ID
  * @returns {Promise<Object|null>} - Driver object or null
  */
-export async function getDriverById(id) {
+export async function getDriverById(userId, id) {
   try {
     const { data, error } = await supabase
       .from('drivers')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
       
     if (error) throw error;
@@ -167,17 +169,19 @@ export async function createDriver(driverData) {
 
 /**
  * Update an existing driver
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Driver ID
  * @param {Object} driverData - Updated driver data
  * @returns {Promise<Object|null>} - Updated driver or null
  */
-export async function updateDriver(id, driverData) {
+export async function updateDriver(userId, id, driverData) {
   try {
     // Get old data to compare expiry date changes
     const { data: oldData } = await supabase
       .from('drivers')
       .select('name, user_id, license_expiry, medical_card_expiry')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
 
     // Ensure we only update fields that match your existing schema
@@ -204,6 +208,7 @@ export async function updateDriver(id, driverData) {
       .from('drivers')
       .update(updateData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
 
     if (error) throw error;
@@ -277,15 +282,17 @@ export async function updateDriver(id, driverData) {
 
 /**
  * Delete a driver
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Driver ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteDriver(id) {
+export async function deleteDriver(userId, id) {
   try {
     const { error } = await supabase
       .from('drivers')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
       
     if (error) throw error;
     

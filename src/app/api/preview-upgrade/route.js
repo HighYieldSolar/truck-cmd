@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[preview-upgrade]', ...args);
+
 // Valid plans and billing cycles
 const VALID_PLANS = ['basic', 'premium', 'fleet'];
 const VALID_BILLING_CYCLES = ['monthly', 'yearly'];
@@ -231,7 +234,7 @@ export async function POST(request) {
         })
       };
     } catch (invoiceErr) {
-      console.error('Error getting proration preview:', invoiceErr);
+      log('Error getting proration preview:', invoiceErr);
       // Fallback calculation - assume full period remaining for simplicity
       const currentPlanPriceCents = pricing[subscription.plan]?.[subscription.billing_cycle] || 0;
       const newPlanPriceCents = pricing[newPlan][billingCycle];
@@ -278,7 +281,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error previewing upgrade:', error);
+    log('Error previewing upgrade:', error);
     return NextResponse.json({
       error: error.message || 'Failed to preview upgrade'
     }, { status: 500 });

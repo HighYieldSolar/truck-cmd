@@ -3,13 +3,16 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[verify-session]', ...args);
+
 export async function POST(request) {
   try {
     const { sessionId } = await request.json();
-    console.log('Verifying session:', sessionId);
+    log('Verifying session:', sessionId);
 
     if (!sessionId) {
-      console.log('No session ID provided');
+      log('No session ID provided');
       return NextResponse.json({
         valid: false,
         error: 'Missing session ID'
@@ -18,26 +21,25 @@ export async function POST(request) {
 
     // Initialize Stripe with API key
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    console.log('Stripe initialized with key ending in:', process.env.STRIPE_SECRET_KEY?.slice(-4));
+    log('Stripe initialized');
 
     try {
       // Retrieve the checkout session with expanded data
-      console.log('Retrieving checkout session from Stripe');
+      log('Retrieving checkout session from Stripe');
       const session = await stripe.checkout.sessions.retrieve(sessionId, {
         expand: ['subscription', 'customer', 'payment_intent', 'payment_intent.payment_method']
       });
 
-      console.log('Session retrieved:', {
+      log('Session retrieved:', {
         id: session.id,
         paymentStatus: session.payment_status,
         customerId: session.customer,
-        subscriptionId: session.subscription,
-        metadata: session.metadata
+        subscriptionId: session.subscription
       });
 
       // Check if the session was successful
       if (session.payment_status !== 'paid') {
-        console.log('Payment not completed, status:', session.payment_status);
+        log('Payment not completed, status:', session.payment_status);
         return NextResponse.json({
           valid: false,
           error: 'Payment not completed'
@@ -57,10 +59,10 @@ export async function POST(request) {
         ? session.customer
         : session.customer?.id;
 
-      console.log('Extracted IDs:', { subscriptionId, customerId, userId });
+      log('Extracted IDs:', { subscriptionId, customerId, userId });
 
       if (!userId) {
-        console.log('No user ID found in session');
+        log('No user ID found in session');
         return NextResponse.json({
           valid: false,
           error: 'No user ID associated with this session'
@@ -75,15 +77,14 @@ export async function POST(request) {
 
       if (subscriptionId) {
         try {
-          console.log('Retrieving subscription details from Stripe');
+          log('Retrieving subscription details from Stripe');
           subscription = await stripe.subscriptions.retrieve(subscriptionId);
           currentPeriodStart = new Date(subscription.current_period_start * 1000).toISOString();
           currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-          console.log('Current period start:', currentPeriodStart);
-          console.log('Current period end:', currentPeriodEnd);
-          console.log('Subscription status:', subscription.status);
+          log('Current period:', currentPeriodStart, 'to', currentPeriodEnd);
+          log('Subscription status:', subscription.status);
         } catch (err) {
-          console.error('Error retrieving subscription:', err);
+          log('Error retrieving subscription:', err.message);
           // Default periods based on billing cycle
           currentPeriodStart = new Date().toISOString();
 
@@ -99,7 +100,7 @@ export async function POST(request) {
             currentPeriodEnd = endDate.toISOString();
           }
 
-          console.log('Using default periods based on billing cycle:', { billingCycle, currentPeriodStart, currentPeriodEnd });
+          log('Using default periods based on billing cycle:', billingCycle);
         }
       } else {
         // Default periods based on billing cycle
@@ -117,7 +118,7 @@ export async function POST(request) {
           currentPeriodEnd = endDate.toISOString();
         }
 
-        console.log('No subscription ID, using default periods based on billing cycle:', { billingCycle, currentPeriodStart, currentPeriodEnd });
+        log('No subscription ID, using default periods based on billing cycle:', billingCycle);
       }
 
       // Get payment method details for card last four
@@ -126,7 +127,7 @@ export async function POST(request) {
           const paymentMethod = session.payment_intent.payment_method;
           if (paymentMethod.card && paymentMethod.card.last4) {
             cardLastFour = paymentMethod.card.last4;
-            console.log('Found card last four:', cardLastFour);
+            log('Found card last four');
           }
         } else if (session.payment_intent) {
           // If payment method wasn't expanded, retrieve it separately
@@ -136,11 +137,11 @@ export async function POST(request) {
 
           if (paymentIntent.payment_method && paymentIntent.payment_method.card) {
             cardLastFour = paymentIntent.payment_method.card.last4;
-            console.log('Retrieved card last four separately:', cardLastFour);
+            log('Retrieved card last four separately');
           }
         }
       } catch (err) {
-        console.error('Error retrieving payment method details:', err);
+        log('Error retrieving payment method details:', err.message);
         // Continue without card details
       }
 
@@ -181,14 +182,14 @@ export async function POST(request) {
         subscriptionStatus: subscription?.status || 'active'
       });
     } catch (stripeError) {
-      console.error('Stripe error during session verification:', stripeError);
+      log('Stripe error during session verification:', stripeError.message);
       return NextResponse.json({
         valid: false,
         error: stripeError.message || 'Failed to verify with Stripe'
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('Error verifying session:', error);
+    log('Error verifying session:', error.message);
     return NextResponse.json({
       valid: false,
       error: error.message || 'Failed to verify session'

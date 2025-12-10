@@ -44,15 +44,17 @@ export async function fetchTrucks(userId, filters = {}) {
 
 /**
  * Get truck by ID
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Truck ID
  * @returns {Promise<Object|null>} - Truck object or null
  */
-export async function getTruckById(id) {
+export async function getTruckById(userId, id) {
   try {
     const { data, error } = await supabase
       .from('vehicles')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
 
     if (error) throw error;
@@ -197,17 +199,19 @@ export async function createTruck(truckData) {
 
 /**
  * Update an existing truck
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Truck ID
  * @param {Object} truckData - Updated truck data
  * @returns {Promise<Object|null>} - Updated truck or null
  */
-export async function updateTruck(id, truckData) {
+export async function updateTruck(userId, id, truckData) {
   try {
     // Get old data to compare expiry date changes
     const { data: oldData } = await supabase
       .from('vehicles')
       .select('name, make, model, user_id, registration_expiry, insurance_expiry, inspection_expiry')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
 
     // Only include valid columns that exist in the vehicles table
@@ -244,6 +248,7 @@ export async function updateTruck(id, truckData) {
       .from('vehicles')
       .update(updateData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
 
     if (error) throw error;
@@ -308,15 +313,17 @@ export async function updateTruck(id, truckData) {
 
 /**
  * Delete a truck
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Truck ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteTruck(id) {
+export async function deleteTruck(userId, id) {
   try {
     const { error } = await supabase
       .from('vehicles')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
 
     if (error) throw error;
 

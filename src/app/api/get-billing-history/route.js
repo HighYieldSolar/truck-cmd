@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[get-billing-history]', ...args);
+
 export async function POST(request) {
   try {
     const { userId } = await request.json();
@@ -63,7 +66,7 @@ export async function POST(request) {
       });
 
     } catch (stripeError) {
-      console.error('Stripe error fetching invoices:', stripeError);
+      log('Stripe error fetching invoices:', stripeError);
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch billing history from Stripe'
@@ -71,7 +74,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
-    console.error('Error fetching billing history:', error);
+    log('Error fetching billing history:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to fetch billing history'

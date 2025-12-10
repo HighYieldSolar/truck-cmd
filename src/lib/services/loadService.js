@@ -108,15 +108,17 @@ export async function fetchLoads(userId, filters = {}) {
 
 /**
  * Get a single load by ID
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Load ID
  * @returns {Promise<Object|null>} - Load object or null
  */
-export async function getLoadById(id) {
+export async function getLoadById(userId, id) {
   try {
     const { data, error } = await supabase
       .from('loads')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
       
     if (error) throw error;
@@ -203,11 +205,12 @@ export async function createLoad(userId, loadData) {
 
 /**
  * Update an existing load
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Load ID
  * @param {Object} loadData - Updated load data
  * @returns {Promise<Object|null>} - Updated load object or null
  */
-export async function updateLoad(id, loadData) {
+export async function updateLoad(userId, id, loadData) {
   try {
     // Format the data for database
     const dbLoadData = {
@@ -223,11 +226,12 @@ export async function updateLoad(id, loadData) {
       description: loadData.description || '',
       notes: loadData.notes || ''
     };
-    
+
     const { data, error } = await supabase
       .from('loads')
       .update(dbLoadData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
       
     if (error) throw error;
@@ -257,15 +261,17 @@ export async function updateLoad(id, loadData) {
 
 /**
  * Delete a load
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Load ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteLoad(id) {
+export async function deleteLoad(userId, id) {
   try {
     const { error } = await supabase
       .from('loads')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
       
     if (error) throw error;
     
@@ -277,11 +283,12 @@ export async function deleteLoad(id) {
 
 /**
  * Assign a driver to a load
+ * @param {string} userId - The authenticated user's ID
  * @param {string} loadId - Load ID
  * @param {string} driverName - Driver name
  * @returns {Promise<Object|null>} - Updated load object or null
  */
-export async function assignDriver(loadId, driverName) {
+export async function assignDriver(userId, loadId, driverName) {
   try {
     const { data, error } = await supabase
       .from('loads')
@@ -290,6 +297,7 @@ export async function assignDriver(loadId, driverName) {
         status: 'Assigned' // Update status if previously unassigned
       })
       .eq('id', loadId)
+      .eq('user_id', userId)
       .select();
 
     if (error) throw error;
@@ -339,16 +347,18 @@ export async function assignDriver(loadId, driverName) {
 
 /**
  * Update load status
+ * @param {string} userId - The authenticated user's ID
  * @param {string} loadId - Load ID
  * @param {string} status - New status
  * @returns {Promise<Object|null>} - Updated load object or null
  */
-export async function updateLoadStatus(loadId, status) {
+export async function updateLoadStatus(userId, loadId, status) {
   try {
     const { data, error } = await supabase
       .from('loads')
       .update({ status })
       .eq('id', loadId)
+      .eq('user_id', userId)
       .select();
 
     if (error) throw error;

@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[cancel-subscription]', ...args);
 
 export async function POST(request) {
   try {
-    const { userId, reason, feedback } = await request.json();
+    const body = await request.json();
+    const { userId, reason, feedback } = body;
 
     if (!userId) {
       return NextResponse.json({
         success: false,
         error: 'Missing userId'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        success: false,
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     // Initialize Stripe
@@ -53,7 +67,7 @@ export async function POST(request) {
         }
       );
 
-      console.log('Subscription canceled in Stripe:', canceledSubscription.id);
+      log('Subscription canceled in Stripe:', canceledSubscription.id);
 
       // Update the subscription status in our database
       // Note: We keep status as 'active' since they have access until period end
@@ -74,7 +88,7 @@ export async function POST(request) {
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error updating subscription in database:', updateError);
+        log('Error updating subscription in database:', updateError);
         // Don't fail the request since Stripe cancellation succeeded
       }
 
@@ -90,7 +104,7 @@ export async function POST(request) {
       });
 
     } catch (stripeError) {
-      console.error('Stripe error canceling subscription:', stripeError);
+      log('Stripe error canceling subscription:', stripeError);
 
       // Handle specific Stripe errors
       if (stripeError.type === 'StripeCardError') {
@@ -112,7 +126,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
-    console.error('Error canceling subscription:', error);
+    log('Error canceling subscription:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to cancel subscription'

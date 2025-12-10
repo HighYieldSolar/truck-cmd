@@ -2,6 +2,10 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyUserAccess } from '@/lib/serverAuth';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[create-portal-session]', ...args);
 
 export async function POST(request) {
   try {
@@ -12,6 +16,14 @@ export async function POST(request) {
       return NextResponse.json({
         error: 'Missing required field: userId'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     // Initialize Stripe
@@ -50,7 +62,7 @@ export async function POST(request) {
           })
           .eq('user_id', userId);
       } catch (err) {
-        console.error('Error retrieving Stripe subscription:', err);
+        log('Error retrieving Stripe subscription:', err);
       }
     }
 
@@ -71,7 +83,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error creating portal session:', error);
+    log('Error creating portal session:', error);
     return NextResponse.json({
       error: error.message || 'Failed to create billing portal session'
     }, { status: 500 });

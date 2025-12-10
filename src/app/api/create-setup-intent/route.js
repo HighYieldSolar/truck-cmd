@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[create-setup-intent]', ...args);
+
 export async function POST(request) {
   try {
     const { userId } = await request.json();
@@ -50,7 +53,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error creating setup intent:', error);
+    log('Error creating setup intent:', error);
     return NextResponse.json({
       error: error.message || 'Failed to create setup intent'
     }, { status: 500 });

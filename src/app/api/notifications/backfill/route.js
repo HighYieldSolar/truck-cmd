@@ -2,6 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[notifications/backfill]', ...args);
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -267,7 +270,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Notification backfill error:', error);
+    log('Notification backfill error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

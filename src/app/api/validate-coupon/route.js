@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[validate-coupon]', ...args);
+
 export async function POST(request) {
   try {
     const { couponCode, plan, billingCycle } = await request.json();
@@ -118,7 +121,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
-    console.error('Error validating coupon:', error);
+    log('Error validating coupon:', error);
     return NextResponse.json({
       valid: false,
       error: 'Failed to validate coupon'

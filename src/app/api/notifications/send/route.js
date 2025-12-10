@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { sendNotificationEmail } from '@/lib/services/emailService';
 import { sendNotificationSMS } from '@/lib/services/smsService';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[notifications/send]', ...args);
+
 /**
  * API route for sending notification via email/SMS
  * Called after a notification is created to deliver via configured channels
@@ -127,7 +130,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Notification delivery error:', error);
+    log('Notification delivery error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -259,7 +262,7 @@ export async function PUT(request) {
     });
 
   } catch (error) {
-    console.error('Batch notification delivery error:', error);
+    log('Batch notification delivery error:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

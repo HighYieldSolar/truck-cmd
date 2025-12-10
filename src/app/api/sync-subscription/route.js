@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[sync-subscription]', ...args);
+
 export async function POST(request) {
   try {
     const { userId } = await request.json();
@@ -29,7 +32,7 @@ export async function POST(request) {
       subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
     } else {
       // No subscription ID in database - search Stripe for subscriptions with this userId in metadata
-      console.log(`No subscription ID in database for user ${userId}, searching Stripe...`);
+      log(`No subscription ID in database for user ${userId}, searching Stripe...`);
 
       // Search for subscriptions with any status (active, incomplete, etc.)
       // This handles the case where payment just completed and status is transitioning
@@ -46,7 +49,7 @@ export async function POST(request) {
         // Prioritize active subscriptions
         subscription = matchingSubscriptions.find(sub => sub.status === 'active')
           || matchingSubscriptions[0];
-        console.log(`Found ${matchingSubscriptions.length} matching subscription(s), using status: ${subscription.status}`);
+        log(`Found ${matchingSubscriptions.length} matching subscription(s), using status: ${subscription.status}`);
       }
 
       if (!subscription) {
@@ -62,7 +65,7 @@ export async function POST(request) {
         ? subscription.customer
         : subscription.customer?.id;
 
-      console.log(`Found subscription ${stripeSubscriptionId} for user ${userId} in Stripe`);
+      log(`Found subscription ${stripeSubscriptionId} for user ${userId} in Stripe`);
     }
 
     // Extract plan info
@@ -96,7 +99,7 @@ export async function POST(request) {
       .eq('user_id', userId);
 
     if (updateError) {
-      console.error('Error updating subscription:', updateError);
+      log('Error updating subscription:', updateError);
       return NextResponse.json({
         error: 'Failed to update subscription',
         details: updateError.message
@@ -115,7 +118,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error syncing subscription:', error);
+    log('Error syncing subscription:', error);
     return NextResponse.json({
       error: error.message || 'Failed to sync subscription'
     }, { status: 500 });

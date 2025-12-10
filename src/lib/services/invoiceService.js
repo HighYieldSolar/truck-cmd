@@ -1,6 +1,7 @@
 // src/lib/services/invoiceService.js
 import { supabase } from "../supabaseClient";
 import { NotificationService, URGENCY_LEVELS } from "./notificationService";
+import { getLimit } from "@/config/tierConfig";
 
 /**
  * Fetch all invoices for the current user with optional filters
@@ -185,14 +186,75 @@ export async function generateInvoiceNumber(userId) {
 }
 
 /**
+ * Get the count of invoices created this month for a user
+ * @param {string} userId - User ID
+ * @returns {Promise<number>} - Count of invoices this month
+ */
+export async function getMonthlyInvoiceCount(userId) {
+  try {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const { count, error } = await supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', firstDayOfMonth.toISOString());
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    return 0;
+  }
+}
+
+/**
+ * Check if user can create more invoices based on their plan limits
+ * @param {string} userId - User ID
+ * @param {string} userPlan - User's subscription plan
+ * @returns {Promise<{allowed: boolean, currentCount: number, limit: number, error?: string}>}
+ */
+export async function checkInvoiceLimitForUser(userId, userPlan) {
+  const plan = userPlan?.toLowerCase() || 'basic';
+  const limit = getLimit(plan, 'invoicesPerMonth');
+
+  // Unlimited plans always allowed
+  if (limit === Infinity) {
+    return { allowed: true, currentCount: 0, limit: Infinity };
+  }
+
+  const currentCount = await getMonthlyInvoiceCount(userId);
+
+  if (currentCount >= limit) {
+    return {
+      allowed: false,
+      currentCount,
+      limit,
+      error: `Monthly invoice limit reached (${currentCount}/${limit}). Upgrade your plan for unlimited invoices.`
+    };
+  }
+
+  return { allowed: true, currentCount, limit };
+}
+
+/**
  * Create a new invoice
  * @param {Object} invoiceData - Invoice data
+ * @param {string} userPlan - User's subscription plan (optional, for limit checking)
  * @returns {Promise<Object|null>} - Created invoice or null
  */
-export async function createInvoice(invoiceData) {
+export async function createInvoice(invoiceData, userPlan = null) {
   try {
     const { supabase } = await import('../supabaseClient');
-    
+
+    // Server-side limit enforcement if plan is provided
+    if (userPlan && invoiceData.user_id) {
+      const limitCheck = await checkInvoiceLimitForUser(invoiceData.user_id, userPlan);
+      if (!limitCheck.allowed) {
+        throw new Error(limitCheck.error);
+      }
+    }
+
     // Extract items
     const items = invoiceData.items || [];
     
@@ -544,7 +606,7 @@ export async function recordPayment(invoiceId, paymentData) {
       }
     } catch (notifError) {
       // Don't fail the main operation if notification fails
-      console.error('Failed to create payment notification:', notifError);
+      // Silent failure in production, would log in development
     }
 
     return payment?.[0] || null;
@@ -774,7 +836,7 @@ export async function checkAndUpdateOverdueInvoices(userId) {
           });
         }
       } catch (notifError) {
-        console.error('Failed to create overdue invoice notification:', notifError);
+        // Silent failure in production, notification is non-critical
       }
     }
 

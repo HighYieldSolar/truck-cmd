@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabaseClient';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[update-subscription]', ...args);
+
 // Valid plans and billing cycles
 const VALID_PLANS = ['basic', 'premium', 'fleet'];
 const VALID_BILLING_CYCLES = ['monthly', 'yearly'];
@@ -278,7 +281,7 @@ export async function POST(request) {
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error storing scheduled downgrade:', updateError);
+        log('Error storing scheduled downgrade:', updateError);
       }
 
     } else {
@@ -323,7 +326,7 @@ export async function POST(request) {
             };
           }
         } catch (couponError) {
-          console.log('Coupon not found or invalid:', couponCode);
+          log('Coupon not found or invalid:', couponCode);
           // Continue without coupon - don't fail the upgrade
         }
       }
@@ -350,13 +353,13 @@ export async function POST(request) {
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error updating subscription in database:', updateError);
+        log('Error updating subscription in database:', updateError);
       }
     }
 
     // Log if we cleared a cancellation
     if (wasCanceled) {
-      console.log(`Cleared pending cancellation for user ${userId} during ${changeType}`);
+      log(`Cleared pending cancellation for user ${userId} during ${changeType}`);
     }
 
     const currentPeriodEnd = new Date(updatedSubscription.current_period_end * 1000);
@@ -400,7 +403,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('Error updating subscription:', error);
+    log('Error updating subscription:', error);
     return NextResponse.json({
       error: error.message || 'Failed to update subscription'
     }, { status: 500 });

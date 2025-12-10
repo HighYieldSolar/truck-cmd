@@ -85,15 +85,17 @@ export async function fetchFuelEntries(userId, filters = {}) {
 
 /**
  * Get a fuel entry by ID
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Fuel entry ID
  * @returns {Promise<Object|null>} - Fuel entry object or null
  */
-export async function getFuelEntryById(id) {
+export async function getFuelEntryById(userId, id) {
   try {
     const { data, error } = await supabase
       .from('fuel_entries')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
       
     if (error) throw error;
@@ -137,16 +139,18 @@ export async function createFuelEntry(fuelEntryData) {
 
 /**
  * Update an existing fuel entry
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Fuel entry ID
  * @param {Object} fuelEntryData - Updated fuel entry data
  * @returns {Promise<Object|null>} - Updated fuel entry or null
  */
-export async function updateFuelEntry(id, fuelEntryData) {
+export async function updateFuelEntry(userId, id, fuelEntryData) {
   try {
     const { data, error } = await supabase
       .from('fuel_entries')
       .update(fuelEntryData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
       
     if (error) throw error;
@@ -159,15 +163,17 @@ export async function updateFuelEntry(id, fuelEntryData) {
 
 /**
  * Delete a fuel entry
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Fuel entry ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteFuelEntry(id) {
+export async function deleteFuelEntry(userId, id) {
   try {
     const { error } = await supabase
       .from('fuel_entries')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
       
     if (error) throw error;
     

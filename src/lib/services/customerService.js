@@ -66,11 +66,12 @@ export async function createCustomer(userId, customerData) {
 
 /**
  * Update an existing customer
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Customer ID
  * @param {Object} customerData - Updated customer data
  * @returns {Promise<Object|null>} - Updated customer object or null
  */
-export async function updateCustomer(id, customerData) {
+export async function updateCustomer(userId, id, customerData) {
   try {
     // Format data for the database
     const dbData = {
@@ -87,11 +88,12 @@ export async function updateCustomer(id, customerData) {
       notes: customerData.notes || '',
       updated_at: new Date()
     };
-    
+
     const { data, error } = await supabase
       .from('customers')
       .update(dbData)
       .eq('id', id)
+      .eq('user_id', userId)
       .select();
       
     if (error) throw error;
@@ -107,15 +109,17 @@ export async function updateCustomer(id, customerData) {
 
 /**
  * Delete a customer
+ * @param {string} userId - The authenticated user's ID
  * @param {string} id - Customer ID
  * @returns {Promise<boolean>} - Success status
  */
-export async function deleteCustomer(id) {
+export async function deleteCustomer(userId, id) {
   try {
     const { error } = await supabase
       .from('customers')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', userId);
       
     if (error) throw error;
     
