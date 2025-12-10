@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { 
-  HelpCircle, 
-  MessageCircle, 
-  FileText, 
-  Phone, 
+import {
+  HelpCircle,
+  MessageCircle,
+  FileText,
+  Phone,
   Mail,
   ChevronDown,
   ChevronUp,
   ArrowLeft,
   Book,
-  Video,
   Users
 } from "lucide-react";
 
@@ -60,42 +59,45 @@ export default function HelpPage() {
       title: "Live Chat",
       description: "Get instant help from our support team",
       action: "Start Chat",
-      available: "Mon-Fri, 9am-6pm EST"
+      available: "Mon-Fri, 9am-6pm EST",
+      href: "/contact"
     },
     {
       icon: <Mail className="w-6 h-6" />,
       title: "Email Support",
       description: "We'll respond within 24 hours",
-      action: "support@truckingapp.com",
-      available: "24/7 response time"
+      action: "support@truckcommand.com",
+      available: "24/7 response time",
+      href: "mailto:support@truckcommand.com"
     },
     {
       icon: <Phone className="w-6 h-6" />,
-      title: "Phone Support",
-      description: "Speak with our support team",
-      action: "1-800-TRUCKING",
-      available: "Mon-Fri, 9am-6pm EST"
+      title: "Contact Form",
+      description: "Send us a detailed message",
+      action: "Get in Touch",
+      available: "Response within 24-48 hours",
+      href: "/contact"
     }
   ];
 
   const resources = [
     {
       icon: <Book className="w-6 h-6" />,
-      title: "Documentation",
-      description: "Detailed guides for every feature",
-      link: "/docs"
+      title: "FAQ",
+      description: "Find answers to common questions",
+      link: "/faq"
     },
     {
-      icon: <Video className="w-6 h-6" />,
-      title: "Video Tutorials",
-      description: "Step-by-step video walkthroughs",
-      link: "/tutorials"
+      icon: <FileText className="w-6 h-6" />,
+      title: "Getting Started",
+      description: "Quick start guide for new users",
+      link: "/about"
     },
     {
       icon: <Users className="w-6 h-6" />,
-      title: "Community Forum",
-      description: "Connect with other trucking businesses",
-      link: "/community"
+      title: "Contact Us",
+      description: "Reach out with questions or feedback",
+      link: "/contact"
     }
   ];
 
@@ -178,7 +180,7 @@ export default function HelpPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Contact Support</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {supportChannels.map((channel, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow">
+              <Link key={index} href={channel.href} className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
                 <div className="flex items-center mb-4">
                   <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
                     {channel.icon}
@@ -188,7 +190,7 @@ export default function HelpPage() {
                 <p className="text-gray-600 mb-4">{channel.description}</p>
                 <p className="font-medium text-blue-600 mb-2">{channel.action}</p>
                 <p className="text-sm text-gray-500">{channel.available}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
