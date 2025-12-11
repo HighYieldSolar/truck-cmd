@@ -266,6 +266,8 @@ async function handleSubscriptionUpdate(event) {
 
   if (status === 'active') {
     updateData.trial_ends_at = null;
+    // Clear cancellation fields when subscription becomes active (re-subscribe scenario)
+    updateData.canceled_at = null;
   }
 
   if (subscription.canceled_at) {
@@ -352,12 +354,30 @@ async function handleSubscriptionCancellation(event) {
     throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
   }
 
+  // Build cancellation update data
+  const cancelData = {
+    status: "canceled",
+    cancel_at_period_end: false, // Already canceled, not pending
+    updated_at: new Date().toISOString(),
+    // Clear any scheduled changes since subscription is now canceled
+    scheduled_plan: null,
+    scheduled_billing_cycle: null,
+    scheduled_amount: null
+  };
+
+  // Add canceled_at timestamp if available
+  if (subscription.canceled_at) {
+    const canceledAtISO = safeTimestampToISO(subscription.canceled_at);
+    if (canceledAtISO) {
+      cancelData.canceled_at = canceledAtISO;
+    }
+  } else {
+    cancelData.canceled_at = new Date().toISOString();
+  }
+
   const { error: updateError } = await supabase
     .from("subscriptions")
-    .update({
-      status: "canceled",
-      updated_at: new Date().toISOString()
-    })
+    .update(cancelData)
     .eq("user_id", userId);
 
   if (updateError) {
@@ -665,7 +685,8 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
       stripeSubscription.metadata?.scheduled_downgrade === 'true';
 
     if (hasScheduledDowngrade) {
-      const newPlan = dbSubscription?.scheduled_plan || stripeSubscription.metadata?.scheduled_plan;
+      const rawNewPlan = dbSubscription?.scheduled_plan || stripeSubscription.metadata?.scheduled_plan;
+      const newPlan = normalizePlanName(rawNewPlan);
       const newBillingCycle = dbSubscription?.scheduled_billing_cycle || stripeSubscription.metadata?.scheduled_billing_cycle;
       const scheduledPriceId = stripeSubscription.metadata?.scheduled_price_id;
 
@@ -718,7 +739,8 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
     }
 
     // Normal payment processing
-    const plan = stripeSubscription.metadata?.plan || 'premium';
+    const rawPlan = stripeSubscription.metadata?.plan;
+    const plan = normalizePlanName(rawPlan);
     const invoiceSubItems = stripeSubscription.items?.data || [];
     const invoicePrimaryItem = invoiceSubItems[0];
     const billingCycle = stripeSubscription.metadata?.billingCycle ||
@@ -759,12 +781,14 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
   const subscriptionId = schedule.subscription;
   const stripeCustomerId = schedule.customer;
 
-  const newPlan = schedule.metadata?.new_plan;
+  const rawNewPlan = schedule.metadata?.new_plan;
   const newBillingCycle = schedule.metadata?.new_billing_cycle;
 
-  if (!newPlan) {
+  if (!rawNewPlan) {
     return;
   }
+
+  const newPlan = normalizePlanName(rawNewPlan);
 
   let userId;
 
