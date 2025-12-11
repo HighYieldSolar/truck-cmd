@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabaseClient';
 // Create the context
 const SubscriptionContext = createContext();
 
+// Mutex to prevent concurrent subscription checks/creations
+let subscriptionMutex = Promise.resolve();
+
 /**
  * Trigger notification backfill for a user (runs once per 24 hours)
  */
@@ -72,123 +75,162 @@ export function SubscriptionProvider({ children }) {
   const refreshTimeoutRef = useRef(null);
   const initialLoadRef = useRef(false);
 
-  // Load user and subscription data
+  // Load user and subscription data with mutex to prevent race conditions
   const checkUserAndSubscription = async () => {
-    try {
-      setLoading(true);
+    // Use mutex to prevent concurrent execution
+    subscriptionMutex = subscriptionMutex.then(async () => {
+      try {
+        setLoading(true);
 
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-      if (userError) throw userError;
+        if (userError) throw userError;
 
-      if (!user) {
+        if (!user) {
+          setSubscription({
+            status: 'none',
+            plan: null,
+            trialEndsAt: null,
+            currentPeriodEndsAt: null
+          });
+          setUserProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        setUser(user);
+
+        // Trigger notification backfill for any missing alerts (runs once per 24 hours)
+        triggerNotificationBackfill(user.id);
+
+        // Fetch user profile data (including avatar_url)
+        const { data: profileData } = await supabase
+          .from('users')
+          .select('full_name, avatar_url, company_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profileData) {
+          setUserProfile({
+            fullName: profileData.full_name,
+            avatarUrl: profileData.avatar_url,
+            companyName: profileData.company_name
+          });
+        }
+
+        // Check for subscription
+        const { data: subscriptionData, error: subError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (subError && subError.code !== 'PGRST116') {
+          // Continue without throwing error
+        }
+
+        if (subscriptionData) {
+          // Subscription exists - set data
+          setSubscription({
+            status: subscriptionData.status,
+            plan: subscriptionData.plan,
+            trialEndsAt: subscriptionData.trial_ends_at,
+            currentPeriodEndsAt: subscriptionData.current_period_ends_at,
+            stripeCustomerId: subscriptionData.stripe_customer_id,
+            stripeSubscriptionId: subscriptionData.stripe_subscription_id,
+            billing_cycle: subscriptionData.billing_cycle,
+            amount: subscriptionData.amount,
+            card_last_four: subscriptionData.card_last_four,
+            cancel_at_period_end: subscriptionData.cancel_at_period_end,
+            canceled_at: subscriptionData.canceled_at,
+            current_period_starts_at: subscriptionData.current_period_starts_at,
+            current_period_ends_at: subscriptionData.current_period_ends_at,
+            scheduled_plan: subscriptionData.scheduled_plan,
+            scheduled_billing_cycle: subscriptionData.scheduled_billing_cycle
+          });
+        } else {
+          // No subscription record found - create a trial subscription using upsert
+          // to prevent duplicate creation race condition
+          const createdAt = new Date(user.created_at || Date.now());
+          const trialEndDate = new Date(createdAt);
+          trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+          // Use upsert with onConflict to prevent race condition
+          try {
+            const { data: upsertData, error: upsertError } = await supabase
+              .from('subscriptions')
+              .upsert([{
+                user_id: user.id,
+                status: 'trial',
+                plan: null,
+                trial_ends_at: trialEndDate.toISOString(),
+                created_at: new Date().toISOString()
+              }], {
+                onConflict: 'user_id',
+                ignoreDuplicates: true // Don't update if already exists
+              })
+              .select()
+              .single();
+
+            // If upsert returned data, use it; otherwise fetch the existing record
+            if (upsertData) {
+              setSubscription({
+                status: upsertData.status,
+                plan: upsertData.plan,
+                trialEndsAt: upsertData.trial_ends_at,
+                currentPeriodEndsAt: upsertData.current_period_ends_at
+              });
+            } else {
+              // Another request may have created the subscription, fetch it
+              const { data: existingData } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+              if (existingData) {
+                setSubscription({
+                  status: existingData.status,
+                  plan: existingData.plan,
+                  trialEndsAt: existingData.trial_ends_at,
+                  currentPeriodEndsAt: existingData.current_period_ends_at
+                });
+              } else {
+                // Fallback to trial data
+                setSubscription({
+                  status: 'trial',
+                  plan: null,
+                  trialEndsAt: trialEndDate.toISOString(),
+                  currentPeriodEndsAt: null
+                });
+              }
+            }
+          } catch (insertError) {
+            // Set default trial data anyway
+            setSubscription({
+              status: 'trial',
+              plan: null,
+              trialEndsAt: trialEndDate.toISOString(),
+              currentPeriodEndsAt: null
+            });
+          }
+        }
+      } catch (error) {
+        // Set fallback state
         setSubscription({
-          status: 'none',
+          status: 'error',
           plan: null,
           trialEndsAt: null,
           currentPeriodEndsAt: null
         });
-        setUserProfile(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setUser(user);
-
-      // Trigger notification backfill for any missing alerts (runs once per 24 hours)
-      triggerNotificationBackfill(user.id);
-
-      // Fetch user profile data (including avatar_url)
-      const { data: profileData } = await supabase
-        .from('users')
-        .select('full_name, avatar_url, company_name')
-        .eq('id', user.id)
-        .single();
-
-      if (profileData) {
-        setUserProfile({
-          fullName: profileData.full_name,
-          avatarUrl: profileData.avatar_url,
-          companyName: profileData.company_name
-        });
-      }
-
-      // Check for subscription
-      const { data: subscriptionData, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (subError && subError.code !== 'PGRST116') {
-        // Continue without throwing error
-      }
-
-      if (subscriptionData) {
-        // Subscription exists - set data
-        setSubscription({
-          status: subscriptionData.status,
-          plan: subscriptionData.plan,
-          trialEndsAt: subscriptionData.trial_ends_at,
-          currentPeriodEndsAt: subscriptionData.current_period_ends_at,
-          stripeCustomerId: subscriptionData.stripe_customer_id,
-          stripeSubscriptionId: subscriptionData.stripe_subscription_id,
-          billing_cycle: subscriptionData.billing_cycle,
-          amount: subscriptionData.amount,
-          card_last_four: subscriptionData.card_last_four,
-          cancel_at_period_end: subscriptionData.cancel_at_period_end,
-          canceled_at: subscriptionData.canceled_at,
-          current_period_starts_at: subscriptionData.current_period_starts_at,
-          current_period_ends_at: subscriptionData.current_period_ends_at,
-          scheduled_plan: subscriptionData.scheduled_plan,
-          scheduled_billing_cycle: subscriptionData.scheduled_billing_cycle
-        });
-      } else {
-        // No subscription record found - create a trial subscription
-        const createdAt = new Date(user.created_at || Date.now());
-        const trialEndDate = new Date(createdAt);
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
-
-        // Create subscription record in the database
-        try {
-          await supabase
-            .from('subscriptions')
-            .insert([{
-              user_id: user.id,
-              status: 'trial',
-              plan: null,
-              trial_ends_at: trialEndDate.toISOString(),
-              created_at: new Date().toISOString()
-            }]);
-
-          setSubscription({
-            status: 'trial',
-            plan: null,
-            trialEndsAt: trialEndDate.toISOString(),
-            currentPeriodEndsAt: null
-          });
-        } catch (insertError) {
-          // Set default trial data anyway
-          setSubscription({
-            status: 'trial',
-            plan: null,
-            trialEndsAt: trialEndDate.toISOString(),
-            currentPeriodEndsAt: null
-          });
-        }
-      }
-    } catch (error) {
-      // Set fallback state
-      setSubscription({
-        status: 'error',
-        plan: null,
-        trialEndsAt: null,
-        currentPeriodEndsAt: null
-      });
-    } finally {
+    }).catch(() => {
+      // Reset mutex on error
       setLoading(false);
-    }
+    });
   };
 
   // Initial load effect

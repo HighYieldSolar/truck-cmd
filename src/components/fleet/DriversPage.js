@@ -168,20 +168,32 @@ export default function DriversPage() {
         setUser(user);
         await loadData(user.id);
 
-        // Set up real-time subscription
+        // Set up real-time subscription - selective updates without full reload
         channel = supabase
           .channel('drivers-changes')
           .on('postgres_changes',
             { event: '*', schema: 'public', table: 'drivers', filter: `user_id=eq.${user.id}` },
             (payload) => {
+              // Update local state directly based on event type (no full reload)
               if (payload.eventType === 'INSERT') {
-                setDrivers(prev => [payload.new, ...prev]);
+                setDrivers(prev => {
+                  const updated = [payload.new, ...prev];
+                  calculateExpiryStats(updated);
+                  return updated;
+                });
               } else if (payload.eventType === 'UPDATE') {
-                setDrivers(prev => prev.map(d => d.id === payload.new.id ? payload.new : d));
+                setDrivers(prev => {
+                  const updated = prev.map(d => d.id === payload.new.id ? payload.new : d);
+                  calculateExpiryStats(updated);
+                  return updated;
+                });
               } else if (payload.eventType === 'DELETE') {
-                setDrivers(prev => prev.filter(d => d.id !== payload.old.id));
+                setDrivers(prev => {
+                  const updated = prev.filter(d => d.id !== payload.old.id);
+                  calculateExpiryStats(updated);
+                  return updated;
+                });
               }
-              loadData(user.id);
             }
           )
           .subscribe();

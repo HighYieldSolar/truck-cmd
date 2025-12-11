@@ -31,12 +31,17 @@ function LoginPageContent() {
     const handleHashTokens = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
+        // SECURITY: Clear the hash from URL immediately to prevent exposure in browser history
+        // Store tokens in memory before clearing
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        // Clear hash from URL immediately (before any async operations)
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
         setProcessingOAuth(true);
         try {
-          const hashParams = new URLSearchParams(hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-
           if (accessToken) {
             const { data, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
@@ -44,28 +49,20 @@ function LoginPageContent() {
             });
 
             if (sessionError) {
-              console.error('Session error:', sessionError);
               setError('Failed to complete sign in. Please try again.');
               setProcessingOAuth(false);
-              // Clear the hash
-              window.history.replaceState(null, '', window.location.pathname);
               return;
             }
 
             if (data.session) {
-              // Clear the hash and redirect to dashboard
-              window.history.replaceState(null, '', window.location.pathname);
               router.push('/dashboard');
               return;
             }
           }
         } catch (err) {
-          console.error('OAuth processing error:', err);
           setError('Authentication error. Please try again.');
         }
         setProcessingOAuth(false);
-        // Clear the hash
-        window.history.replaceState(null, '', window.location.pathname);
       }
 
       // Check for error in query params

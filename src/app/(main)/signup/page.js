@@ -40,12 +40,17 @@ function SignupPageContent() {
     const handleHashTokens = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
+        // SECURITY: Clear the hash from URL immediately to prevent exposure in browser history
+        // Store tokens in memory before clearing
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        // Clear hash from URL immediately (before any async operations)
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
         setProcessingOAuth(true);
         try {
-          const hashParams = new URLSearchParams(hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-
           if (accessToken) {
             const { data, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken,
@@ -53,25 +58,20 @@ function SignupPageContent() {
             });
 
             if (sessionError) {
-              console.error('Session error:', sessionError);
               setError('Failed to complete sign in. Please try again.');
               setProcessingOAuth(false);
-              window.history.replaceState(null, '', window.location.pathname);
               return;
             }
 
             if (data.session) {
-              window.history.replaceState(null, '', window.location.pathname);
               router.push('/dashboard');
               return;
             }
           }
         } catch (err) {
-          console.error('OAuth processing error:', err);
           setError('Authentication error. Please try again.');
         }
         setProcessingOAuth(false);
-        window.history.replaceState(null, '', window.location.pathname);
       }
     };
 
@@ -195,14 +195,8 @@ function SignupPageContent() {
     setLoading(true);
 
     try {
-      // Double-check email doesn't exist before signup
-      const emailExists = await checkEmailExists(email);
-      if (emailExists) {
-        setError("This email is already registered. Please use a different email or log in to your existing account.");
-        setLoading(false);
-        return;
-      }
-
+      // Note: We skip the double-check here to avoid race conditions
+      // Supabase's signUp will handle duplicate emails properly
       const cleanedPhone = phone.replace(/\D/g, '');
 
       const { data, error } = await supabase.auth.signUp({
