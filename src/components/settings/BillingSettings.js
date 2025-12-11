@@ -200,9 +200,19 @@ export default function BillingSettings() {
     try {
       setLoadingPayment(true);
 
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.log('No session found for payment method fetch');
+        return;
+      }
+
       const response = await fetch('/api/get-payment-method', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId }),
       });
 
@@ -296,9 +306,19 @@ export default function BillingSettings() {
   // Handle Stripe portal access
   const handleStripePortal = async () => {
     try {
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setErrorMessage('Please sign in again to access billing portal.');
+        return;
+      }
+
       const response = await fetch('/api/create-portal-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           userId: user.id,
           returnUrl: `${window.location.origin}/dashboard/settings/billing`
@@ -323,9 +343,19 @@ export default function BillingSettings() {
       setCanceling(true);
       setShowCancellationModal(false);
 
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setErrorMessage('Please sign in again to cancel your subscription.');
+        return;
+      }
+
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           userId: user.id,
           reason: cancellationData.reason,
@@ -353,9 +383,19 @@ export default function BillingSettings() {
     try {
       setReactivating(true);
 
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setErrorMessage('Please sign in again to reactivate your subscription.');
+        return;
+      }
+
       const response = await fetch('/api/reactivate-subscription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId: user.id }),
       });
 
