@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabaseClient';
 // Create the context
 const SubscriptionContext = createContext();
 
+// Debug logging (disabled in production)
+const DEBUG = process.env.NODE_ENV === 'development';
+
 // Mutex to prevent concurrent subscription checks/creations
 let subscriptionMutex = Promise.resolve();
 
@@ -43,12 +46,12 @@ async function triggerNotificationBackfill(userId) {
       localStorage.setItem(lastBackfillKey, new Date().toISOString());
       const result = await response.json();
       if (result.totalCreated > 0) {
-        console.log(`Notification backfill: ${result.totalCreated} new alerts created`);
+        if (DEBUG) console.log(`Notification backfill: ${result.totalCreated} new alerts created`);
       }
     }
   } catch (error) {
     // Silently fail - backfill is not critical
-    console.error('Notification backfill failed:', error);
+    // Silently fail in production
   }
 }
 
@@ -156,33 +159,31 @@ export function SubscriptionProvider({ children }) {
           const trialEndDate = new Date(createdAt);
           trialEndDate.setDate(trialEndDate.getDate() + 7);
 
-          // Use upsert with onConflict to prevent race condition
+          // Try to create trial subscription - use INSERT first, then upsert as fallback
           try {
-            const { data: upsertData, error: upsertError } = await supabase
+            // First, try a direct INSERT (most common case - no existing row)
+            const { data: insertData, error: insertError } = await supabase
               .from('subscriptions')
-              .upsert([{
+              .insert({
                 user_id: user.id,
-                status: 'trial',
-                plan: null,
+                status: 'trialing',
+                plan: 'basic',
                 trial_ends_at: trialEndDate.toISOString(),
-                created_at: new Date().toISOString()
-              }], {
-                onConflict: 'user_id',
-                ignoreDuplicates: true // Don't update if already exists
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
               })
               .select()
               .single();
 
-            // If upsert returned data, use it; otherwise fetch the existing record
-            if (upsertData) {
+            if (insertData && !insertError) {
               setSubscription({
-                status: upsertData.status,
-                plan: upsertData.plan,
-                trialEndsAt: upsertData.trial_ends_at,
-                currentPeriodEndsAt: upsertData.current_period_ends_at
+                status: insertData.status,
+                plan: insertData.plan,
+                trialEndsAt: insertData.trial_ends_at,
+                currentPeriodEndsAt: insertData.current_period_ends_at
               });
-            } else {
-              // Another request may have created the subscription, fetch it
+            } else if (insertError?.code === '23505') {
+              // Duplicate key - row already exists, fetch it
               const { data: existingData } = await supabase
                 .from('subscriptions')
                 .select('*')
@@ -197,20 +198,32 @@ export function SubscriptionProvider({ children }) {
                   currentPeriodEndsAt: existingData.current_period_ends_at
                 });
               } else {
-                // Fallback to trial data
+                // Fallback to trial state
                 setSubscription({
-                  status: 'trial',
-                  plan: null,
+                  status: 'trialing',
+                  plan: 'basic',
                   trialEndsAt: trialEndDate.toISOString(),
                   currentPeriodEndsAt: null
                 });
               }
+            } else if (insertError) {
+              // Log error only in development
+              if (DEBUG) console.error('Subscription creation failed:', insertError.message, insertError.code);
+              // Set trial state anyway so user can use the app
+              setSubscription({
+                status: 'trialing',
+                plan: 'basic',
+                trialEndsAt: trialEndDate.toISOString(),
+                currentPeriodEndsAt: null
+              });
             }
           } catch (insertError) {
+            // Log only in development
+            if (DEBUG) console.error('Subscription creation exception:', insertError);
             // Set default trial data anyway
             setSubscription({
-              status: 'trial',
-              plan: null,
+              status: 'trialing',
+              plan: 'basic',
               trialEndsAt: trialEndDate.toISOString(),
               currentPeriodEndsAt: null
             });
