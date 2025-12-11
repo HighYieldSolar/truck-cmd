@@ -78,6 +78,23 @@ export async function POST(req) {
 }
 
 /**
+ * Helper function to normalize plan names to valid values
+ */
+function normalizePlanName(rawPlanName) {
+  if (!rawPlanName) return 'premium';
+
+  const planName = rawPlanName.toLowerCase().trim();
+
+  // Check if it contains one of the valid plan names
+  if (planName.includes('fleet')) return 'fleet';
+  if (planName.includes('basic')) return 'basic';
+  if (planName.includes('premium')) return 'premium';
+
+  // Default to premium if no match
+  return 'premium';
+}
+
+/**
  * Helper function to safely convert Unix timestamp to ISO string
  */
 function safeTimestampToISO(timestamp) {
@@ -148,7 +165,8 @@ async function handleSubscriptionUpdate(event) {
         // Get plan name from product metadata or name
         const product = price.product;
         if (product && typeof product !== 'string') {
-          planId = product.metadata?.plan_id || product.name?.toLowerCase()?.replace(/\s+(plan|subscription)/gi, '').trim() || 'premium';
+          const rawPlan = product.metadata?.plan_id || product.name;
+          planId = normalizePlanName(rawPlan);
         }
       }
     }
