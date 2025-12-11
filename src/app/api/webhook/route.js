@@ -78,6 +78,21 @@ export async function POST(req) {
 }
 
 /**
+ * Helper function to safely convert Unix timestamp to ISO string
+ */
+function safeTimestampToISO(timestamp) {
+  if (!timestamp || typeof timestamp !== 'number') {
+    return null;
+  }
+  try {
+    return new Date(timestamp * 1000).toISOString();
+  } catch (err) {
+    log(`Error converting timestamp ${timestamp}:`, err.message);
+    return null;
+  }
+}
+
+/**
  * Handle subscription created or updated events
  */
 async function handleSubscriptionUpdate(event) {
@@ -85,14 +100,23 @@ async function handleSubscriptionUpdate(event) {
   const subscriptionId = subscription.id;
   const stripeCustomerId = subscription.customer;
   const status = subscription.status;
-  const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+
+  // Safely get period dates - fall back to item-level dates if subscription-level not available
+  const subscriptionItems = subscription.items?.data || [];
+  const primaryItem = subscriptionItems[0];
+
+  const currentPeriodEnd = safeTimestampToISO(subscription.current_period_end)
+    || safeTimestampToISO(primaryItem?.current_period_end)
+    || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // Fallback: 30 days from now
+
+  const currentPeriodStart = safeTimestampToISO(subscription.current_period_start)
+    || safeTimestampToISO(primaryItem?.current_period_start)
+    || new Date().toISOString(); // Fallback: now
 
   log(`Subscription update: ${subscriptionId}, Status: ${status}`);
 
   // Get plan info from the subscription items
-  // Handle subscriptions with no items or multiple items safely
-  const subscriptionItems = subscription.items?.data || [];
-  const primaryItem = subscriptionItems[0]; // Primary subscription item
+  // Note: subscriptionItems and primaryItem already defined above
 
   let planId = null;
   let billingCycle = primaryItem?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly';
@@ -164,7 +188,7 @@ async function handleSubscriptionUpdate(event) {
     stripe_subscription_id: subscriptionId,
     stripe_customer_id: stripeCustomerId,
     current_period_ends_at: currentPeriodEnd,
-    current_period_starts_at: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_starts_at: currentPeriodStart,
     cancel_at_period_end: subscription.cancel_at_period_end || false,
     updated_at: new Date().toISOString()
   };
@@ -196,7 +220,10 @@ async function handleSubscriptionUpdate(event) {
   }
 
   if (subscription.canceled_at) {
-    updateData.canceled_at = new Date(subscription.canceled_at * 1000).toISOString();
+    const canceledAtISO = safeTimestampToISO(subscription.canceled_at);
+    if (canceledAtISO) {
+      updateData.canceled_at = canceledAtISO;
+    }
   }
 
   const { error: updateError } = await supabase
@@ -306,8 +333,8 @@ async function handleCheckoutCompleted(event, stripe) {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionIdString);
     const status = subscription.status;
-    const currentPeriodStart = new Date(subscription.current_period_start * 1000).toISOString();
-    const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    const currentPeriodStart = safeTimestampToISO(subscription.current_period_start) || new Date().toISOString();
+    const currentPeriodEnd = safeTimestampToISO(subscription.current_period_end) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const calculateAmount = (plan, billingCycle) => {
       const pricing = {
@@ -593,8 +620,8 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
           amount: dbSubscription?.scheduled_amount || (Math.round(invoice.amount_paid) / 100),
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: stripeCustomerId,
-          current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-          current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+          current_period_starts_at: safeTimestampToISO(stripeSubscription.current_period_start) || new Date().toISOString(),
+          current_period_ends_at: safeTimestampToISO(stripeSubscription.current_period_end) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           scheduled_plan: null,
           scheduled_billing_cycle: null,
           scheduled_amount: null,
@@ -626,8 +653,8 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
         plan: plan,
         billing_cycle: billingCycle,
         amount: Math.round(amount) / 100,
-        current_period_starts_at: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-        current_period_ends_at: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
+        current_period_starts_at: safeTimestampToISO(stripeSubscription.current_period_start) || new Date().toISOString(),
+        current_period_ends_at: safeTimestampToISO(stripeSubscription.current_period_end) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         trial_ends_at: null,
         updated_at: new Date().toISOString()
       })
