@@ -157,30 +157,61 @@ async function handleSubscriptionUpdate(event) {
     planId = 'premium';
   }
 
-  // Find the user in Supabase
-  let { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
+  // Find the user in Supabase - try multiple lookup methods
+  let userId = null;
 
-  // If not found in users table, try the subscriptions table
-  if (userError) {
+  // Method 1: Check subscription metadata for userId (most reliable for new subscriptions)
+  if (subscription.metadata?.userId) {
+    userId = subscription.metadata.userId;
+    log(`Found userId from subscription metadata: ${userId}`);
+  }
+
+  // Method 2: Try users table by stripe_customer_id
+  if (!userId) {
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!userError && userData) {
+      userId = userData.id;
+      log(`Found userId from users table: ${userId}`);
+    }
+  }
+
+  // Method 3: Try subscriptions table by stripe_customer_id
+  if (!userId) {
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .select("user_id")
       .eq("stripe_customer_id", stripeCustomerId)
       .single();
 
-    if (subError) {
-      log(`User not found for Stripe customer: ${stripeCustomerId}`);
-      throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
+    if (!subError && subData) {
+      userId = subData.user_id;
+      log(`Found userId from subscriptions table: ${userId}`);
     }
-
-    userData = { id: subData.user_id };
   }
 
-  const userId = userData.id;
+  // Method 4: Try subscriptions table by stripe_subscription_id
+  if (!userId) {
+    const { data: subDataById, error: subByIdError } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("stripe_subscription_id", subscriptionId)
+      .single();
+
+    if (!subByIdError && subDataById) {
+      userId = subDataById.user_id;
+      log(`Found userId from subscriptions table by subscription ID: ${userId}`);
+    }
+  }
+
+  if (!userId) {
+    log(`User not found for Stripe customer: ${stripeCustomerId}, subscription: ${subscriptionId}`);
+    throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
+  }
 
   // Update the subscription in Supabase
   const updateData = {
@@ -245,30 +276,62 @@ async function handleSubscriptionUpdate(event) {
 async function handleSubscriptionCancellation(event) {
   const subscription = event.data.object;
   const stripeCustomerId = subscription.customer;
+  const subscriptionId = subscription.id;
 
-  let userId;
+  // Find the user using multiple lookup methods
+  let userId = null;
 
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
+  // Method 1: Check subscription metadata for userId
+  if (subscription.metadata?.userId) {
+    userId = subscription.metadata.userId;
+    log(`Found userId from subscription metadata: ${userId}`);
+  }
 
-  if (userError) {
+  // Method 2: Try users table by stripe_customer_id
+  if (!userId) {
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!userError && userData) {
+      userId = userData.id;
+      log(`Found userId from users table: ${userId}`);
+    }
+  }
+
+  // Method 3: Try subscriptions table by stripe_customer_id
+  if (!userId) {
     const { data: subData, error: subError } = await supabase
       .from("subscriptions")
       .select("user_id")
       .eq("stripe_customer_id", stripeCustomerId)
       .single();
 
-    if (subError) {
-      log(`User not found for Stripe customer: ${stripeCustomerId}`);
-      throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
+    if (!subError && subData) {
+      userId = subData.user_id;
+      log(`Found userId from subscriptions table: ${userId}`);
     }
+  }
 
-    userId = subData.user_id;
-  } else {
-    userId = userData.id;
+  // Method 4: Try subscriptions table by stripe_subscription_id
+  if (!userId) {
+    const { data: subDataById, error: subByIdError } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("stripe_subscription_id", subscriptionId)
+      .single();
+
+    if (!subByIdError && subDataById) {
+      userId = subDataById.user_id;
+      log(`Found userId from subscriptions table by subscription ID: ${userId}`);
+    }
+  }
+
+  if (!userId) {
+    log(`User not found for Stripe customer: ${stripeCustomerId}, subscription: ${subscriptionId}`);
+    throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
   }
 
   const { error: updateError } = await supabase
