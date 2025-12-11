@@ -1,7 +1,7 @@
 // src/app/api/webhook/route.js
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 
 // Enable verbose logging only in development
 const DEBUG = process.env.NODE_ENV === 'development';
