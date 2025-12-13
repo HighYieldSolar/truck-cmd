@@ -68,8 +68,14 @@ export async function POST(request) {
 
     const { userId, plan, billingCycle } = body;
 
-    // Determine if we should use test price data or real price IDs
-    const useTestPriceData = !priceIds[plan]?.[billingCycle];
+    // Get the price ID - fail if not configured
+    const priceId = priceIds[plan]?.[billingCycle];
+    if (!priceId) {
+      console.error(`[create-checkout-session] Missing price ID for ${plan}/${billingCycle}`);
+      return NextResponse.json({
+        error: `Price not configured for ${plan} plan with ${billingCycle} billing. Please contact support.`
+      }, { status: 500 });
+    }
 
     // Set up success and cancel URLs
     const successUrl = body.returnUrl
@@ -77,36 +83,16 @@ export async function POST(request) {
       : `${process.env.NEXT_PUBLIC_URL}/dashboard/upgrade/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${body.returnUrl || process.env.NEXT_PUBLIC_URL}/dashboard/upgrade?canceled=true`;
 
-    // Create the checkout session
+    // Create the checkout session with the configured price ID
     const session = await stripe.checkout.sessions.create({
-      customer_email: userEmail, // Add this if available
+      customer_email: userEmail,
       client_reference_id: userId,
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'link'],
       line_items: [
-        useTestPriceData ?
-          {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${billingCycle})`,
-                description: `Subscription to the ${plan} plan, billed ${billingCycle}`,
-              },
-              unit_amount:
-                plan === 'basic'
-                  ? (billingCycle === 'yearly' ? 19200 : 2000) // $192/year or $20/month
-                  : plan === 'premium'
-                    ? (billingCycle === 'yearly' ? 33600 : 3500) // $336/year or $35/month
-                    : (billingCycle === 'yearly' ? 72000 : 7500), // $720/year or $75/month
-              recurring: {
-                interval: billingCycle === 'yearly' ? 'year' : 'month',
-              },
-            },
-            quantity: 1,
-          } :
-          {
-            price: priceIds[plan][billingCycle],
-            quantity: 1,
-          }
+        {
+          price: priceId,
+          quantity: 1,
+        }
       ],
       mode: 'subscription',
       success_url: successUrl,
@@ -115,7 +101,15 @@ export async function POST(request) {
         userId,
         plan,
         billingCycle
-      }
+      },
+      subscription_data: {
+        metadata: {
+          userId,
+          plan,
+          billingCycle
+        }
+      },
+      allow_promotion_codes: true
     });
 
     // Update the subscription record to indicate checkout was initiated

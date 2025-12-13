@@ -52,6 +52,14 @@ export async function POST(req) {
         await handleInvoicePaymentSucceeded(event, stripe);
         break;
 
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event, stripe);
+        break;
+
+      case "customer.subscription.trial_will_end":
+        await handleTrialWillEnd(event, stripe);
+        break;
+
       // Note: invoice.paid is deprecated in favor of invoice.payment_succeeded
       // Keep minimal handler for backwards compatibility during transition
       case "invoice.paid":
@@ -687,10 +695,28 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
     if (hasScheduledDowngrade) {
       const rawNewPlan = dbSubscription?.scheduled_plan || stripeSubscription.metadata?.scheduled_plan;
       const newPlan = normalizePlanName(rawNewPlan);
-      const newBillingCycle = dbSubscription?.scheduled_billing_cycle || stripeSubscription.metadata?.scheduled_billing_cycle;
-      const scheduledPriceId = stripeSubscription.metadata?.scheduled_price_id;
+      const newBillingCycle = dbSubscription?.scheduled_billing_cycle || stripeSubscription.metadata?.scheduled_billing_cycle || 'monthly';
 
-      if (scheduledPriceId) {
+      // Always use canonical price IDs from environment variables (not metadata)
+      // This ensures we use the correct prices even if duplicate prices were previously stored
+      const canonicalPriceIds = {
+        basic: {
+          monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID,
+          yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID
+        },
+        premium: {
+          monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID,
+          yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID
+        },
+        fleet: {
+          monthly: process.env.STRIPE_FLEET_MONTHLY_PRICE_ID,
+          yearly: process.env.STRIPE_FLEET_YEARLY_PRICE_ID
+        }
+      };
+
+      const canonicalPriceId = canonicalPriceIds[newPlan]?.[newBillingCycle];
+
+      if (canonicalPriceId) {
         const stripeSubItems = stripeSubscription.items?.data || [];
         const subscriptionItemId = stripeSubItems[0]?.id;
 
@@ -698,7 +724,7 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
           await stripe.subscriptions.update(subscriptionId, {
             items: [{
               id: subscriptionItemId,
-              price: scheduledPriceId
+              price: canonicalPriceId
             }],
             proration_behavior: 'none',
             metadata: {
@@ -710,7 +736,10 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
               scheduled_price_id: ''
             }
           });
+          log(`Applied scheduled downgrade with canonical price: ${canonicalPriceId}`);
         }
+      } else {
+        log(`Warning: No canonical price ID found for ${newPlan}/${newBillingCycle}`);
       }
 
       const { error: updateError } = await supabase
@@ -844,4 +873,210 @@ async function handleSubscriptionScheduleCompleted(event, stripe) {
   }
 
   log(`Schedule completed for user ${userId}`);
+}
+
+/**
+ * Handle invoice payment failed event - dunning/failed payment recovery
+ */
+async function handleInvoicePaymentFailed(event, stripe) {
+  const invoice = event.data.object;
+
+  if (!invoice.subscription) {
+    return;
+  }
+
+  const subscriptionId = typeof invoice.subscription === 'string'
+    ? invoice.subscription
+    : invoice.subscription?.id;
+  const stripeCustomerId = typeof invoice.customer === 'string'
+    ? invoice.customer
+    : invoice.customer?.id;
+  const attemptCount = invoice.attempt_count || 1;
+  const nextPaymentAttempt = invoice.next_payment_attempt;
+
+  log(`Payment failed for subscription ${subscriptionId}, attempt ${attemptCount}`);
+
+  // Find the user
+  let userId = null;
+
+  const { data: subData, error: subError } = await supabase
+    .from("subscriptions")
+    .select("user_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (!subError && subData) {
+    userId = subData.user_id;
+  } else {
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!userError && userData) {
+      userId = userData.id;
+    }
+  }
+
+  if (!userId) {
+    log("Could not find user for failed payment");
+    return;
+  }
+
+  // Update subscription status to past_due
+  const updateData = {
+    status: 'past_due',
+    payment_failed_at: new Date().toISOString(),
+    payment_failure_count: attemptCount,
+    updated_at: new Date().toISOString()
+  };
+
+  if (nextPaymentAttempt) {
+    updateData.next_payment_retry_at = safeTimestampToISO(nextPaymentAttempt);
+  }
+
+  const { error: updateError } = await supabase
+    .from("subscriptions")
+    .update(updateData)
+    .eq("user_id", userId);
+
+  if (updateError) {
+    log(`Error updating subscription for failed payment: ${updateError.message}`);
+    throw updateError;
+  }
+
+  // Create a notification for the user
+  try {
+    await supabase
+      .from("notifications")
+      .insert({
+        user_id: userId,
+        type: 'payment_failed',
+        title: 'Payment Failed',
+        message: `We couldn't process your payment. Please update your payment method to avoid service interruption.`,
+        data: {
+          attempt_count: attemptCount,
+          next_retry: nextPaymentAttempt ? safeTimestampToISO(nextPaymentAttempt) : null,
+          invoice_id: invoice.id
+        },
+        read: false,
+        created_at: new Date().toISOString()
+      });
+  } catch (notifError) {
+    log(`Error creating payment failed notification: ${notifError.message}`);
+    // Non-critical, continue
+  }
+
+  log(`Processed failed payment for user ${userId}, attempt ${attemptCount}`);
+}
+
+/**
+ * Handle trial will end event - notify user 3 days before trial ends
+ */
+async function handleTrialWillEnd(event, stripe) {
+  const subscription = event.data.object;
+  const subscriptionId = subscription.id;
+  const stripeCustomerId = subscription.customer;
+  const trialEnd = subscription.trial_end;
+
+  log(`Trial ending soon for subscription ${subscriptionId}`);
+
+  // Find the user
+  let userId = null;
+
+  // Check metadata first
+  if (subscription.metadata?.userId) {
+    userId = subscription.metadata.userId;
+  }
+
+  if (!userId) {
+    const { data: subData, error: subError } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!subError && subData) {
+      userId = subData.user_id;
+    }
+  }
+
+  if (!userId) {
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .single();
+
+    if (!userError && userData) {
+      userId = userData.id;
+    }
+  }
+
+  if (!userId) {
+    log("Could not find user for trial ending notification");
+    return;
+  }
+
+  const trialEndDate = trialEnd ? new Date(trialEnd * 1000) : new Date();
+  const formattedDate = trialEndDate.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  // Get plan info for the notification
+  const subscriptionItems = subscription.items?.data || [];
+  const primaryItem = subscriptionItems[0];
+  const priceId = primaryItem?.price?.id;
+
+  let planName = 'your plan';
+  if (priceId) {
+    const priceIdToPlanMap = {
+      [process.env.STRIPE_BASIC_MONTHLY_PRICE_ID]: 'Basic',
+      [process.env.STRIPE_BASIC_YEARLY_PRICE_ID]: 'Basic',
+      [process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID]: 'Premium',
+      [process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID]: 'Premium',
+      [process.env.STRIPE_FLEET_MONTHLY_PRICE_ID]: 'Fleet',
+      [process.env.STRIPE_FLEET_YEARLY_PRICE_ID]: 'Fleet'
+    };
+    planName = priceIdToPlanMap[priceId] || 'your plan';
+  }
+
+  // Create a notification for the user
+  try {
+    await supabase
+      .from("notifications")
+      .insert({
+        user_id: userId,
+        type: 'trial_ending',
+        title: 'Your Trial Ends Soon',
+        message: `Your free trial ends on ${formattedDate}. Add a payment method to continue using ${planName} without interruption.`,
+        data: {
+          trial_end: safeTimestampToISO(trialEnd),
+          subscription_id: subscriptionId
+        },
+        read: false,
+        created_at: new Date().toISOString()
+      });
+  } catch (notifError) {
+    log(`Error creating trial ending notification: ${notifError.message}`);
+    // Non-critical, continue
+  }
+
+  // Update subscription to mark that trial ending notification was sent
+  try {
+    await supabase
+      .from("subscriptions")
+      .update({
+        trial_ending_notified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+  } catch (updateError) {
+    log(`Error updating trial notification status: ${updateError.message}`);
+  }
+
+  log(`Sent trial ending notification to user ${userId}`);
 }

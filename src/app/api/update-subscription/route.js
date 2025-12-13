@@ -104,9 +104,8 @@ export async function POST(request) {
       }
     };
 
-    // Check if we have actual price IDs or need to use price_data
+    // Get the price ID from environment variables
     const newPriceId = priceIds[newPlan]?.[billingCycle];
-    const useTestPriceData = !newPriceId;
 
     // Pricing in cents (monthly equivalent for comparison)
     const pricing = {
@@ -191,35 +190,12 @@ export async function POST(request) {
     let updatedSubscription;
     let priceIdToUse = newPriceId;
 
-    // If we don't have a price ID, create one
+    // Validate that we have a configured price ID - no more dynamic creation
     if (!priceIdToUse) {
-      // For test mode without actual price IDs, we need to create a new price
-      const products = await stripe.products.list({ limit: 100 });
-      let product = products.data.find(p =>
-        p.name.toLowerCase().includes(newPlan) && p.active
-      );
-
-      if (!product) {
-        // Create the product if it doesn't exist
-        product = await stripe.products.create({
-          name: `${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} Plan`,
-          description: `Truck Command ${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} subscription`,
-          metadata: { plan_id: newPlan }
-        });
-      }
-
-      // Create a new price for this product
-      const newPrice = await stripe.prices.create({
-        product: product.id,
-        unit_amount: pricing[newPlan][billingCycle],
-        currency: 'usd',
-        recurring: {
-          interval: billingCycle === 'yearly' ? 'year' : 'month'
-        },
-        metadata: { plan: newPlan, billing_cycle: billingCycle }
-      });
-
-      priceIdToUse = newPrice.id;
+      log(`Missing price ID for ${newPlan}/${billingCycle}`);
+      return NextResponse.json({
+        error: `Price not configured for ${newPlan} plan with ${billingCycle} billing. Please contact support.`
+      }, { status: 500 });
     }
 
     // Check if subscription was previously set to cancel at period end

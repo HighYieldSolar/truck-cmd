@@ -139,35 +139,14 @@ export async function POST(request) {
       fleet: { monthly: 7500, yearly: 72000 }
     };
 
-    // Get or create price ID
-    let priceId = priceIds[newPlan]?.[billingCycle];
+    // Get the configured price ID - fail if not configured
+    const priceId = priceIds[newPlan]?.[billingCycle];
 
     if (!priceId) {
-      // Find or create product and price for test mode
-      const products = await stripe.products.list({ limit: 100 });
-      let product = products.data.find(p =>
-        p.name.toLowerCase().includes(newPlan) && p.active
-      );
-
-      if (!product) {
-        product = await stripe.products.create({
-          name: `${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} Plan`,
-          description: `Truck Command ${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} subscription`,
-          metadata: { plan_id: newPlan }
-        });
-      }
-
-      const newPrice = await stripe.prices.create({
-        product: product.id,
-        unit_amount: pricing[newPlan][billingCycle],
-        currency: 'usd',
-        recurring: {
-          interval: billingCycle === 'yearly' ? 'year' : 'month'
-        },
-        metadata: { plan: newPlan, billing_cycle: billingCycle }
-      });
-
-      priceId = newPrice.id;
+      log(`Missing price ID for ${newPlan}/${billingCycle}`);
+      return NextResponse.json({
+        error: `Price not configured for ${newPlan} plan with ${billingCycle} billing. Please contact support.`
+      }, { status: 500 });
     }
 
     // Get proration preview using upcoming invoice

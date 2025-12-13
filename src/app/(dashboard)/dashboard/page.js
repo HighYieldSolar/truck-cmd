@@ -17,12 +17,17 @@ import BusinessOverview from "@/components/dashboard/(dashboard)/BusinessOvervie
 import ActivityPanel from "@/components/dashboard/(dashboard)/ActivityPanel";
 import FuelSummary from "@/components/dashboard/(dashboard)/FuelSummary";
 import QuickActions from "@/components/dashboard/(dashboard)/QuickActions";
+import FailedPaymentBanner from "@/components/billing/FailedPaymentBanner";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 /**
  * Main Dashboard Page
  * A modular implementation with separate components for better maintainability
  */
 export default function Dashboard() {
+  // Subscription context for billing status
+  const { subscription } = useSubscription();
+
   // User and authentication state
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -287,11 +292,15 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
-          <DashboardHeader 
+          <DashboardHeader
             user={user}
           />
 
-
+          {/* Failed Payment Banner - shows when payment has failed */}
+          <FailedPaymentBanner
+            subscription={subscription}
+            userId={subscription?.userId}
+          />
 
           {/* Date Range Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">

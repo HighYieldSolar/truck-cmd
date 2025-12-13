@@ -136,6 +136,7 @@ export function SubscriptionProvider({ children }) {
         if (subscriptionData) {
           // Subscription exists - set data
           setSubscription({
+            userId: user.id,
             status: subscriptionData.status,
             plan: subscriptionData.plan,
             trialEndsAt: subscriptionData.trial_ends_at,
@@ -150,7 +151,14 @@ export function SubscriptionProvider({ children }) {
             current_period_starts_at: subscriptionData.current_period_starts_at,
             current_period_ends_at: subscriptionData.current_period_ends_at,
             scheduled_plan: subscriptionData.scheduled_plan,
-            scheduled_billing_cycle: subscriptionData.scheduled_billing_cycle
+            scheduled_billing_cycle: subscriptionData.scheduled_billing_cycle,
+            // Pause subscription fields
+            paused_at: subscriptionData.paused_at,
+            pause_resumes_at: subscriptionData.pause_resumes_at,
+            // Payment failure fields
+            payment_failed_at: subscriptionData.payment_failed_at,
+            payment_failure_count: subscriptionData.payment_failure_count,
+            next_payment_retry_at: subscriptionData.next_payment_retry_at
           });
         } else {
           // No subscription record found - create a trial subscription using upsert
@@ -177,6 +185,7 @@ export function SubscriptionProvider({ children }) {
 
             if (insertData && !insertError) {
               setSubscription({
+                userId: user.id,
                 status: insertData.status,
                 plan: insertData.plan,
                 trialEndsAt: insertData.trial_ends_at,
@@ -192,6 +201,7 @@ export function SubscriptionProvider({ children }) {
 
               if (existingData) {
                 setSubscription({
+                  userId: user.id,
                   status: existingData.status,
                   plan: existingData.plan,
                   trialEndsAt: existingData.trial_ends_at,
@@ -200,6 +210,7 @@ export function SubscriptionProvider({ children }) {
               } else {
                 // Fallback to trial state
                 setSubscription({
+                  userId: user.id,
                   status: 'trialing',
                   plan: 'basic',
                   trialEndsAt: trialEndDate.toISOString(),
@@ -211,6 +222,7 @@ export function SubscriptionProvider({ children }) {
               if (DEBUG) console.error('Subscription creation failed:', insertError.message, insertError.code);
               // Set trial state anyway so user can use the app
               setSubscription({
+                userId: user.id,
                 status: 'trialing',
                 plan: 'basic',
                 trialEndsAt: trialEndDate.toISOString(),
@@ -222,6 +234,7 @@ export function SubscriptionProvider({ children }) {
             if (DEBUG) console.error('Subscription creation exception:', insertError);
             // Set default trial data anyway
             setSubscription({
+              userId: user.id,
               status: 'trialing',
               plan: 'basic',
               trialEndsAt: trialEndDate.toISOString(),

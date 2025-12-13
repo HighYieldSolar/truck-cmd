@@ -216,35 +216,14 @@ export async function POST(request) {
       fleet: { monthly: 7500, yearly: 72000 }
     };
 
-    // Check if we have actual price IDs or need to create one
-    let priceId = priceIds[plan]?.[billingCycle];
+    // Get the configured price ID - fail if not configured
+    const priceId = priceIds[plan]?.[billingCycle];
 
     if (!priceId) {
-      // Create a price dynamically for test mode
-      const products = await stripe.products.list({ limit: 100 });
-      let product = products.data.find(p =>
-        p.name.toLowerCase().includes(plan) && p.active
-      );
-
-      if (!product) {
-        product = await stripe.products.create({
-          name: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`,
-          description: `Truck Command ${plan.charAt(0).toUpperCase() + plan.slice(1)} subscription`,
-          metadata: { plan_id: plan }
-        });
-      }
-
-      const newPrice = await stripe.prices.create({
-        product: product.id,
-        unit_amount: pricing[plan][billingCycle],
-        currency: 'usd',
-        recurring: {
-          interval: billingCycle === 'yearly' ? 'year' : 'month'
-        },
-        metadata: { plan, billing_cycle: billingCycle }
-      });
-
-      priceId = newPrice.id;
+      log(`Missing price ID for ${plan}/${billingCycle}`);
+      return NextResponse.json({
+        error: `Price not configured for ${plan} plan with ${billingCycle} billing. Please contact support.`
+      }, { status: 500 });
     }
 
     // Create the subscription with payment_behavior: 'default_incomplete'
