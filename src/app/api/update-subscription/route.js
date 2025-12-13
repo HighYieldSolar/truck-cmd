@@ -233,13 +233,13 @@ export async function POST(request) {
       }
 
     } else {
-      // For UPGRADES: Apply immediately with proration
+      // For UPGRADES: Apply immediately with proration and bill now
       const updateParams = {
         items: [{
           id: subscriptionItemId,
           price: priceIdToUse
         }],
-        proration_behavior: 'create_prorations', // Charge the difference immediately
+        proration_behavior: 'always_invoice', // Create prorations AND invoice immediately
         cancel_at_period_end: false, // Clear any pending cancellation
         metadata: {
           plan: newPlan,
