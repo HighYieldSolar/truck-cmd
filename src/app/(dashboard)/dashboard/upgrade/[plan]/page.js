@@ -785,45 +785,64 @@ export default function UpgradePlanPage() {
           {/* Plan Title */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{selectedPlan.name} plan</h1>
 
-          {/* Billing Cycle Selection */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <button
-              onClick={() => handleBillingCycleChange("monthly")}
-              className={`relative p-4 rounded-lg border-2 text-left transition-all ${
-                billingCycle === "monthly"
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full border-2 mb-2 flex items-center justify-center ${
-                billingCycle === "monthly" ? "border-blue-500" : "border-gray-400 dark:border-gray-500"
-              }`}>
-                {billingCycle === "monthly" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
-              </div>
-              <p className="text-gray-900 dark:text-white font-medium text-sm">Monthly billing</p>
-              <p className="text-gray-500 dark:text-gray-400 text-xs">${selectedPlan.monthlyPrice}/month + tax</p>
-            </button>
+          {/* Billing Cycle Selection - Hide the option that matches user's current subscription */}
+          {(() => {
+            const currentPlan = subscription?.plan?.toLowerCase();
+            const currentBillingCycle = subscription?.billing_cycle || 'monthly';
+            const isOnSamePlan = currentPlan === planId;
+            const isCurrentMonthly = isOnSamePlan && currentBillingCycle === 'monthly';
+            const isCurrentYearly = isOnSamePlan && currentBillingCycle === 'yearly';
 
-            <button
-              onClick={() => handleBillingCycleChange("yearly")}
-              className={`relative p-4 rounded-lg border-2 text-left transition-all ${
-                billingCycle === "yearly"
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
-              }`}
-            >
-              <span className="absolute top-2 right-2 text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">
-                Save 20%
-              </span>
-              <div className={`w-4 h-4 rounded-full border-2 mb-2 flex items-center justify-center ${
-                billingCycle === "yearly" ? "border-blue-500" : "border-gray-400 dark:border-gray-500"
-              }`}>
-                {billingCycle === "yearly" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+            // If user is on same plan, only show the OTHER billing cycle option
+            const showMonthly = !isCurrentMonthly;
+            const showYearly = !isCurrentYearly;
+            const showBothOptions = showMonthly && showYearly;
+
+            return (
+              <div className={`grid ${showBothOptions ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-6`}>
+                {showMonthly && (
+                  <button
+                    onClick={() => handleBillingCycleChange("monthly")}
+                    className={`relative p-4 rounded-lg border-2 text-left transition-all ${
+                      billingCycle === "monthly"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 mb-2 flex items-center justify-center ${
+                      billingCycle === "monthly" ? "border-blue-500" : "border-gray-400 dark:border-gray-500"
+                    }`}>
+                      {billingCycle === "monthly" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-medium text-sm">Monthly billing</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">${selectedPlan.monthlyPrice}/month + tax</p>
+                  </button>
+                )}
+
+                {showYearly && (
+                  <button
+                    onClick={() => handleBillingCycleChange("yearly")}
+                    className={`relative p-4 rounded-lg border-2 text-left transition-all ${
+                      billingCycle === "yearly"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                        : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <span className="absolute top-2 right-2 text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                      Save 20%
+                    </span>
+                    <div className={`w-4 h-4 rounded-full border-2 mb-2 flex items-center justify-center ${
+                      billingCycle === "yearly" ? "border-blue-500" : "border-gray-400 dark:border-gray-500"
+                    }`}>
+                      {billingCycle === "yearly" && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                    </div>
+                    <p className="text-gray-900 dark:text-white font-medium text-sm">Yearly billing</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">${selectedPlan.yearlyPrice}/month + tax</p>
+                  </button>
+                )}
               </div>
-              <p className="text-gray-900 dark:text-white font-medium text-sm">Yearly billing</p>
-              <p className="text-gray-500 dark:text-gray-400 text-xs">${selectedPlan.yearlyPrice}/month + tax</p>
-            </button>
-          </div>
+            );
+          })()}
 
           {/* Error message */}
           {errorMessage && (
