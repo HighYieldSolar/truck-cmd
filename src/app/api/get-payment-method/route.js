@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { verifyUserAccess } from '@/lib/serverAuth';
 
 const DEBUG = process.env.NODE_ENV === 'development';

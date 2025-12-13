@@ -1102,6 +1102,18 @@ export default function UpgradePlanPage() {
                     </div>
                     <Lock size={14} className="text-gray-400 dark:text-gray-500" />
                   </div>
+                ) : subscription?.card_last_four ? (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div className="w-10 h-6 bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-500 dark:to-gray-700 rounded flex items-center justify-center">
+                      <CreditCard size={14} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">
+                        Card •••• {subscription.card_last_four}
+                      </p>
+                    </div>
+                    <Lock size={14} className="text-gray-400 dark:text-gray-500" />
+                  </div>
                 ) : (
                   <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <CreditCard size={20} className="text-gray-400 dark:text-gray-500" />
