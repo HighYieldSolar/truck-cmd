@@ -32,7 +32,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
   const [pauseError, setPauseError] = useState(null);
 
   const cancellationReasons = [
-    { value: "too_expensive", label: "Too expensive", offer: "discount" },
+    { value: "too_expensive", label: "Too expensive", offer: "none" },
     { value: "not_using", label: "Not using it enough", offer: "pause" },
     { value: "missing_features", label: "Missing features I need", offer: "feedback" },
     { value: "found_alternative", label: "Found a better alternative", offer: "feedback" },
