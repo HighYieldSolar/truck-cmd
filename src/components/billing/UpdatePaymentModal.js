@@ -19,6 +19,7 @@ import {
   Lock,
   Link as LinkIcon
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -246,9 +247,20 @@ export default function UpdatePaymentModal({
     setError(null);
 
     try {
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError("Please sign in again to update your payment method");
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch("/api/create-setup-intent", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId })
       });
 
@@ -270,9 +282,19 @@ export default function UpdatePaymentModal({
   const handleSuccess = async (paymentMethodId) => {
     // Update the default payment method
     try {
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError("Please sign in again to update your payment method");
+        return;
+      }
+
       const response = await fetch("/api/update-payment-method", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId, paymentMethodId })
       });
 

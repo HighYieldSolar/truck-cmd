@@ -1,7 +1,8 @@
 // src/app/api/create-setup-intent/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
+import { verifyUserAccess } from '@/lib/serverAuth';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[create-setup-intent]', ...args);
@@ -14,6 +15,14 @@ export async function POST(request) {
       return NextResponse.json({
         error: 'Missing userId'
       }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    const { authorized, error: authError } = await verifyUserAccess(request, userId);
+    if (!authorized) {
+      return NextResponse.json({
+        error: authError || 'Unauthorized'
+      }, { status: 401 });
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

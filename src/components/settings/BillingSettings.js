@@ -177,9 +177,19 @@ export default function BillingSettings() {
     try {
       setLoadingBilling(true);
 
+      // Get the current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.log('No session found for billing history fetch');
+        return;
+      }
+
       const response = await fetch('/api/get-billing-history', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId }),
       });
 
