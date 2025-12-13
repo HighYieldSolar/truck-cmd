@@ -257,18 +257,40 @@ async function handleSubscriptionUpdate(event) {
     updateData.amount = Math.round(primaryItem.price.unit_amount) / 100;
   }
 
-  // Check if scheduled change has taken effect
-  if (!subscription.schedule) {
+  // Check for scheduled downgrade in metadata and save to database
+  if (subscription.metadata?.scheduled_downgrade === 'true') {
+    const scheduledPlan = subscription.metadata?.scheduled_plan;
+    const scheduledBillingCycle = subscription.metadata?.scheduled_billing_cycle;
+
+    if (scheduledPlan) {
+      updateData.scheduled_plan = normalizePlanName(scheduledPlan);
+      updateData.scheduled_billing_cycle = scheduledBillingCycle || 'monthly';
+
+      // Calculate scheduled amount based on plan
+      const pricing = {
+        basic: { monthly: 20, yearly: 192 },
+        premium: { monthly: 35, yearly: 336 },
+        fleet: { monthly: 75, yearly: 720 }
+      };
+      const normalizedPlan = normalizePlanName(scheduledPlan);
+      updateData.scheduled_amount = pricing[normalizedPlan]?.[scheduledBillingCycle || 'monthly'] || 20;
+
+      log(`Saving scheduled downgrade to database: ${normalizedPlan}/${scheduledBillingCycle}`);
+    }
+  } else if (!subscription.schedule) {
+    // No scheduled downgrade - check if we should clear any existing scheduled changes
     const { data: currentSub } = await supabase
       .from("subscriptions")
       .select("scheduled_plan, scheduled_billing_cycle")
       .eq("user_id", userId)
       .single();
 
-    if (currentSub?.scheduled_plan) {
+    if (currentSub?.scheduled_plan && !subscription.metadata?.scheduled_downgrade) {
+      // Only clear if there's no scheduled_downgrade metadata
       updateData.scheduled_plan = null;
       updateData.scheduled_billing_cycle = null;
       updateData.scheduled_amount = null;
+      log(`Clearing scheduled downgrade for user ${userId}`);
     }
   }
 

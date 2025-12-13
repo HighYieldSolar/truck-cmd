@@ -1,7 +1,7 @@
 // src/app/api/update-subscription/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[update-subscription]', ...args);
@@ -107,48 +107,35 @@ export async function POST(request) {
     // Get the price ID from environment variables
     const newPriceId = priceIds[newPlan]?.[billingCycle];
 
-    // Pricing in cents (monthly equivalent for comparison)
+    // Pricing in cents
     const pricing = {
-      basic: { monthly: 2000, yearly: 19200 },
-      premium: { monthly: 3500, yearly: 33600 },
-      fleet: { monthly: 7500, yearly: 72000 }
+      basic: { monthly: 2000, yearly: 19200 },    // $20/mo or $192/yr
+      premium: { monthly: 3500, yearly: 33600 },  // $35/mo or $336/yr
+      fleet: { monthly: 7500, yearly: 72000 }     // $75/mo or $720/yr
     };
 
-    // Monthly equivalent prices for comparison (yearly plans have 20% discount)
-    const monthlyEquivalent = {
-      basic: { monthly: 2000, yearly: 1600 },    // $20/mo vs $16/mo
-      premium: { monthly: 3500, yearly: 2800 },  // $35/mo vs $28/mo
-      fleet: { monthly: 7500, yearly: 6000 }     // $75/mo vs $60/mo
-    };
-
-    // Determine if this is an upgrade or downgrade using VALUE-BASED comparison
+    // Determine if this is an upgrade or downgrade based on plan tier
     const planOrder = ['basic', 'premium', 'fleet'];
     const oldPlanIndex = planOrder.indexOf(subscription.plan);
     const newPlanIndex = planOrder.indexOf(newPlan);
     const currentBillingCycle = subscription.billing_cycle || 'monthly';
 
-    // Calculate current and new monthly costs for accurate comparison
-    const currentMonthlyValue = pricing[subscription.plan]?.[currentBillingCycle] || 0;
-    const newMonthlyValue = pricing[newPlan]?.[billingCycle] || 0;
-
-    // Calculate remaining value in current subscription for proration
+    // Calculate days remaining in current period (for UI display)
     const now = Math.floor(Date.now() / 1000);
     const periodEnd = stripeSubscription.current_period_end;
-    const periodStart = stripeSubscription.current_period_start;
-    const totalPeriodDays = Math.ceil((periodEnd - periodStart) / 86400);
     const daysRemaining = Math.max(0, Math.ceil((periodEnd - now) / 86400));
-    const percentRemaining = daysRemaining / totalPeriodDays;
 
-    // Determine change type using comprehensive logic:
-    // 1. Higher plan tier = always upgrade (immediate)
-    // 2. Lower plan tier = always downgrade (at period end)
-    // 3. Same plan, monthly→yearly = upgrade (immediate, better value)
-    // 4. Same plan, yearly→monthly = downgrade (at period end)
-    // 5. Cross-scenario (e.g., Premium Monthly → Basic Yearly):
-    //    - If new total cost > remaining current value = immediate upgrade
-    //    - Otherwise = downgrade at period end
+    // Determine change type using SIMPLE, PREDICTABLE logic (Option A):
+    // Plan tier and billing cycle are handled independently:
+    // 1. Higher plan tier = always upgrade (immediate with proration)
+    // 2. Lower plan tier = always downgrade (at period end, regardless of billing cycle)
+    // 3. Same plan, monthly→yearly = upgrade (immediate, user wants savings now)
+    // 4. Same plan, yearly→monthly = downgrade (at period end, committed to year)
+    //
+    // For cross-scenarios (e.g., Fleet Monthly → Basic Yearly):
+    // - Plan downgrade takes precedence = scheduled at period end
+    // - The new billing cycle (yearly) is applied when the downgrade takes effect
     let changeType;
-    let crossScenarioDetails = null;
 
     if (newPlan === subscription.plan && billingCycle === currentBillingCycle) {
       // Same plan, same billing cycle - no change needed
@@ -158,30 +145,13 @@ export async function POST(request) {
     }
 
     if (newPlanIndex > oldPlanIndex) {
-      // Moving to higher tier = always upgrade
+      // Moving to higher tier = always upgrade (immediate)
       changeType = 'upgrade';
     } else if (newPlanIndex < oldPlanIndex) {
-      // Moving to lower tier - check if billing cycle change makes it complex
-      if (currentBillingCycle === 'monthly' && billingCycle === 'yearly') {
-        // Cross-scenario: Plan downgrade but switching to yearly (e.g., Premium Monthly → Basic Yearly)
-        // Calculate if the yearly price exceeds remaining value in current subscription
-        const remainingCurrentValue = currentMonthlyValue * percentRemaining;
-        const newYearlyPrice = pricing[newPlan].yearly;
-
-        crossScenarioDetails = {
-          type: 'plan_downgrade_cycle_upgrade',
-          remainingValue: remainingCurrentValue / 100,
-          newPrice: newYearlyPrice / 100,
-          requiresPayment: newYearlyPrice > remainingCurrentValue
-        };
-
-        // If new yearly price > remaining value, treat as upgrade (immediate with charge)
-        // Otherwise, schedule for period end
-        changeType = newYearlyPrice > remainingCurrentValue ? 'upgrade' : 'downgrade';
-      } else {
-        // Standard downgrade (same or monthly cycle)
-        changeType = 'downgrade';
-      }
+      // Moving to lower tier = always downgrade (at period end)
+      // Even if also switching to yearly, the downgrade happens at renewal
+      // and the yearly pricing will be applied at that time
+      changeType = 'downgrade';
     } else {
       // Same plan, different billing cycle
       changeType = billingCycle === 'yearly' ? 'upgrade' : 'downgrade';
@@ -218,6 +188,7 @@ export async function POST(request) {
             cancel_at_period_end: false,
             metadata: {
               ...stripeSubscription.metadata,
+              userId: userId,
               scheduled_downgrade: 'true',
               scheduled_plan: newPlan,
               scheduled_billing_cycle: billingCycle,
@@ -232,6 +203,7 @@ export async function POST(request) {
           {
             metadata: {
               ...stripeSubscription.metadata,
+              userId: userId,
               scheduled_downgrade: 'true',
               scheduled_plan: newPlan,
               scheduled_billing_cycle: billingCycle,
@@ -271,7 +243,13 @@ export async function POST(request) {
         cancel_at_period_end: false, // Clear any pending cancellation
         metadata: {
           plan: newPlan,
-          billingCycle: billingCycle
+          billingCycle: billingCycle,
+          userId: userId,
+          // Clear any scheduled downgrade metadata
+          scheduled_downgrade: '',
+          scheduled_plan: '',
+          scheduled_billing_cycle: '',
+          scheduled_price_id: ''
         }
       };
 
@@ -343,19 +321,28 @@ export async function POST(request) {
     // Build the response message
     let message;
     const cancellationCleared = wasCanceled ? ' Your pending cancellation has been removed.' : '';
-    const isBillingCycleChange = newPlan === subscription.plan && billingCycle !== currentBillingCycle;
+    const isBillingCycleOnlyChange = newPlan === subscription.plan && billingCycle !== currentBillingCycle;
+    const isPlanDowngradeWithCycleChange = newPlanIndex < oldPlanIndex && billingCycle !== currentBillingCycle;
+    const formattedDate = currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const newPlanCapitalized = newPlan.charAt(0).toUpperCase() + newPlan.slice(1);
 
     if (changeType === 'upgrade') {
-      if (isBillingCycleChange) {
+      if (isBillingCycleOnlyChange) {
         message = `Your billing has been switched to ${billingCycle}! You're now saving 20% with annual billing.${cancellationCleared}`;
+      } else if (billingCycle !== currentBillingCycle) {
+        // Plan upgrade with billing cycle change
+        message = `Your plan has been upgraded to ${newPlanCapitalized} with ${billingCycle} billing! You now have access to all new features.${cancellationCleared}`;
       } else {
-        message = `Your plan has been upgraded to ${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)}! You now have access to all new features.${cancellationCleared}`;
+        message = `Your plan has been upgraded to ${newPlanCapitalized}! You now have access to all new features.${cancellationCleared}`;
       }
     } else if (changeType === 'downgrade') {
-      if (isBillingCycleChange) {
-        message = `Your billing will switch to ${billingCycle} on ${currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.${cancellationCleared}`;
+      if (isBillingCycleOnlyChange) {
+        message = `Your billing will switch to ${billingCycle} on ${formattedDate}.${cancellationCleared}`;
+      } else if (isPlanDowngradeWithCycleChange) {
+        // Plan downgrade with billing cycle change - both take effect at renewal
+        message = `Your plan will change to ${newPlanCapitalized} with ${billingCycle} billing on ${formattedDate}. You'll keep your current features until then.${cancellationCleared}`;
       } else {
-        message = `Your plan will change to ${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} on ${currentPeriodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. You'll keep your current features until then.${cancellationCleared}`;
+        message = `Your plan will change to ${newPlanCapitalized} on ${formattedDate}. You'll keep your current features until then.${cancellationCleared}`;
       }
     } else {
       message = `Your subscription has been updated.${cancellationCleared}`;
@@ -365,7 +352,6 @@ export async function POST(request) {
       success: true,
       changeType,
       cancellationCleared: wasCanceled,
-      crossScenario: crossScenarioDetails,
       subscription: {
         plan: changeType === 'downgrade' ? subscription.plan : newPlan, // Return current plan for downgrades
         scheduledPlan: changeType === 'downgrade' ? newPlan : null,
