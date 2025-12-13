@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Truck,
   Users,
@@ -26,6 +27,21 @@ import {
   MapPin,
   Gauge
 } from "lucide-react";
+
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "orange" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
+    </div>
+  </div>
+);
 
 // Testimonial component
 const Testimonial = ({ quote, author, role, rating = 5 }) => (
@@ -353,10 +369,9 @@ export default function FleetManagementFeaturePage() {
                 </div>
               </div>
 
-              <ScreenshotPlaceholder
-                title="Driver Management Dashboard"
-                description="Replace with screenshot of drivers list with status indicators"
-                icon={Users}
+              <Screenshot
+                src="/images/screenshots/fleet-drivers.png"
+                alt="Driver management dashboard showing all drivers with status indicators"
                 color="blue"
               />
             </div>
@@ -369,10 +384,9 @@ export default function FleetManagementFeaturePage() {
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <ScreenshotPlaceholder
-                title="Maintenance Records"
-                description="Replace with screenshot of maintenance history view"
-                icon={Wrench}
+              <Screenshot
+                src="/images/screenshots/fleet-maintenance.png"
+                alt="Maintenance records showing service history and upcoming maintenance"
                 color="green"
               />
 
@@ -430,28 +444,24 @@ export default function FleetManagementFeaturePage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <ScreenshotPlaceholder
-              title="Vehicle List View"
-              description="Replace with screenshot of trucks dashboard with stats"
-              icon={Truck}
+            <Screenshot
+              src="/images/screenshots/fleet-trucks.png"
+              alt="Vehicle list showing all trucks with status and mileage"
               color="orange"
             />
-            <ScreenshotPlaceholder
-              title="Add/Edit Vehicle Form"
-              description="Replace with screenshot of vehicle form modal"
-              icon={Plus}
+            <Screenshot
+              src="/images/screenshots/fleet-detail.png"
+              alt="Vehicle detail view with comprehensive truck information"
               color="blue"
             />
-            <ScreenshotPlaceholder
-              title="Driver Status Dashboard"
-              description="Replace with screenshot of driver compliance status"
-              icon={Users}
+            <Screenshot
+              src="/images/screenshots/fleet-drivers.png"
+              alt="Driver compliance status dashboard"
               color="green"
             />
-            <ScreenshotPlaceholder
-              title="Maintenance Schedule"
-              description="Replace with screenshot of maintenance records"
-              icon={Wrench}
+            <Screenshot
+              src="/images/screenshots/fleet-reports.png"
+              alt="Fleet reports and analytics"
               color="purple"
             />
           </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, Check, Calculator, MapPin, Fuel,
   FileText, Download, BarChart2, Map, Clock,
@@ -60,14 +61,18 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Screenshot Placeholder Component
-const ScreenshotPlaceholder = ({ title, description, color = "green" }) => (
-  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-${color}-200`}>
-    <div className={`w-16 h-16 bg-${color}-100 rounded-xl flex items-center justify-center mb-4`}>
-      <Calculator size={32} className={`text-${color}-600`} />
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "green" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
     </div>
-    <p className="text-gray-600 font-medium text-center">{title}</p>
-    <p className="text-gray-400 text-sm text-center mt-2">{description}</p>
   </div>
 );
 
@@ -325,13 +330,11 @@ export default function IFTACalculatorFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-green-200">
-                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                  <Calculator size={32} className="text-green-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">IFTA Dashboard</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of IFTA calculator dashboard</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/ifta-calculator-light.png"
+                alt="IFTA dashboard showing jurisdiction breakdown, MPG calculations, and tax summary"
+                color="green"
+              />
             </div>
           </div>
 
@@ -372,13 +375,11 @@ export default function IFTACalculatorFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-blue-200">
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                  <Route size={32} className="text-blue-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Trip Records</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of trip records table</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/ifta-trips.png"
+                alt="Trip records table showing state-by-state mileage breakdown"
+                color="blue"
+              />
             </div>
           </div>
 
@@ -419,13 +420,11 @@ export default function IFTACalculatorFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-purple-200">
-                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                  <FileText size={32} className="text-purple-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">IFTA Report Export</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of export modal or PDF preview</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/ifta-report.png"
+                alt="IFTA report export showing filing-ready quarterly summary"
+                color="purple"
+              />
             </div>
           </div>
         </div>

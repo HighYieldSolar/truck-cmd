@@ -1,12 +1,28 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, Check, Fuel, MapPin, DollarSign,
   FileText, Download, BarChart2, TrendingDown, Truck,
   ChevronDown, Calendar, CheckCircle, Receipt, Camera,
   Gauge, Calculator, Clock, PieChart
 } from "lucide-react";
+
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "blue" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
+    </div>
+  </div>
+);
 
 // Testimonial Component
 const Testimonial = ({ text, author, role, company }) => (
@@ -212,13 +228,11 @@ export default function FuelTrackerFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-blue-200">
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                  <Fuel size={32} className="text-blue-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Fuel Dashboard</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of fuel tracker dashboard</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/fuel-tracker-light.png"
+                alt="Fuel dashboard showing summary stats, MPG tracking, and recent entries"
+                color="blue"
+              />
             </div>
           </div>
 
@@ -259,13 +273,11 @@ export default function FuelTrackerFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-green-200">
-                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                  <Receipt size={32} className="text-green-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Fuel Entry Form</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of fuel entry form</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/fuel-entry.png"
+                alt="Fuel entry form for logging purchases with location and receipt upload"
+                color="green"
+              />
             </div>
           </div>
 
@@ -306,13 +318,11 @@ export default function FuelTrackerFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-purple-200">
-                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                  <Gauge size={32} className="text-purple-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">MPG Analytics</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of MPG charts and analytics</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/fuel-list.png"
+                alt="Fuel entries list showing MPG calculations and cost analysis"
+                color="purple"
+              />
             </div>
           </div>
         </div>

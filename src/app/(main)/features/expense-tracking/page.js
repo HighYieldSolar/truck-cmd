@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, Check, DollarSign, Receipt, CreditCard,
   FileText, Download, BarChart2, PieChart, Tag,
@@ -60,14 +61,18 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Screenshot Placeholder Component
-const ScreenshotPlaceholder = ({ title, description, icon: Icon, color = "purple" }) => (
-  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-${color}-200`}>
-    <div className={`w-16 h-16 bg-${color}-100 rounded-xl flex items-center justify-center mb-4`}>
-      <Icon size={32} className={`text-${color}-600`} />
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "purple" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
     </div>
-    <p className="text-gray-600 font-medium text-center">{title}</p>
-    <p className="text-gray-400 text-sm text-center mt-2">{description}</p>
   </div>
 );
 
@@ -232,13 +237,11 @@ export default function ExpenseTrackingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-purple-200">
-                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                  <DollarSign size={32} className="text-purple-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Expense Dashboard</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of expense dashboard</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/expenses-light.png"
+                alt="Expense dashboard showing spending summary, category breakdown, and recent expenses"
+                color="purple"
+              />
             </div>
           </div>
 
@@ -279,13 +282,11 @@ export default function ExpenseTrackingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-blue-200">
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                  <Search size={32} className="text-blue-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Expense List with Filters</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of expense table with filters</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/expenses-list.png"
+                alt="Expense list with filtering and search capabilities"
+                color="blue"
+              />
             </div>
           </div>
 
@@ -326,13 +327,56 @@ export default function ExpenseTrackingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-green-200">
-                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                  <Camera size={32} className="text-green-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Receipt Attachment</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of expense with receipt preview</p>
+              <Screenshot
+                src="/images/screenshots/expenses-receipt.png"
+                alt="Expense detail showing attached receipt preview"
+                color="green"
+              />
+            </div>
+          </div>
+
+          {/* Receipt Directory */}
+          <div className="flex flex-col lg:flex-row-reverse items-center mt-20 gap-12">
+            <div className="lg:w-1/2">
+              <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                <FolderOpen size={14} />
+                Receipt Directory
               </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                Organized Receipt Storage
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                All your receipts organized and accessible in one place:
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start">
+                  <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700"><strong>Visual Gallery:</strong> Browse all receipts in a visual grid view</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700"><strong>Quick Preview:</strong> Click any receipt to view full-size image</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700"><strong>Linked Expenses:</strong> Each receipt linked to its expense record</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700"><strong>Download Options:</strong> Download individual receipts or bulk export</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700"><strong>Tax Season Ready:</strong> All documentation organized for accountants</span>
+                </li>
+              </ul>
+            </div>
+            <div className="lg:w-1/2">
+              <Screenshot
+                src="/images/screenshots/expenses-reciept-directory.png"
+                alt="Receipt directory showing organized gallery of all uploaded receipts"
+                color="orange"
+              />
             </div>
           </div>
         </div>

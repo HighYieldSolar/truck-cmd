@@ -61,14 +61,18 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Screenshot Placeholder Component
-const ScreenshotPlaceholder = ({ title, description }) => (
-  <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-gray-200">
-    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-      <FileText size={32} className="text-blue-600" />
+// Screenshot Component
+const Screenshot = ({ src, alt }) => (
+  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 shadow-lg border border-blue-200">
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
     </div>
-    <p className="text-gray-600 font-medium text-center">{title}</p>
-    <p className="text-gray-400 text-sm text-center mt-2">{description}</p>
   </div>
 );
 
@@ -253,9 +257,9 @@ export default function InvoicingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <ScreenshotPlaceholder
-                title="Invoice Dashboard"
-                description="Replace with screenshot of invoice management dashboard"
+              <Screenshot
+                src="/images/screenshots/invoices-light.png"
+                alt="Invoice management dashboard showing status overview, quick stats, and invoice list"
               />
             </div>
           </div>
@@ -297,9 +301,9 @@ export default function InvoicingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <ScreenshotPlaceholder
-                title="Invoice Creation Form"
-                description="Replace with screenshot of new invoice creation page"
+              <Screenshot
+                src="/images/screenshots/invoicing-create.png"
+                alt="Invoice creation form with customer selection, line items, and automatic calculations"
               />
             </div>
           </div>
@@ -341,9 +345,9 @@ export default function InvoicingFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <ScreenshotPlaceholder
-                title="Invoice Detail View"
-                description="Replace with screenshot of invoice detail page with PDF preview"
+              <Screenshot
+                src="/images/screenshots/invoicing-detail.png"
+                alt="Invoice detail view with PDF preview, email delivery, and payment recording options"
               />
             </div>
           </div>

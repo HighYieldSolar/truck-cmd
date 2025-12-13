@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Route,
   MapPin,
@@ -24,6 +25,21 @@ import {
   Target,
   Navigation
 } from "lucide-react";
+
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "blue" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
+    </div>
+  </div>
+);
 
 // Testimonial component
 const Testimonial = ({ quote, author, role, rating = 5 }) => (
@@ -277,28 +293,24 @@ export default function StateMileageFeaturePage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <ScreenshotPlaceholder
-              title="Active Trip Recording"
-              description="Replace with screenshot of active trip with state crossings"
-              icon={Route}
+            <Screenshot
+              src="/images/screenshots/state-mileage-light.png"
+              alt="State mileage dashboard showing miles tracked by jurisdiction"
               color="blue"
             />
-            <ScreenshotPlaceholder
-              title="Miles by State Chart"
-              description="Replace with screenshot of mileage breakdown view"
-              icon={BarChart2}
+            <Screenshot
+              src="/images/screenshots/mileage-entries.png"
+              alt="Mileage entries table with state-by-state breakdown"
               color="indigo"
             />
-            <ScreenshotPlaceholder
-              title="Trip History"
-              description="Replace with screenshot of completed trips list"
-              icon={History}
+            <Screenshot
+              src="/images/screenshots/state-mileage-light.png"
+              alt="Trip history showing completed routes and border crossings"
               color="green"
             />
-            <ScreenshotPlaceholder
-              title="All-Time Summary"
-              description="Replace with screenshot of total mileage stats"
-              icon={Target}
+            <Screenshot
+              src="/images/screenshots/mileage-entries.png"
+              alt="All-time mileage summary by state"
               color="purple"
             />
           </div>

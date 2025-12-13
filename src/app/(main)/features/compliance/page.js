@@ -1,12 +1,28 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, Check, Shield, FileText, Calendar,
   Bell, AlertTriangle, CheckCircle, Clock, Upload,
   ChevronDown, Truck, User, Award, ClipboardCheck,
   AlertCircle, Eye, Download, RefreshCw
 } from "lucide-react";
+
+// Screenshot Component
+const Screenshot = ({ src, alt, color = "red" }) => (
+  <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 rounded-2xl p-4 shadow-lg border border-${color}-200`}>
+    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      <Image
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+        className="w-full h-auto"
+      />
+    </div>
+  </div>
+);
 
 // Testimonial Component
 const Testimonial = ({ text, author, role, company }) => (
@@ -215,13 +231,11 @@ export default function ComplianceFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-red-200">
-                <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-4">
-                  <Shield size={32} className="text-red-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Compliance Dashboard</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of compliance overview</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/compliance-light.png"
+                alt="Compliance dashboard showing document status with green, yellow, and red indicators"
+                color="red"
+              />
             </div>
           </div>
 
@@ -262,13 +276,11 @@ export default function ComplianceFeature() {
               </ul>
             </div>
             <div className="lg:w-1/2">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 h-80 flex flex-col items-center justify-center shadow-lg border border-blue-200">
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                  <FileText size={32} className="text-blue-600" />
-                </div>
-                <p className="text-gray-600 font-medium text-center">Document List</p>
-                <p className="text-gray-400 text-sm text-center mt-2">Replace with screenshot of document table</p>
-              </div>
+              <Screenshot
+                src="/images/screenshots/compliance-documents.png"
+                alt="Document management table showing all compliance documents with status and expiration dates"
+                color="blue"
+              />
             </div>
           </div>
         </div>

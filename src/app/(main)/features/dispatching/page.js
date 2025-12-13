@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight, Check, BarChart2, MapPin, Calendar,
   Map, Smartphone, Repeat, RotateCw, FileText,
@@ -227,13 +228,20 @@ export default function DispatchingFeature() {
               </ul>
             </div>
             <div className="md:w-1/2">
-              <div className="bg-gray-100 rounded-lg p-4 h-80 flex items-center justify-center shadow-lg">
-                {/* Placeholder for fleet map screenshot */}
-                <p className="text-gray-500">Fleet Map Visualization</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 shadow-lg border border-blue-200">
+                <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                  <Image
+                    src="/images/screenshots/load-management-light.png"
+                    alt="Load management dashboard showing fleet visibility and load tracking"
+                    width={800}
+                    height={500}
+                    className="w-full h-auto"
+                  />
+                </div>
               </div>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:flex-row-reverse items-center">
             <div className="md:w-1/2 pl-0 md:pl-12 mb-8 md:mb-0">
               <h2 className="text-3xl font-bold mb-6 inline-block relative">
@@ -267,9 +275,16 @@ export default function DispatchingFeature() {
               </ul>
             </div>
             <div className="md:w-1/2">
-              <div className="bg-gray-100 rounded-lg p-4 h-80 flex items-center justify-center shadow-lg">
-                {/* Placeholder for load matching screenshot */}
-                <p className="text-gray-500">Load Matching Interface</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 shadow-lg border border-blue-200">
+                <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                  <Image
+                    src="/images/screenshots/dispatching-detail.png"
+                    alt="Load detail view showing assignment, route information, and driver details"
+                    width={800}
+                    height={500}
+                    className="w-full h-auto"
+                  />
+                </div>
               </div>
             </div>
           </div>
