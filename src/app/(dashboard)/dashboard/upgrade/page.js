@@ -28,7 +28,13 @@ import {
 export default function UpgradePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState('monthly');
+  // Initialize billing cycle from sessionStorage to maintain state across navigation
+  const [billingCycle, setBillingCycle] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('checkout_billing_cycle') || 'monthly';
+    }
+    return 'monthly';
+  });
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -158,9 +164,11 @@ export default function UpgradePage() {
     router.push(`/dashboard/upgrade/${planId}`);
   };
 
-  // Toggle billing cycle
+  // Toggle billing cycle and save to sessionStorage
   const toggleBillingCycle = () => {
-    setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly');
+    const newCycle = billingCycle === 'monthly' ? 'yearly' : 'monthly';
+    setBillingCycle(newCycle);
+    sessionStorage.setItem('checkout_billing_cycle', newCycle);
   };
 
   // Toggle FAQ

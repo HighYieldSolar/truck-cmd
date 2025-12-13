@@ -382,7 +382,13 @@ export default function UpgradePlanPage() {
   const [loading, setLoading] = useState(true);
   const [clientSecret, setClientSecret] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [billingCycle, setBillingCycle] = useState("monthly");
+  // Initialize billing cycle from sessionStorage to maintain state across navigation
+  const [billingCycle, setBillingCycle] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem("checkout_billing_cycle") || "monthly";
+    }
+    return "monthly";
+  });
   const [isUpgradeMode, setIsUpgradeMode] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [prorationPreview, setProrationPreview] = useState(null);
@@ -455,17 +461,14 @@ export default function UpgradePlanPage() {
   const selectedPlan = plans[planId];
 
   useEffect(() => {
-    // Get billing cycle from session storage
-    const savedCycle = sessionStorage.getItem("checkout_billing_cycle") || "monthly";
-    setBillingCycle(savedCycle);
-
     // Save current plan to session storage for success page
     if (planId) {
       sessionStorage.setItem("checkout_plan", planId);
     }
 
     // Prevent double API calls in React Strict Mode
-    const planKey = `${planId}-${savedCycle}`;
+    // Use billingCycle state which is already initialized from sessionStorage
+    const planKey = `${planId}-${billingCycle}`;
     if (intentCreatedRef.current && currentPlanRef.current === planKey) {
       return;
     }
@@ -486,17 +489,17 @@ export default function UpgradePlanPage() {
         setIsUpgradeMode(true);
         setLoading(false);
         // Fetch proration preview and payment method
-        fetchUpgradePreview(planId, savedCycle);
+        fetchUpgradePreview(planId, billingCycle);
       } else {
         // User doesn't have active subscription - use checkout flow
         setIsUpgradeMode(false);
-        createSubscriptionIntent(planId, savedCycle);
+        createSubscriptionIntent(planId, billingCycle);
       }
     } else if (!selectedPlan) {
       setErrorMessage("Invalid plan selected");
       setLoading(false);
     }
-  }, [user, planId, subscription, isSubscriptionActive]);
+  }, [user, planId, subscription, isSubscriptionActive, billingCycle]);
 
   const createSubscriptionIntent = async (plan, cycle, couponCode = null) => {
     try {
