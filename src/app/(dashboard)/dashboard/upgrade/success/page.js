@@ -32,6 +32,39 @@ export default function SuccessPage() {
     fleet: { name: "Fleet", monthlyPrice: 75, yearlyPrice: 60, yearlyTotal: 720, limits: "12 Trucks • 12 Drivers • 6 Team Users" }
   };
 
+  // Get accurate subscription details from context (primary source of truth)
+  const getAccurateSubscriptionDetails = () => {
+    if (!subscription) return subscriptionDetails;
+
+    const planKey = subscription.plan?.toLowerCase() || 'basic';
+    const planData = plans[planKey] || plans.basic;
+    const billingCycle = subscription.billing_cycle || 'monthly';
+    const isYearly = billingCycle === 'yearly';
+
+    // Calculate next payment date from subscription data
+    let nextPaymentDate = "Your next billing date";
+    if (subscription.current_period_ends_at) {
+      nextPaymentDate = new Date(subscription.current_period_ends_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    return {
+      plan: planData.name,
+      limits: planData.limits,
+      billingCycle: billingCycle,
+      nextPaymentDate: nextPaymentDate,
+      amount: isYearly ? `$${planData.yearlyTotal}/year` : `$${planData.monthlyPrice}/month`,
+      status: subscription.status || 'active',
+      upgradeMessage: subscriptionDetails?.upgradeMessage
+    };
+  };
+
+  // Use accurate details from subscription context when available
+  const displayDetails = getAccurateSubscriptionDetails();
+
   useEffect(() => {
     // Wait for user to be available
     if (!user?.id) return;
@@ -454,40 +487,40 @@ export default function SuccessPage() {
                 />
               </div>
 
-              {subscriptionDetails && (
+              {displayDetails && (
                 <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-6 mb-6">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Subscription Details</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400">Plan</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{subscriptionDetails.plan}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{displayDetails.plan}</span>
                     </div>
-                    {subscriptionDetails.limits && (
+                    {displayDetails.limits && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-500 dark:text-gray-400">Includes</span>
                         <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs font-medium rounded-full">
-                          {subscriptionDetails.limits}
+                          {displayDetails.limits}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400">Billing</span>
-                      <span className="font-medium text-gray-900 dark:text-white capitalize">{subscriptionDetails.billingCycle}</span>
+                      <span className="font-medium text-gray-900 dark:text-white capitalize">{displayDetails.billingCycle}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400">Amount</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{subscriptionDetails.amount}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{displayDetails.amount}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400">Status</span>
                       <span className="font-medium text-emerald-600 dark:text-emerald-400 capitalize flex items-center">
                         <CheckCircle size={14} className="mr-1" />
-                        {subscriptionDetails.status}
+                        {displayDetails.status}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400">Next Payment</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{subscriptionDetails.nextPaymentDate}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{displayDetails.nextPaymentDate}</span>
                     </div>
                   </div>
                 </div>
