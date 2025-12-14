@@ -590,7 +590,7 @@ export default function LandingPage() {
               <div className="relative">
                 <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
                   <Image
-                    src="/images/screenshots/Screenshot 2025-12-07 203800.png"
+                    src="/images/screenshots/dashboard-light.png"
                     alt="Truck Command Dashboard"
                     width={1920}
                     height={1080}
@@ -614,7 +614,7 @@ export default function LandingPage() {
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 Run Your Trucking Business{" "}
-                <span className="text-blue-600">Without the Hassle</span>
+                <span className="text-blue-600">in One Simple Dashboard</span>
               </h1>
 
               <p className="text-xl text-gray-600 mb-8 max-w-xl">
@@ -646,7 +646,7 @@ export default function LandingPage() {
             <div className="lg:hidden w-full">
               <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
                 <Image
-                  src="/images/screenshots/Screenshot 2025-12-07 203800.png"
+                  src="/images/screenshots/dashboard-light.png"
                   alt="Truck Command Dashboard"
                   width={1920}
                   height={1080}
