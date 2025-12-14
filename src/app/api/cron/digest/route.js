@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendDigestEmail } from '@/lib/services/emailService';
+import { sendDigestEmail, sendNotificationEmail } from '@/lib/services/emailService';
+import { sendNotificationSMS } from '@/lib/services/smsService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[cron/digest]', ...args);
 
 /**
- * Cron job endpoint for sending digest emails
- * Runs daily at 8 AM to send daily digests
- * Runs weekly on Mondays at 8 AM for weekly digests
+ * Cron job endpoint for sending digest emails AND batch notifications
+ * Runs daily at 8 AM to:
+ * 1. Send daily/weekly digest emails
+ * 2. Send pending high-priority notifications (consolidated from /api/notifications/send)
  */
 
 function getSupabaseAdmin() {
@@ -22,6 +24,116 @@ function getSupabaseAdmin() {
       }
     }
   );
+}
+
+/**
+ * Send pending high-priority notifications via email/SMS
+ * (Consolidated from /api/notifications/send cron)
+ */
+async function sendPendingNotifications(supabase) {
+  const results = {
+    total: 0,
+    emailsSent: 0,
+    smsSent: 0,
+    errors: []
+  };
+
+  try {
+    // Get notifications created in the last hour that haven't been delivered
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    const { data: pendingNotifications, error } = await supabase
+      .from('notifications')
+      .select(`
+        id, user_id, title, message, notification_type, urgency, link_to, due_date,
+        users!inner (id, email, phone, full_name)
+      `)
+      .gte('created_at', oneHourAgo)
+      .is('delivered_at', null)
+      .in('urgency', ['HIGH', 'CRITICAL']) // Only send immediate notifications for high urgency
+      .limit(100);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!pendingNotifications || pendingNotifications.length === 0) {
+      return results;
+    }
+
+    results.total = pendingNotifications.length;
+
+    for (const notification of pendingNotifications) {
+      const user = notification.users;
+
+      // Check preferences
+      const { data: shouldSendEmail } = await supabase.rpc('should_send_notification', {
+        p_user_id: notification.user_id,
+        p_notification_type: notification.notification_type,
+        p_channel: 'email'
+      });
+
+      const { data: shouldSendSMS } = await supabase.rpc('should_send_notification', {
+        p_user_id: notification.user_id,
+        p_notification_type: notification.notification_type,
+        p_channel: 'sms'
+      });
+
+      let emailSent = false;
+      let smsSent = false;
+
+      // Send email
+      if (shouldSendEmail && user.email) {
+        const emailResult = await sendNotificationEmail({
+          to: user.email,
+          notification: notification
+        });
+        if (emailResult.success) {
+          results.emailsSent++;
+          emailSent = true;
+        } else {
+          results.errors.push({
+            notificationId: notification.id,
+            channel: 'email',
+            error: emailResult.error
+          });
+        }
+      }
+
+      // Send SMS
+      if (shouldSendSMS && user.phone) {
+        const smsResult = await sendNotificationSMS({
+          to: user.phone,
+          notification: notification
+        });
+        if (smsResult.success) {
+          results.smsSent++;
+          smsSent = true;
+        } else {
+          results.errors.push({
+            notificationId: notification.id,
+            channel: 'sms',
+            error: smsResult.error
+          });
+        }
+      }
+
+      // Update notification
+      await supabase
+        .from('notifications')
+        .update({
+          email_sent: emailSent,
+          sms_sent: smsSent,
+          delivered_at: (emailSent || smsSent) ? new Date().toISOString() : null
+        })
+        .eq('id', notification.id);
+    }
+  } catch (error) {
+    log('Error sending pending notifications:', error);
+    results.errors.push({ error: error.message });
+  }
+
+  return results;
 }
 
 export async function GET(request) {
@@ -53,7 +165,8 @@ export async function GET(request) {
     const results = {
       timestamp: today.toISOString(),
       dailyDigests: { sent: 0, skipped: 0, errors: [] },
-      weeklyDigests: { sent: 0, skipped: 0, errors: [] }
+      weeklyDigests: { sent: 0, skipped: 0, errors: [] },
+      pendingNotifications: { total: 0, emailsSent: 0, smsSent: 0, errors: [] }
     };
 
     // Get all users with their notification preferences
@@ -147,6 +260,10 @@ export async function GET(request) {
         });
       }
     }
+
+    // Also send pending high-priority notifications (consolidated from /api/notifications/send)
+    const pendingResults = await sendPendingNotifications(supabase);
+    results.pendingNotifications = pendingResults;
 
     return NextResponse.json({
       success: true,
