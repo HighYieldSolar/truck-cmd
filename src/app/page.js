@@ -218,7 +218,7 @@ const FeaturesSection = () => {
                 ))}
               </ul>
               <Link href="/signup" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                Try It Free
+                Start Free Trial
                 <ArrowRight size={18} />
               </Link>
             </div>
@@ -368,14 +368,20 @@ const TestimonialsSection = () => {
   const testimonials = [
     {
       text: "Finally, software that doesn't cost an arm and a leg. I was paying $50/month for another TMS that I barely used. Truck Command gives me everything I need for $20.",
+      name: "Marcus Johnson",
+      title: "Owner-Operator, Texas",
       highlight: false
     },
     {
       text: "The best part is how everything connects together. I can track fuel, log expenses, and generate IFTA reports with just a few clicks. No more juggling spreadsheets and losing receipts. These days, I recommend Truck Command to every owner operator I know.",
+      name: "David Thompson",
+      title: "Fleet Owner, 4 Trucks",
       highlight: true
     },
     {
       text: "I'm using Truck Command to manage all my loads and invoicing. The whole process is streamlined—from dispatching to getting paid. It's saved me hours every week.",
+      name: "Robert Martinez",
+      title: "Owner-Operator, Arizona",
       highlight: false
     }
   ];
@@ -394,18 +400,36 @@ const TestimonialsSection = () => {
           {/* Left column */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-md transition-shadow hover:border-gray-300">
-              <p className="text-gray-700 text-lg leading-relaxed">
+              <p className="text-gray-700 text-lg leading-relaxed mb-4">
                 &ldquo;{testimonials[0].text}&rdquo;
               </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
+                  {testimonials[0].name.charAt(0)}
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium text-gray-900">{testimonials[0].name}</p>
+                  <p className="text-sm text-gray-500">{testimonials[0].title}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right column */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-md transition-shadow hover:border-gray-300">
-              <p className="text-gray-700 text-lg leading-relaxed">
+              <p className="text-gray-700 text-lg leading-relaxed mb-4">
                 &ldquo;{testimonials[1].text}&rdquo;
               </p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
+                  {testimonials[1].name.charAt(0)}
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium text-gray-900">{testimonials[1].name}</p>
+                  <p className="text-sm text-gray-500">{testimonials[1].title}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -413,9 +437,18 @@ const TestimonialsSection = () => {
         {/* Center card */}
         <div className="hidden md:flex justify-center mt-6">
           <div className="max-w-xl bg-white rounded-2xl p-8 border-2 border-blue-100 shadow-sm hover:shadow-md transition-shadow hover:border-blue-200">
-            <p className="text-gray-700 text-lg leading-relaxed">
+            <p className="text-gray-700 text-lg leading-relaxed mb-4">
               &ldquo;{testimonials[2].text}&rdquo;
             </p>
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold">
+                {testimonials[2].name.charAt(0)}
+              </div>
+              <div className="ml-3">
+                <p className="font-medium text-gray-900">{testimonials[2].name}</p>
+                <p className="text-sm text-gray-500">{testimonials[2].title}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -428,9 +461,22 @@ const TestimonialsSection = () => {
                 i === 2 ? 'border-2 border-blue-100' : 'border-gray-200'
               }`}
             >
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed mb-4">
                 &ldquo;{testimonial.text}&rdquo;
               </p>
+              <div className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                  i === 0 ? 'bg-blue-100 text-blue-600' :
+                  i === 1 ? 'bg-green-100 text-green-600' :
+                  'bg-purple-100 text-purple-600'
+                }`}>
+                  {testimonial.name.charAt(0)}
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium text-gray-900">{testimonial.name}</p>
+                  <p className="text-sm text-gray-500">{testimonial.title}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -439,10 +485,9 @@ const TestimonialsSection = () => {
         <div className="flex justify-center mt-12">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
           >
-            <span className="text-sm font-semibold uppercase tracking-wide">Start Free</span>
-            <span>Start your 7-day free trial</span>
+            Start Free Trial
             <ArrowRight size={18} />
           </Link>
         </div>
@@ -463,7 +508,7 @@ const FinalCTA = () => (
       </p>
       <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
         <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-          Start Your 7-Day Free Trial
+          Start Free Trial
           <ArrowRight size={20} />
         </Link>
         <Link href="/pricing" className="px-8 py-4 bg-gray-100 text-gray-700 text-lg font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center">
@@ -609,7 +654,7 @@ export default function LandingPage() {
             <div className="lg:w-1/2 text-center lg:text-left relative z-10">
               <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <Zap size={16} />
-                Trucking management for fleets of all sizes
+                Built for owner-operators & small fleets
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
@@ -617,8 +662,12 @@ export default function LandingPage() {
                 <span className="text-blue-600">in One Simple Dashboard</span>
               </h1>
 
-              <p className="text-xl text-gray-600 mb-8 max-w-xl">
+              <p className="text-xl text-gray-600 mb-4 max-w-xl">
                 Invoicing, expenses, IFTA calculations, and compliance tracking—all in one simple platform built for truckers.
+              </p>
+
+              <p className="text-lg text-blue-600 font-medium mb-8">
+                Plans starting at just $20/month
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-6">
@@ -626,7 +675,7 @@ export default function LandingPage() {
                   href="/signup"
                   className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
-                  Start Your Free Trial
+                  Start Free Trial
                   <ArrowRight size={20} />
                 </Link>
                 <Link
@@ -637,9 +686,20 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              <p className="text-sm text-gray-500">
-                No credit card required • 7-day free trial • Cancel anytime
-              </p>
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Shield size={14} className="text-green-600" />
+                  No credit card required
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock size={14} className="text-blue-600" />
+                  7-day free trial
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle size={14} className="text-green-600" />
+                  Cancel anytime
+                </span>
+              </div>
             </div>
 
             {/* Mobile screenshot */}
