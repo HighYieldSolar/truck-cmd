@@ -2,6 +2,8 @@
 "use client";
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import {
   MapPin,
   Calendar,
@@ -13,12 +15,73 @@ import {
   Users,
   Package,
   AlertCircle,
-  Eye
+  Eye,
+  Phone,
+  MessageSquare,
+  Navigation
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 
 export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
+  const [driverPhone, setDriverPhone] = useState(null);
+
+  // Fetch driver phone number if driver is assigned
+  useEffect(() => {
+    const fetchDriverPhone = async () => {
+      const driverId = load.driver_id || load.driverId;
+      if (!driverId) {
+        setDriverPhone(null);
+        return;
+      }
+
+      try {
+        const { data } = await supabase
+          .from('drivers')
+          .select('phone, name')
+          .eq('id', driverId)
+          .single();
+
+        if (data?.phone) {
+          setDriverPhone(data);
+        }
+      } catch (err) {
+        // Silently fail
+      }
+    };
+
+    fetchDriverPhone();
+  }, [load.driver_id, load.driverId]);
+
+  // Quick action handlers
+  const handleCall = (e) => {
+    e.stopPropagation();
+    if (driverPhone?.phone) {
+      const phone = driverPhone.phone.replace(/\D/g, '');
+      window.open(`tel:${phone}`, '_self');
+    }
+  };
+
+  const handleMessage = (e) => {
+    e.stopPropagation();
+    if (driverPhone?.phone) {
+      const phone = driverPhone.phone.replace(/\D/g, '');
+      const message = encodeURIComponent(
+        `Hi ${driverPhone.name || 'Driver'}, this is about Load #${load.loadNumber || load.load_number}.`
+      );
+      window.open(`sms:${phone}?body=${message}`, '_self');
+    }
+  };
+
+  const handleDirections = (e) => {
+    e.stopPropagation();
+    const address = load.destination || load.origin;
+    if (address) {
+      const encodedAddress = encodeURIComponent(address);
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+    }
+  };
+
   // Format currency
   const formatCurrency = (amount) => {
     return '$' + parseFloat(amount || 0).toLocaleString(undefined, {
@@ -172,6 +235,44 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
         </div>
 
         <div className="flex items-center space-x-1">
+          {/* Quick Actions */}
+          <button
+            onClick={handleCall}
+            disabled={!driverPhone?.phone}
+            className={`p-2 rounded-lg transition-colors ${
+              driverPhone?.phone
+                ? 'text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/40'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+            }`}
+            title={driverPhone?.phone ? `Call ${driverPhone.name || 'Driver'}` : 'No driver phone'}
+          >
+            <Phone size={16} />
+          </button>
+          <button
+            onClick={handleMessage}
+            disabled={!driverPhone?.phone}
+            className={`p-2 rounded-lg transition-colors ${
+              driverPhone?.phone
+                ? 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+            }`}
+            title={driverPhone?.phone ? `Message ${driverPhone.name || 'Driver'}` : 'No driver phone'}
+          >
+            <MessageSquare size={16} />
+          </button>
+          <button
+            onClick={handleDirections}
+            disabled={!load.destination && !load.origin}
+            className={`p-2 rounded-lg transition-colors ${
+              load.destination || load.origin
+                ? 'text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+            }`}
+            title="Get Directions"
+          >
+            <Navigation size={16} />
+          </button>
+          <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-1"></div>
           <button
             onClick={() => onSelect(load)}
             className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-lg transition-colors"

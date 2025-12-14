@@ -1,588 +1,147 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Download,
-  BarChart2,
-  FileCog,
-  AlertTriangle,
+  FileDown,
   FileText,
-  ArrowRight,
-  Calendar,
+  FileSpreadsheet,
+  File,
+  Printer,
+  Check,
+  X,
   RefreshCw,
-  Check
+  Truck,
+  Users,
+  Wrench,
+  AlertTriangle,
+  BarChart2
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { fetchTrucks, getTruckStats } from "@/lib/services/truckService";
 import { fetchDrivers, getDriverStats, checkDriverDocumentStatus } from "@/lib/services/driverService";
 import { fetchMaintenanceRecords, getUpcomingMaintenance, getOverdueMaintenance } from "@/lib/services/maintenanceService";
 
-// Storage key for last generated timestamps
-const REPORT_TIMESTAMPS_KEY = "fleet_report_timestamps";
-
-// Get stored timestamps from localStorage
-function getStoredTimestamps() {
-  if (typeof window === "undefined") return {};
-  try {
-    const stored = localStorage.getItem(REPORT_TIMESTAMPS_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-// Save timestamp to localStorage
-function saveTimestamp(reportType) {
-  if (typeof window === "undefined") return;
-  try {
-    const timestamps = getStoredTimestamps();
-    timestamps[reportType] = new Date().toISOString();
-    localStorage.setItem(REPORT_TIMESTAMPS_KEY, JSON.stringify(timestamps));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-// Format timestamp for display
-function formatTimestamp(isoString) {
-  if (!isoString) return "Never";
-  const date = new Date(isoString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
 export default function FleetReportsComponent() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState({
-    summary: false,
-    maintenance: false,
-    documents: false,
-    export: false
-  });
-  const [success, setSuccess] = useState({
-    summary: false,
-    maintenance: false,
-    documents: false,
-    export: false
-  });
-  const [timestamps, setTimestamps] = useState({});
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Load user and timestamps on mount
   useEffect(() => {
+    setMounted(true);
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      setTimestamps(getStoredTimestamps());
     }
     init();
   }, []);
 
-  // Clear success state after animation
-  const showSuccess = (type) => {
-    setSuccess(prev => ({ ...prev, [type]: true }));
-    setTimeout(() => {
-      setSuccess(prev => ({ ...prev, [type]: false }));
-    }, 2000);
-  };
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <BarChart2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Fleet Reports
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Generate and export comprehensive fleet reports
+            </p>
+          </div>
+        </div>
+      </div>
 
-  // Generate Fleet Summary Report PDF
-  const generateFleetSummaryReport = async () => {
-    if (!user) return;
+      <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+        Export detailed reports about your fleet including vehicle inventory, driver roster,
+        maintenance schedules, and document expiration tracking.
+      </p>
 
-    setLoading(prev => ({ ...prev, summary: true }));
+      <button
+        onClick={() => setShowExportModal(true)}
+        className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        <FileDown className="h-5 w-5 mr-2" />
+        Export Fleet Report
+      </button>
 
-    try {
-      // Fetch all data
-      const [trucks, drivers, truckStats, driverStats] = await Promise.all([
-        fetchTrucks(user.id),
-        fetchDrivers(user.id),
-        getTruckStats(user.id),
-        getDriverStats(user.id)
-      ]);
+      {mounted && showExportModal && (
+        <FleetExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          user={user}
+        />
+      )}
+    </div>
+  );
+}
 
-      // Dynamically import jsPDF
-      const [jsPDFModule, autoTableModule] = await Promise.all([
-        import("jspdf"),
-        import("jspdf-autotable")
-      ]);
-      const jsPDF = jsPDFModule.default;
-      const autoTable = autoTableModule.default;
+// Fleet Export Modal Component
+function FleetExportModal({ isOpen, onClose, user }) {
+  const [reportType, setReportType] = useState('summary');
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exportState, setExportState] = useState('idle');
+  const [error, setError] = useState(null);
 
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      // Header
-      doc.setFontSize(20);
-      doc.setFont(undefined, "bold");
-      doc.text("Fleet Summary Report", 14, 20);
-
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-      doc.setTextColor(100);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-
-      // Fleet Statistics Section
-      doc.setFontSize(14);
-      doc.setTextColor(0);
-      doc.setFont(undefined, "bold");
-      doc.text("Fleet Statistics", 14, 42);
-
-      // Stats boxes
-      const statsY = 48;
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-
-      // Vehicle stats
-      doc.text(`Total Vehicles: ${truckStats.total}`, 14, statsY);
-      doc.text(`Active: ${truckStats.active}`, 14, statsY + 5);
-      doc.text(`In Maintenance: ${truckStats.maintenance}`, 14, statsY + 10);
-      doc.text(`Out of Service: ${truckStats.outOfService}`, 14, statsY + 15);
-
-      // Driver stats
-      doc.text(`Total Drivers: ${driverStats.total}`, 100, statsY);
-      doc.text(`Active: ${driverStats.active}`, 100, statsY + 5);
-      doc.text(`Inactive: ${driverStats.inactive}`, 100, statsY + 10);
-      doc.text(`Expiring Docs: ${driverStats.expiringLicense + driverStats.expiringMedical}`, 100, statsY + 15);
-
-      // Vehicles Table
-      doc.setFontSize(14);
-      doc.setFont(undefined, "bold");
-      doc.text("Vehicles", 14, 78);
-
-      const vehicleRows = trucks.map(truck => [
-        truck.name || "-",
-        `${truck.year || ""} ${truck.make || ""} ${truck.model || ""}`.trim() || "-",
-        truck.vin || "-",
-        truck.license_plate || "-",
-        truck.status || "-"
-      ]);
-
-      autoTable(doc, {
-        startY: 82,
-        head: [["Name", "Vehicle", "VIN", "License Plate", "Status"]],
-        body: vehicleRows,
-        theme: "striped",
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-        styles: { fontSize: 9 },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 }
-        }
-      });
-
-      // Drivers Table
-      const driversStartY = doc.lastAutoTable.finalY + 15;
-      doc.setFontSize(14);
-      doc.setFont(undefined, "bold");
-      doc.text("Drivers", 14, driversStartY);
-
-      const driverRows = drivers.map(driver => {
-        const docStatus = checkDriverDocumentStatus(driver);
-        return [
-          driver.name || "-",
-          driver.position || "-",
-          driver.phone || "-",
-          driver.license_number || "-",
-          driver.status || "-"
-        ];
-      });
-
-      autoTable(doc, {
-        startY: driversStartY + 4,
-        head: [["Name", "Position", "Phone", "License #", "Status"]],
-        body: driverRows,
-        theme: "striped",
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
-        styles: { fontSize: 9 }
-      });
-
-      // Footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Fleet Summary Report | Page ${i} of ${pageCount} | Truck Command`,
-          105, 287, { align: "center" }
-        );
-      }
-
-      // Save PDF
-      doc.save(`Fleet_Summary_Report_${new Date().toISOString().split("T")[0]}.pdf`);
-
-      // Update timestamp
-      saveTimestamp("summary");
-      setTimestamps(getStoredTimestamps());
-      showSuccess("summary");
-    } catch (error) {
-      alert("Failed to generate report. Please try again.");
-    } finally {
-      setLoading(prev => ({ ...prev, summary: false }));
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
     }
-  };
+  }, [isOpen]);
 
-  // Generate Maintenance Schedule Report PDF
-  const generateMaintenanceReport = async () => {
-    if (!user) return;
+  if (!isOpen) return null;
 
-    setLoading(prev => ({ ...prev, maintenance: true }));
-
-    try {
-      // Fetch maintenance data
-      const [upcomingMaint, overdueMaint, allMaint] = await Promise.all([
-        getUpcomingMaintenance(user.id, 90),
-        getOverdueMaintenance(user.id),
-        fetchMaintenanceRecords(user.id)
-      ]);
-
-      const [jsPDFModule, autoTableModule] = await Promise.all([
-        import("jspdf"),
-        import("jspdf-autotable")
-      ]);
-      const jsPDF = jsPDFModule.default;
-      const autoTable = autoTableModule.default;
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      // Header
-      doc.setFontSize(20);
-      doc.setFont(undefined, "bold");
-      doc.text("Maintenance Schedule Report", 14, 20);
-
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-      doc.setTextColor(100);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-
-      // Summary Stats
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.setFont(undefined, "bold");
-      doc.text("Summary", 14, 42);
-
-      doc.setFont(undefined, "normal");
-      doc.setFontSize(10);
-      doc.text(`Overdue Items: ${overdueMaint.length}`, 14, 50);
-      doc.text(`Upcoming (90 days): ${upcomingMaint.length}`, 14, 56);
-      doc.text(`Total Records: ${allMaint.length}`, 14, 62);
-
-      // Overdue Section (if any)
-      let currentY = 75;
-
-      if (overdueMaint.length > 0) {
-        doc.setFontSize(14);
-        doc.setFont(undefined, "bold");
-        doc.setTextColor(220, 38, 38); // Red
-        doc.text("OVERDUE MAINTENANCE", 14, currentY);
-        doc.setTextColor(0);
-
-        const overdueRows = overdueMaint.map(record => [
-          record.trucks?.name || "-",
-          record.type || "-",
-          new Date(record.due_date).toLocaleDateString(),
-          record.status || "-",
-          record.notes || "-"
-        ]);
-
-        autoTable(doc, {
-          startY: currentY + 4,
-          head: [["Vehicle", "Type", "Due Date", "Status", "Notes"]],
-          body: overdueRows,
-          theme: "striped",
-          headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-          styles: { fontSize: 9 }
-        });
-
-        currentY = doc.lastAutoTable.finalY + 15;
-      }
-
-      // Upcoming Maintenance
-      doc.setFontSize(14);
-      doc.setFont(undefined, "bold");
-      doc.setTextColor(0);
-      doc.text("Upcoming Maintenance (Next 90 Days)", 14, currentY);
-
-      if (upcomingMaint.length > 0) {
-        const upcomingRows = upcomingMaint.map(record => {
-          const dueDate = new Date(record.due_date);
-          const today = new Date();
-          const daysUntil = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-
-          return [
-            record.trucks?.name || "-",
-            record.type || "-",
-            dueDate.toLocaleDateString(),
-            `${daysUntil} days`,
-            record.status || "-"
-          ];
-        });
-
-        autoTable(doc, {
-          startY: currentY + 4,
-          head: [["Vehicle", "Type", "Due Date", "Days Until", "Status"]],
-          body: upcomingRows,
-          theme: "striped",
-          headStyles: { fillColor: [249, 115, 22], textColor: 255 },
-          styles: { fontSize: 9 }
-        });
-      } else {
-        doc.setFontSize(10);
-        doc.setFont(undefined, "normal");
-        doc.text("No upcoming maintenance scheduled.", 14, currentY + 8);
-      }
-
-      // Footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Maintenance Schedule Report | Page ${i} of ${pageCount} | Truck Command`,
-          105, 287, { align: "center" }
-        );
-      }
-
-      doc.save(`Maintenance_Schedule_${new Date().toISOString().split("T")[0]}.pdf`);
-
-      saveTimestamp("maintenance");
-      setTimestamps(getStoredTimestamps());
-      showSuccess("maintenance");
-    } catch (error) {
-      alert("Failed to generate report. Please try again.");
-    } finally {
-      setLoading(prev => ({ ...prev, maintenance: false }));
+  const reportTypes = [
+    {
+      value: 'summary',
+      label: 'Fleet Summary',
+      description: 'Overview of vehicles, drivers, and fleet statistics',
+      icon: BarChart2
+    },
+    {
+      value: 'maintenance',
+      label: 'Maintenance Schedule',
+      description: 'Upcoming and overdue maintenance items',
+      icon: Wrench
+    },
+    {
+      value: 'documents',
+      label: 'Document Expiration',
+      description: 'Driver license and medical card expiry tracking',
+      icon: AlertTriangle
+    },
+    {
+      value: 'full',
+      label: 'Full Fleet Export',
+      description: 'Complete data export with all fleet information',
+      icon: FileDown
     }
-  };
+  ];
 
-  // Generate Document Expiration Report PDF
-  const generateDocumentExpirationReport = async () => {
-    if (!user) return;
+  const formatOptions = [
+    { value: 'pdf', label: 'PDF Report', description: 'Professional format with branding', icon: FileText },
+    { value: 'csv', label: 'Spreadsheet (CSV)', description: 'For Excel or Google Sheets', icon: FileSpreadsheet },
+    { value: 'txt', label: 'Plain Text', description: 'Simple format for email', icon: File },
+    { value: 'print', label: 'Print', description: 'Send to printer', icon: Printer }
+  ];
 
-    setLoading(prev => ({ ...prev, documents: true }));
-
-    try {
-      const drivers = await fetchDrivers(user.id);
-
-      const [jsPDFModule, autoTableModule] = await Promise.all([
-        import("jspdf"),
-        import("jspdf-autotable")
-      ]);
-      const jsPDF = jsPDFModule.default;
-      const autoTable = autoTableModule.default;
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      // Header
-      doc.setFontSize(20);
-      doc.setFont(undefined, "bold");
-      doc.text("Document Expiration Report", 14, 20);
-
-      doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
-      doc.setTextColor(100);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-
-      // Process driver documents
-      const now = new Date();
-      const expiringDocuments = [];
-      const expiredDocuments = [];
-
-      drivers.forEach(driver => {
-        const licenseExpiry = new Date(driver.license_expiry);
-        const medicalExpiry = new Date(driver.medical_card_expiry);
-
-        const licenseDays = Math.floor((licenseExpiry - now) / (1000 * 60 * 60 * 24));
-        const medicalDays = Math.floor((medicalExpiry - now) / (1000 * 60 * 60 * 24));
-
-        // License
-        if (licenseDays < 0) {
-          expiredDocuments.push({
-            driver: driver.name,
-            document: "CDL License",
-            expiry: driver.license_expiry,
-            days: licenseDays,
-            state: driver.license_state
-          });
-        } else if (licenseDays <= 90) {
-          expiringDocuments.push({
-            driver: driver.name,
-            document: "CDL License",
-            expiry: driver.license_expiry,
-            days: licenseDays,
-            state: driver.license_state
-          });
-        }
-
-        // Medical Card
-        if (medicalDays < 0) {
-          expiredDocuments.push({
-            driver: driver.name,
-            document: "Medical Card",
-            expiry: driver.medical_card_expiry,
-            days: medicalDays,
-            state: "-"
-          });
-        } else if (medicalDays <= 90) {
-          expiringDocuments.push({
-            driver: driver.name,
-            document: "Medical Card",
-            expiry: driver.medical_card_expiry,
-            days: medicalDays,
-            state: "-"
-          });
-        }
-      });
-
-      // Sort by days remaining
-      expiredDocuments.sort((a, b) => a.days - b.days);
-      expiringDocuments.sort((a, b) => a.days - b.days);
-
-      // Summary
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.setFont(undefined, "bold");
-      doc.text("Summary", 14, 42);
-
-      doc.setFont(undefined, "normal");
-      doc.setFontSize(10);
-      doc.text(`Expired Documents: ${expiredDocuments.length}`, 14, 50);
-      doc.text(`Expiring in 90 Days: ${expiringDocuments.length}`, 14, 56);
-      doc.text(`Total Drivers: ${drivers.length}`, 14, 62);
-
-      let currentY = 75;
-
-      // Expired Documents Section
-      if (expiredDocuments.length > 0) {
-        doc.setFontSize(14);
-        doc.setFont(undefined, "bold");
-        doc.setTextColor(220, 38, 38);
-        doc.text("EXPIRED DOCUMENTS", 14, currentY);
-        doc.setTextColor(0);
-
-        const expiredRows = expiredDocuments.map(item => [
-          item.driver,
-          item.document,
-          new Date(item.expiry).toLocaleDateString(),
-          `${Math.abs(item.days)} days ago`,
-          "EXPIRED"
-        ]);
-
-        autoTable(doc, {
-          startY: currentY + 4,
-          head: [["Driver", "Document", "Expired On", "Days Overdue", "Status"]],
-          body: expiredRows,
-          theme: "striped",
-          headStyles: { fillColor: [220, 38, 38], textColor: 255 },
-          styles: { fontSize: 9 }
-        });
-
-        currentY = doc.lastAutoTable.finalY + 15;
-      }
-
-      // Expiring Documents Section
-      doc.setFontSize(14);
-      doc.setFont(undefined, "bold");
-      doc.setTextColor(0);
-      doc.text("Documents Expiring Within 90 Days", 14, currentY);
-
-      if (expiringDocuments.length > 0) {
-        const expiringRows = expiringDocuments.map(d => {
-          let urgency = "Low";
-          if (d.days <= 14) urgency = "Critical";
-          else if (d.days <= 30) urgency = "High";
-          else if (d.days <= 60) urgency = "Medium";
-
-          return [
-            d.driver,
-            d.document,
-            new Date(d.expiry).toLocaleDateString(),
-            `${d.days} days`,
-            urgency
-          ];
-        });
-
-        autoTable(doc, {
-          startY: currentY + 4,
-          head: [["Driver", "Document", "Expiry Date", "Days Left", "Urgency"]],
-          body: expiringRows,
-          theme: "striped",
-          headStyles: { fillColor: [249, 115, 22], textColor: 255 },
-          styles: { fontSize: 9 },
-          didDrawCell: (data) => {
-            // Color code urgency column
-            if (data.section === "body" && data.column.index === 4) {
-              const urgency = data.cell.raw;
-              if (urgency === "Critical") {
-                doc.setTextColor(220, 38, 38);
-              } else if (urgency === "High") {
-                doc.setTextColor(249, 115, 22);
-              }
-            }
-          }
-        });
-      } else {
-        doc.setFontSize(10);
-        doc.setFont(undefined, "normal");
-        doc.text("No documents expiring in the next 90 days.", 14, currentY + 8);
-      }
-
-      // Footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Document Expiration Report | Page ${i} of ${pageCount} | Truck Command`,
-          105, 287, { align: "center" }
-        );
-      }
-
-      doc.save(`Document_Expiration_Report_${new Date().toISOString().split("T")[0]}.pdf`);
-
-      saveTimestamp("documents");
-      setTimestamps(getStoredTimestamps());
-      showSuccess("documents");
-    } catch (error) {
-      alert("Failed to generate report. Please try again.");
-    } finally {
-      setLoading(prev => ({ ...prev, documents: false }));
-    }
-  };
-
-  // Helper to escape CSV values
+  // Helper functions
   const escapeCSV = (value) => {
     if (value === null || value === undefined) return "";
     const str = String(value);
-    // Escape quotes and wrap in quotes if contains comma, quote, or newline
     if (str.includes(",") || str.includes('"') || str.includes("\n")) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
   };
 
-  // Helper to format phone number
   const formatPhone = (phone) => {
     if (!phone) return "";
     const digits = phone.replace(/\D/g, "");
@@ -592,499 +151,592 @@ export default function FleetReportsComponent() {
     return phone;
   };
 
-  // Helper to format date
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
-  // Helper to format currency
   const formatCurrency = (amount) => {
     if (!amount) return "";
     return `$${parseFloat(amount).toFixed(2)}`;
   };
 
-  // Export all fleet data to CSV
-  const exportFleetData = async () => {
-    if (!user) return;
+  // Generate Fleet Summary Report PDF
+  const generateFleetSummaryPDF = async () => {
+    const [trucks, drivers, truckStats, driverStats] = await Promise.all([
+      fetchTrucks(user.id),
+      fetchDrivers(user.id),
+      getTruckStats(user.id),
+      getDriverStats(user.id)
+    ]);
 
-    setLoading(prev => ({ ...prev, export: true }));
+    const [jsPDFModule, autoTableModule] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable")
+    ]);
+    const jsPDF = jsPDFModule.default;
+    const autoTable = autoTableModule.default;
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const brandBlue = [37, 99, 235];
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+
+    // Header
+    doc.setFillColor(...brandBlue);
+    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('FLEET SUMMARY REPORT', pageWidth / 2, 14, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 22, { align: 'center' });
+
+    // Statistics Section
+    let yPos = 40;
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Fleet Statistics', margin, yPos);
+
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Total Vehicles: ${truckStats.total} (${truckStats.active} active)`, margin, yPos);
+    doc.text(`Total Drivers: ${driverStats.total} (${driverStats.active} active)`, 100, yPos);
+    yPos += 6;
+    doc.text(`In Maintenance: ${truckStats.maintenance}`, margin, yPos);
+    doc.text(`Inactive Drivers: ${driverStats.inactive}`, 100, yPos);
+
+    // Vehicles Table
+    yPos += 15;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Vehicles', margin, yPos);
+
+    autoTable(doc, {
+      startY: yPos + 4,
+      head: [['Name', 'Vehicle', 'VIN', 'License Plate', 'Status']],
+      body: trucks.map(truck => [
+        truck.name || '-',
+        `${truck.year || ''} ${truck.make || ''} ${truck.model || ''}`.trim() || '-',
+        truck.vin || '-',
+        truck.license_plate || '-',
+        truck.status || '-'
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: brandBlue, textColor: 255 },
+      styles: { fontSize: 9 },
+      margin: { left: margin, right: margin, bottom: 25 }
+    });
+
+    // Drivers Table
+    const driversY = doc.lastAutoTable.finalY + 12;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Drivers', margin, driversY);
+
+    autoTable(doc, {
+      startY: driversY + 4,
+      head: [['Name', 'Position', 'Phone', 'License #', 'Status']],
+      body: drivers.map(driver => [
+        driver.name || '-',
+        driver.position || '-',
+        formatPhone(driver.phone) || '-',
+        driver.license_number || '-',
+        driver.status || '-'
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: brandBlue, textColor: 255 },
+      styles: { fontSize: 9 },
+      margin: { left: margin, right: margin, bottom: 25 }
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Fleet Summary Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
+    }
+
+    doc.save(`Fleet_Summary_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // Generate Maintenance Report PDF
+  const generateMaintenancePDF = async () => {
+    const [upcomingMaint, overdueMaint] = await Promise.all([
+      getUpcomingMaintenance(user.id, 90),
+      getOverdueMaintenance(user.id)
+    ]);
+
+    const [jsPDFModule, autoTableModule] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable")
+    ]);
+    const jsPDF = jsPDFModule.default;
+    const autoTable = autoTableModule.default;
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const brandBlue = [37, 99, 235];
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+
+    // Header
+    doc.setFillColor(...brandBlue);
+    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('MAINTENANCE SCHEDULE REPORT', pageWidth / 2, 14, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 22, { align: 'center' });
+
+    let yPos = 40;
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.text(`Overdue Items: ${overdueMaint.length}  |  Upcoming (90 days): ${upcomingMaint.length}`, margin, yPos);
+
+    // Overdue Section
+    if (overdueMaint.length > 0) {
+      yPos += 12;
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(220, 38, 38);
+      doc.text('OVERDUE MAINTENANCE', margin, yPos);
+
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Vehicle', 'Type', 'Due Date', 'Status']],
+        body: overdueMaint.map(r => [
+          r.trucks?.name || '-',
+          r.type || '-',
+          formatDate(r.due_date),
+          r.status || '-'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+        styles: { fontSize: 9 },
+        margin: { left: margin, right: margin }
+      });
+      yPos = doc.lastAutoTable.finalY + 12;
+    }
+
+    // Upcoming Section
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Upcoming Maintenance (Next 90 Days)', margin, yPos);
+
+    if (upcomingMaint.length > 0) {
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Vehicle', 'Type', 'Due Date', 'Days Until', 'Status']],
+        body: upcomingMaint.map(r => {
+          const daysUntil = Math.ceil((new Date(r.due_date) - new Date()) / (1000 * 60 * 60 * 24));
+          return [r.trucks?.name || '-', r.type || '-', formatDate(r.due_date), `${daysUntil} days`, r.status || '-'];
+        }),
+        theme: 'striped',
+        headStyles: { fillColor: [249, 115, 22], textColor: 255 },
+        styles: { fontSize: 9 },
+        margin: { left: margin, right: margin, bottom: 25 }
+      });
+    } else {
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('No upcoming maintenance scheduled.', margin, yPos + 8);
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Maintenance Schedule Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
+    }
+
+    doc.save(`Maintenance_Schedule_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // Generate Document Expiration Report PDF
+  const generateDocumentsPDF = async () => {
+    const drivers = await fetchDrivers(user.id);
+
+    const [jsPDFModule, autoTableModule] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable")
+    ]);
+    const jsPDF = jsPDFModule.default;
+    const autoTable = autoTableModule.default;
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const brandBlue = [37, 99, 235];
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const now = new Date();
+
+    // Process documents
+    const expiredDocs = [];
+    const expiringDocs = [];
+
+    drivers.forEach(driver => {
+      const licenseExpiry = new Date(driver.license_expiry);
+      const medicalExpiry = new Date(driver.medical_card_expiry);
+      const licenseDays = Math.floor((licenseExpiry - now) / (1000 * 60 * 60 * 24));
+      const medicalDays = Math.floor((medicalExpiry - now) / (1000 * 60 * 60 * 24));
+
+      if (licenseDays < 0) {
+        expiredDocs.push({ driver: driver.name, document: 'CDL License', expiry: driver.license_expiry, days: licenseDays });
+      } else if (licenseDays <= 90) {
+        expiringDocs.push({ driver: driver.name, document: 'CDL License', expiry: driver.license_expiry, days: licenseDays });
+      }
+
+      if (medicalDays < 0) {
+        expiredDocs.push({ driver: driver.name, document: 'Medical Card', expiry: driver.medical_card_expiry, days: medicalDays });
+      } else if (medicalDays <= 90) {
+        expiringDocs.push({ driver: driver.name, document: 'Medical Card', expiry: driver.medical_card_expiry, days: medicalDays });
+      }
+    });
+
+    // Header
+    doc.setFillColor(...brandBlue);
+    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('DOCUMENT EXPIRATION REPORT', pageWidth / 2, 14, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 22, { align: 'center' });
+
+    let yPos = 40;
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.text(`Expired: ${expiredDocs.length}  |  Expiring in 90 Days: ${expiringDocs.length}  |  Total Drivers: ${drivers.length}`, margin, yPos);
+
+    // Expired Section
+    if (expiredDocs.length > 0) {
+      yPos += 12;
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(220, 38, 38);
+      doc.text('EXPIRED DOCUMENTS', margin, yPos);
+
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Driver', 'Document', 'Expired On', 'Days Overdue']],
+        body: expiredDocs.map(d => [d.driver, d.document, formatDate(d.expiry), `${Math.abs(d.days)} days`]),
+        theme: 'striped',
+        headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+        styles: { fontSize: 9 },
+        margin: { left: margin, right: margin }
+      });
+      yPos = doc.lastAutoTable.finalY + 12;
+    }
+
+    // Expiring Section
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Documents Expiring Within 90 Days', margin, yPos);
+
+    if (expiringDocs.length > 0) {
+      autoTable(doc, {
+        startY: yPos + 4,
+        head: [['Driver', 'Document', 'Expiry Date', 'Days Left', 'Urgency']],
+        body: expiringDocs.sort((a, b) => a.days - b.days).map(d => {
+          let urgency = d.days <= 14 ? 'Critical' : d.days <= 30 ? 'High' : d.days <= 60 ? 'Medium' : 'Low';
+          return [d.driver, d.document, formatDate(d.expiry), `${d.days} days`, urgency];
+        }),
+        theme: 'striped',
+        headStyles: { fillColor: [249, 115, 22], textColor: 255 },
+        styles: { fontSize: 9 },
+        margin: { left: margin, right: margin, bottom: 25 }
+      });
+    } else {
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text('No documents expiring in the next 90 days.', margin, yPos + 8);
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Document Expiration Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
+    }
+
+    doc.save(`Document_Expiration_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // Generate Full Export CSV
+  const generateFullExportCSV = async () => {
+    const [trucks, drivers, maintenance, truckStats, driverStats, profileResult] = await Promise.all([
+      fetchTrucks(user.id),
+      fetchDrivers(user.id),
+      fetchMaintenanceRecords(user.id),
+      getTruckStats(user.id),
+      getDriverStats(user.id),
+      supabase.from("users").select("*").eq("id", user.id).single()
+    ]);
+
+    const profile = profileResult.data || {};
+    const now = new Date();
+
+    let lines = [];
+    lines.push('FLEET DATA EXPORT REPORT');
+    lines.push(`Generated: ${new Date().toLocaleString()}`);
+    if (profile.company_name) lines.push(`Company: ${profile.company_name}`);
+    lines.push('');
+
+    // Statistics
+    lines.push('FLEET STATISTICS');
+    lines.push(`Total Vehicles,${truckStats.total}`);
+    lines.push(`Active Vehicles,${truckStats.active}`);
+    lines.push(`Total Drivers,${driverStats.total}`);
+    lines.push(`Active Drivers,${driverStats.active}`);
+    lines.push('');
+
+    // Vehicles
+    lines.push('VEHICLES');
+    lines.push('Name,Year,Make,Model,VIN,License Plate,Status');
+    trucks.forEach(t => {
+      lines.push([escapeCSV(t.name), escapeCSV(t.year), escapeCSV(t.make), escapeCSV(t.model), escapeCSV(t.vin), escapeCSV(t.license_plate), escapeCSV(t.status)].join(','));
+    });
+    lines.push('');
+
+    // Drivers
+    lines.push('DRIVERS');
+    lines.push('Name,Position,Phone,License #,License Expiry,Medical Expiry,Status');
+    drivers.forEach(d => {
+      lines.push([escapeCSV(d.name), escapeCSV(d.position), escapeCSV(formatPhone(d.phone)), escapeCSV(d.license_number), escapeCSV(formatDate(d.license_expiry)), escapeCSV(formatDate(d.medical_card_expiry)), escapeCSV(d.status)].join(','));
+    });
+    lines.push('');
+
+    // Maintenance
+    lines.push('MAINTENANCE RECORDS');
+    lines.push('Vehicle,Type,Due Date,Status,Cost');
+    maintenance.forEach(m => {
+      lines.push([escapeCSV(m.trucks?.name), escapeCSV(m.type), escapeCSV(formatDate(m.due_date)), escapeCSV(m.status), escapeCSV(formatCurrency(m.cost))].join(','));
+    });
+
+    const csvContent = lines.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Fleet_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Handle export
+  const handleExport = async () => {
+    if (!user) return;
+    setExportState('loading');
+    setError(null);
 
     try {
-      // Fetch all data including user profile
-      const [trucks, drivers, maintenance, truckStats, driverStats, profileResult] = await Promise.all([
-        fetchTrucks(user.id),
-        fetchDrivers(user.id),
-        fetchMaintenanceRecords(user.id),
-        getTruckStats(user.id),
-        getDriverStats(user.id),
-        supabase.from("users").select("*").eq("id", user.id).single()
-      ]);
-
-      const profile = profileResult.data || {};
-
-      // Calculate additional stats
-      const now = new Date();
-      const activeDrivers = drivers.filter(d => d.status === "Active").length;
-      const activeTrucks = trucks.filter(t => t.status === "Active").length;
-      const pendingMaintenance = maintenance.filter(m => m.status !== "Completed").length;
-      const overdueMaintenance = maintenance.filter(m => {
-        if (m.status === "Completed") return false;
-        return new Date(m.due_date) < now;
-      }).length;
-      const totalMaintenanceCost = maintenance
-        .filter(m => m.status === "Completed" && m.cost)
-        .reduce((sum, m) => sum + parseFloat(m.cost || 0), 0);
-
-      // Calculate expiring documents
-      const expiringDocs = drivers.reduce((count, driver) => {
-        const licenseExpiry = new Date(driver.license_expiry);
-        const medicalExpiry = new Date(driver.medical_card_expiry);
-        const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        if (licenseExpiry <= thirtyDays && licenseExpiry >= now) count++;
-        if (medicalExpiry <= thirtyDays && medicalExpiry >= now) count++;
-        return count;
-      }, 0);
-
-      // Build CSV content
-      let lines = [];
-
-      // ============================================
-      // HEADER SECTION - Business Information
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                           FLEET DATA EXPORT REPORT                            ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-
-      // Business Information
-      lines.push("BUSINESS INFORMATION");
-      lines.push("───────────────────────────────────────────────────────────────────────────────");
-      if (profile.company_name) {
-        lines.push(`Company Name:,${escapeCSV(profile.company_name)}`);
-      }
-      if (profile.full_name) {
-        lines.push(`Owner/Manager:,${escapeCSV(profile.full_name)}`);
-      }
-      if (profile.address || profile.city || profile.state || profile.zip) {
-        const address = [profile.address, profile.city, profile.state, profile.zip].filter(Boolean).join(", ");
-        lines.push(`Address:,${escapeCSV(address)}`);
-      }
-      if (profile.phone) {
-        lines.push(`Phone:,${escapeCSV(formatPhone(profile.phone))}`);
-      }
-      if (profile.email || user.email) {
-        lines.push(`Email:,${escapeCSV(profile.email || user.email)}`);
-      }
-      lines.push("");
-      lines.push(`Report Generated:,${escapeCSV(new Date().toLocaleString())}`);
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // FLEET SUMMARY STATISTICS
-      // ============================================
-      lines.push("FLEET SUMMARY STATISTICS");
-      lines.push("───────────────────────────────────────────────────────────────────────────────");
-      lines.push("");
-      lines.push("Category,Count,Details");
-      lines.push(`Total Vehicles,${truckStats.total},${activeTrucks} active`);
-      lines.push(`Active Vehicles,${truckStats.active},Ready for dispatch`);
-      lines.push(`In Maintenance,${truckStats.maintenance},Currently being serviced`);
-      lines.push(`Out of Service,${truckStats.outOfService},Not operational`);
-      lines.push("");
-      lines.push(`Total Drivers,${driverStats.total},${activeDrivers} active`);
-      lines.push(`Active Drivers,${driverStats.active},Available for work`);
-      lines.push(`Inactive Drivers,${driverStats.inactive},Not currently working`);
-      lines.push(`Expiring Documents,${expiringDocs},Within next 30 days`);
-      lines.push("");
-      lines.push(`Maintenance Records,${maintenance.length},All time`);
-      lines.push(`Pending Maintenance,${pendingMaintenance},Scheduled or in progress`);
-      lines.push(`Overdue Maintenance,${overdueMaintenance},Past due date`);
-      lines.push(`Total Maintenance Cost,${formatCurrency(totalMaintenanceCost)},Completed services`);
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // VEHICLES SECTION
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                              VEHICLE INVENTORY                                ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-      lines.push("Vehicle Name,Year,Make,Model,Type,VIN,License Plate,Status,Fuel Type,Tank Capacity,MPG,Color,Notes");
-
-      if (trucks.length > 0) {
-        trucks.forEach(truck => {
-          lines.push([
-            escapeCSV(truck.name),
-            escapeCSV(truck.year),
-            escapeCSV(truck.make),
-            escapeCSV(truck.model),
-            escapeCSV(truck.type),
-            escapeCSV(truck.vin),
-            escapeCSV(truck.license_plate),
-            escapeCSV(truck.status),
-            escapeCSV(truck.fuel_type),
-            escapeCSV(truck.tank_capacity ? `${truck.tank_capacity} gal` : ""),
-            escapeCSV(truck.mpg),
-            escapeCSV(truck.color),
-            escapeCSV(truck.notes)
-          ].join(","));
-        });
-      } else {
-        lines.push("No vehicles found");
-      }
-      lines.push("");
-      lines.push(`Total Vehicles: ${trucks.length}`);
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // DRIVERS SECTION
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                               DRIVER ROSTER                                   ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-      lines.push("Driver Name,Position,Status,Phone,Email,License Number,License State,License Expiry,License Status,Medical Card Expiry,Medical Status,Hire Date,City,State,Emergency Contact,Emergency Phone");
-
-      if (drivers.length > 0) {
-        drivers.forEach(driver => {
-          const licenseExpiry = new Date(driver.license_expiry);
-          const medicalExpiry = new Date(driver.medical_card_expiry);
-          const licenseDays = Math.floor((licenseExpiry - now) / (1000 * 60 * 60 * 24));
-          const medicalDays = Math.floor((medicalExpiry - now) / (1000 * 60 * 60 * 24));
-
-          let licenseStatus = "Valid";
-          if (licenseDays < 0) licenseStatus = "EXPIRED";
-          else if (licenseDays <= 30) licenseStatus = "Expiring Soon";
-
-          let medicalStatus = "Valid";
-          if (medicalDays < 0) medicalStatus = "EXPIRED";
-          else if (medicalDays <= 30) medicalStatus = "Expiring Soon";
-
-          lines.push([
-            escapeCSV(driver.name),
-            escapeCSV(driver.position),
-            escapeCSV(driver.status),
-            escapeCSV(formatPhone(driver.phone)),
-            escapeCSV(driver.email),
-            escapeCSV(driver.license_number),
-            escapeCSV(driver.license_state),
-            escapeCSV(formatDate(driver.license_expiry)),
-            escapeCSV(licenseStatus),
-            escapeCSV(formatDate(driver.medical_card_expiry)),
-            escapeCSV(medicalStatus),
-            escapeCSV(formatDate(driver.hire_date)),
-            escapeCSV(driver.city),
-            escapeCSV(driver.state),
-            escapeCSV(driver.emergency_contact),
-            escapeCSV(formatPhone(driver.emergency_phone))
-          ].join(","));
-        });
-      } else {
-        lines.push("No drivers found");
-      }
-      lines.push("");
-      lines.push(`Total Drivers: ${drivers.length}`);
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // MAINTENANCE RECORDS SECTION
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                            MAINTENANCE RECORDS                                ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-      lines.push("Vehicle,Maintenance Type,Status,Priority,Due Date,Days Until Due,Completed Date,Cost,Odometer,Service Provider,Invoice Number,Notes");
-
-      if (maintenance.length > 0) {
-        // Sort by due date
-        const sortedMaintenance = [...maintenance].sort((a, b) => {
-          if (a.status === "Completed" && b.status !== "Completed") return 1;
-          if (a.status !== "Completed" && b.status === "Completed") return -1;
-          return new Date(a.due_date) - new Date(b.due_date);
-        });
-
-        sortedMaintenance.forEach(record => {
-          const dueDate = new Date(record.due_date);
-          const daysUntil = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-
-          let priority = "Normal";
-          if (record.status !== "Completed") {
-            if (daysUntil < 0) priority = "OVERDUE";
-            else if (daysUntil <= 7) priority = "Urgent";
-            else if (daysUntil <= 14) priority = "High";
-          } else {
-            priority = "Completed";
-          }
-
-          let daysDisplay = "";
-          if (record.status !== "Completed") {
-            if (daysUntil < 0) daysDisplay = `${Math.abs(daysUntil)} days overdue`;
-            else if (daysUntil === 0) daysDisplay = "Due today";
-            else daysDisplay = `${daysUntil} days`;
-          }
-
-          lines.push([
-            escapeCSV(record.trucks?.name || "Unknown"),
-            escapeCSV(record.type),
-            escapeCSV(record.status),
-            escapeCSV(priority),
-            escapeCSV(formatDate(record.due_date)),
-            escapeCSV(daysDisplay),
-            escapeCSV(formatDate(record.completed_date)),
-            escapeCSV(formatCurrency(record.cost)),
-            escapeCSV(record.odometer_at_service ? `${record.odometer_at_service} mi` : ""),
-            escapeCSV(record.service_provider),
-            escapeCSV(record.invoice_number),
-            escapeCSV(record.notes)
-          ].join(","));
-        });
-      } else {
-        lines.push("No maintenance records found");
-      }
-      lines.push("");
-      lines.push(`Total Maintenance Records: ${maintenance.length}`);
-      lines.push(`Total Maintenance Cost: ${formatCurrency(totalMaintenanceCost)}`);
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // DOCUMENT EXPIRATION TRACKING
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                         DOCUMENT EXPIRATION TRACKING                          ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-      lines.push("Driver Name,Document Type,Expiry Date,Days Until Expiry,Status,Action Required");
-
-      const docExpirations = [];
-      drivers.forEach(driver => {
-        const licenseExpiry = new Date(driver.license_expiry);
-        const medicalExpiry = new Date(driver.medical_card_expiry);
-        const licenseDays = Math.floor((licenseExpiry - now) / (1000 * 60 * 60 * 24));
-        const medicalDays = Math.floor((medicalExpiry - now) / (1000 * 60 * 60 * 24));
-
-        docExpirations.push({
-          driver: driver.name,
-          type: "CDL License",
-          expiry: driver.license_expiry,
-          days: licenseDays
-        });
-
-        docExpirations.push({
-          driver: driver.name,
-          type: "Medical Card",
-          expiry: driver.medical_card_expiry,
-          days: medicalDays
-        });
-      });
-
-      // Sort by days until expiry
-      docExpirations.sort((a, b) => a.days - b.days);
-
-      docExpirations.forEach(doc => {
-        let status = "Valid";
-        let action = "None";
-
-        if (doc.days < 0) {
-          status = "EXPIRED";
-          action = "Renew immediately";
-        } else if (doc.days <= 14) {
-          status = "Critical";
-          action = "Renew urgently";
-        } else if (doc.days <= 30) {
-          status = "Warning";
-          action = "Schedule renewal";
-        } else if (doc.days <= 60) {
-          status = "Upcoming";
-          action = "Plan renewal";
+      if (exportFormat === 'pdf' || exportFormat === 'print') {
+        switch (reportType) {
+          case 'summary':
+            await generateFleetSummaryPDF();
+            break;
+          case 'maintenance':
+            await generateMaintenancePDF();
+            break;
+          case 'documents':
+            await generateDocumentsPDF();
+            break;
+          case 'full':
+            await generateFleetSummaryPDF(); // Full export as PDF uses summary
+            break;
         }
-
-        let daysDisplay = "";
-        if (doc.days < 0) daysDisplay = `${Math.abs(doc.days)} days ago`;
-        else daysDisplay = `${doc.days} days`;
-
-        lines.push([
-          escapeCSV(doc.driver),
-          escapeCSV(doc.type),
-          escapeCSV(formatDate(doc.expiry)),
-          escapeCSV(daysDisplay),
-          escapeCSV(status),
-          escapeCSV(action)
-        ].join(","));
-      });
-
-      lines.push("");
-      lines.push("");
-
-      // ============================================
-      // FOOTER
-      // ============================================
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("                              END OF REPORT                                    ");
-      lines.push("═══════════════════════════════════════════════════════════════════════════════");
-      lines.push("");
-      lines.push(`Report generated by Truck Command Fleet Management System`);
-      lines.push(`Generated on: ${new Date().toLocaleString()}`);
-      if (profile.company_name) {
-        lines.push(`Company: ${profile.company_name}`);
+        if (exportFormat === 'print') {
+          setTimeout(() => window.print(), 500);
+        }
+      } else {
+        // CSV/TXT export - use full export for all types
+        await generateFullExportCSV();
       }
 
-      // Join all lines and create download
-      const csvContent = lines.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      const fileName = profile.company_name
-        ? `${profile.company_name.replace(/[^a-z0-9]/gi, "_")}_Fleet_Export_${new Date().toISOString().split("T")[0]}.csv`
-        : `Fleet_Data_Export_${new Date().toISOString().split("T")[0]}.csv`;
-
-      link.setAttribute("href", url);
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      saveTimestamp("export");
-      setTimestamps(getStoredTimestamps());
-      showSuccess("export");
-    } catch (error) {
-      alert("Failed to export data. Please try again.");
-    } finally {
-      setLoading(prev => ({ ...prev, export: false }));
+      setExportState('success');
+      setTimeout(() => onClose(), 1500);
+    } catch (err) {
+      setExportState('error');
+      setError('Failed to generate report. Please try again.');
     }
   };
 
-  return (
-    <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-        <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
-          <FileText size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-          Fleet Reports
-        </h3>
-        <button
-          onClick={exportFleetData}
-          disabled={loading.export}
-          className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading.export ? (
-            <>
-              <RefreshCw size={16} className="mr-1.5 animate-spin" />
-              Exporting...
-            </>
-          ) : success.export ? (
-            <>
-              <Check size={16} className="mr-1.5" />
-              Exported!
-            </>
-          ) : (
-            <>
-              <Download size={16} className="mr-1.5" />
-              Export Fleet Data
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Fleet Summary Report */}
-          <div
-            onClick={!loading.summary ? generateFleetSummaryReport : undefined}
-            className={`border border-gray-200 dark:border-gray-600 rounded-lg hover:shadow-md dark:hover:bg-gray-700/50 transition-all p-5 bg-white dark:bg-gray-800 ${loading.summary ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
-          >
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-3">
-              {loading.summary ? (
-                <RefreshCw size={20} className="text-blue-600 dark:text-blue-400 animate-spin" />
-              ) : success.summary ? (
-                <Check size={20} className="text-green-600 dark:text-green-400" />
-              ) : (
-                <BarChart2 size={20} className="text-blue-600 dark:text-blue-400" />
-              )}
+  const modalContent = (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[9999] overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && exportState !== 'loading') onClose();
+      }}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-lg mx-auto sm:my-8 relative max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+              <FileDown size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Fleet Summary Report</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Complete overview of all vehicles and drivers with current status.</p>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Last: {formatTimestamp(timestamps.summary)}
-              </span>
-              <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                <ArrowRight size={16} />
-              </button>
-            </div>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Export Fleet Report
+            </h2>
           </div>
-
-          {/* Maintenance Schedule Report */}
-          <div
-            onClick={!loading.maintenance ? generateMaintenanceReport : undefined}
-            className={`border border-gray-200 dark:border-gray-600 rounded-lg hover:shadow-md dark:hover:bg-gray-700/50 transition-all p-5 bg-white dark:bg-gray-800 ${loading.maintenance ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
+          <button
+            onClick={onClose}
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            disabled={exportState === 'loading'}
           >
-            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center mb-3">
-              {loading.maintenance ? (
-                <RefreshCw size={20} className="text-orange-600 dark:text-orange-400 animate-spin" />
-              ) : success.maintenance ? (
-                <Check size={20} className="text-green-600 dark:text-green-400" />
-              ) : (
-                <FileCog size={20} className="text-orange-600 dark:text-orange-400" />
-              )}
-            </div>
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Maintenance Schedule</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Upcoming maintenance activities for all vehicles in your fleet.</p>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Last: {formatTimestamp(timestamps.maintenance)}
-              </span>
-              <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Document Expiration Report */}
-          <div
-            onClick={!loading.documents ? generateDocumentExpirationReport : undefined}
-            className={`border border-gray-200 dark:border-gray-600 rounded-lg hover:shadow-md dark:hover:bg-gray-700/50 transition-all p-5 bg-white dark:bg-gray-800 ${loading.documents ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
-          >
-            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mb-3">
-              {loading.documents ? (
-                <RefreshCw size={20} className="text-red-600 dark:text-red-400 animate-spin" />
-              ) : success.documents ? (
-                <Check size={20} className="text-green-600 dark:text-green-400" />
-              ) : (
-                <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
-              )}
-            </div>
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Document Expiration Report</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">List of all documents expiring in the next 90 days.</p>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Last: {formatTimestamp(timestamps.documents)}
-              </span>
-              <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
+            <X size={20} />
+          </button>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Report Schedule</h4>
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 flex items-start">
-            <Calendar size={18} className="text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm text-blue-800 dark:text-blue-200">Click any report card above to generate and download a PDF report instantly.</p>
-              <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">Reports include the latest data from your fleet.</p>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {/* Report Type Selection */}
+          <div className="mb-6">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">
+              Select Report Type
+            </label>
+            <div className="space-y-2">
+              {reportTypes.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <label
+                    key={type.value}
+                    className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      reportType === type.value
+                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value={type.value}
+                      checked={reportType === type.value}
+                      onChange={() => setReportType(type.value)}
+                      className="sr-only"
+                    />
+                    <div className={`p-2 rounded-lg ${reportType === type.value ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                      <Icon size={20} className={reportType === type.value ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{type.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{type.description}</div>
+                    </div>
+                    {reportType === type.value && <Check size={18} className="text-blue-600 dark:text-blue-400" />}
+                  </label>
+                );
+              })}
             </div>
           </div>
+
+          {/* Format Selection */}
+          <div className="mb-4">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">
+              Select Export Format
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {formatOptions.map((format) => {
+                const Icon = format.icon;
+                return (
+                  <label
+                    key={format.value}
+                    className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      exportFormat === format.value
+                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      value={format.value}
+                      checked={exportFormat === format.value}
+                      onChange={() => setExportFormat(format.value)}
+                      className="sr-only"
+                    />
+                    <Icon size={18} className={exportFormat === format.value ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
+                    <span className={`ml-2 text-sm font-medium ${exportFormat === format.value ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {format.label.split(' ')[0]}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          {exportState === 'success' && (
+            <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md flex items-center border border-green-200 dark:border-green-800">
+              <Check size={16} className="text-green-500 dark:text-green-400 mr-2" />
+              <p className="text-sm text-green-700 dark:text-green-300">Export successful!</p>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 px-4 py-4 sm:px-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            disabled={exportState === 'loading'}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            disabled={exportState === 'loading' || exportState === 'success'}
+          >
+            {exportState === 'loading' ? (
+              <>
+                <RefreshCw size={18} className="animate-spin mr-2" />
+                Generating...
+              </>
+            ) : exportState === 'success' ? (
+              <>
+                <Check size={18} className="mr-2" />
+                Done
+              </>
+            ) : (
+              <>
+                <FileDown size={18} className="mr-2" />
+                Export Report
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+  return modalContent;
 }

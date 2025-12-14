@@ -64,11 +64,73 @@ export default function LoadDetailModal({
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [assignedDriverDetails, setAssignedDriverDetails] = useState(null);
 
   // Load drivers and trucks on mount
   useEffect(() => {
     loadFleetData();
   }, []);
+
+  // Fetch assigned driver details (including phone) when driver_id changes
+  useEffect(() => {
+    const fetchDriverDetails = async () => {
+      const driverId = load.driver_id || load.driverId;
+      if (!driverId) {
+        setAssignedDriverDetails(null);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('drivers')
+          .select('id, name, phone, email')
+          .eq('id', driverId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!error && data) {
+          setAssignedDriverDetails(data);
+        }
+      } catch (err) {
+        // Silently fail - quick actions will be disabled
+      }
+    };
+
+    fetchDriverDetails();
+  }, [load.driver_id, load.driverId]);
+
+  // Quick Action Handlers
+  const handleCallDriver = () => {
+    if (assignedDriverDetails?.phone) {
+      // Format phone for tel: link
+      const phone = assignedDriverDetails.phone.replace(/\D/g, '');
+      window.open(`tel:${phone}`, '_self');
+    }
+  };
+
+  const handleMessageDriver = () => {
+    if (assignedDriverDetails?.phone) {
+      // Format phone for sms: link
+      const phone = assignedDriverDetails.phone.replace(/\D/g, '');
+      const message = encodeURIComponent(
+        `Hi ${assignedDriverDetails.name || 'Driver'}, this is about Load #${load.load_number || load.loadNumber} - ${load.origin} to ${load.destination}.`
+      );
+      window.open(`sms:${phone}?body=${message}`, '_self');
+    }
+  };
+
+  const handleGetDirections = () => {
+    // Default to destination, or use origin if destination is empty
+    const address = load.destination || load.origin;
+    if (address) {
+      const encodedAddress = encodeURIComponent(address);
+      // Open Google Maps with directions
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+    }
+  };
 
   const loadFleetData = async () => {
     try {
@@ -781,22 +843,26 @@ export default function LoadDetailModal({
         <ActionButton
           icon={<MessageSquare size={20} />}
           title="Message Driver"
-          description="Send notification"
+          description={assignedDriverDetails?.phone ? "Send SMS" : "No phone number"}
           color="blue"
-          disabled={!(load.driver_id || load.driverId)}
+          disabled={!assignedDriverDetails?.phone}
+          onClick={handleMessageDriver}
         />
         <ActionButton
           icon={<PhoneCall size={20} />}
           title="Call Driver"
-          description="Make phone call"
+          description={assignedDriverDetails?.phone ? assignedDriverDetails.phone : "No phone number"}
           color="blue"
-          disabled={!(load.driver_id || load.driverId)}
+          disabled={!assignedDriverDetails?.phone}
+          onClick={handleCallDriver}
         />
         <ActionButton
           icon={<Navigation size={20} />}
           title="Get Directions"
           description="Open in Maps"
           color="blue"
+          disabled={!load.destination && !load.origin}
+          onClick={handleGetDirections}
         />
       </div>
 

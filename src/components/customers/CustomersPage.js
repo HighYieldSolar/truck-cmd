@@ -23,6 +23,7 @@ import CustomerTable from "./CustomerTable";
 import CustomerForm from "./CustomerForm";
 import CustomerViewModal from "./CustomerViewModal";
 import CustomerDeletionModal from "./CustomerDeletionModal";
+import ExportReportModal from "@/components/common/ExportReportModal";
 
 // Utilities
 import { fetchCustomers, deleteCustomer } from "@/lib/services/customerService";
@@ -59,6 +60,7 @@ export default function CustomersPage() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -262,41 +264,74 @@ export default function CustomersPage() {
     }
   };
 
-  // Export to CSV
-  const exportToCSV = () => {
+  // Export columns configuration
+  const exportColumns = [
+    { key: 'company_name', header: 'Company Name' },
+    { key: 'contact_name', header: 'Contact Name' },
+    { key: 'email', header: 'Email' },
+    { key: 'phone', header: 'Phone' },
+    { key: 'city', header: 'City' },
+    { key: 'state', header: 'State' },
+    { key: 'customer_type', header: 'Type' },
+    { key: 'status', header: 'Status' }
+  ];
+
+  // Get export data
+  const getExportData = useCallback(() => {
+    return filteredCustomers.map(c => ({
+      company_name: c.company_name || '',
+      contact_name: c.contact_name || '',
+      email: c.email || '',
+      phone: c.phone || '',
+      address: c.address || '',
+      city: c.city || '',
+      state: c.state || '',
+      zip: c.zip || '',
+      customer_type: c.customer_type || '',
+      status: c.status || 'Active'
+    }));
+  }, [filteredCustomers]);
+
+  // Get export summary info
+  const getExportSummaryInfo = useCallback(() => {
+    const activeCount = filteredCustomers.filter(c => (c.status || 'Active').toLowerCase() === 'active').length;
+    const brokerCount = filteredCustomers.filter(c => (c.customer_type || '').toLowerCase() === 'broker').length;
+    const shipperCount = filteredCustomers.filter(c => (c.customer_type || '').toLowerCase() === 'shipper').length;
+    const uniqueStates = [...new Set(filteredCustomers.map(c => c.state).filter(Boolean))].length;
+
+    return {
+      'Total Customers': filteredCustomers.length.toString(),
+      'Active': activeCount.toString(),
+      'Brokers': brokerCount.toString(),
+      'Shippers': shipperCount.toString(),
+      'States': uniqueStates.toString()
+    };
+  }, [filteredCustomers]);
+
+  // Get date range for export
+  const getExportDateRange = useCallback(() => {
+    if (filteredCustomers.length === 0) return null;
+
+    const dates = filteredCustomers
+      .filter(c => c.created_at)
+      .map(c => new Date(c.created_at))
+      .sort((a, b) => a - b);
+
+    if (dates.length === 0) return null;
+
+    return {
+      start: dates[0].toISOString().split('T')[0],
+      end: dates[dates.length - 1].toISOString().split('T')[0]
+    };
+  }, [filteredCustomers]);
+
+  // Handle export
+  const handleExportData = () => {
     if (filteredCustomers.length === 0) {
       setMessage({ type: 'warning', text: 'No customers to export.' });
       return;
     }
-
-    const headers = ['Company Name', 'Contact Name', 'Email', 'Phone', 'Address', 'City', 'State', 'ZIP', 'Type', 'Status'];
-    const rows = filteredCustomers.map(c => [
-      c.company_name || '',
-      c.contact_name || '',
-      c.email || '',
-      c.phone || '',
-      c.address || '',
-      c.city || '',
-      c.state || '',
-      c.zip || '',
-      c.customer_type || '',
-      c.status || 'Active'
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `customers_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    setMessage({ type: 'success', text: `Exported ${filteredCustomers.length} customers to CSV.` });
+    setExportModalOpen(true);
   };
 
   // Get recent customers for sidebar
@@ -361,7 +396,7 @@ export default function CustomersPage() {
                   );
                 })()}
                 <button
-                  onClick={exportToCSV}
+                  onClick={handleExportData}
                   className="px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center gap-2 font-medium"
                 >
                   <Download size={18} />
@@ -531,6 +566,29 @@ export default function CustomersPage() {
           onConfirm={confirmDelete}
           customer={selectedCustomer}
           isDeleting={isDeleting}
+        />
+
+        {/* Export Report Modal */}
+        <ExportReportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          title="Export Customers Report"
+          description="Export your customer records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+          data={getExportData()}
+          columns={exportColumns}
+          filename="customers_report"
+          summaryInfo={getExportSummaryInfo()}
+          dateRange={getExportDateRange()}
+          pdfConfig={{
+            title: 'Customer Report',
+            subtitle: 'Customer Relationship Management'
+          }}
+          onExportComplete={() => {
+            setMessage({
+              type: 'success',
+              text: `Exported ${filteredCustomers.length} customers successfully!`
+            });
+          }}
         />
       </main>
     </DashboardLayout>

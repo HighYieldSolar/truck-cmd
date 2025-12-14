@@ -469,7 +469,7 @@ export default function IFTACalculatorPage() {
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                     <MapPin size={16} className="text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <span>Multi-jurisdiction summary for all 48 IFTA states/provinces</span>
+                  <span>Multi-jurisdiction summary for all 48 IFTA states</span>
                 </li>
               </ul>
             </div>

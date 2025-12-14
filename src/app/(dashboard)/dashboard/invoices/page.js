@@ -38,6 +38,7 @@ import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 // Import components
 import InvoiceStatsComponent from "@/components/invoices/InvoiceStatsComponent";
 import DeleteInvoiceModal from "@/components/invoices/DeleteInvoiceModal";
+import ExportReportModal from "@/components/common/ExportReportModal";
 
 // Local storage key for filter persistence
 const STORAGE_KEY = 'invoice_filters';
@@ -120,6 +121,7 @@ export default function Page() {
 
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -386,51 +388,77 @@ export default function Page() {
     };
   }, [calculateStats, fetchMonthlyInvoiceCount]);
 
-  // Export invoice data to CSV
+  // Open export modal
   const handleExportData = useCallback(() => {
-    if (invoices.length === 0) return;
+    if (filteredInvoices.length === 0) return;
+    setExportModalOpen(true);
+  }, [filteredInvoices]);
 
-    const headers = [
-      "Invoice Number",
-      "Customer",
-      "Description",
-      "Invoice Date",
-      "Due Date",
-      "Total",
-      "Status"
-    ];
+  // Export columns configuration
+  const exportColumns = [
+    { key: 'invoice_number', header: 'Invoice #' },
+    { key: 'customer', header: 'Customer' },
+    { key: 'invoice_date', header: 'Invoice Date', format: 'date' },
+    { key: 'due_date', header: 'Due Date', format: 'date' },
+    { key: 'total', header: 'Amount', format: 'currency' },
+    { key: 'status', header: 'Status' }
+  ];
 
-    const csvData = invoices.map((item) => [
-      item.invoice_number || "",
-      item.customer || "",
-      item.description || "",
-      item.invoice_date || "",
-      item.due_date || "",
-      item.total || "0.00",
-      item.status || ""
-    ]);
+  // Get export data
+  const getExportData = useCallback(() => {
+    return filteredInvoices.map(inv => ({
+      invoice_number: inv.invoice_number || '',
+      customer: inv.customer || '',
+      description: inv.description || '',
+      invoice_date: inv.invoice_date || '',
+      due_date: inv.due_date || '',
+      total: parseFloat(inv.total || 0),
+      status: inv.status || ''
+    }));
+  }, [filteredInvoices]);
 
-    let csvContent = headers.join(",") + "\n";
-    csvData.forEach(row => {
-      const escapedRow = row.map(field => {
-        const str = String(field);
-        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      });
-      csvContent += escapedRow.join(",") + "\n";
-    });
+  // Get export summary info
+  const getExportSummaryInfo = useCallback(() => {
+    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0);
+    const paidCount = filteredInvoices.filter(inv => inv.status?.toLowerCase() === 'paid').length;
+    const pendingCount = filteredInvoices.filter(inv => {
+      const status = inv.status?.toLowerCase();
+      return status === 'pending' || status === 'sent';
+    }).length;
+    const overdueCount = filteredInvoices.filter(inv => inv.status?.toLowerCase() === 'overdue').length;
+    const paidAmount = filteredInvoices
+      .filter(inv => inv.status?.toLowerCase() === 'paid')
+      .reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0);
+    const outstandingAmount = filteredInvoices
+      .filter(inv => inv.status?.toLowerCase() !== 'paid')
+      .reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `invoice_data_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [invoices]);
+    return {
+      'Total Invoices': filteredInvoices.length.toString(),
+      'Total Amount': `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      'Paid': `${paidCount} ($${paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`,
+      'Pending': pendingCount.toString(),
+      'Overdue': overdueCount.toString(),
+      'Outstanding': `$${outstandingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    };
+  }, [filteredInvoices]);
+
+  // Get date range for export
+  const getExportDateRange = useCallback(() => {
+    if (filteredInvoices.length === 0) return null;
+
+    const dates = filteredInvoices
+      .filter(inv => inv.invoice_date)
+      .map(inv => new Date(inv.invoice_date))
+      .sort((a, b) => a - b);
+
+    if (dates.length === 0) return null;
+
+    return {
+      start: dates[0].toISOString().split('T')[0],
+      end: dates[dates.length - 1].toISOString().split('T')[0]
+    };
+  }, [filteredInvoices]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((e) => {
@@ -1216,6 +1244,29 @@ export default function Page() {
           onConfirm={confirmDeleteInvoice}
           invoice={currentInvoice}
           isDeleting={isDeleting}
+        />
+
+        {/* Export Report Modal */}
+        <ExportReportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          title="Export Invoices Report"
+          description="Export your invoice records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+          data={getExportData()}
+          columns={exportColumns}
+          filename="invoices_report"
+          summaryInfo={getExportSummaryInfo()}
+          dateRange={getExportDateRange()}
+          pdfConfig={{
+            title: 'Invoice Report',
+            subtitle: 'Billing & Accounts Receivable'
+          }}
+          onExportComplete={() => {
+            setMessage({
+              type: 'success',
+              text: 'Report exported successfully!'
+            });
+          }}
         />
       </main>
     </DashboardLayout>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { XCircle, Mail, RefreshCw, Send, AlertCircle, FileText, CheckCircle } from 'lucide-react';
-import { emailInvoice } from '@/lib/services/invoiceService';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * Modal component for emailing invoices to customers
@@ -20,33 +20,56 @@ export default function EmailInvoiceModal({ isOpen, onClose, invoice, onSuccess 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [companyInfo, setCompanyInfo] = useState(null);
 
-  // Initialize form data when invoice changes
+  // Fetch company info on mount
+  useEffect(() => {
+    async function fetchCompanyInfo() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('users')
+            .select('company_name, phone')
+            .eq('id', user.id)
+            .single();
+          setCompanyInfo(data);
+        }
+      } catch (err) {
+        // Silently fail - will use defaults
+      }
+    }
+    fetchCompanyInfo();
+  }, []);
+
+  // Initialize form data when invoice or company info changes
   useEffect(() => {
     if (invoice) {
+      const company = companyInfo?.company_name || 'Your Company';
+      const phone = companyInfo?.phone || '';
       // Set default email values based on the invoice
       setFormData({
         to: invoice.customer_email || '',
         cc: '',
         bcc: '',
-        subject: `Invoice #${invoice.invoice_number} from Your Company`,
-        message: generateDefaultMessage(invoice),
+        subject: `Invoice #${invoice.invoice_number} from ${company}`,
+        message: generateDefaultMessage(invoice, company, phone),
         includePdf: true,
         includePaymentLink: false
       });
     }
-  }, [invoice]);
+  }, [invoice, companyInfo]);
 
   if (!isOpen) return null;
 
   // Generate default email message based on invoice
-  function generateDefaultMessage(invoice) {
+  function generateDefaultMessage(invoice, companyName = 'Your Company', phone = '') {
     const amountDue = (invoice.total || 0) - (invoice.amount_paid || 0);
     const dueDate = new Date(invoice.due_date).toLocaleDateString();
-    
-    return `Dear Customer,
 
-Please find attached invoice #${invoice.invoice_number} for ${invoice.customer} in the amount of $${amountDue.toFixed(2)}.
+    return `Dear ${invoice.customer || 'Customer'},
+
+Please find attached invoice #${invoice.invoice_number} in the amount of $${amountDue.toFixed(2)}.
 
 This invoice is due on ${dueDate}. Please remit payment at your earliest convenience.
 
@@ -61,8 +84,7 @@ If you have any questions about this invoice, please don't hesitate to contact u
 Thank you for your business!
 
 Best regards,
-Your Company Name
-(555) 123-4567`;
+${companyName}${phone ? `\n${phone}` : ''}`;
   }
 
   // Handle form input changes
@@ -79,44 +101,69 @@ Your Company Name
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
-    
+
     // Basic validation
     if (!formData.to) {
       setError('Recipient email is required');
       return;
     }
-    
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.to)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     try {
       setLoading(true);
-      
-      // Prepare email data
-      const emailData = {
-        to: formData.to,
-        cc: formData.cc,
-        bcc: formData.bcc,
-        subject: formData.subject,
-        message: formData.message,
-        includePdf: formData.includePdf,
-        includePaymentLink: formData.includePaymentLink
-      };
-      
-      // Send the email
-      await emailInvoice(invoice.id, emailData);
-      
+
+      // Get the current session for auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Please log in to send invoices');
+        return;
+      }
+
+      // Send the email via API route
+      const response = await fetch('/api/send-invoice-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          invoiceId: invoice.id,
+          to: formData.to,
+          cc: formData.cc,
+          bcc: formData.bcc,
+          subject: formData.subject,
+          message: formData.message,
+          includePdf: formData.includePdf,
+          includePaymentLink: formData.includePaymentLink
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send invoice');
+      }
+
       // Show success message
       setSuccessMessage('Invoice has been sent successfully!');
-      
+
       // Notify parent component
       if (onSuccess) {
         onSuccess();
       }
-      
+
       // Close modal after a delay
       setTimeout(() => {
         onClose();
       }, 2000);
     } catch (err) {
-      setError('Failed to send invoice. Please try again.');
+      setError(err.message || 'Failed to send invoice. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -84,18 +84,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
     { code: "WA", name: "Washington" },
     { code: "WV", name: "West Virginia" },
     { code: "WI", name: "Wisconsin" },
-    { code: "WY", name: "Wyoming" },
-    // Canadian provinces
-    { code: "AB", name: "Alberta" },
-    { code: "BC", name: "British Columbia" },
-    { code: "MB", name: "Manitoba" },
-    { code: "NB", name: "New Brunswick" },
-    { code: "NL", name: "Newfoundland" },
-    { code: "NS", name: "Nova Scotia" },
-    { code: "ON", name: "Ontario" },
-    { code: "PE", name: "Prince Edward Island" },
-    { code: "QC", name: "Quebec" },
-    { code: "SK", name: "Saskatchewan" }
+    { code: "WY", name: "Wyoming" }
   ];
 
   const handleChange = (e) => {

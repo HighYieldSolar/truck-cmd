@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'IFTA Calculator & Reporting Software for Truckers',
-  description: 'Simplify IFTA tax reporting with automatic fuel tax calculations. Track miles by state, calculate fuel tax liability, and generate quarterly reports. Supports all 48 IFTA jurisdictions plus Canada.',
+  description: 'Simplify IFTA tax reporting with automatic fuel tax calculations. Track miles by state, calculate fuel tax liability, and generate quarterly reports. Supports all 48 IFTA jurisdictions.',
   keywords: [
     'IFTA calculator',
     'IFTA reporting software',
@@ -15,7 +15,7 @@ export const metadata = {
   ],
   openGraph: {
     title: 'IFTA Calculator & Reporting Software | Truck Command',
-    description: 'Automatic IFTA fuel tax calculations for all 48 jurisdictions plus Canada. Generate quarterly reports in minutes.',
+    description: 'Automatic IFTA fuel tax calculations for all 48 US jurisdictions. Generate quarterly reports in minutes.',
     url: 'https://truckcommand.com/features/ifta-calculator',
     siteName: 'Truck Command',
     images: [
@@ -32,7 +32,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'IFTA Calculator & Reporting Software | Truck Command',
-    description: 'Automatic IFTA fuel tax calculations for all 48 jurisdictions plus Canada. Generate quarterly reports in minutes.',
+    description: 'Automatic IFTA fuel tax calculations for all 48 US jurisdictions. Generate quarterly reports in minutes.',
     images: ['/images/screenshots/ifta-calculator-dashboard.png'],
   },
   alternates: {
@@ -66,10 +66,10 @@ const faqStructuredData = {
     },
     {
       '@type': 'Question',
-      name: 'Which states and provinces are supported?',
+      name: 'Which states are supported?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'All 48 contiguous US states plus 10 Canadian provinces that participate in IFTA. Tax rates are updated quarterly to ensure accurate calculations.',
+        text: 'All 48 contiguous US states that participate in IFTA. Tax rates are updated quarterly to ensure accurate calculations.',
       },
     },
     {

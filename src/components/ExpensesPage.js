@@ -41,6 +41,7 @@ import ExpenseCategories from '@/components/expenses/ExpenseCategories';
 import TopExpenses from '@/components/expenses/TopExpenses';
 import ExpenseChart from '@/components/expenses/ExpenseChart';
 import ReceiptDirectory from '@/components/expenses/ReceiptDirectory';
+import ExportReportModal from '@/components/common/ExportReportModal';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -80,6 +81,7 @@ export default function ExpensesPage() {
   const [receiptViewerOpen, setReceiptViewerOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   // Feedback state
   const [operationMessage, setOperationMessage] = useState(null);
@@ -354,41 +356,54 @@ export default function ExpensesPage() {
     });
   };
 
-  // Export to CSV
+  // Open export modal
   const handleExportData = () => {
     if (filteredExpenses.length === 0) return;
+    setExportModalOpen(true);
+  };
 
-    const headers = ['Description', 'Date', 'Category', 'Amount', 'Payment Method', 'Notes', 'Deductible'];
-    const csvData = filteredExpenses.map((expense) => [
-      expense.description || '',
-      expense.date || '',
-      expense.category || '',
-      expense.amount || '',
-      expense.payment_method || '',
-      expense.notes || '',
-      expense.deductible === false ? 'No' : 'Yes'
-    ]);
+  // Export configuration
+  const exportColumns = [
+    { key: 'description', header: 'Description' },
+    { key: 'date', header: 'Date', format: 'date' },
+    { key: 'category', header: 'Category' },
+    { key: 'amount', header: 'Amount', format: 'currency' },
+    { key: 'payment_method', header: 'Payment Method' },
+    { key: 'deductible', header: 'Deductible' }
+  ];
 
-    let csvContent = headers.join(',') + '\n';
-    csvData.forEach(row => {
-      const escapedRow = row.map(field => {
-        const str = String(field);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      });
-      csvContent += escapedRow.join(',') + '\n';
-    });
+  // Get export summary info
+  const getExportSummaryInfo = () => {
+    const total = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const deductibleTotal = filteredExpenses
+      .filter(e => e.deductible !== false)
+      .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `expenses_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    return {
+      'Total Records': filteredExpenses.length,
+      'Total Amount': '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      'Deductible': '$' + deductibleTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      'Date Range': filters.dateRange
+    };
+  };
+
+  // Get export date range
+  const getExportDateRange = () => {
+    if (filters.dateRange === 'Custom' && filters.startDate && filters.endDate) {
+      return {
+        start: new Date(filters.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        end: new Date(filters.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+    }
+    return null;
+  };
+
+  // Format expense data for export
+  const getExportData = () => {
+    return filteredExpenses.map(expense => ({
+      ...expense,
+      deductible: expense.deductible === false ? 'No' : 'Yes'
+    }));
   };
 
   // Format currency
@@ -722,6 +737,24 @@ export default function ExpensesPage() {
           setSelectedReceipt(null);
         }}
         receipt={selectedReceipt}
+      />
+
+      <ExportReportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        title="Export Expenses Report"
+        description="Export your expense records in multiple formats. Choose PDF for a professional report or CSV for spreadsheet analysis."
+        data={getExportData()}
+        columns={exportColumns}
+        filename="expenses_report"
+        summaryInfo={getExportSummaryInfo()}
+        dateRange={getExportDateRange()}
+        onExportComplete={() => {
+          setOperationMessage({
+            type: 'success',
+            text: 'Report exported successfully!'
+          });
+        }}
       />
     </DashboardLayout>
   );

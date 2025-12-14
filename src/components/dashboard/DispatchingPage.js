@@ -16,7 +16,8 @@ import {
   Truck,
   RefreshCw,
   Package,
-  Lock
+  Lock,
+  Download
 } from "lucide-react";
 
 // Import dispatching components
@@ -29,6 +30,7 @@ import LoadCategories from "@/components/dispatching/LoadCategories";
 import LoadDetailModal from "@/components/dispatching/LoadDetailModal";
 import NewLoadModal from "@/components/dispatching/NewLoadModal";
 import DeleteLoadModal from "@/components/dispatching/DeleteLoadModal";
+import ExportReportModal from "@/components/common/ExportReportModal";
 
 // Fetch drivers from the database
 const fetchDrivers = async (userId) => {
@@ -276,6 +278,7 @@ export default function DispatchingPage() {
   const [editingLoad, setEditingLoad] = useState(null);
   const [showNewLoadModal, setShowNewLoadModal] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [loadToDelete, setLoadToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -544,6 +547,79 @@ export default function DispatchingPage() {
     });
   };
 
+  // Export columns configuration
+  const exportColumns = [
+    { key: 'loadNumber', header: 'Load #' },
+    { key: 'customer', header: 'Customer' },
+    { key: 'origin', header: 'Origin' },
+    { key: 'destination', header: 'Destination' },
+    { key: 'pickupDate', header: 'Pickup Date', format: 'date' },
+    { key: 'deliveryDate', header: 'Delivery Date', format: 'date' },
+    { key: 'driver', header: 'Driver' },
+    { key: 'rate', header: 'Rate', format: 'currency' },
+    { key: 'status', header: 'Status' }
+  ];
+
+  // Get export data
+  const getExportData = useCallback(() => {
+    return loads.map(load => ({
+      loadNumber: load.loadNumber || '',
+      customer: load.customer || '',
+      origin: load.origin || '',
+      destination: load.destination || '',
+      pickupDate: load.pickupDate || '',
+      deliveryDate: load.deliveryDate || '',
+      driver: load.driver || 'Unassigned',
+      rate: parseFloat(load.rate || 0),
+      status: load.status || ''
+    }));
+  }, [loads]);
+
+  // Get export summary info
+  const getExportSummaryInfo = useCallback(() => {
+    const totalRevenue = loads
+      .filter(l => l.status === 'Completed')
+      .reduce((sum, l) => sum + parseFloat(l.rate || 0), 0);
+    const activeLoads = loads.filter(l => !['Completed', 'Cancelled'].includes(l.status)).length;
+    const completedLoads = loads.filter(l => l.status === 'Completed').length;
+    const assignedLoads = loads.filter(l => l.driver && l.driver !== '').length;
+    const avgRate = loads.length > 0
+      ? loads.reduce((sum, l) => sum + parseFloat(l.rate || 0), 0) / loads.length
+      : 0;
+
+    return {
+      'Total Loads': loads.length.toString(),
+      'Active Loads': activeLoads.toString(),
+      'Completed': completedLoads.toString(),
+      'Assigned': assignedLoads.toString(),
+      'Total Revenue': `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      'Avg Rate': `$${avgRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    };
+  }, [loads]);
+
+  // Get date range for export
+  const getExportDateRange = useCallback(() => {
+    if (loads.length === 0) return null;
+
+    const dates = loads
+      .filter(l => l.pickupDate)
+      .map(l => new Date(l.pickupDate))
+      .sort((a, b) => a - b);
+
+    if (dates.length === 0) return null;
+
+    return {
+      start: dates[0].toISOString().split('T')[0],
+      end: dates[dates.length - 1].toISOString().split('T')[0]
+    };
+  }, [loads]);
+
+  // Handle export
+  const handleExportData = () => {
+    if (loads.length === 0) return;
+    setExportModalOpen(true);
+  };
+
   // Handle status filter from sidebar
   const handleStatusFilterChange = (status) => {
     setFilters(prev => ({ ...prev, status }));
@@ -587,32 +663,42 @@ export default function DispatchingPage() {
                     </h1>
                     <p className="mt-1 text-blue-100">Create and manage your loads and dispatching</p>
                   </div>
-                  {(() => {
-                    const loadLimit = checkResourceUpgrade('loadsPerMonth', monthlyLoadCount);
-                    if (loadLimit.needsUpgrade) {
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleExportData}
+                      disabled={loads.length === 0}
+                      className="inline-flex items-center px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 font-medium shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download size={18} className="mr-2" />
+                      Export
+                    </button>
+                    {(() => {
+                      const loadLimit = checkResourceUpgrade('loadsPerMonth', monthlyLoadCount);
+                      if (loadLimit.needsUpgrade) {
+                        return (
+                          <Link
+                            href="/dashboard/upgrade"
+                            className="inline-flex items-center px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium shadow-lg transition-all duration-200"
+                          >
+                            <Lock size={18} className="mr-2" />
+                            Limit Reached ({monthlyLoadCount}/{loadLimit.limit})
+                          </Link>
+                        );
+                      }
                       return (
-                        <Link
-                          href="/dashboard/upgrade"
-                          className="inline-flex items-center px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium shadow-lg transition-all duration-200"
+                        <button
+                          onClick={() => {
+                            setEditingLoad(null);
+                            setShowNewLoadModal(true);
+                          }}
+                          className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
                         >
-                          <Lock size={18} className="mr-2" />
-                          Limit Reached ({monthlyLoadCount}/{loadLimit.limit})
-                        </Link>
+                          <Plus size={18} className="mr-2" />
+                          Create Load
+                        </button>
                       );
-                    }
-                    return (
-                      <button
-                        onClick={() => {
-                          setEditingLoad(null);
-                          setShowNewLoadModal(true);
-                        }}
-                        className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
-                      >
-                        <Plus size={18} className="mr-2" />
-                        Create Load
-                      </button>
-                    );
-                  })()}
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -887,6 +973,29 @@ export default function DispatchingPage() {
           isDeleting={isDeleting}
         />
       )}
+
+      {/* Export Report Modal */}
+      <ExportReportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        title="Export Loads Report"
+        description="Export your load records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+        data={getExportData()}
+        columns={exportColumns}
+        filename="loads_report"
+        summaryInfo={getExportSummaryInfo()}
+        dateRange={getExportDateRange()}
+        pdfConfig={{
+          title: 'Load Management Report',
+          subtitle: 'Dispatching & Logistics'
+        }}
+        onExportComplete={() => {
+          setMessage({
+            type: 'success',
+            text: 'Report exported successfully!'
+          });
+        }}
+      />
     </DashboardLayout>
   );
 }

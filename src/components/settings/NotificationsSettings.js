@@ -11,7 +11,7 @@ import {
   Bell, Mail, Smartphone, Monitor, Settings,
   FileText, TruckIcon, User, Calendar, Wrench,
   CreditCard, AlertTriangle, RefreshCw, Save, Fuel,
-  Lock, ArrowRight, Sparkles
+  Lock, ArrowRight, Sparkles, Send, CheckCircle, XCircle
 } from 'lucide-react';
 
 // Notification categories with their settings
@@ -120,6 +120,10 @@ export default function NotificationsSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [operationMessage, setOperationMessage] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testingSMS, setTestingSMS] = useState(false);
+  const [testResults, setTestResults] = useState({ email: null, sms: null });
+  const [userPhone, setUserPhone] = useState('');
 
   // Feature access checks
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
@@ -138,34 +142,45 @@ export default function NotificationsSettings() {
     setIsLoading(true);
 
     try {
-      // Try to get existing preferences
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // Try to get existing preferences and user phone
+      const [prefsResult, userResult] = await Promise.all([
+        supabase
+          .from('notification_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('users')
+          .select('phone')
+          .eq('id', user.id)
+          .single()
+      ]);
 
-      if (error) {
-        // If table doesn't exist or no preferences found, use defaults
-        if (error.code === 'PGRST116' || error.code === '42P01') {
+      // Handle preferences
+      if (prefsResult.error) {
+        if (prefsResult.error.code === 'PGRST116' || prefsResult.error.code === '42P01') {
           setPreferences(DEFAULT_PREFERENCES);
         } else {
-          throw error;
+          throw prefsResult.error;
         }
-      } else if (data) {
-        // Merge stored preferences with defaults (in case new fields were added)
+      } else if (prefsResult.data) {
         setPreferences({
           ...DEFAULT_PREFERENCES,
-          ...data.preferences,
+          ...prefsResult.data.preferences,
           categories: {
             ...DEFAULT_PREFERENCES.categories,
-            ...(data.preferences?.categories || {})
+            ...(prefsResult.data.preferences?.categories || {})
           },
           quiet_hours: {
             ...DEFAULT_PREFERENCES.quiet_hours,
-            ...(data.preferences?.quiet_hours || {})
+            ...(prefsResult.data.preferences?.quiet_hours || {})
           }
         });
+      }
+
+      // Set user phone if available
+      if (userResult.data?.phone) {
+        setUserPhone(userResult.data.phone);
       }
     } catch (err) {
       // Silently handle errors and use defaults
@@ -271,6 +286,91 @@ export default function NotificationsSettings() {
       }
     }));
     setHasChanges(true);
+  };
+
+  // Test email notification
+  const testEmailNotification = async () => {
+    if (!user?.email) {
+      setOperationMessage({ type: 'error', text: 'No email address found for your account.' });
+      return;
+    }
+
+    setTestingEmail(true);
+    setTestResults(prev => ({ ...prev, email: null }));
+
+    try {
+      const response = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          testEmail: true,
+          testSMS: false
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.results?.email?.success) {
+        setTestResults(prev => ({ ...prev, email: 'success' }));
+        setOperationMessage({ type: 'success', text: 'Test email sent successfully! Check your inbox.' });
+      } else {
+        setTestResults(prev => ({ ...prev, email: 'error' }));
+        setOperationMessage({
+          type: 'error',
+          text: data.results?.email?.error || 'Failed to send test email. Email service may not be configured.'
+        });
+      }
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, email: 'error' }));
+      setOperationMessage({ type: 'error', text: 'Failed to send test email. Please try again.' });
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
+  // Test SMS notification
+  const testSMSNotification = async () => {
+    if (!userPhone) {
+      setOperationMessage({
+        type: 'error',
+        text: 'No phone number found. Please add your phone number in Profile Settings first.'
+      });
+      return;
+    }
+
+    setTestingSMS(true);
+    setTestResults(prev => ({ ...prev, sms: null }));
+
+    try {
+      const response = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: userPhone,
+          testEmail: false,
+          testSMS: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.results?.sms?.success) {
+        setTestResults(prev => ({ ...prev, sms: 'success' }));
+        setOperationMessage({ type: 'success', text: 'Test SMS sent successfully! Check your phone.' });
+      } else {
+        setTestResults(prev => ({ ...prev, sms: 'error' }));
+        setOperationMessage({
+          type: 'error',
+          text: data.results?.sms?.error || 'Failed to send test SMS. SMS service may not be configured.'
+        });
+      }
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, sms: 'error' }));
+      setOperationMessage({ type: 'error', text: 'Failed to send test SMS. Please try again.' });
+    } finally {
+      setTestingSMS(false);
+    }
   };
 
   // Toggle Component - Compact version
@@ -738,6 +838,119 @@ export default function NotificationsSettings() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Test Notifications */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Send className="h-4 w-4 text-blue-500" />
+            Test Notifications
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Send a test notification to verify your settings are working correctly
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Test Email */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Test Email</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+                    {user?.email || 'No email found'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {testResults.email === 'success' && (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                )}
+                {testResults.email === 'error' && (
+                  <XCircle className="h-5 w-5 text-red-500" />
+                )}
+                <button
+                  onClick={testEmailNotification}
+                  disabled={testingEmail || !preferences.email_enabled}
+                  className={`
+                    px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                    ${preferences.email_enabled
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {testingEmail ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Send Test'
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Test SMS */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Test SMS</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {userPhone ? `+1${userPhone}` : 'No phone found'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {testResults.sms === 'success' && (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                )}
+                {testResults.sms === 'error' && (
+                  <XCircle className="h-5 w-5 text-red-500" />
+                )}
+                {hasSMSNotifications ? (
+                  <button
+                    onClick={testSMSNotification}
+                    disabled={testingSMS || !preferences.sms_enabled || !userPhone}
+                    className={`
+                      px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                      ${preferences.sms_enabled && userPhone
+                        ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    {testingSMS ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Send Test'
+                    )}
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Fleet
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Help text */}
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Tip:</strong> If you don&apos;t receive test notifications, check your spam folder or verify your contact information in{' '}
+              <Link href="/dashboard/settings/profile" className="underline hover:no-underline">
+                Profile Settings
+              </Link>.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

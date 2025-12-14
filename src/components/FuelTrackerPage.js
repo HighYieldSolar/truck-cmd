@@ -10,7 +10,8 @@ import {
   BarChart2,
   Filter,
   FileText,
-  Calculator
+  Calculator,
+  Download
 } from "lucide-react";
 
 // Import custom hooks and components
@@ -30,6 +31,7 @@ import FuelFilterBar from "@/components/fuel/FuelFilterBar";
 import FuelCategories from "@/components/fuel/FuelCategories";
 import TopFuelEntries from "@/components/fuel/TopFuelEntries";
 import FuelChart from "@/components/fuel/FuelChart";
+import ExportReportModal from "@/components/common/ExportReportModal";
 
 export default function FuelTrackerPage() {
   const router = useRouter();
@@ -55,6 +57,7 @@ export default function FuelTrackerPage() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [selectedVehicleInfo, setSelectedVehicleInfo] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState(null);
   
   // Add dedicated loading state for deletion
@@ -277,13 +280,13 @@ export default function FuelTrackerPage() {
       vehicleId: ""
     });
   };
-  
+
   // Navigate to IFTA Calculator page
   const handleGoToIFTA = () => {
     router.push('/dashboard/ifta');
   };
-  
-  // Format currency 
+
+  // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -292,7 +295,70 @@ export default function FuelTrackerPage() {
       maximumFractionDigits: 2
     }).format(value);
   };
-  
+
+  // Export columns configuration
+  const exportColumns = [
+    { key: 'date', header: 'Date', format: 'date' },
+    { key: 'location', header: 'Location' },
+    { key: 'state', header: 'State' },
+    { key: 'gallons', header: 'Gallons', format: 'number' },
+    { key: 'price_per_gallon', header: 'Price/Gal', format: 'currency' },
+    { key: 'total_amount', header: 'Total', format: 'currency' },
+    { key: 'vehicle_name', header: 'Vehicle' }
+  ];
+
+  // Get export data - must be before conditional returns
+  const getExportData = useCallback(() => {
+    return filteredFuelEntries.map(entry => ({
+      date: entry.date || '',
+      location: entry.location || '',
+      state: entry.state || '',
+      gallons: parseFloat(entry.gallons || 0),
+      price_per_gallon: parseFloat(entry.price_per_gallon || 0),
+      total_amount: parseFloat(entry.total_amount || 0),
+      vehicle_name: entry.vehicle_name || ''
+    }));
+  }, [filteredFuelEntries]);
+
+  // Get export summary info - must be before conditional returns
+  const getExportSummaryInfo = useCallback(() => {
+    const totalGallons = filteredFuelEntries.reduce((sum, e) => sum + parseFloat(e.gallons || 0), 0);
+    const totalAmount = filteredFuelEntries.reduce((sum, e) => sum + parseFloat(e.total_amount || 0), 0);
+    const avgPricePerGallon = totalGallons > 0 ? totalAmount / totalGallons : 0;
+    const uniqueStates = [...new Set(filteredFuelEntries.map(e => e.state).filter(Boolean))].length;
+
+    return {
+      'Total Entries': filteredFuelEntries.length.toString(),
+      'Total Gallons': totalGallons.toFixed(2),
+      'Total Spent': `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      'Avg Price/Gal': `$${avgPricePerGallon.toFixed(3)}`,
+      'States': uniqueStates.toString()
+    };
+  }, [filteredFuelEntries]);
+
+  // Get date range for export - must be before conditional returns
+  const getExportDateRange = useCallback(() => {
+    if (filteredFuelEntries.length === 0) return null;
+
+    const dates = filteredFuelEntries
+      .filter(e => e.date)
+      .map(e => new Date(e.date))
+      .sort((a, b) => a - b);
+
+    if (dates.length === 0) return null;
+
+    return {
+      start: dates[0].toISOString().split('T')[0],
+      end: dates[dates.length - 1].toISOString().split('T')[0]
+    };
+  }, [filteredFuelEntries]);
+
+  // Handle export
+  const handleExportData = () => {
+    if (filteredFuelEntries.length === 0) return;
+    setExportModalOpen(true);
+  };
+
   // Show loading indicator while checking auth
   if (initialLoading) {
     return (
@@ -301,7 +367,7 @@ export default function FuelTrackerPage() {
       </div>
     );
   }
-  
+
   // Generate state categories for the sidebar
   const generateStateCategories = () => {
     // Group by state and calculate total per state
@@ -336,6 +402,14 @@ export default function FuelTrackerPage() {
                 <p className="text-blue-100 dark:text-blue-200">Track fuel purchases and generate IFTA reports by state</p>
               </div>
               <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleExportData}
+                  disabled={filteredFuelEntries.length === 0}
+                  className="px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-xl hover:bg-blue-800 dark:hover:bg-blue-900 transition-all duration-200 shadow-md flex items-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download size={18} className="mr-2" />
+                  Export
+                </button>
                 <button
                   onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
                   className="px-4 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-md hover:shadow-lg flex items-center font-semibold"
@@ -649,6 +723,30 @@ export default function FuelTrackerPage() {
         onConfirm={handleConfirmDelete}
         fuelEntry={fuelEntryToDelete}
         isDeleting={deleteLoading}
+      />
+
+      {/* Export Report Modal */}
+      <ExportReportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        title="Export Fuel Report"
+        description="Export your fuel purchase records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+        data={getExportData()}
+        columns={exportColumns}
+        filename="fuel_report"
+        summaryInfo={getExportSummaryInfo()}
+        dateRange={getExportDateRange()}
+        pdfConfig={{
+          title: 'Fuel Purchase Report',
+          subtitle: 'IFTA Fuel Tracking'
+        }}
+        onExportComplete={() => {
+          setOperationMessage({
+            type: 'success',
+            text: 'Report exported successfully!'
+          });
+          setTimeout(() => setOperationMessage(null), 3000);
+        }}
       />
     </DashboardLayout>
   );

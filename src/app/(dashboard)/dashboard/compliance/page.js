@@ -44,6 +44,7 @@ import ComplianceFormModal from "@/components/compliance/ComplianceFormModal";
 import ViewComplianceModal from "@/components/compliance/ViewComplianceModal";
 import DeleteConfirmationModal from "@/components/compliance/DeleteConfirmationModal";
 import ComplianceSummary from "@/components/compliance/ComplianceSummary";
+import ExportReportModal from "@/components/common/ExportReportModal";
 
 // Feature gating
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -130,6 +131,7 @@ export default function CompliancePage() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -424,57 +426,79 @@ export default function CompliancePage() {
     }
   }, [currentItem, user, loadData]);
 
-  // Export compliance data to CSV
+  // Export configuration
+  const exportColumns = useMemo(() => [
+    { key: 'title', label: 'Title', width: 20 },
+    { key: 'type', label: 'Type', width: 15 },
+    { key: 'entity_type', label: 'Entity Type', width: 12 },
+    { key: 'entity_name', label: 'Entity Name', width: 15 },
+    { key: 'document_number', label: 'Document #', width: 12 },
+    { key: 'issue_date', label: 'Issue Date', width: 10 },
+    { key: 'expiration_date', label: 'Expiration', width: 10 },
+    { key: 'status', label: 'Status', width: 12 },
+    { key: 'issuing_authority', label: 'Issuing Authority', width: 15 },
+    { key: 'notes', label: 'Notes', width: 20 }
+  ], []);
+
+  const getExportData = useCallback(() => {
+    return filteredItems.map((item) => ({
+      title: item.title || '',
+      type: COMPLIANCE_TYPES[item.compliance_type]?.name || item.compliance_type || '',
+      entity_type: item.entity_type || '',
+      entity_name: item.entity_name || '',
+      document_number: item.document_number || '',
+      issue_date: item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-',
+      expiration_date: item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-',
+      status: computeItemStatus(item) || '',
+      issuing_authority: item.issuing_authority || '',
+      notes: item.notes || ''
+    }));
+  }, [filteredItems, computeItemStatus]);
+
+  const getExportSummaryInfo = useCallback(() => {
+    const activeCount = filteredItems.filter(item => computeItemStatus(item).toLowerCase() === 'active').length;
+    const expiringSoonCount = filteredItems.filter(item => computeItemStatus(item).toLowerCase() === 'expiring soon').length;
+    const expiredCount = filteredItems.filter(item => computeItemStatus(item).toLowerCase() === 'expired').length;
+    const pendingCount = filteredItems.filter(item => computeItemStatus(item).toLowerCase() === 'pending').length;
+
+    // Count by entity type
+    const vehicleCount = filteredItems.filter(item => item.entity_type === 'Vehicle').length;
+    const driverCount = filteredItems.filter(item => item.entity_type === 'Driver').length;
+    const companyCount = filteredItems.filter(item => item.entity_type === 'Company').length;
+
+    return [
+      { label: 'Total Records', value: filteredItems.length },
+      { label: 'Active', value: activeCount },
+      { label: 'Expiring Soon', value: expiringSoonCount },
+      { label: 'Expired', value: expiredCount },
+      { label: 'Pending', value: pendingCount },
+      { label: 'Vehicle Records', value: vehicleCount },
+      { label: 'Driver Records', value: driverCount },
+      { label: 'Company Records', value: companyCount }
+    ];
+  }, [filteredItems, computeItemStatus]);
+
+  const getExportDateRange = useCallback(() => {
+    if (filteredItems.length === 0) return null;
+
+    const expirationDates = filteredItems
+      .filter(item => item.expiration_date)
+      .map(item => new Date(item.expiration_date))
+      .sort((a, b) => a - b);
+
+    if (expirationDates.length === 0) return null;
+
+    return {
+      start: expirationDates[0],
+      end: expirationDates[expirationDates.length - 1]
+    };
+  }, [filteredItems]);
+
+  // Handle export data button click
   const handleExportData = useCallback(() => {
     if (complianceItems.length === 0) return;
-
-    const headers = [
-      "Title",
-      "Type",
-      "Entity",
-      "Entity Name",
-      "Document Number",
-      "Issue Date",
-      "Expiration Date",
-      "Status",
-      "Issuing Authority",
-      "Notes"
-    ];
-
-    const csvData = complianceItems.map((item) => [
-      item.title || "",
-      COMPLIANCE_TYPES[item.compliance_type]?.name || item.compliance_type || "",
-      item.entity_type || "",
-      item.entity_name || "",
-      item.document_number || "",
-      item.issue_date || "",
-      item.expiration_date || "",
-      computeItemStatus(item) || "",
-      item.issuing_authority || "",
-      item.notes || ""
-    ]);
-
-    let csvContent = headers.join(",") + "\n";
-    csvData.forEach(row => {
-      const escapedRow = row.map(field => {
-        const str = String(field);
-        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      });
-      csvContent += escapedRow.join(",") + "\n";
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `compliance_data_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [complianceItems, computeItemStatus]);
+    setExportModalOpen(true);
+  }, [complianceItems.length]);
 
   // Get status badge styling
   const getStatusBadge = useCallback((status) => {
@@ -1077,6 +1101,23 @@ export default function CompliancePage() {
           onConfirm={handleDeleteComplianceItem}
           complianceTitle={currentItem?.title || "this compliance record"}
           isDeleting={isDeleting}
+        />
+
+        <ExportReportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          title="Compliance Report"
+          description="Export your compliance records and expiration tracking data"
+          data={getExportData()}
+          columns={exportColumns}
+          filename="compliance_report"
+          summaryInfo={getExportSummaryInfo()}
+          dateRange={getExportDateRange()}
+          pdfConfig={{
+            title: 'Compliance Report',
+            subtitle: 'Document Expiration & Compliance Tracking',
+            showLogo: true
+          }}
         />
       </main>
     </DashboardLayout>

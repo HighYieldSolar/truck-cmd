@@ -203,7 +203,7 @@ export default function IFTACalculatorFeature() {
             <FeatureDetail
               icon={<MapPin size={28} />}
               title="State Mileage Tracking"
-              description="Automatically track miles driven in each state and Canadian province. Data syncs from your load records for accurate reporting."
+              description="Automatically track miles driven in each state. Data syncs from your load records for accurate reporting."
             />
             <FeatureDetail
               icon={<Fuel size={28} />}
@@ -309,7 +309,7 @@ export default function IFTACalculatorFeature() {
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700"><strong>Jurisdiction Breakdown:</strong> Miles and fuel for all 48 US states plus Canadian provinces</span>
+                  <span className="text-gray-700"><strong>Jurisdiction Breakdown:</strong> Miles and fuel for all 48 US states</span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle size={24} className="text-green-500 mr-3 mt-0.5 flex-shrink-0" />
@@ -523,7 +523,7 @@ export default function IFTACalculatorFeature() {
           <div className="space-y-4">
             <FAQItem
               question="What is IFTA and why do I need to file?"
-              answer="IFTA (International Fuel Tax Agreement) is a tax agreement between US states and Canadian provinces that simplifies fuel tax reporting for interstate carriers. If you operate a qualified motor vehicle in more than one IFTA jurisdiction, you must file quarterly IFTA reports to properly distribute fuel taxes to each state based on miles traveled."
+              answer="IFTA (International Fuel Tax Agreement) is a tax agreement between US states that simplifies fuel tax reporting for interstate carriers. If you operate a qualified motor vehicle in more than one IFTA jurisdiction, you must file quarterly IFTA reports to properly distribute fuel taxes to each state based on miles traveled."
             />
             <FAQItem
               question="How does the automatic mileage tracking work?"

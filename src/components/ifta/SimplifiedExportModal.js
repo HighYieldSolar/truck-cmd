@@ -499,7 +499,8 @@ export default function SimplifiedExportModal({
             }
           }
         },
-        margin: { left: margin, right: margin }
+        margin: { left: margin, right: margin, bottom: 25 },
+        showHead: 'everyPage'
       });
 
       // Get final Y position after table

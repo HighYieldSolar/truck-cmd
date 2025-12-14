@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'State Mileage Tracker for Truckers - IFTA Mileage Reporting',
-  description: 'Track miles driven in each state and Canadian province for IFTA reporting. Automatic state line detection, trip logging, and quarterly mileage reports for all 48 IFTA jurisdictions.',
+  description: 'Track miles driven in each state for IFTA reporting. Automatic state line detection, trip logging, and quarterly mileage reports for all 48 IFTA jurisdictions.',
   keywords: [
     'state mileage tracker',
     'IFTA mileage reporting',
@@ -11,11 +11,11 @@ export const metadata = {
     'trucking trip log',
     'commercial mileage tracker',
     'fleet mileage management',
-    'Canadian province mileage'
+    'US state mileage'
   ],
   openGraph: {
     title: 'State Mileage Tracker for IFTA Reporting | Truck Command',
-    description: 'Track miles by state and province for IFTA. Automatic state line detection and quarterly mileage reports.',
+    description: 'Track miles by state for IFTA. Automatic state line detection and quarterly mileage reports.',
     url: 'https://truckcommand.com/features/state-mileage',
     siteName: 'Truck Command',
     images: [
@@ -32,7 +32,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'State Mileage Tracker | Truck Command',
-    description: 'Track miles by state and province for IFTA. Automatic state line detection and quarterly reports.',
+    description: 'Track miles by state for IFTA. Automatic state line detection and quarterly reports.',
     images: ['/images/screenshots/state-mileage-dashboard.png'],
   },
   alternates: {
@@ -69,7 +69,7 @@ const faqStructuredData = {
       name: 'Which jurisdictions are supported?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'All 48 contiguous US states plus 10 Canadian provinces that participate in IFTA. Complete coverage for your interstate and international routes.',
+        text: 'All 48 contiguous US states that participate in IFTA. Complete coverage for your interstate routes.',
       },
     },
     {

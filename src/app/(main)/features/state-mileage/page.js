@@ -156,7 +156,7 @@ export default function StateMileageFeaturePage() {
             <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-green-500" />
-                US & Canadian provinces
+                All 48 US States
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-green-500" />
@@ -317,7 +317,7 @@ export default function StateMileageFeaturePage() {
         </div>
       </section>
 
-      {/* US & Canada Coverage */}
+      {/* US Coverage */}
       <section className="py-24">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
@@ -328,25 +328,25 @@ export default function StateMileageFeaturePage() {
                     <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
                       <Globe size={24} />
                     </div>
-                    <h3 className="text-2xl font-bold">US & Canadian Coverage</h3>
+                    <h3 className="text-2xl font-bold">Complete US Coverage</h3>
                   </div>
                   <p className="text-blue-100 text-lg leading-relaxed mb-6">
-                    Track mileage across all 50 US states and 10 Canadian provinces. Perfect for
-                    cross-border trucking operations and IFTA compliance across North America.
+                    Track mileage across all 48 contiguous US states. Perfect for
+                    interstate trucking operations and IFTA compliance.
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                      <div className="text-3xl font-bold">50</div>
-                      <div className="text-blue-200 text-sm">US States</div>
+                      <div className="text-3xl font-bold">48</div>
+                      <div className="text-blue-200 text-sm">IFTA States</div>
                     </div>
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                      <div className="text-3xl font-bold">10</div>
-                      <div className="text-blue-200 text-sm">Canadian Provinces</div>
+                      <div className="text-3xl font-bold">100%</div>
+                      <div className="text-blue-200 text-sm">IFTA Compliant</div>
                     </div>
                   </div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                  <h4 className="font-semibold mb-4">Supported Jurisdictions</h4>
+                  <h4 className="font-semibold mb-4">Supported States</h4>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <span className="bg-white/10 px-2 py-1 rounded">Alabama</span>
                     <span className="bg-white/10 px-2 py-1 rounded">California</span>
@@ -354,9 +354,9 @@ export default function StateMileageFeaturePage() {
                     <span className="bg-white/10 px-2 py-1 rounded">Florida</span>
                     <span className="bg-white/10 px-2 py-1 rounded">Ohio</span>
                     <span className="bg-white/10 px-2 py-1 rounded">Illinois</span>
-                    <span className="bg-white/10 px-2 py-1 rounded">Ontario</span>
-                    <span className="bg-white/10 px-2 py-1 rounded">Quebec</span>
-                    <span className="bg-white/10 px-2 py-1 rounded">+52 more</span>
+                    <span className="bg-white/10 px-2 py-1 rounded">Georgia</span>
+                    <span className="bg-white/10 px-2 py-1 rounded">New York</span>
+                    <span className="bg-white/10 px-2 py-1 rounded">+40 more</span>
                   </div>
                 </div>
               </div>
@@ -433,7 +433,7 @@ export default function StateMileageFeaturePage() {
               role="Fleet Owner, 5 trucks"
             />
             <Testimonial
-              quote="Finally, an app that understands cross-border trucking. Having Canadian provinces included makes my US-Canada runs so much easier to track."
+              quote="Finally, an app that understands interstate trucking. Having all 48 states included makes my cross-country runs so much easier to track."
               author="Robert K."
               role="Owner-Operator, Cross-border"
             />
@@ -468,8 +468,8 @@ export default function StateMileageFeaturePage() {
                 answer="When you complete a trip, you can import the mileage data directly to the IFTA calculator. The system automatically matches state mileage to the correct quarter based on crossing dates. Multi-quarter trips are split automatically."
               />
               <FAQItem
-                question="Does this work for Canadian provinces too?"
-                answer="Yes! The system supports all 50 US states and 10 Canadian provinces (Alberta, British Columbia, Manitoba, New Brunswick, Newfoundland, Nova Scotia, Ontario, Prince Edward Island, Quebec, and Saskatchewan)."
+                question="Which states are supported?"
+                answer="The system supports all 48 contiguous US states that participate in IFTA. This includes every state you'll drive through on your interstate routes."
               />
               <FAQItem
                 question="What if I forget to record a crossing?"

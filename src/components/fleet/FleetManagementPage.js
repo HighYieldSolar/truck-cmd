@@ -403,10 +403,11 @@ export default function FleetManagementPage() {
           </div>
 
           {/* Fleet Reports Section */}
-          {hasFleetReportsAccess ? (
-            <FleetReportsComponent />
+          <div className="mt-12">
+            {hasFleetReportsAccess ? (
+              <FleetReportsComponent />
           ) : (
-            <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
               <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                 <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
                   <FileText size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
@@ -451,8 +452,9 @@ export default function FleetManagementPage() {
                   </Link>
                 </div>
               </div>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </DashboardLayout>

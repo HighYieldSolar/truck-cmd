@@ -169,7 +169,9 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
           1: { cellWidth: 25, halign: 'center' },
           2: { cellWidth: 35, halign: 'right' },
           3: { cellWidth: 35, halign: 'right' }
-        }
+        },
+        margin: { bottom: 25 },
+        showHead: 'everyPage'
       });
       
       // Calculate where the table ended
