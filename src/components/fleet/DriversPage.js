@@ -28,6 +28,9 @@ import DriverFormModal from "@/components/fleet/DriverFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
+import TutorialCard from "@/components/shared/TutorialCard";
+import TableActions from "@/components/shared/TableActions";
+import { FileText, Shield, Calendar as CalendarDoc, Bell } from "lucide-react";
 
 // Local storage key for filter persistence
 const STORAGE_KEY = 'driver_filters';
@@ -507,6 +510,45 @@ export default function DriversPage() {
             onDismiss={() => setMessage(null)}
           />
 
+          {/* Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="drivers"
+              title="Driver Management Guide"
+              description="Manage driver profiles and track document compliance"
+              accentColor="green"
+              userId={user.id}
+              features={[
+                {
+                  icon: Plus,
+                  title: "Add Drivers",
+                  description: "Create profiles with contact info, license, and medical card details"
+                },
+                {
+                  icon: Shield,
+                  title: "Document Tracking",
+                  description: "Monitor license and medical card expiration dates"
+                },
+                {
+                  icon: Bell,
+                  title: "Expiry Alerts",
+                  description: "See at-a-glance which documents are expiring or expired"
+                },
+                {
+                  icon: Download,
+                  title: "Export Data",
+                  description: "Download driver list as CSV for compliance reporting"
+                }
+              ]}
+              tips={[
+                "Monitor document expiry - red/yellow badges show immediate attention needed",
+                "Medical card expiry is often overlooked - set calendar reminders",
+                "Use 'On Leave' status to preserve records without showing in active dispatch",
+                "Keep license numbers updated for DOT background checks"
+              ]}
+            />
+          )}
+
           {/* Statistics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {statCards.map((card, index) => {
@@ -789,22 +831,11 @@ export default function DriversPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <div className="flex justify-center space-x-1">
-                              <button
-                                onClick={() => handleEditDriver(driver)}
-                                className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                                title="Edit"
-                              >
-                                <Edit size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteClick(driver)}
-                                className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            <TableActions
+                              onEdit={() => handleEditDriver(driver)}
+                              onDelete={() => handleDeleteClick(driver)}
+                              size="md"
+                            />
                           </td>
                         </tr>
                       );
@@ -888,21 +919,12 @@ export default function DriversPage() {
                         <p><span className="font-medium">Phone:</span> {driver.phone || 'N/A'}</p>
                         <p><span className="font-medium">Documents:</span> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${docStatus.class}`}>{docStatus.text}</span></p>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-3">
-                        <button
-                          onClick={() => handleEditDriver(driver)}
-                          className="p-3 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label="Edit driver"
-                        >
-                          <Edit size={20} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(driver)}
-                          className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                          aria-label="Delete driver"
-                        >
-                          <Trash2 size={20} />
-                        </button>
+                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end">
+                        <TableActions
+                          onEdit={() => handleEditDriver(driver)}
+                          onDelete={() => handleDeleteClick(driver)}
+                          size="lg"
+                        />
                       </div>
                     </div>
                   );

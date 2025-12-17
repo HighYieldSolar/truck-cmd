@@ -4,19 +4,13 @@ import Link from "next/link";
 import {
   FileText,
   DollarSign,
-  Eye,
-  Trash2,
   Filter,
   Search,
-  ArrowDown,
-  ArrowUp,
-  ChevronRight,
   Plus,
-  RefreshCw,
-  Edit,
-  Mail
+  RefreshCw
 } from "lucide-react";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
+import TableActions from "@/components/shared/TableActions";
 
 // Invoice Filters Component
 const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
@@ -296,31 +290,20 @@ export default function InvoiceListComponent({
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center space-x-3">
-                        <button
-                          onClick={() => handleViewInvoice(invoice.id)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                          title="View"
-                        >
-                          <Eye size={18} />
-                        </button>
-
-                        <button
-                          onClick={() => invoice.status !== 'paid' && handleMarkAsPaid(invoice.id)}
-                          className={`p-1 rounded ${invoice.status !== 'paid' ? 'text-green-600 hover:text-green-800 hover:bg-green-50' : 'text-gray-400 cursor-not-allowed'}`}
-                          title="Mark as Paid"
-                          disabled={invoice.status === 'paid'}
-                        >
-                          <DollarSign size={18} />
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteInvoice(invoice)}
-                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                      <div className="flex items-center justify-center">
+                        <TableActions
+                          onView={() => handleViewInvoice(invoice.id)}
+                          onDelete={() => handleDeleteInvoice(invoice)}
+                          customActions={invoice.status !== 'paid' ? [
+                            {
+                              icon: DollarSign,
+                              onClick: () => handleMarkAsPaid(invoice.id),
+                              title: "Mark as Paid",
+                              color: "green"
+                            }
+                          ] : []}
+                          size="md"
+                        />
                       </div>
                     </td>
                   </tr>

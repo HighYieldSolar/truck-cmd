@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { MapPin, Truck, BarChart2, Calculator, Route, FileDown, Clock } from 'lucide-react';
+import { MapPin, Truck, BarChart2, Calculator, Route, FileDown, Clock, Play, History } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/billing/UpgradePrompt';
+import { supabase } from '@/lib/supabaseClient';
+import TutorialCard from '@/components/shared/TutorialCard';
 
 // Dynamically import the StateMileageLogger component
 const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMileageLogger'), {
@@ -19,9 +21,21 @@ const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMilea
 
 // Note: DashboardLayout is provided by mileage/layout.js - do not duplicate here
 export default function DriverMileagePage() {
+  // User state for tutorial
+  const [user, setUser] = useState(null);
+
   // Feature access check
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
   const hasStateMileageAccess = canAccess('stateMileage');
+
+  // Get current user for tutorial
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    getUser();
+  }, []);
 
   // Show loading state
   if (featureLoading) {
@@ -140,6 +154,43 @@ export default function DriverMileagePage() {
               </div>
             </div>
           </div>
+
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="mileage"
+            title="State Mileage Tracker"
+            description="Record and export your state mileage for IFTA reporting"
+            features={[
+              {
+                icon: Play,
+                title: "Trip Recording",
+                description: "Start active trips and record state crossings with odometer readings"
+              },
+              {
+                icon: MapPin,
+                title: "State Crossings",
+                description: "Log when you cross state lines to track miles per jurisdiction"
+              },
+              {
+                icon: History,
+                title: "Trip History",
+                description: "View past trips and edit mileage entries as needed"
+              },
+              {
+                icon: FileDown,
+                title: "IFTA Export",
+                description: "Export mileage data in IFTA-ready format for quarterly filings"
+              }
+            ]}
+            tips={[
+              "Start a trip before leaving and add state entries as you cross borders",
+              "Record odometer readings at each state line for accurate calculations",
+              "Use the IFTA Calculator to combine mileage with fuel data",
+              "Export your trip data before quarterly IFTA filing deadlines"
+            ]}
+            accentColor="teal"
+            userId={user?.id}
+          />
 
           {/* Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

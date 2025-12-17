@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/hooks/usePagination";
+import TableActions from "@/components/shared/TableActions";
 
 /**
  * Customer Table Component
@@ -203,29 +204,12 @@ export default function CustomerTable({
                   </span>
                 </td>
                 <td className="px-4 py-4 text-center">
-                  <div className="flex items-center justify-center gap-0.5">
-                    <button
-                      onClick={() => onView(customer)}
-                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      title="View details"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    <button
-                      onClick={() => onEdit(customer)}
-                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
-                      title="Edit customer"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => onDelete(customer)}
-                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Delete customer"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  <TableActions
+                    onView={() => onView(customer)}
+                    onEdit={() => onEdit(customer)}
+                    onDelete={() => onDelete(customer)}
+                    size="md"
+                  />
                 </td>
               </tr>
             ))}

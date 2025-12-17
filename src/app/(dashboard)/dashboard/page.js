@@ -18,7 +18,13 @@ import ActivityPanel from "@/components/dashboard/(dashboard)/ActivityPanel";
 import FuelSummary from "@/components/dashboard/(dashboard)/FuelSummary";
 import QuickActions from "@/components/dashboard/(dashboard)/QuickActions";
 import FailedPaymentBanner from "@/components/billing/FailedPaymentBanner";
+import SetupChecklist from "@/components/onboarding/SetupChecklist";
+import TutorialCard from "@/components/shared/TutorialCard";
 import { useSubscription } from "@/context/SubscriptionContext";
+import {
+  LayoutDashboard, TrendingUp, Activity, Zap,
+  FileText, DollarSign, BarChart3, Settings
+} from "lucide-react";
 
 /**
  * Main Dashboard Page
@@ -301,6 +307,48 @@ export default function Dashboard() {
             subscription={subscription}
             userId={subscription?.userId}
           />
+
+          {/* Setup Checklist for new users */}
+          {user && <SetupChecklist userId={user.id} />}
+
+          {/* Dashboard Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="dashboard"
+              title="Welcome to Your Dashboard"
+              description="Your business command center - track everything at a glance"
+              accentColor="blue"
+              userId={user.id}
+              features={[
+                {
+                  icon: TrendingUp,
+                  title: "Track Earnings & Profit",
+                  description: "See revenue, expenses, and profit with month-over-month trends"
+                },
+                {
+                  icon: Activity,
+                  title: "Recent Activity",
+                  description: "Monitor loads, invoices, and business events in real-time"
+                },
+                {
+                  icon: BarChart3,
+                  title: "Date Range Filtering",
+                  description: "View stats for this month, quarter, year, or all time"
+                },
+                {
+                  icon: Zap,
+                  title: "Quick Actions",
+                  description: "Fast shortcuts to create loads, invoices, and more"
+                }
+              ]}
+              tips={[
+                "Use the date range selector to compare performance across periods",
+                "The dashboard auto-refreshes every 5 minutes to show latest data",
+                "Click any stat card to navigate to its detailed page",
+                "Check 'Upcoming Deliveries' daily to stay on top of your schedule"
+              ]}
+            />
+          )}
 
           {/* Date Range Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">

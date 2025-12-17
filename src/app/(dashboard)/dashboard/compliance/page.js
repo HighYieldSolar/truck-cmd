@@ -50,6 +50,10 @@ import ExportReportModal from "@/components/common/ExportReportModal";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
 
+// Tutorial component
+import TutorialCard from "@/components/shared/TutorialCard";
+import { Calendar, Upload, Bell, Truck as TruckIcon } from "lucide-react";
+
 // Local storage key for form persistence
 const STORAGE_KEY = 'compliance_filters';
 
@@ -638,6 +642,43 @@ export default function CompliancePage() {
           <OperationMessage
             message={message}
             onDismiss={() => setMessage(null)}
+          />
+
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="compliance"
+            title="Compliance Management"
+            description="Track and manage all your regulatory compliance documents"
+            features={[
+              {
+                icon: FileText,
+                title: "Document Tracking",
+                description: "Store and track licenses, permits, insurance, and other compliance documents"
+              },
+              {
+                icon: Calendar,
+                title: "Expiration Alerts",
+                description: "Get notified before documents expire to stay compliant"
+              },
+              {
+                icon: Upload,
+                title: "Document Upload",
+                description: "Upload copies of documents for easy access and backup"
+              },
+              {
+                icon: TruckIcon,
+                title: "Fleet Coverage",
+                description: "Track compliance for drivers, trucks, and company-wide documents"
+              }
+            ]}
+            tips={[
+              "Add all document expiration dates to get automatic reminders",
+              "Upload scanned copies of documents for quick reference",
+              "Use the 'Expiring Soon' filter to prioritize renewals",
+              "Keep company-wide documents like authority and insurance updated"
+            ]}
+            accentColor="purple"
+            userId={user?.id}
           />
 
           {/* Statistics */}

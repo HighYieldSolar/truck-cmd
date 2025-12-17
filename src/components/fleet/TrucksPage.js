@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -30,10 +31,15 @@ import OperationMessage from "@/components/ui/OperationMessage";
 import { usePagination, Pagination } from "@/hooks/usePagination";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
+import TutorialCard from "@/components/shared/TutorialCard";
+import TableActions from "@/components/shared/TableActions";
+import { Settings, FileCheck2, Gauge, MapPin } from "lucide-react";
 
 const STORAGE_KEY = 'truck_filters';
 
 export default function TrucksPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trucks, setTrucks] = useState([]);
@@ -130,6 +136,18 @@ export default function TrucksPage() {
 
   // Operation messages
   const [operationMessage, setOperationMessage] = useState(null);
+
+  // Check for addNew URL parameter to auto-open the modal
+  useEffect(() => {
+    if (searchParams.get('addNew') === 'true' && !loading && user) {
+      setTruckToEdit(null);
+      setFormModalOpen(true);
+      // Remove the query parameter from URL without navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete('addNew');
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, loading, user, router]);
 
   // Save filters to localStorage
   useEffect(() => {
@@ -529,6 +547,45 @@ export default function TrucksPage() {
             </div>
           </div>
 
+          {/* Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="trucks"
+              title="Vehicle Management Guide"
+              description="Register and track all vehicles in your fleet"
+              accentColor="blue"
+              userId={user.id}
+              features={[
+                {
+                  icon: Plus,
+                  title: "Add Vehicles",
+                  description: "Register trucks with year, make, model, VIN, and license plate"
+                },
+                {
+                  icon: Settings,
+                  title: "Track Status",
+                  description: "Monitor Active, In Maintenance, Out of Service, or Idle vehicles"
+                },
+                {
+                  icon: FileCheck2,
+                  title: "Compliance Ready",
+                  description: "VIN and registration info for DOT and IFTA compliance"
+                },
+                {
+                  icon: Download,
+                  title: "Export Data",
+                  description: "Download your vehicle list as CSV for reporting"
+                }
+              ]}
+              tips={[
+                "Keep vehicle status updated - it affects dispatch availability",
+                "Add VIN for recall tracking and compliance documentation",
+                "Use the search to quickly find vehicles by name, make, or license plate",
+                "Link vehicles to loads for accurate mileage and fuel tracking"
+              ]}
+            />
+          )}
+
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {statCards.map((card, index) => {
@@ -807,22 +864,11 @@ export default function TrucksPage() {
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="flex justify-center items-center space-x-1">
-                                <button
-                                  onClick={() => handleEditTruck(truck)}
-                                  className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-md transition-colors"
-                                  title="Edit Vehicle"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(truck)}
-                                  className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                                  title="Delete Vehicle"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
+                              <TableActions
+                                onEdit={() => handleEditTruck(truck)}
+                                onDelete={() => handleDeleteClick(truck)}
+                                size="md"
+                              />
                             </td>
                           </tr>
                         );
@@ -873,22 +919,11 @@ export default function TrucksPage() {
                             <Calendar size={12} className="mr-1" />
                             Added {formatDate(truck.created_at)}
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => handleEditTruck(truck)}
-                              className="p-3 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                              aria-label="Edit vehicle"
-                            >
-                              <Edit size={20} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(truck)}
-                              className="p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                              aria-label="Delete vehicle"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
+                          <TableActions
+                            onEdit={() => handleEditTruck(truck)}
+                            onDelete={() => handleDeleteClick(truck)}
+                            size="lg"
+                          />
                         </div>
                       </div>
                     );

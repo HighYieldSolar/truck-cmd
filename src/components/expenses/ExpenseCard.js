@@ -1,6 +1,7 @@
 'use client';
 
 import { Pencil, Trash2, Eye, Receipt, CheckCircle } from 'lucide-react';
+import TableActions from '@/components/shared/TableActions';
 
 /**
  * Expense Card Component (Mobile View)
@@ -107,31 +108,12 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {expense.receipt_image && (
-            <button
-              onClick={() => onViewReceipt(expense)}
-              className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-              title="View Receipt"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          )}
-          <button
-            onClick={() => onEdit(expense)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-            title="Edit"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => onDelete(expense)}
-            className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
+        <TableActions
+          onView={expense.receipt_image ? () => onViewReceipt(expense) : undefined}
+          onEdit={() => onEdit(expense)}
+          onDelete={() => onDelete(expense)}
+          size="md"
+        />
       </div>
     </div>
   );

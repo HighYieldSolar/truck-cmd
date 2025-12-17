@@ -4,13 +4,11 @@
 import Link from 'next/link';
 import {
   MapPin,
-  ArrowRight,
-  Trash2,
-  CheckCircle,
-  Eye
+  CheckCircle
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import TableActions from "@/components/shared/TableActions";
 
 export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
   // Format currency
@@ -100,30 +98,21 @@ export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
       {/* Actions */}
       <td className="px-3 py-3 whitespace-nowrap">
         <div className="flex items-center space-x-1">
-          <button
-            onClick={() => onSelect(load)}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <Eye size={16} />
-          </button>
           {load.status !== "Completed" && load.status !== "Cancelled" && (
             <Link
               href={`/dashboard/dispatching/complete/${load.id}`}
-              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/40 rounded-lg transition-colors"
+              className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
               title="Mark Complete"
               onClick={(e) => e.stopPropagation()}
             >
               <CheckCircle size={16} />
             </Link>
           )}
-          <button
-            onClick={() => onDelete(load)}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={16} />
-          </button>
+          <TableActions
+            onView={() => onSelect(load)}
+            onDelete={() => onDelete(load)}
+            size="md"
+          />
         </div>
       </td>
     </tr>

@@ -11,13 +11,10 @@ import {
   DollarSign,
   Truck,
   FileImage,
-  Edit,
-  Trash2,
-  CheckCircle,
-  ChevronRight,
-  MoreVertical
+  CheckCircle
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import TableActions from "@/components/shared/TableActions";
 
 export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   const [vehicleInfo, setVehicleInfo] = useState(null);
@@ -160,31 +157,12 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           )}
         </div>
 
-        <div className="flex items-center space-x-1">
-          {fuelEntry.receipt_image && (
-            <button
-              onClick={handleViewReceipt}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-              title="View Receipt"
-            >
-              <FileImage size={18} />
-            </button>
-          )}
-          <button
-            onClick={() => onEdit(fuelEntry)}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            title="Edit"
-          >
-            <Edit size={18} />
-          </button>
-          <button
-            onClick={() => onDelete(fuelEntry)}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
+        <TableActions
+          onView={fuelEntry.receipt_image ? handleViewReceipt : undefined}
+          onEdit={() => onEdit(fuelEntry)}
+          onDelete={() => onDelete(fuelEntry)}
+          size="lg"
+        />
       </div>
     </div>
   );

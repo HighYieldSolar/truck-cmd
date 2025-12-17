@@ -9,8 +9,6 @@ import {
   Search,
   RefreshCw,
   Wrench,
-  Edit,
-  Trash2,
   ChevronLeft,
   Download,
   Calendar,
@@ -40,6 +38,8 @@ import OperationMessage from "@/components/ui/OperationMessage";
 import { usePagination, Pagination } from "@/hooks/usePagination";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
+import TutorialCard from "@/components/shared/TutorialCard";
+import TableActions from "@/components/shared/TableActions";
 
 const STORAGE_KEY = 'maintenance_filters';
 
@@ -606,6 +606,43 @@ export default function MaintenancePage() {
             </div>
           </div>
 
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="maintenance"
+            title="Maintenance Management"
+            description="Schedule, track and manage vehicle maintenance"
+            features={[
+              {
+                icon: Calendar,
+                title: "Schedule Service",
+                description: "Create maintenance schedules based on date or mileage intervals"
+              },
+              {
+                icon: Wrench,
+                title: "Track Repairs",
+                description: "Log repairs, parts replaced, and service providers"
+              },
+              {
+                icon: Bell,
+                title: "Due Alerts",
+                description: "Get notified when maintenance is due or overdue"
+              },
+              {
+                icon: DollarSign,
+                title: "Cost Tracking",
+                description: "Track maintenance costs per vehicle for budgeting"
+              }
+            ]}
+            tips={[
+              "Schedule recurring maintenance like oil changes and inspections",
+              "Record service provider details for warranty tracking",
+              "Use the overdue filter to prioritize urgent maintenance",
+              "Track maintenance costs to identify high-expense vehicles"
+            ]}
+            accentColor="amber"
+            userId={user?.id}
+          />
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {/* Total Records */}
@@ -877,30 +914,13 @@ export default function MaintenancePage() {
                               </span>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="flex justify-center items-center space-x-1">
-                                {record.status !== 'Completed' && record.status !== 'Cancelled' && (
-                                  <button
-                                    onClick={() => handleCompleteClick(record)}
-                                    className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors"
-                                    title="Mark Complete"
-                                  >
-                                    <CheckCircle size={16} />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleEditRecord(record)}
-                                  className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-md transition-colors"
-                                  title="Edit Record"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(record)}
-                                  className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                                  title="Delete Record"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                              <div className="flex justify-center">
+                                <TableActions
+                                  onComplete={record.status !== 'Completed' && record.status !== 'Cancelled' ? () => handleCompleteClick(record) : undefined}
+                                  onEdit={() => handleEditRecord(record)}
+                                  onDelete={() => handleDeleteClick(record)}
+                                  size="md"
+                                />
                               </div>
                             </td>
                           </tr>
@@ -962,31 +982,12 @@ export default function MaintenancePage() {
                               <span>Provider: {record.service_provider}</span>
                             )}
                           </div>
-                          <div className="flex items-center space-x-3">
-                            {record.status !== 'Completed' && record.status !== 'Cancelled' && (
-                              <button
-                                onClick={() => handleCompleteClick(record)}
-                                className="p-3 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                                aria-label="Complete maintenance"
-                              >
-                                <CheckCircle size={20} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleEditRecord(record)}
-                              className="p-3 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                              aria-label="Edit maintenance"
-                            >
-                              <Edit size={20} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(record)}
-                              className="p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-                              aria-label="Delete maintenance"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
+                          <TableActions
+                            onComplete={record.status !== 'Completed' && record.status !== 'Cancelled' ? () => handleCompleteClick(record) : undefined}
+                            onEdit={() => handleEditRecord(record)}
+                            onDelete={() => handleDeleteClick(record)}
+                            size="lg"
+                          />
                         </div>
                       </div>
                     );

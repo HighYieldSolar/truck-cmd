@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -9,8 +10,13 @@ import {
   Download,
   RefreshCw,
   Users,
-  Lock
+  Lock,
+  UserPlus,
+  Building,
+  Mail,
+  MapPin
 } from "lucide-react";
+import TutorialCard from "@/components/shared/TutorialCard";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 
@@ -34,6 +40,9 @@ import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 const ITEMS_PER_PAGE = 10;
 
 export default function CustomersPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   // User state
   const [user, setUser] = useState(null);
 
@@ -63,6 +72,18 @@ export default function CustomersPage() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Check for addNew URL parameter to auto-open the modal
+  useEffect(() => {
+    if (searchParams.get('addNew') === 'true' && !isLoading && user) {
+      setSelectedCustomer(null);
+      setFormModalOpen(true);
+      // Remove the query parameter from URL without navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete('addNew');
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, isLoading, user, router]);
 
   // Initialize user and load data
   useEffect(() => {
@@ -411,6 +432,45 @@ export default function CustomersPage() {
             message={message}
             onDismiss={() => setMessage(null)}
           />
+
+          {/* Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="customers"
+              title="Customer Management Guide"
+              description="Organize and maintain all your customer relationships"
+              accentColor="green"
+              userId={user.id}
+              features={[
+                {
+                  icon: UserPlus,
+                  title: "Add Customers",
+                  description: "Create profiles with company, contact, and location details"
+                },
+                {
+                  icon: Building,
+                  title: "Customer Types",
+                  description: "Categorize as Broker, Shipper, Direct, 3PL, or Freight Forwarder"
+                },
+                {
+                  icon: Mail,
+                  title: "Contact Management",
+                  description: "Store email, phone, and address for easy communication"
+                },
+                {
+                  icon: MapPin,
+                  title: "Location Tracking",
+                  description: "See customer distribution by state for business insights"
+                }
+              ]}
+              tips={[
+                "Categorize customer types accurately - it affects reporting and workflows",
+                "Keep contact info updated for smooth invoice delivery",
+                "Use the Notes field to track special requirements or payment terms",
+                "Filter by state to manage regional customer relationships"
+              ]}
+            />
+          )}
 
           {/* Stats */}
           <CustomerStats stats={stats} isLoading={isLoading} />

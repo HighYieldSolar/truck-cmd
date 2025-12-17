@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Wallet,
@@ -14,8 +14,12 @@ import {
   DollarSign,
   Calendar,
   Receipt,
-  FolderArchive
+  FolderArchive,
+  Tags,
+  Calculator,
+  Upload
 } from 'lucide-react';
+import TutorialCard from "@/components/shared/TutorialCard";
 
 // Import services
 import {
@@ -45,6 +49,7 @@ import ExportReportModal from '@/components/common/ExportReportModal';
 
 export default function ExpensesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Authentication state
   const [user, setUser] = useState(null);
@@ -82,6 +87,18 @@ export default function ExpensesPage() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  // Check for addNew URL parameter to auto-open the modal
+  useEffect(() => {
+    if (searchParams.get('addNew') === 'true' && !initialLoading && user) {
+      setCurrentExpense(null);
+      setFormModalOpen(true);
+      // Remove the query parameter from URL without navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete('addNew');
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, initialLoading, user, router]);
 
   // Feedback state
   const [operationMessage, setOperationMessage] = useState(null);
@@ -479,6 +496,45 @@ export default function ExpensesPage() {
             message={operationMessage}
             onDismiss={() => setOperationMessage(null)}
           />
+
+          {/* Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="expenses"
+              title="Expense Tracking Guide"
+              description="Record and categorize business expenses for tax compliance"
+              accentColor="orange"
+              userId={user.id}
+              features={[
+                {
+                  icon: Plus,
+                  title: "Log Expenses",
+                  description: "Record expenses with category, amount, date, and payment method"
+                },
+                {
+                  icon: Upload,
+                  title: "Receipt Upload",
+                  description: "Attach receipt images for documentation and tax records"
+                },
+                {
+                  icon: Tags,
+                  title: "Smart Categories",
+                  description: "Fuel, Maintenance, Insurance, Tolls, Meals, Equipment & more"
+                },
+                {
+                  icon: Calculator,
+                  title: "Tax Deductions",
+                  description: "Track deductible expenses for accurate tax reporting"
+                }
+              ]}
+              tips={[
+                "Upload receipts immediately - don't lose documentation",
+                "Fuel expenses auto-sync from Fuel Tracker for convenience",
+                "Use category filters to review spending by type",
+                "Export reports quarterly for bookkeeping and tax prep"
+              ]}
+            />
+          )}
 
           {/* Statistics Row */}
           <ExpenseStats

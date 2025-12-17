@@ -32,6 +32,8 @@ import FuelCategories from "@/components/fuel/FuelCategories";
 import TopFuelEntries from "@/components/fuel/TopFuelEntries";
 import FuelChart from "@/components/fuel/FuelChart";
 import ExportReportModal from "@/components/common/ExportReportModal";
+import TutorialCard from "@/components/shared/TutorialCard";
+import { MapPin, Receipt, TrendingUp, BarChart } from "lucide-react";
 
 export default function FuelTrackerPage() {
   const router = useRouter();
@@ -441,7 +443,7 @@ export default function FuelTrackerPage() {
           
           {operationMessage && (
             <div className="mb-6">
-              <StatusAlert 
+              <StatusAlert
                 type={operationMessage.type}
                 message={operationMessage.text}
                 onClose={() => setOperationMessage(null)}
@@ -449,6 +451,43 @@ export default function FuelTrackerPage() {
               />
             </div>
           )}
+
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="fuel"
+            title="Fuel Tracker"
+            description="Track fuel purchases and generate IFTA reports by state"
+            features={[
+              {
+                icon: Fuel,
+                title: "Log Purchases",
+                description: "Record fuel purchases with gallons, cost, location, and state"
+              },
+              {
+                icon: Receipt,
+                title: "Receipt Upload",
+                description: "Attach receipt images to fuel entries for record keeping"
+              },
+              {
+                icon: MapPin,
+                title: "State Tracking",
+                description: "Track fuel by state for IFTA compliance reporting"
+              },
+              {
+                icon: Calculator,
+                title: "IFTA Reports",
+                description: "Generate quarterly IFTA reports with fuel data by jurisdiction"
+              }
+            ]}
+            tips={[
+              "Fuel purchases automatically sync to your Expenses page for easy bookkeeping",
+              "Always record the state where fuel was purchased for accurate IFTA reporting",
+              "Upload receipt photos to keep proof of purchase organized",
+              "Link fuel entries to vehicles to track per-truck consumption"
+            ]}
+            accentColor="blue"
+            userId={user?.id}
+          />
 
           {/* Statistics */}
           <FuelStats 

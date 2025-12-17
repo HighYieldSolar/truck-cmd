@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -17,8 +18,14 @@ import {
   RefreshCw,
   Package,
   Lock,
-  Download
+  Download,
+  UserCheck,
+  Route,
+  FileCheck,
+  Filter,
+  BarChart2
 } from "lucide-react";
+import TutorialCard from "@/components/shared/TutorialCard";
 
 // Import dispatching components
 import LoadStats from "@/components/dispatching/LoadStats";
@@ -239,6 +246,8 @@ const calculateLoadStats = (loads) => {
 
 // Main Dispatching Dashboard Component
 export default function DispatchingPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -281,6 +290,18 @@ export default function DispatchingPage() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [loadToDelete, setLoadToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Check for addNew URL parameter to auto-open the modal
+  useEffect(() => {
+    if (searchParams.get('addNew') === 'true' && !loading && user) {
+      setEditingLoad(null);
+      setShowNewLoadModal(true);
+      // Remove the query parameter from URL without navigation
+      const url = new URL(window.location.href);
+      url.searchParams.delete('addNew');
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, loading, user, router]);
 
   // Feedback message state
   const [message, setMessage] = useState(null);
@@ -703,6 +724,45 @@ export default function DispatchingPage() {
               </div>
             </div>
           </div>
+
+          {/* Tutorial Card */}
+          {user && (
+            <TutorialCard
+              pageId="dispatching"
+              title="Load Management Guide"
+              description="Create, track, and manage all your freight loads in one place"
+              accentColor="blue"
+              userId={user.id}
+              features={[
+                {
+                  icon: Plus,
+                  title: "Create Loads",
+                  description: "Add loads with pickup/delivery details, customer, rate, and more"
+                },
+                {
+                  icon: UserCheck,
+                  title: "Assign Driver & Truck",
+                  description: "Assign available drivers and vehicles to loads for complete tracking"
+                },
+                {
+                  icon: Route,
+                  title: "Track Status",
+                  description: "Monitor loads through Pending → Assigned → In Transit → Completed"
+                },
+                {
+                  icon: Filter,
+                  title: "Filter & Search",
+                  description: "Filter by status, date range, driver, vehicle, or search any field"
+                }
+              ]}
+              tips={[
+                "Assign both driver AND truck for accurate IFTA and compliance tracking",
+                "Mark loads complete promptly to trigger automatic invoicing",
+                "Use the Export button to download load reports as PDF, CSV, or TXT",
+                "Click any load to view full details and update status"
+              ]}
+            />
+          )}
 
           {/* Limit Warning Banner */}
           {(() => {

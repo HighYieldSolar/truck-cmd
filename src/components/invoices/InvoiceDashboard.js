@@ -38,6 +38,7 @@ import OverdueInvoicesComponent from "@/components/invoices/OverdueInvoicesCompo
 import QuickActionsComponent from "@/components/invoices/QuickActionsComponent";
 import InvoiceListComponent from "@/components/invoices/InvoiceListComponent";
 import InvoiceReportsComponent from "@/components/invoices/InvoiceReportsComponent";
+import TutorialCard from "@/components/shared/TutorialCard";
 
 // Invoice Stats Card Component
 const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) => {
@@ -735,6 +736,43 @@ export default function InvoiceDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <InvoiceManagementHeader />
+
+        {/* Tutorial Card */}
+        <TutorialCard
+          pageId="invoices"
+          title="Invoice Management"
+          description="Create, track, and manage all your customer invoices"
+          features={[
+            {
+              icon: FileText,
+              title: "Create Invoices",
+              description: "Generate professional invoices from completed loads or create custom invoices"
+            },
+            {
+              icon: DollarSign,
+              title: "Track Payments",
+              description: "Monitor payment status and record payments when received"
+            },
+            {
+              icon: Clock,
+              title: "Due Date Alerts",
+              description: "See upcoming and overdue invoices at a glance"
+            },
+            {
+              icon: Mail,
+              title: "Email Invoices",
+              description: "Send invoices directly to customers via email"
+            }
+          ]}
+          tips={[
+            "Mark invoices as paid when payment is received to keep your records accurate",
+            "Use the status filters to quickly find pending or overdue invoices",
+            "Export invoice reports for your accounting records",
+            "Check the 'Payment Due Soon' section to follow up on unpaid invoices"
+          ]}
+          accentColor="green"
+          userId={user?.id}
+        />
 
         {/* Error message */}
         {error && (

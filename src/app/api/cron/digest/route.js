@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendDigestEmail, sendNotificationEmail } from '@/lib/services/emailService';
+import { sendDigestEmail, sendNotificationEmail, sendOnboardingEmail } from '@/lib/services/emailService';
 import { sendNotificationSMS } from '@/lib/services/smsService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[cron/digest]', ...args);
 
 /**
- * Cron job endpoint for sending digest emails AND batch notifications
+ * Cron job endpoint for sending digest emails, batch notifications, AND onboarding emails
  * Runs daily at 8 AM to:
  * 1. Send daily/weekly digest emails
- * 2. Send pending high-priority notifications (consolidated from /api/notifications/send)
+ * 2. Send pending high-priority notifications
+ * 3. Send onboarding email sequence (Day 1, 3, 5, 6 emails based on trial start date)
  */
 
 function getSupabaseAdmin() {
@@ -136,6 +137,120 @@ async function sendPendingNotifications(supabase) {
   return results;
 }
 
+/**
+ * Send onboarding emails based on trial start date
+ * Day 1: First win email
+ * Day 3: Feature highlight
+ * Day 5: Social proof
+ * Day 6: Trial ending reminder
+ */
+async function sendOnboardingEmails(supabase) {
+  const results = {
+    day1: { sent: 0, skipped: 0 },
+    day3: { sent: 0, skipped: 0 },
+    day5: { sent: 0, skipped: 0 },
+    day6: { sent: 0, skipped: 0 },
+    errors: []
+  };
+
+  try {
+    const now = new Date();
+
+    // Get all trial users with their subscription and profile data
+    const { data: trialUsers, error } = await supabase
+      .from('subscriptions')
+      .select(`
+        user_id,
+        created_at,
+        status,
+        users!inner (id, email, full_name, operator_type, primary_focus)
+      `)
+      .eq('status', 'trial')
+      .not('users.email', 'is', null);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!trialUsers || trialUsers.length === 0) {
+      log('No trial users to send onboarding emails');
+      return results;
+    }
+
+    // Define email schedule: { dayNumber: emailType }
+    const emailSchedule = {
+      1: 'firstWin',
+      3: 'featureHighlight',
+      5: 'socialProof',
+      6: 'trialEnding'
+    };
+
+    for (const subscription of trialUsers) {
+      const user = subscription.users;
+      const trialStartDate = new Date(subscription.created_at);
+      const daysSinceStart = Math.floor((now - trialStartDate) / (1000 * 60 * 60 * 24));
+
+      // Check if user should receive an email today
+      const emailType = emailSchedule[daysSinceStart];
+      if (!emailType) {
+        continue; // No email scheduled for this day
+      }
+
+      // Check if we already sent this email (using a simple tracking approach)
+      // We'll check if user has received an email with this type in notifications table
+      const emailTrackingKey = `onboarding_${emailType}_sent`;
+      const { data: alreadySent } = await supabase
+        .from('user_settings')
+        .select('setting_value')
+        .eq('user_id', user.id)
+        .eq('setting_key', emailTrackingKey)
+        .single();
+
+      if (alreadySent) {
+        results[`day${daysSinceStart}`].skipped++;
+        continue;
+      }
+
+      // Send the onboarding email
+      const emailResult = await sendOnboardingEmail({
+        to: user.email,
+        emailType,
+        userName: user.full_name?.split(' ')[0], // First name only
+        operatorType: user.operator_type,
+        primaryFocus: user.primary_focus
+      });
+
+      if (emailResult.success) {
+        results[`day${daysSinceStart}`].sent++;
+
+        // Mark email as sent
+        await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            setting_key: emailTrackingKey,
+            setting_value: { sent_at: now.toISOString() }
+          }, {
+            onConflict: 'user_id,setting_key'
+          });
+
+        log(`Sent ${emailType} email to ${user.email}`);
+      } else {
+        results.errors.push({
+          userId: user.id,
+          emailType,
+          error: emailResult.error
+        });
+      }
+    }
+  } catch (error) {
+    log('Error sending onboarding emails:', error);
+    results.errors.push({ error: error.message });
+  }
+
+  return results;
+}
+
 export async function GET(request) {
   try {
     // Verify cron secret for security - REQUIRED in production
@@ -166,7 +281,8 @@ export async function GET(request) {
       timestamp: today.toISOString(),
       dailyDigests: { sent: 0, skipped: 0, errors: [] },
       weeklyDigests: { sent: 0, skipped: 0, errors: [] },
-      pendingNotifications: { total: 0, emailsSent: 0, smsSent: 0, errors: [] }
+      pendingNotifications: { total: 0, emailsSent: 0, smsSent: 0, errors: [] },
+      onboardingEmails: { day1: { sent: 0, skipped: 0 }, day3: { sent: 0, skipped: 0 }, day5: { sent: 0, skipped: 0 }, day6: { sent: 0, skipped: 0 }, errors: [] }
     };
 
     // Get all users with their notification preferences
@@ -264,6 +380,10 @@ export async function GET(request) {
     // Also send pending high-priority notifications (consolidated from /api/notifications/send)
     const pendingResults = await sendPendingNotifications(supabase);
     results.pendingNotifications = pendingResults;
+
+    // Send onboarding emails to trial users
+    const onboardingResults = await sendOnboardingEmails(supabase);
+    results.onboardingEmails = onboardingResults;
 
     return NextResponse.json({
       success: true,

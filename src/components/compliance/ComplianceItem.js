@@ -1,7 +1,7 @@
 "use client";
 
-import { Eye, Edit, Trash2 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import TableActions from "@/components/shared/TableActions";
 
 export default function ComplianceItem({ item, onEdit, onDelete, onView }) {
   // Format dates for better display (fixed timezone issue)
@@ -58,30 +58,13 @@ export default function ComplianceItem({ item, onEdit, onDelete, onView }) {
       </td>
 
       <td className="px-6 py-4">
-        <div className="flex justify-center space-x-3">
-          <button 
-            onClick={() => onView(item)} 
-            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-            title="View Details"
-          >
-            <Eye size={18} />
-          </button>
-
-          <button 
-            onClick={() => onEdit(item)} 
-            className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-            title="Edit Record"
-          >
-            <Edit size={18} />
-          </button>
-
-          <button 
-            onClick={() => onDelete(item)} 
-            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-            title="Delete Record"
-          >
-            <Trash2 size={18} />
-          </button>
+        <div className="flex justify-center">
+          <TableActions
+            onView={() => onView(item)}
+            onEdit={() => onEdit(item)}
+            onDelete={() => onDelete(item)}
+            size="md"
+          />
         </div>
       </td>
     </tr>

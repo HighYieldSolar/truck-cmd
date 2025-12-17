@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { supabase } from "@/lib/supabaseClient";
 import {
   CheckCircle,
   AlertCircle,
@@ -22,8 +23,31 @@ import {
   ArrowDown,
   ArrowRight,
   Loader2,
-  Calendar
+  Calendar,
+  Sparkles,
+  User,
+  Users,
+  Truck,
+  FileText,
+  Calculator,
+  DollarSign
 } from "lucide-react";
+
+// Personalized recommendations based on operator type
+const planRecommendations = {
+  'owner-operator': {
+    planId: 'premium',
+    headline: 'Recommended for Owner-Operators',
+    reason: 'Premium gives you IFTA tracking, compliance alerts, and unlimited loads - everything a solo operator needs to maximize profits.',
+    icon: User
+  },
+  'small-fleet': {
+    planId: 'fleet',
+    headline: 'Perfect for Your Growing Fleet',
+    reason: 'Fleet plan includes maintenance scheduling, advanced reports, and up to 12 trucks - built for multi-truck operations.',
+    icon: Users
+  }
+};
 
 export default function UpgradePage() {
   const router = useRouter();
@@ -39,6 +63,10 @@ export default function UpgradePage() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
+
+  // Personalization state
+  const [userOperatorType, setUserOperatorType] = useState(null);
+  const [userPrimaryFocus, setUserPrimaryFocus] = useState(null);
 
   // Plan change state (kept for loading indicator if needed)
   const [planChangeLoading, setPlanChangeLoading] = useState(false);
@@ -154,6 +182,30 @@ export default function UpgradePage() {
       setLoading(false);
     }
   }, [subscriptionLoading]);
+
+  // Fetch user's operator type for personalized recommendations
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('operator_type, primary_focus')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          setUserOperatorType(data.operator_type);
+          setUserPrimaryFocus(data.primary_focus);
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
 
   // Handle plan selection
   const handleSelectPlan = (planId) => {
@@ -557,18 +609,70 @@ export default function UpgradePage() {
             </div>
           </div>
 
+          {/* Personalized Recommendation Banner */}
+          {userOperatorType && planRecommendations[userOperatorType] && !hasActiveSubscription && (
+            <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 relative overflow-hidden">
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/30 dark:bg-blue-700/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+
+              <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                      {planRecommendations[userOperatorType].headline}
+                    </h3>
+                    {(() => {
+                      const RecommendIcon = planRecommendations[userOperatorType].icon;
+                      return <RecommendIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
+                    })()}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {planRecommendations[userOperatorType].reason}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handlePlanChange(planRecommendations[userOperatorType].planId)}
+                  className="flex-shrink-0 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  Get {plans[planRecommendations[userOperatorType].planId]?.name}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Plan cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {Object.values(plans).map((plan) => (
+            {Object.values(plans).map((plan) => {
+              // Check if this plan is recommended based on user's operator type
+              const isPersonalizedRecommendation = userOperatorType &&
+                planRecommendations[userOperatorType]?.planId === plan.id;
+
+              return (
               <div
                 key={plan.id}
                 className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 overflow-hidden transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 relative flex flex-col ${
-                  selectedPlan === plan.id
-                    ? 'border-blue-500 dark:border-blue-400'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
+                  isPersonalizedRecommendation && !hasActiveSubscription
+                    ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800'
+                    : selectedPlan === plan.id
+                      ? 'border-blue-500 dark:border-blue-400'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
                 }`}
               >
-                {plan.recommended && (
+                {/* Personalized recommendation badge - takes priority */}
+                {isPersonalizedRecommendation && !hasActiveSubscription ? (
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      For You
+                    </span>
+                  </div>
+                ) : plan.recommended && (
                   <div className="absolute top-4 right-4">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-500 text-white">
                       <Star className="h-3 w-3 mr-1" />
@@ -684,7 +788,8 @@ export default function UpgradePage() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* FAQ Section */}

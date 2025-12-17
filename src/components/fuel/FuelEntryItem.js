@@ -4,6 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Fuel, MapPin, Calendar, DollarSign, Truck, FileImage, Edit, Trash2, CheckCircle, ExternalLink, Calculator } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import TableActions from "@/components/shared/TableActions";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   // Add state for IFTA link status
@@ -171,24 +172,11 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
 
       {/* Actions - Always visible */}
       <td className="px-4 py-3 whitespace-nowrap text-right">
-        <div className="flex items-center justify-end space-x-0.5">
-          <button
-            onClick={() => onEdit(fuelEntry)}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40 rounded-md transition-colors"
-            aria-label="Edit fuel entry"
-            title="Edit"
-          >
-            <Edit size={15} />
-          </button>
-          <button
-            onClick={() => onDelete(fuelEntry)}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-md transition-colors"
-            aria-label="Delete fuel entry"
-            title="Delete"
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
+        <TableActions
+          onEdit={() => onEdit(fuelEntry)}
+          onDelete={() => onDelete(fuelEntry)}
+          size="md"
+        />
       </td>
     </tr>
   );

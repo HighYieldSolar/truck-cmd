@@ -42,6 +42,10 @@ import { getQuarterDateRange } from "@/lib/utils/dateUtils";
 // Import hooks
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
+// Import tutorial component
+import TutorialCard from "@/components/shared/TutorialCard";
+import { FileText, MapPinned, DollarSign } from "lucide-react";
+
 // State name mapping
 const STATE_NAMES = {
   'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
@@ -552,6 +556,43 @@ export default function IFTACalculatorPage() {
               </button>
             </div>
           )}
+
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="ifta"
+            title="IFTA Calculator"
+            description="Generate your quarterly IFTA tax report"
+            features={[
+              {
+                icon: Calculator,
+                title: "Tax Calculation",
+                description: "Automatically calculate fuel tax owed or credits by jurisdiction"
+              },
+              {
+                icon: MapPinned,
+                title: "State Breakdown",
+                description: "View mileage and fuel gallons by state/province for reporting"
+              },
+              {
+                icon: Route,
+                title: "Trip Records",
+                description: "Track trip mileage data to support your IFTA filing"
+              },
+              {
+                icon: FileText,
+                title: "Export Reports",
+                description: "Generate PDF or CSV reports for quarterly IFTA filing"
+              }
+            ]}
+            tips={[
+              "Select the correct quarter and year before generating reports",
+              "Filter by vehicle to see individual truck IFTA data",
+              "Ensure all fuel purchases have the correct state recorded",
+              "Export your report to file with your state IFTA office"
+            ]}
+            accentColor="indigo"
+            userId={user?.id}
+          />
 
           {/* Quarter & Vehicle Selection */}
           <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">

@@ -1,14 +1,12 @@
 "use client";
 
-import { 
-  FileText, 
-  Edit, 
-  Trash2, 
-  Plus, 
-  RefreshCw,
-  Eye 
+import {
+  FileText,
+  Plus,
+  RefreshCw
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import TableActions from "@/components/shared/TableActions";
 
 export default function ComplianceTable({ complianceItems, filteredItems, onEdit, onDelete, onView, onAddNew }) {
   return (
@@ -142,30 +140,13 @@ export default function ComplianceTable({ complianceItems, filteredItems, onEdit
                     </td>
                     
                     <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center space-x-3">
-                        <button 
-                          onClick={() => onView(item)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                          title="View"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        
-                        <button 
-                          onClick={() => onEdit(item)}
-                          className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
-                          title="Edit"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        
-                        <button 
-                          onClick={() => onDelete(item)}
-                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                      <div className="flex items-center justify-center">
+                        <TableActions
+                          onView={() => onView(item)}
+                          onEdit={() => onEdit(item)}
+                          onDelete={() => onDelete(item)}
+                          size="md"
+                        />
                       </div>
                     </td>
                   </tr>

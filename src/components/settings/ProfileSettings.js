@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { RefreshCw, Save, User, Camera, CheckCircle, AlertCircle } from "lucide-react";
+import { RefreshCw, Save, User, Camera, CheckCircle, AlertCircle, Info, Sparkles } from "lucide-react";
 
 export default function ProfileSettings() {
   const { updateUserProfile } = useSubscription();
@@ -26,7 +26,11 @@ export default function ProfileSettings() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Check if essential profile fields are complete
+  const isProfileComplete = profile.phone && profile.companyName;
 
   // Format phone number to (555) 555-5555 format
   const formatPhoneNumber = (value) => {
@@ -95,6 +99,11 @@ export default function ProfileSettings() {
         });
 
         setProfileImage(userData?.avatar_url || user.user_metadata?.profile_image || null);
+
+        // Check if user is new (missing essential fields)
+        if (!userData?.phone || !userData?.company_name) {
+          setIsNewUser(true);
+        }
 
       } catch (error) {
         setErrorMessage('Failed to load your profile information. Please try again later.');
@@ -291,6 +300,44 @@ export default function ProfileSettings() {
         </div>
       )}
 
+      {/* Setup Progress Banner for New Users */}
+      {isNewUser && !isProfileComplete && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-200/30 dark:bg-blue-700/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative flex items-start gap-4">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                Complete Your Business Profile
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                Add your <span className="font-medium text-blue-600 dark:text-blue-400">phone number</span> and <span className="font-medium text-blue-600 dark:text-blue-400">company name</span> to unlock professional invoicing. Your business address will appear on invoices you send to customers.
+              </p>
+              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  {profile.phone ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                  )}
+                  Phone number
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {profile.companyName ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                  )}
+                  Company name
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={saveProfile}>
         {/* Profile Image */}
         <div className="flex items-center mb-8">
@@ -381,7 +428,7 @@ export default function ProfileSettings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="phone">
-                Phone Number
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -390,14 +437,21 @@ export default function ProfileSettings() {
                 value={profile.phone}
                 onChange={handlePhoneChange}
                 maxLength={14}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+                  !profile.phone && isNewUser
+                    ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
                 placeholder="(555) 555-5555"
               />
+              {!profile.phone && isNewUser && (
+                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">Required for invoices</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="companyName">
-                Company Name
+                Company Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -405,9 +459,16 @@ export default function ProfileSettings() {
                 name="companyName"
                 value={profile.companyName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+                  !profile.companyName && isNewUser
+                    ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
                 placeholder="Your company name"
               />
+              {!profile.companyName && isNewUser && (
+                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">Required for invoices</p>
+              )}
             </div>
           </div>
 

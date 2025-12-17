@@ -39,6 +39,8 @@ import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 import InvoiceStatsComponent from "@/components/invoices/InvoiceStatsComponent";
 import DeleteInvoiceModal from "@/components/invoices/DeleteInvoiceModal";
 import ExportReportModal from "@/components/common/ExportReportModal";
+import TutorialCard from "@/components/shared/TutorialCard";
+import PaymentModal from "@/components/invoices/PaymentModal";
 
 // Local storage key for filter persistence
 const STORAGE_KEY = 'invoice_filters';
@@ -122,8 +124,10 @@ export default function Page() {
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
 
   // Save filters to localStorage
   useEffect(() => {
@@ -482,24 +486,64 @@ export default function Page() {
     });
   }, []);
 
-  // Handle marking invoice as paid
-  const handleMarkAsPaid = async (invoiceId) => {
-    try {
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      if (!invoice || invoice.status?.toLowerCase() === 'paid') return;
+  // Handle opening payment modal for marking invoice as paid
+  const handleMarkAsPaid = (invoiceId) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice || invoice.status?.toLowerCase() === 'paid') return;
 
-      await recordPayment(invoiceId, { status: "paid", payment_date: new Date().toISOString() });
+    // Set current invoice and open payment modal
+    setCurrentInvoice(invoice);
+    setPaymentModalOpen(true);
+  };
+
+  // Handle recording payment from modal
+  const handleRecordPayment = async (paymentData) => {
+    if (!currentInvoice) return;
+
+    try {
+      setIsRecordingPayment(true);
+
+      // Format the payment data
+      const formattedPayment = {
+        amount: parseFloat(paymentData.amount),
+        method: paymentData.method,
+        date: paymentData.date,
+        reference: paymentData.reference || '',
+        notes: paymentData.notes || '',
+        description: `Payment for invoice ${currentInvoice.invoice_number}`,
+        status: 'completed'
+      };
+
+      // Record the payment (this will also update the status and amount_paid)
+      await recordPayment(currentInvoice.id, formattedPayment);
+
+      // Force refresh of stats by setting a session flag
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('dashboard-refresh-needed', 'true');
+      }
+
+      // Calculate new values for local state update
+      const currentTotal = parseFloat(currentInvoice.total) || 0;
+      const currentPaid = parseFloat(currentInvoice.amount_paid) || 0;
+      const newAmountPaid = currentPaid + parseFloat(paymentData.amount);
+      const newStatus = newAmountPaid >= currentTotal ? 'Paid' : 'Partially Paid';
 
       // Update local state
       const updatedInvoices = invoices.map(inv =>
-        inv.id === invoiceId ? { ...inv, status: "paid" } : inv
+        inv.id === currentInvoice.id
+          ? { ...inv, status: newStatus, amount_paid: newAmountPaid }
+          : inv
       );
 
       setInvoices(updatedInvoices);
       calculateStats(updatedInvoices);
-      setMessage({ type: 'success', text: 'Invoice marked as paid successfully' });
+      setPaymentModalOpen(false);
+      setCurrentInvoice(null);
+      setMessage({ type: 'success', text: 'Payment recorded successfully' });
     } catch (error) {
       setMessage({ type: 'error', text: getUserFriendlyError(error) });
+    } finally {
+      setIsRecordingPayment(false);
     }
   };
 
@@ -649,6 +693,43 @@ export default function Page() {
           <OperationMessage
             message={message}
             onDismiss={() => setMessage(null)}
+          />
+
+          {/* Tutorial Card */}
+          <TutorialCard
+            pageId="invoices"
+            title="Invoice Management"
+            description="Create, track, and manage professional invoices for your trucking services. Get paid faster with organized billing."
+            features={[
+              {
+                icon: FileText,
+                title: "Create Professional Invoices",
+                description: "Generate detailed invoices with line items, tax calculations, and payment terms"
+              },
+              {
+                icon: DollarSign,
+                title: "Track Payments",
+                description: "Monitor payment status, mark invoices as paid, and track outstanding balances"
+              },
+              {
+                icon: Clock,
+                title: "Due Date Alerts",
+                description: "Stay on top of accounts receivable with upcoming and overdue payment alerts"
+              },
+              {
+                icon: Download,
+                title: "Export Reports",
+                description: "Download invoice reports in PDF, CSV, or TXT format for your records"
+              }
+            ]}
+            tips={[
+              "Complete loads can be automatically converted to invoices",
+              "Set appropriate payment terms (Net 15, Net 30) based on customer agreements",
+              "Review overdue invoices regularly and follow up with customers",
+              "Use the export feature to generate billing reports for accounting"
+            ]}
+            accentColor="blue"
+            userId={user?.id}
           />
 
           {/* Limit reached prompt */}
@@ -1267,6 +1348,18 @@ export default function Page() {
               text: 'Report exported successfully!'
             });
           }}
+        />
+
+        {/* Payment Modal */}
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={() => {
+            setPaymentModalOpen(false);
+            setCurrentInvoice(null);
+          }}
+          onSubmit={handleRecordPayment}
+          invoice={currentInvoice}
+          isSubmitting={isRecordingPayment}
         />
       </main>
     </DashboardLayout>
