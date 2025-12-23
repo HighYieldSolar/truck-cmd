@@ -20,6 +20,8 @@ import billingEN from './locales/en/billing.json';
 import errorsEN from './locales/en/errors.json';
 import authEN from './locales/en/auth.json';
 import mileageEN from './locales/en/mileage.json';
+import onboardingEN from './locales/en/onboarding.json';
+import landingEN from './locales/en/landing.json';
 
 // Import Spanish translations
 import commonES from './locales/es/common.json';
@@ -37,6 +39,8 @@ import billingES from './locales/es/billing.json';
 import errorsES from './locales/es/errors.json';
 import authES from './locales/es/auth.json';
 import mileageES from './locales/es/mileage.json';
+import onboardingES from './locales/es/onboarding.json';
+import landingES from './locales/es/landing.json';
 
 // Bundle all resources
 const resources = {
@@ -55,7 +59,9 @@ const resources = {
     billing: billingEN,
     errors: errorsEN,
     auth: authEN,
-    mileage: mileageEN
+    mileage: mileageEN,
+    onboarding: onboardingEN,
+    landing: landingEN
   },
   es: {
     common: commonES,
@@ -72,7 +78,9 @@ const resources = {
     billing: billingES,
     errors: errorsES,
     auth: authES,
-    mileage: mileageES
+    mileage: mileageES,
+    onboarding: onboardingES,
+    landing: landingES
   }
 };
 
@@ -107,7 +115,9 @@ i18n
       'billing',
       'errors',
       'auth',
-      'mileage'
+      'mileage',
+      'onboarding',
+      'landing'
     ],
     interpolation: {
       escapeValue: false // React already escapes values
