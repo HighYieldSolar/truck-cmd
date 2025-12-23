@@ -317,37 +317,37 @@ export default function Dashboard() {
           {user && (
             <TutorialCard
               pageId="dashboard"
-              title="Welcome to Your Dashboard"
-              description="Your business command center - track everything at a glance"
+              title={t('tutorial.title')}
+              description={t('tutorial.description')}
               accentColor="blue"
               userId={user.id}
               features={[
                 {
                   icon: TrendingUp,
-                  title: "Track Earnings & Profit",
-                  description: "See revenue, expenses, and profit with month-over-month trends"
+                  title: t('tutorial.features.trackEarnings.title'),
+                  description: t('tutorial.features.trackEarnings.description')
                 },
                 {
                   icon: Activity,
-                  title: "Recent Activity",
-                  description: "Monitor loads, invoices, and business events in real-time"
+                  title: t('tutorial.features.recentActivity.title'),
+                  description: t('tutorial.features.recentActivity.description')
                 },
                 {
                   icon: BarChart3,
-                  title: "Date Range Filtering",
-                  description: "View stats for this month, quarter, year, or all time"
+                  title: t('tutorial.features.dateRangeFiltering.title'),
+                  description: t('tutorial.features.dateRangeFiltering.description')
                 },
                 {
                   icon: Zap,
-                  title: "Quick Actions",
-                  description: "Fast shortcuts to create loads, invoices, and more"
+                  title: t('tutorial.features.quickActions.title'),
+                  description: t('tutorial.features.quickActions.description')
                 }
               ]}
               tips={[
-                "Use the date range selector to compare performance across periods",
-                "The dashboard auto-refreshes every 5 minutes to show latest data",
-                "Click any stat card to navigate to its detailed page",
-                "Check 'Upcoming Deliveries' daily to stay on top of your schedule"
+                t('tutorial.tips.dateRange'),
+                t('tutorial.tips.autoRefresh'),
+                t('tutorial.tips.statCards'),
+                t('tutorial.tips.deliveries')
               ]}
             />
           )}
