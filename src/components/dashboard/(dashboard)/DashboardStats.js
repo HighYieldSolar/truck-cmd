@@ -1,5 +1,8 @@
 // src/components/dashboard/DashboardStats.js
+"use client";
+
 import { BarChart2, DollarSign, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Dashboard Stats Component
@@ -11,6 +14,8 @@ import { BarChart2, DollarSign, Wallet, TrendingUp, TrendingDown } from "lucide-
  * @param {string} props.dateRange Current date range selection
  */
 export default function DashboardStats({ stats, isLoading, dateRange = 'month' }) {
+  const { t } = useTranslation('dashboard');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -39,7 +44,7 @@ export default function DashboardStats({ stats, isLoading, dateRange = 'month' }
       ) : (
         <>
           <StatCard
-            title="Total Earnings (MTD)"
+            title={t('stats.totalEarnings')}
             value={formatCurrency(stats.earnings)}
             change={stats.earningsChange}
             positive={stats.earningsPositive}
@@ -48,7 +53,7 @@ export default function DashboardStats({ stats, isLoading, dateRange = 'month' }
             dateRange={dateRange}
           />
           <StatCard
-            title="Total Expenses (MTD)"
+            title={t('stats.totalExpenses')}
             value={formatCurrency(stats.expenses)}
             change={stats.expensesChange}
             positive={stats.expensesPositive}
@@ -57,7 +62,7 @@ export default function DashboardStats({ stats, isLoading, dateRange = 'month' }
             dateRange={dateRange}
           />
           <StatCard
-            title="Net Profit"
+            title={t('stats.netProfit')}
             value={formatCurrency(stats.profit)}
             change={stats.profitChange}
             positive={stats.profitPositive}
@@ -76,6 +81,8 @@ export default function DashboardStats({ stats, isLoading, dateRange = 'month' }
  * Individual statistic card with trend indicator
  */
 function StatCard({ title, value, change, positive, icon, color = "blue", dateRange = 'month' }) {
+  const { t } = useTranslation('dashboard');
+
   // Define color classes based on the color prop
   const getColorClasses = () => {
     switch (color) {
@@ -96,17 +103,17 @@ function StatCard({ title, value, change, positive, icon, color = "blue", dateRa
   const getComparisonText = () => {
     switch (dateRange) {
       case 'month':
-        return 'vs last month';
+        return t('stats.vsLastMonth');
       case 'lastMonth':
-        return 'vs prior month';
+        return t('stats.vsPriorMonth');
       case 'quarter':
-        return 'vs last quarter';
+        return t('stats.vsLastQuarter');
       case 'year':
-        return 'vs last year';
+        return t('stats.vsLastYear');
       case 'all':
-        return 'vs prior 30 days';
+        return t('stats.vsPrior30Days');
       default:
-        return 'vs last month';
+        return t('stats.vsLastMonth');
     }
   };
 

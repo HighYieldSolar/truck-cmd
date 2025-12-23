@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "@/context/LanguageContext";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -44,6 +45,7 @@ import TableActions from "@/components/shared/TableActions";
 const STORAGE_KEY = 'maintenance_filters';
 
 export default function MaintenancePage() {
+  const { t } = useTranslation('fleet');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
@@ -170,10 +172,10 @@ export default function MaintenancePage() {
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to load maintenance records. Please try again later.'
+        text: t('maintenancePage.failedToLoad')
       });
     }
-  }, []);
+  }, [t]);
 
   // Get user and load initial data with real-time subscription
   useEffect(() => {
@@ -221,7 +223,7 @@ export default function MaintenancePage() {
       } catch (error) {
         setOperationMessage({
           type: 'error',
-          text: 'Failed to initialize. Please refresh the page.'
+          text: t('maintenancePage.failedToInit')
         });
       } finally {
         setLoading(false);
@@ -258,14 +260,14 @@ export default function MaintenancePage() {
 
       setOperationMessage({
         type: 'success',
-        text: recordToEdit ? 'Maintenance record updated successfully!' : 'Maintenance record added successfully!'
+        text: recordToEdit ? t('maintenancePage.recordUpdated') : t('maintenancePage.recordAdded')
       });
 
       return true;
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to save maintenance record. Please try again.'
+        text: t('maintenancePage.failedToSave')
       });
       return false;
     }
@@ -291,12 +293,12 @@ export default function MaintenancePage() {
 
       setOperationMessage({
         type: 'success',
-        text: 'Maintenance record deleted successfully!'
+        text: t('maintenancePage.recordDeleted')
       });
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to delete maintenance record. Please try again.'
+        text: t('maintenancePage.failedToDelete')
       });
     } finally {
       setIsDeleting(false);
@@ -435,9 +437,9 @@ export default function MaintenancePage() {
 
     setOperationMessage({
       type: 'success',
-      text: `Exported ${filteredRecords.length} maintenance records to CSV`
+      text: t('maintenancePage.exported', { count: filteredRecords.length })
     });
-  }, [filteredRecords]);
+  }, [filteredRecords, t]);
 
   // Loading skeleton
   if (loading || featureLoading) {
@@ -505,9 +507,9 @@ export default function MaintenancePage() {
                   <Wrench size={28} />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">Maintenance Scheduling</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold">{t('maintenancePage.upgradeTitle')}</h1>
                   <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                    Upgrade to Fleet plan to access maintenance scheduling
+                    {t('maintenancePage.upgradeSubtitle')}
                   </p>
                 </div>
               </div>
@@ -519,38 +521,38 @@ export default function MaintenancePage() {
             {/* Feature Preview */}
             <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                What you'll get with Maintenance Scheduling:
+                {t('maintenancePage.whatYouGet')}
               </h3>
               <ul className="space-y-3 text-gray-600 dark:text-gray-300">
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                     <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span>Schedule preventive maintenance for your entire fleet</span>
+                  <span>{t('maintenancePage.featureSchedule')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
                     <Bell size={16} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <span>Get alerts when maintenance is due or overdue</span>
+                  <span>{t('maintenancePage.featureAlerts')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
                     <DollarSign size={16} className="text-purple-600 dark:text-purple-400" />
                   </div>
-                  <span>Track maintenance costs and service history</span>
+                  <span>{t('maintenancePage.featureTrackCosts')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
                     <Settings size={16} className="text-orange-600 dark:text-orange-400" />
                   </div>
-                  <span>Multiple maintenance types: oil change, tire rotation, inspections, and more</span>
+                  <span>{t('maintenancePage.featureTypes')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                     <ClipboardList size={16} className="text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <span>Service provider tracking and warranty management</span>
+                  <span>{t('maintenancePage.featureProviders')}</span>
                 </li>
               </ul>
             </div>
@@ -582,8 +584,8 @@ export default function MaintenancePage() {
                     <ChevronLeft size={20} />
                   </Link>
                   <div>
-                    <h1 className="text-3xl font-bold mb-1">Maintenance Management</h1>
-                    <p className="text-blue-100">Schedule, track and manage vehicle maintenance</p>
+                    <h1 className="text-3xl font-bold mb-1">{t('maintenancePage.title')}</h1>
+                    <p className="text-blue-100">{t('maintenancePage.subtitle')}</p>
                   </div>
                 </div>
               </div>
@@ -593,14 +595,14 @@ export default function MaintenancePage() {
                   className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Plus size={18} className="mr-2" />
-                  Schedule Maintenance
+                  {t('maintenancePage.scheduleMaintenance')}
                 </button>
                 <button
                   onClick={exportToCSV}
                   className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Download size={18} className="mr-2" />
-                  Export CSV
+                  {t('maintenancePage.exportCsv')}
                 </button>
               </div>
             </div>
@@ -609,35 +611,35 @@ export default function MaintenancePage() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="maintenance"
-            title="Maintenance Management"
-            description="Schedule, track and manage vehicle maintenance"
+            title={t('maintenancePage.tutorialTitle')}
+            description={t('maintenancePage.tutorialDescription')}
             features={[
               {
                 icon: Calendar,
-                title: "Schedule Service",
-                description: "Create maintenance schedules based on date or mileage intervals"
+                title: t('maintenancePage.tutorialFeature1Title'),
+                description: t('maintenancePage.tutorialFeature1Desc')
               },
               {
                 icon: Wrench,
-                title: "Track Repairs",
-                description: "Log repairs, parts replaced, and service providers"
+                title: t('maintenancePage.tutorialFeature2Title'),
+                description: t('maintenancePage.tutorialFeature2Desc')
               },
               {
                 icon: Bell,
-                title: "Due Alerts",
-                description: "Get notified when maintenance is due or overdue"
+                title: t('maintenancePage.tutorialFeature3Title'),
+                description: t('maintenancePage.tutorialFeature3Desc')
               },
               {
                 icon: DollarSign,
-                title: "Cost Tracking",
-                description: "Track maintenance costs per vehicle for budgeting"
+                title: t('maintenancePage.tutorialFeature4Title'),
+                description: t('maintenancePage.tutorialFeature4Desc')
               }
             ]}
             tips={[
-              "Schedule recurring maintenance like oil changes and inspections",
-              "Record service provider details for warranty tracking",
-              "Use the overdue filter to prioritize urgent maintenance",
-              "Track maintenance costs to identify high-expense vehicles"
+              t('maintenancePage.tip1'),
+              t('maintenancePage.tip2'),
+              t('maintenancePage.tip3'),
+              t('maintenancePage.tip4')
             ]}
             accentColor="amber"
             userId={user?.id}
@@ -649,7 +651,7 @@ export default function MaintenancePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-blue-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Records</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('maintenancePage.totalRecords')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
                 </div>
                 <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
@@ -662,7 +664,7 @@ export default function MaintenancePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-yellow-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('maintenancePage.pending')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
                 </div>
                 <div className="h-10 w-10 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center">
@@ -675,7 +677,7 @@ export default function MaintenancePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-red-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Overdue</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('maintenancePage.overdue')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.overdue}</p>
                 </div>
                 <div className="h-10 w-10 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
@@ -688,7 +690,7 @@ export default function MaintenancePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-green-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('maintenancePage.completed')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
                 </div>
                 <div className="h-10 w-10 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center">
@@ -701,7 +703,7 @@ export default function MaintenancePage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-purple-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700 col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Spent</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('maintenancePage.totalSpent')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalCost)}</p>
                 </div>
                 <div className="h-10 w-10 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center">
@@ -719,10 +721,10 @@ export default function MaintenancePage() {
                 <div className="flex items-center">
                   <Wrench size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">
-                    Maintenance Records
+                    {t('maintenancePage.maintenanceRecords')}
                   </h3>
                   <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-                    {filteredRecords.length} of {records.length} records
+                    {t('maintenancePage.ofRecords', { current: filteredRecords.length, total: records.length })}
                   </span>
                 </div>
 
@@ -734,7 +736,7 @@ export default function MaintenancePage() {
                       type="text"
                       value={filters.search}
                       onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                      placeholder="Search records..."
+                      placeholder={t('maintenancePage.searchPlaceholder')}
                       className="pl-9 pr-3 py-2 w-full sm:w-48 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
@@ -745,7 +747,7 @@ export default function MaintenancePage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Statuses</option>
+                    <option value="all">{t('maintenancePage.allStatuses')}</option>
                     {MAINTENANCE_STATUSES.map(status => (
                       <option key={status} value={status}>{status}</option>
                     ))}
@@ -757,7 +759,7 @@ export default function MaintenancePage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Types</option>
+                    <option value="all">{t('maintenancePage.allTypes')}</option>
                     {MAINTENANCE_TYPES.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -769,7 +771,7 @@ export default function MaintenancePage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, truck: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Vehicles</option>
+                    <option value="all">{t('maintenancePage.allVehicles')}</option>
                     {trucks.map(truck => (
                       <option key={truck.id} value={truck.id}>{truck.name}</option>
                     ))}
@@ -782,7 +784,7 @@ export default function MaintenancePage() {
                       className="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       <X size={14} className="mr-1" />
-                      Clear
+                      {t('maintenancePage.clear')}
                     </button>
                   )}
                 </div>
@@ -798,17 +800,17 @@ export default function MaintenancePage() {
                       <Wrench size={32} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      No maintenance records yet
+                      {t('maintenancePage.noRecordsYet')}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-6">
-                      Get started by scheduling your first maintenance task.
+                      {t('maintenancePage.getStartedScheduling')}
                     </p>
                     <button
                       onClick={handleAddRecord}
                       className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     >
                       <Plus size={18} className="mr-2" />
-                      Schedule Maintenance
+                      {t('maintenancePage.scheduleMaintenance')}
                     </button>
                   </div>
                 ) : (
@@ -817,17 +819,17 @@ export default function MaintenancePage() {
                       <Search size={32} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      No matching records
+                      {t('maintenancePage.noMatchingRecords')}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      Try adjusting your search or filter criteria.
+                      {t('maintenancePage.tryAdjustingFilters')}
                     </p>
                     <button
                       onClick={resetFilters}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                     >
                       <RefreshCw size={16} className="mr-2" />
-                      Reset Filters
+                      {t('maintenancePage.resetFilters')}
                     </button>
                   </div>
                 )}
@@ -840,28 +842,28 @@ export default function MaintenancePage() {
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
                         <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Vehicle
+                          {t('maintenancePage.vehicle')}
                         </th>
                         <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Type
+                          {t('maintenancePage.type')}
                         </th>
                         <th className="w-[16%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Description
+                          {t('maintenancePage.description')}
                         </th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Due Date
+                          {t('maintenancePage.dueDate')}
                         </th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Status
+                          {t('maintenancePage.status')}
                         </th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Cost
+                          {t('maintenancePage.cost')}
                         </th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Provider
+                          {t('maintenancePage.provider')}
                         </th>
                         <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Actions
+                          {t('maintenancePage.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -875,7 +877,7 @@ export default function MaintenancePage() {
                               <div className="flex items-center">
                                 <Truck size={16} className="text-gray-400 mr-2 flex-shrink-0" />
                                 <span className="text-gray-900 dark:text-gray-100 truncate">
-                                  {record.trucks?.name || 'N/A'}
+                                  {record.trucks?.name || t('maintenancePage.na')}
                                 </span>
                               </div>
                             </td>
@@ -900,7 +902,7 @@ export default function MaintenancePage() {
                             <td className="px-4 py-4">
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot} mr-1.5`}></span>
-                                {overdue ? 'Overdue' : record.status}
+                                {overdue ? t('maintenancePage.overdue') : record.status}
                               </span>
                             </td>
                             <td className="px-4 py-4">
@@ -942,7 +944,7 @@ export default function MaintenancePage() {
                             <div className="flex items-center">
                               <Truck size={16} className="text-gray-400 mr-2 flex-shrink-0" />
                               <span className="text-gray-900 dark:text-gray-100 font-medium truncate">
-                                {record.trucks?.name || 'N/A'}
+                                {record.trucks?.name || t('maintenancePage.na')}
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -951,7 +953,7 @@ export default function MaintenancePage() {
                           </div>
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text} ml-2 flex-shrink-0`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot} mr-1.5`}></span>
-                            {overdue ? 'Overdue' : record.status}
+                            {overdue ? t('maintenancePage.overdue') : record.status}
                           </span>
                         </div>
 
@@ -963,13 +965,13 @@ export default function MaintenancePage() {
 
                         <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                           <div>
-                            <span className="text-gray-500 dark:text-gray-400">Due:</span>
+                            <span className="text-gray-500 dark:text-gray-400">{t('maintenancePage.due')}</span>
                             <span className={`ml-1 ${overdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-900 dark:text-gray-100'}`}>
                               {formatDate(record.due_date)}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-500 dark:text-gray-400">Cost:</span>
+                            <span className="text-gray-500 dark:text-gray-400">{t('maintenancePage.cost')}:</span>
                             <span className="ml-1 text-gray-900 dark:text-gray-100">
                               {record.cost ? formatCurrency(record.cost) : '-'}
                             </span>
@@ -979,7 +981,7 @@ export default function MaintenancePage() {
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {record.service_provider && (
-                              <span>Provider: {record.service_provider}</span>
+                              <span>{t('maintenancePage.providerLabel')} {record.service_provider}</span>
                             )}
                           </div>
                           <TableActions
@@ -1020,20 +1022,20 @@ export default function MaintenancePage() {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">
-                  Maintenance Tips
+                  {t('maintenancePage.tipsTitle')}
                 </h3>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Schedule preventive maintenance to reduce unexpected breakdowns and repair costs.
+                    {t('maintenancePage.tipPreventive')}
                   </li>
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Track odometer readings to stay on top of mileage-based service intervals.
+                    {t('maintenancePage.tipOdometer')}
                   </li>
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Keep service provider information for quick reference and warranty claims.
+                    {t('maintenancePage.tipProviderInfo')}
                   </li>
                 </ul>
               </div>
@@ -1062,8 +1064,8 @@ export default function MaintenancePage() {
           setRecordToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Delete Maintenance Record"
-        message={`Are you sure you want to delete this ${recordToDelete?.maintenance_type} maintenance record? This action cannot be undone.`}
+        title={t('maintenancePage.deleteRecord')}
+        message={t('maintenancePage.confirmDelete', { type: recordToDelete?.maintenance_type })}
         isDeleting={isDeleting}
       />
     </DashboardLayout>

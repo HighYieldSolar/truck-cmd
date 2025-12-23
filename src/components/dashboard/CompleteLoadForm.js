@@ -13,6 +13,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 import { recordFactoredEarnings } from "@/lib/services/earningsService";
 import { createInvoiceFromLoad } from "@/lib/services/loadInvoiceService";
 
@@ -82,28 +83,28 @@ const StarRating = ({ rating, setRating, disabled = false }) => {
 };
 
 // Steps progress bar
-const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
+const StepsProgress = ({ currentStep, totalSteps = 3, t }) => {
   const steps = [
-    { 
-      number: 1, 
-      title: "Delivery Info", 
-      subtitle: "When & Who",
+    {
+      number: 1,
+      title: t('completeLoadForm.steps.deliveryInfo'),
+      subtitle: t('completeLoadForm.steps.whenWho'),
       icon: MapPin,
-      description: "Enter delivery date, time, and receiver information"
+      description: t('completeLoadForm.steps.deliveryInfoDesc')
     },
-    { 
-      number: 2, 
-      title: "Proof of Delivery", 
-      subtitle: "Upload POD",
+    {
+      number: 2,
+      title: t('completeLoadForm.steps.proofOfDelivery'),
+      subtitle: t('completeLoadForm.steps.uploadPod'),
       icon: Camera,
-      description: "Upload photos or documents confirming delivery"
+      description: t('completeLoadForm.steps.proofOfDeliveryDesc')
     },
-    { 
-      number: 3, 
-      title: "Review & Submit", 
-      subtitle: "Finalize Load",
+    {
+      number: 3,
+      title: t('completeLoadForm.steps.reviewSubmit'),
+      subtitle: t('completeLoadForm.steps.finalizeLoad'),
       icon: CheckCircle,
-      description: "Review charges and complete the load"
+      description: t('completeLoadForm.steps.reviewSubmitDesc')
     }
   ];
 
@@ -115,7 +116,7 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Step {currentStep} of {totalSteps}
+            {t('completeLoadForm.steps.stepOf', { current: currentStep, total: totalSteps })}
           </span>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {currentStepData?.title}
@@ -191,7 +192,7 @@ const StepsProgress = ({ currentStep, totalSteps = 3 }) => {
 };
 
 // Document Preview Modal
-const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
+const DocumentPreviewModal = ({ file, isOpen, onClose, t }) => {
   if (!isOpen || !file) return null;
 
   const fileUrl = typeof file === 'string' ? file : URL.createObjectURL(file);
@@ -229,7 +230,7 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
           ) : (
             <div className="text-center bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
               <FileText size={64} className="mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-700 dark:text-gray-300 mb-4">Preview not available for this file type</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">{t('completeLoadForm.documentPreview.previewNotAvailable')}</p>
               <a
                 href={fileUrl}
                 target="_blank"
@@ -237,7 +238,7 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
                 className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg inline-flex items-center hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 <Download className="mr-2" size={18} />
-                Download Document
+                {t('completeLoadForm.documentPreview.downloadDocument')}
               </a>
             </div>
           )}
@@ -248,7 +249,7 @@ const DocumentPreviewModal = ({ file, isOpen, onClose }) => {
 };
 
 // Success modal
-const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFactoring }) => {
+const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFactoring, t }) => {
   if (!isOpen) return null;
 
   return (
@@ -257,31 +258,31 @@ const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFacto
         <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mx-auto mb-6">
           <CheckCircle size={40} className="text-green-600 dark:text-green-400" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Load Completed!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">{t('completeLoadForm.successModal.title')}</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Load #{loadNumber} has been successfully marked as completed.
+          {t('completeLoadForm.successModal.loadCompleted', { loadNumber })}
         </p>
         {useFactoring ? (
           <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
             <p className="text-blue-800 dark:text-blue-300 font-medium">
-              The earnings have been recorded for this factored load.
+              {t('completeLoadForm.successModal.factoredEarnings')}
             </p>
           </div>
         ) : invoiceGenerated ? (
           <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-6">
             <p className="text-blue-800 dark:text-blue-300 font-medium">
-              An invoice has been generated for this load.
+              {t('completeLoadForm.successModal.invoiceGenerated')}
             </p>
           </div>
         ) : (
           <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg mb-6">
             <p className="text-yellow-800 dark:text-yellow-300 font-medium">
-              Load marked as completed without generating an invoice.
+              {t('completeLoadForm.successModal.noInvoice')}
             </p>
           </div>
         )}
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-          You&#39;ll be redirected to the dispatching dashboard in a moment...
+          {t('completeLoadForm.successModal.redirecting')}
         </p>
       </div>
     </div>
@@ -291,6 +292,7 @@ const CompletionSuccessModal = ({ isOpen, loadNumber, invoiceGenerated, useFacto
 // Main component
 export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetails = null }) {
   const router = useRouter();
+  const { t } = useTranslation('dispatching');
   const fileInputRef = useRef(null);
 
   // State management
@@ -499,36 +501,36 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     switch (currentStep) {
       case 1:
         if (!formData.deliveryDate) {
-          newErrors.deliveryDate = "Delivery date is required";
+          newErrors.deliveryDate = t('completeLoadForm.validation.deliveryDateRequired');
           isValid = false;
         }
 
         if (!formData.deliveryTime) {
-          newErrors.deliveryTime = "Delivery time is required";
+          newErrors.deliveryTime = t('completeLoadForm.validation.deliveryTimeRequired');
           isValid = false;
         }
 
         if (!formData.receivedBy.trim()) {
-          newErrors.receivedBy = "Receiver name is required";
+          newErrors.receivedBy = t('completeLoadForm.validation.receiverRequired');
           isValid = false;
         }
         break;
 
       case 2:
         if (formData.podFiles.length === 0) {
-          newErrors.podFiles = "At least one proof of delivery document is required";
+          newErrors.podFiles = t('completeLoadForm.validation.podRequired');
           isValid = false;
         }
         break;
 
       case 3:
         if (formData.additionalCharges > 0 && !formData.additionalChargesDescription.trim()) {
-          newErrors.additionalChargesDescription = "Description is required for additional charges";
+          newErrors.additionalChargesDescription = t('completeLoadForm.validation.chargesDescRequired');
           isValid = false;
         }
 
         if (formData.useFactoring && !formData.factoringCompany.trim()) {
-          newErrors.factoringCompany = "Factoring company name is required";
+          newErrors.factoringCompany = t('completeLoadForm.validation.factoringCompanyRequired');
           isValid = false;
         }
         break;
@@ -726,7 +728,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading load details...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('completeLoadForm.loading')}</p>
         </div>
       </div>
     );
@@ -740,17 +742,17 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             <AlertCircle size={32} className="text-red-500 dark:text-red-400" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 text-center">
-            {!loadDetails ? "Load not found" : error}
+            {!loadDetails ? t('completeLoadForm.loadNotFound') : error}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-            Unable to load the requested data. Please try again or contact support.
+            {t('completeLoadForm.loadDataError')}
           </p>
           <Link
             href="/dashboard/dispatching"
             className="block text-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors w-48 mx-auto"
           >
             <ChevronLeft size={18} className="inline mr-2" />
-            Return to Dispatching
+            {t('completeLoadForm.returnToDispatching')}
           </Link>
         </div>
       </div>
@@ -773,10 +775,10 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                 </Link>
                 <div>
                   <h1 className="text-xl font-semibold text-white">
-                    Complete Load #{loadDetails.loadNumber || loadDetails.load_number || 'N/A'}
+                    {t('completeLoadForm.header.title', { loadNumber: loadDetails.loadNumber || loadDetails.load_number || 'N/A' })}
                   </h1>
                   <p className="text-sm text-blue-100 mt-0.5">
-                    Mark this load as delivered and complete
+                    {t('completeLoadForm.header.subtitle')}
                   </p>
                 </div>
               </div>
@@ -831,7 +833,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         <div className="max-w-5xl mx-auto px-4 pt-4">
           {/* Steps Progress */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4 border border-gray-200 dark:border-gray-700">
-            <StepsProgress currentStep={currentStep} />
+            <StepsProgress currentStep={currentStep} t={t} />
           </div>
 
           {/* Form Content */}
@@ -842,16 +844,16 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-500 p-6 text-white rounded-xl mx-4 mt-4">
-                  <h2 className="text-xl font-semibold mb-2">When was the load delivered?</h2>
-                  <p className="text-blue-100">Enter the actual delivery date and time</p>
+                  <h2 className="text-xl font-semibold mb-2">{t('completeLoadForm.step1.title')}</h2>
+                  <p className="text-blue-100">{t('completeLoadForm.step1.subtitle')}</p>
                 </div>
-                
+
                 <div className="p-6 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <Calendar size={16} className="inline mr-1" />
-                        Delivery Date
+                        {t('completeLoadForm.step1.deliveryDate')}
                       </label>
                       <input
                         type="date"
@@ -875,7 +877,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     <div>
                       <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <Clock size={16} className="inline mr-1" />
-                        Delivery Time
+                        {t('completeLoadForm.step1.deliveryTime')}
                       </label>
                       <input
                         type="time"
@@ -900,7 +902,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                   <div>
                     <label htmlFor="receivedBy" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       <User size={16} className="inline mr-1" />
-                      Who received the delivery?
+                      {t('completeLoadForm.step1.receivedBy')}
                     </label>
                     <input
                       type="text"
@@ -908,7 +910,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                       name="receivedBy"
                       value={formData.receivedBy}
                       onChange={handleInputChange}
-                      placeholder="Enter receiver's full name"
+                      placeholder={t('completeLoadForm.step1.receivedByPlaceholder')}
                       className={`block w-full px-4 py-3 border ${errors.receivedBy
                         ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
                         : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
@@ -926,7 +928,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <Star size={16} className="inline mr-1" />
-                        Rate the delivery experience
+                        {t('completeLoadForm.step1.rateDelivery')}
                       </label>
                       <StarRating
                         rating={formData.deliveryRating}
@@ -937,7 +939,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     <div>
                       <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <FileText size={16} className="inline mr-1" />
-                        Additional notes (optional)
+                        {t('completeLoadForm.step1.additionalNotes')}
                       </label>
                       <textarea
                         id="notes"
@@ -945,7 +947,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                         rows="3"
                         value={formData.notes}
                         onChange={handleInputChange}
-                        placeholder="Any special circumstances or issues?"
+                        placeholder={t('completeLoadForm.step1.notesPlaceholder')}
                         className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                       ></textarea>
                     </div>
@@ -958,8 +960,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 p-6 text-white rounded-xl mx-4 mt-4">
-                  <h2 className="text-xl font-semibold mb-2">Upload Proof of Delivery</h2>
-                  <p className="text-purple-100">Add photos or documents that confirm the delivery</p>
+                  <h2 className="text-xl font-semibold mb-2">{t('completeLoadForm.step2.title')}</h2>
+                  <p className="text-purple-100">{t('completeLoadForm.step2.subtitle')}</p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -974,7 +976,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           htmlFor="podFiles"
                           className="relative cursor-pointer font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
                         >
-                          <span>Click to upload</span>
+                          <span>{t('completeLoadForm.step2.clickToUpload')}</span>
                           <input
                             id="podFiles"
                             name="podFiles"
@@ -986,10 +988,10 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                             ref={fileInputRef}
                           />
                         </label>
-                        <p className="text-gray-600 dark:text-gray-400">or drag and drop</p>
+                        <p className="text-gray-600 dark:text-gray-400">{t('completeLoadForm.step2.orDragDrop')}</p>
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        PNG, JPG up to 10MB
+                        {t('completeLoadForm.step2.fileTypes')}
                       </p>
                     </div>
                   </div>
@@ -1005,7 +1007,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     <div>
                       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                         <CheckCircle size={16} className="text-green-500 dark:text-green-400 mr-2" />
-                        Uploaded Documents ({formData.podFiles.length})
+                        {t('completeLoadForm.step2.uploadedDocuments', { count: formData.podFiles.length })}
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {formData.podFiles.map((file, index) => (
@@ -1021,7 +1023,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                                       {typeof file === 'string' ? file.split('/').pop() : file.name}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : 'Uploaded'}
+                                      {typeof file !== 'string' ? `${(file.size / 1024).toFixed(1)} KB` : t('completeLoadForm.step2.uploaded')}
                                     </p>
                                   </div>
                                 </div>
@@ -1033,14 +1035,14 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                                 onClick={() => handleFilePreview(file)}
                                 className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                               >
-                                Preview
+                                {t('completeLoadForm.step2.preview')}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFile(index)}
                                 className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium"
                               >
-                                Remove
+                                {t('completeLoadForm.step2.remove')}
                               </button>
                             </div>
                           </div>
@@ -1054,7 +1056,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                       <Info size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="ml-3">
                         <p className="text-sm text-amber-800 dark:text-amber-300">
-                          <strong>Tip:</strong> Include signed BOL, delivery receipts, or photos of delivered cargo for best documentation.
+                          <strong>{t('completeLoadForm.step2.tip')}</strong> {t('completeLoadForm.step2.tipText')}
                         </p>
                       </div>
                     </div>
@@ -1067,8 +1069,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-green-500 to-green-400 dark:from-green-600 dark:to-green-500 p-6 text-white rounded-xl mx-4 mt-4">
-                  <h2 className="text-xl font-semibold mb-2">Final Details & Billing</h2>
-                  <p className="text-green-100">Review charges and complete the load</p>
+                  <h2 className="text-xl font-semibold mb-2">{t('completeLoadForm.step3.title')}</h2>
+                  <p className="text-green-100">{t('completeLoadForm.step3.subtitle')}</p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -1077,8 +1079,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
                         <DollarSign size={14} className="text-blue-500 dark:text-blue-400 mr-1.5" />
-                        Additional Charges
-                        <span className="text-gray-400 dark:text-gray-500 font-normal ml-1">(Optional)</span>
+                        {t('completeLoadForm.step3.additionalCharges')}
+                        <span className="text-gray-400 dark:text-gray-500 font-normal ml-1">{t('completeLoadForm.step3.optional')}</span>
                       </h4>
                     </div>
 
@@ -1086,7 +1088,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                       {/* Additional Mileage */}
                       <div>
                         <label htmlFor="additionalMileage" className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Extra Miles
+                          {t('completeLoadForm.step3.extraMiles')}
                         </label>
                         <div className="relative">
                           <input
@@ -1100,7 +1102,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                             className="block w-full px-3 py-2 pr-14 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           />
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span className="text-gray-400 dark:text-gray-500 text-xs">miles</span>
+                            <span className="text-gray-400 dark:text-gray-500 text-xs">{t('completeLoadForm.step3.miles')}</span>
                           </div>
                         </div>
                       </div>
@@ -1108,7 +1110,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                       {/* Additional Charges */}
                       <div>
                         <label htmlFor="additionalCharges" className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Extra Charges
+                          {t('completeLoadForm.step3.extraCharges')}
                         </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1126,7 +1128,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                             className="block w-full pl-7 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           />
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span className="text-gray-400 dark:text-gray-500 text-xs">USD</span>
+                            <span className="text-gray-400 dark:text-gray-500 text-xs">{t('completeLoadForm.step3.usd')}</span>
                           </div>
                         </div>
                       </div>
@@ -1136,7 +1138,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     {parseFloat(formData.additionalCharges) > 0 && (
                       <div className="mt-3">
                         <label htmlFor="additionalChargesDescription" className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                          Reason for Additional Charges *
+                          {t('completeLoadForm.step3.reasonForCharges')}
                         </label>
                         <input
                           type="text"
@@ -1144,7 +1146,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           name="additionalChargesDescription"
                           value={formData.additionalChargesDescription}
                           onChange={handleInputChange}
-                          placeholder="e.g., Detention time, lumper fees, toll charges..."
+                          placeholder={t('completeLoadForm.step3.reasonPlaceholder')}
                           className={`block w-full px-3 py-2 border ${errors.additionalChargesDescription
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
                             : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
@@ -1164,21 +1166,21 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-700 p-6 rounded-lg border border-gray-200 dark:border-gray-600">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
                       <DollarSign size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
-                      Billing Summary
+                      {t('completeLoadForm.step3.billingSummary')}
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between py-2">
-                        <span className="text-gray-600 dark:text-gray-400">Base Rate</span>
+                        <span className="text-gray-600 dark:text-gray-400">{t('completeLoadForm.step3.baseRate')}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">${loadDetails.rate.toLocaleString()}</span>
                       </div>
                       {parseFloat(formData.additionalCharges) > 0 && (
                         <div className="flex justify-between py-2">
-                          <span className="text-gray-600 dark:text-gray-400">Additional Charges</span>
+                          <span className="text-gray-600 dark:text-gray-400">{t('completeLoadForm.step3.additionalCharges')}</span>
                           <span className="font-medium text-gray-900 dark:text-gray-100">+${parseFloat(formData.additionalCharges).toLocaleString()}</span>
                         </div>
                       )}
                       <div className="flex justify-between py-3 border-t border-gray-300 dark:border-gray-600">
-                        <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total Amount</span>
+                        <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('completeLoadForm.step3.totalAmount')}</span>
                         <span className="text-lg font-bold text-green-600 dark:text-green-400">
                           ${(loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString()}
                         </span>
@@ -1188,7 +1190,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
                   {/* Invoice Options */}
                   <div className="space-y-4">
-                    <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">How should we handle payment?</h3>
+                    <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{t('completeLoadForm.step3.paymentQuestion')}</h3>
 
                     <div className="space-y-3">
                       <label className={`relative flex items-start p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -1204,8 +1206,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           className="h-4 w-4 text-blue-600 mt-0.5"
                         />
                         <div className="ml-3">
-                          <span className="block font-medium text-gray-900 dark:text-gray-100">Generate Invoice</span>
-                          <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">Create and track invoice in system</span>
+                          <span className="block font-medium text-gray-900 dark:text-gray-100">{t('completeLoadForm.step3.generateInvoice')}</span>
+                          <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{t('completeLoadForm.step3.generateInvoiceDesc')}</span>
                         </div>
                       </label>
 
@@ -1222,8 +1224,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           className="h-4 w-4 text-blue-600 mt-0.5"
                         />
                         <div className="ml-3">
-                          <span className="block font-medium text-gray-900 dark:text-gray-100">Factoring Company</span>
-                          <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">Record payment through factoring</span>
+                          <span className="block font-medium text-gray-900 dark:text-gray-100">{t('completeLoadForm.step3.factoringCompany')}</span>
+                          <span className="block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{t('completeLoadForm.step3.factoringCompanyDesc')}</span>
                         </div>
                       </label>
                     </div>
@@ -1240,8 +1242,8 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                             className="h-4 w-4 text-blue-600 rounded"
                           />
                           <div className="ml-3">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mark as Paid (COD)</span>
-                            <span className="block text-xs text-gray-500 dark:text-gray-400">For cash on delivery payments</span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('completeLoadForm.step3.markPaidCod')}</span>
+                            <span className="block text-xs text-gray-500 dark:text-gray-400">{t('completeLoadForm.step3.markPaidCodDesc')}</span>
                           </div>
                         </label>
                       </div>
@@ -1250,7 +1252,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                     {formData.useFactoring && (
                       <div className="mt-4 ml-8">
                         <label htmlFor="factoringCompany" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Factoring Company Name
+                          {t('completeLoadForm.step3.factoringCompanyName')}
                         </label>
                         <input
                           type="text"
@@ -1258,7 +1260,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                           name="factoringCompany"
                           value={formData.factoringCompany}
                           onChange={handleInputChange}
-                          placeholder="e.g., ABC Factoring Inc."
+                          placeholder={t('completeLoadForm.step3.factoringPlaceholder')}
                           className={`block w-full px-4 py-3 border ${errors.factoringCompany
                             ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
                             : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
@@ -1278,15 +1280,15 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                   <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-6 mt-6">
                     <h3 className="text-base font-medium text-green-900 dark:text-green-300 mb-3 flex items-center">
                       <CheckCircle size={20} className="mr-2 text-green-600 dark:text-green-400" />
-                      Ready to Complete
+                      {t('completeLoadForm.step3.readyToComplete')}
                     </h3>
                     <div className="space-y-2 text-sm text-green-800 dark:text-green-300">
-                      <p className="font-medium">This will:</p>
+                      <p className="font-medium">{t('completeLoadForm.step3.thisWill')}</p>
                       <ul className="list-disc pl-5 space-y-1">
-                        <li>Mark load #{loadDetails.loadNumber} as completed</li>
-                        <li>Save all delivery documentation</li>
-                        {formData.generateInvoice && !formData.useFactoring && <li>Generate invoice for ${(loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString()}</li>}
-                        {formData.useFactoring && <li>Record factored earnings</li>}
+                        <li>{t('completeLoadForm.step3.markLoadCompleted', { loadNumber: loadDetails.loadNumber })}</li>
+                        <li>{t('completeLoadForm.step3.saveDocumentation')}</li>
+                        {formData.generateInvoice && !formData.useFactoring && <li>{t('completeLoadForm.step3.generateInvoiceFor', { amount: (loadDetails.rate + parseFloat(formData.additionalCharges || 0)).toLocaleString() })}</li>}
+                        {formData.useFactoring && <li>{t('completeLoadForm.step3.recordFactoredEarnings')}</li>}
                       </ul>
                     </div>
                   </div>
@@ -1304,7 +1306,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
               disabled={submitting}
             >
               <ChevronLeft size={16} className="mr-2" />
-              {currentStep > 1 ? "Previous" : "Cancel"}
+              {currentStep > 1 ? t('completeLoadForm.navigation.previous') : t('completeLoadForm.navigation.cancel')}
             </button>
 
             {currentStep < 3 ? (
@@ -1313,7 +1315,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                 onClick={handleNextStep}
                 className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
               >
-                Next Step
+                {t('completeLoadForm.navigation.nextStep')}
                 <ChevronRight size={16} className="ml-2" />
               </button>
             ) : (
@@ -1326,12 +1328,12 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
                 {submitting ? (
                   <>
                     <RefreshCw size={16} className="mr-2 animate-spin" />
-                    Completing Load...
+                    {t('completeLoadForm.navigation.completingLoad')}
                   </>
                 ) : (
                   <>
                     <CheckCircle size={16} className="mr-2" />
-                    Complete Load
+                    {t('completeLoadForm.navigation.completeLoad')}
                   </>
                 )}
               </button>
@@ -1345,6 +1347,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         file={previewFile}
         isOpen={previewModalOpen}
         onClose={() => setPreviewModalOpen(false)}
+        t={t}
       />
 
       {/* Success Modal */}
@@ -1353,6 +1356,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
         loadNumber={loadDetails?.loadNumber}
         invoiceGenerated={!formData.useFactoring && formData.generateInvoice}
         useFactoring={formData.useFactoring}
+        t={t}
       />
     </div>
   );

@@ -2,6 +2,7 @@
 "use client";
 
 import { AlertTriangle, X, Loader2, Trash2 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function DeleteLoadModal({
   isOpen,
@@ -10,6 +11,8 @@ export default function DeleteLoadModal({
   loadNumber,
   isDeleting = false
 }) {
+  const { t } = useTranslation('dispatching');
+
   if (!isOpen) return null;
 
   return (
@@ -42,27 +45,27 @@ export default function DeleteLoadModal({
 
             {/* Title */}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 text-center mb-2">
-              Delete Load
+              {t('deleteModal.title')}
             </h3>
 
             {/* Description */}
             <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-              Are you sure you want to delete load{' '}
+              {t('deleteModal.confirmMessage')}{' '}
               <span className="font-semibold text-gray-900 dark:text-gray-100">
                 #{loadNumber}
               </span>
-              ? This action cannot be undone.
+              {t('deleteModal.cannotBeUndone')}
             </p>
 
             {/* Warning Box */}
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
               <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
-                This will permanently delete:
+                {t('deleteModal.permanentlyDelete')}
               </h4>
               <ul className="text-sm text-red-700 dark:text-red-400 list-disc pl-4 space-y-1">
-                <li>All load details and documentation</li>
-                <li>Assignment information</li>
-                <li>Any associated delivery notes</li>
+                <li>{t('deleteModal.allLoadDetails')}</li>
+                <li>{t('deleteModal.assignmentInfo')}</li>
+                <li>{t('deleteModal.deliveryNotes')}</li>
               </ul>
             </div>
 
@@ -73,7 +76,7 @@ export default function DeleteLoadModal({
                 disabled={isDeleting}
                 className="flex-1 px-4 py-2.5 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('common:buttons.cancel')}
               </button>
               <button
                 onClick={onConfirm}
@@ -83,12 +86,12 @@ export default function DeleteLoadModal({
                 {isDeleting ? (
                   <>
                     <Loader2 size={18} className="mr-2 animate-spin" />
-                    Deleting...
+                    {t('deleteModal.deleting')}
                   </>
                 ) : (
                   <>
                     <Trash2 size={18} className="mr-2" />
-                    Delete Load
+                    {t('deleteModal.title')}
                   </>
                 )}
               </button>

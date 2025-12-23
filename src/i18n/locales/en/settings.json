@@ -1,0 +1,510 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your account preferences",
+  "menu": {
+    "profile": "Profile",
+    "appearance": "Appearance",
+    "account": "Account",
+    "privacy": "Privacy",
+    "billing": "Billing",
+    "notifications": "Notifications"
+  },
+  "descriptions": {
+    "profile": "Manage your profile settings",
+    "appearance": "Manage your appearance settings",
+    "account": "Manage your account settings",
+    "privacy": "Manage your privacy settings",
+    "billing": "Manage your billing settings",
+    "notifications": "Manage your notifications settings"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your profile settings",
+    "profilePicture": "Profile Picture",
+    "uploadPhoto": "Upload Photo",
+    "removePhoto": "Remove photo",
+    "photoHelp": "Upload a clear photo to help your team recognize you",
+    "personalInfo": "Personal Information",
+    "businessAddress": "Business Address",
+    "addressNote": "This address will appear on your invoices",
+    "fields": {
+      "fullName": "Full name",
+      "preferredName": "What should we call you?",
+      "phone": "Phone Number",
+      "companyName": "Company Name",
+      "jobFunction": "What best describes your work?",
+      "personalPreferences": "Any additional notes or preferences?",
+      "preferencesHelp": "Share anything that helps us serve you better.",
+      "address": "Street Address",
+      "city": "City",
+      "state": "State",
+      "zip": "ZIP Code"
+    },
+    "placeholders": {
+      "fullName": "Your full name",
+      "preferredName": "Your preferred name",
+      "phone": "(555) 555-5555",
+      "companyName": "Your company name",
+      "address": "123 Main Street",
+      "city": "City",
+      "zip": "12345",
+      "preferences": "e.g. preferred communication times, special requirements, etc."
+    },
+    "jobFunctions": {
+      "select": "Select your work function",
+      "ownerOperator": "Owner Operator",
+      "dispatcher": "Dispatcher",
+      "fleetManager": "Fleet Manager",
+      "administrative": "Administrative Staff",
+      "driver": "Driver",
+      "other": "Other"
+    },
+    "selectState": "Select State",
+    "required": "Required",
+    "requiredForInvoices": "Required for invoices",
+    "completeProfile": {
+      "title": "Complete Your Business Profile",
+      "description": "Add your phone number and company name to unlock professional invoicing. Your business address will appear on invoices you send to customers.",
+      "phoneNumber": "Phone number",
+      "companyName": "Company name"
+    },
+    "messages": {
+      "loading": "Loading your profile...",
+      "saving": "Saving...",
+      "profileUpdated": "Profile updated successfully!",
+      "profilePictureUpdated": "Profile picture updated successfully!",
+      "profilePictureRemoved": "Profile picture removed successfully!",
+      "failedToLoad": "Failed to load your profile information. Please try again later.",
+      "failedToUpdate": "Failed to update profile",
+      "failedToUpload": "Failed to upload profile image. Please try again.",
+      "failedToRemove": "Failed to remove profile image. Please try again.",
+      "invalidImage": "Please upload a valid image file (JPEG, PNG, GIF, or WebP)",
+      "imageTooLarge": "Image file must be less than 5MB"
+    }
+  },
+  "appearance": {
+    "title": "Appearance",
+    "subtitle": "Customize how the app looks",
+    "loading": "Loading appearance settings...",
+    "theme": "Theme",
+    "themePreference": "Theme Preference",
+    "themeDescription": "Choose between light and dark theme for your dashboard",
+    "themes": {
+      "light": "Light Mode",
+      "dark": "Dark Mode",
+      "system": "System"
+    },
+    "colorScheme": "Color Scheme",
+    "colorSchemeDescription": "Choose your accent color",
+    "fontSize": "Font Size",
+    "fontSizeDescription": "Adjust the text size",
+    "fontSizes": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "compactMode": "Compact Mode",
+    "compactModeDescription": "Reduce spacing for a denser layout",
+    "saveTheme": "Save Theme Preference",
+    "sidebarNavigation": "Sidebar Navigation",
+    "sidebarDescription": "Customize which items appear in your sidebar and their display order.",
+    "sidebarTip": "Drag items to reorder, use arrow buttons, or toggle visibility. On mobile, tap and hold the grip handle.",
+    "menuItem": "Menu Item",
+    "reorder": "Reorder",
+    "visible": "Visible",
+    "alwaysVisible": "Always visible",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "clickToHide": "Click to hide from sidebar",
+    "clickToShow": "Click to show in sidebar",
+    "sidebarTipBox": "Hidden items are still accessible via direct URL. Changes take effect immediately after saving.",
+    "unsavedChanges": "You have unsaved changes. Don't forget to save!",
+    "resetToDefault": "Reset to Default",
+    "saveSidebarSettings": "Save Sidebar Settings",
+    "messages": {
+      "themeSuccess": "Theme preference saved successfully!",
+      "sidebarSuccess": "Sidebar preferences saved successfully!",
+      "sidebarResetSuccess": "Sidebar reset to default settings!",
+      "themeFailed": "Failed to update appearance settings",
+      "sidebarFailed": "Failed to save sidebar settings",
+      "sidebarResetFailed": "Failed to reset sidebar"
+    }
+  },
+  "account": {
+    "title": "Account",
+    "subtitle": "Manage your account settings",
+    "loading": "Loading account settings...",
+    "accountInfo": "Account Information",
+    "email": "Email Address",
+    "emailDescription": "Your account email address",
+    "changeEmail": "Change Email",
+    "currentEmail": "Your current email address is",
+    "clickToChangeEmail": "Click the button to change your email address.",
+    "newEmailAddress": "New Email Address",
+    "enterNewEmail": "Enter your new email address",
+    "verifyNewEmail": "You will need to verify your new email address before the change takes effect.",
+    "sendConfirmation": "Send Confirmation Email",
+    "sendingConfirmation": "Sending Confirmation...",
+    "confirmationSent": "Confirmation Email Sent",
+    "checkInbox": "We've sent a confirmation link to",
+    "checkInboxInstructions": "Please check your inbox and click the link to complete the email change.",
+    "accountStatus": "Account Status",
+    "verifiedAccount": "Verified Account",
+    "unverifiedAccount": "Unverified Account",
+    "password": "Password",
+    "passwordDescription": "Update your password",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordMinLength": "Password must be at least 8 characters long.",
+    "updatePassword": "Update Password",
+    "updatingPassword": "Updating...",
+    "twoFactor": "Two-Factor Authentication",
+    "twoFactorDescription": "Add an extra layer of security to your account",
+    "enable2FA": "Enable 2FA",
+    "disable2FA": "Disable 2FA",
+    "sessions": "Active Sessions",
+    "sessionsDescription": "Manage your active sessions",
+    "signOut": "Sign Out",
+    "signOutDescription": "Sign out from your current session on this device.",
+    "signOutAll": "Sign out of all devices",
+    "deleteAccount": "Delete Account",
+    "deleteYourAccount": "Delete Your Account",
+    "deleteAccountDescription": "Permanently delete your account and all associated data. This action cannot be undone.",
+    "reviewPolicies": "Review our",
+    "termsOfService": "Terms of Service",
+    "and": "and",
+    "privacyPolicy": "Privacy Policy",
+    "policyInfo": "for information about data retention and your rights.",
+    "deleteWarning": "This action cannot be undone. All of your data will be permanently deleted. Please type",
+    "typeToConfirm": "delete my account",
+    "toConfirm": "to confirm.",
+    "confirmDeletePlaceholder": "Type 'delete my account' to confirm",
+    "deleting": "Deleting...",
+    "permanentlyDelete": "Permanently Delete Account",
+    "messages": {
+      "loadFailed": "Failed to load your account information. Please try again later.",
+      "enterCurrentPassword": "Please enter your current password.",
+      "passwordsMismatch": "New passwords don't match.",
+      "passwordTooShort": "New password must be at least 8 characters long.",
+      "incorrectPassword": "Current password is incorrect.",
+      "passwordUpdated": "Password updated successfully!",
+      "passwordUpdateFailed": "Failed to update password",
+      "emailConfirmationSent": "A confirmation email has been sent to your new email address. Please click the link in that email to complete the change. You may also need to confirm on your old email address.",
+      "invalidEmail": "Please enter a valid email address.",
+      "sameEmail": "New email must be different from your current email.",
+      "emailChangeFailed": "Failed to change email",
+      "emailRateLimit": "Too many requests. Please wait a few minutes and try again.",
+      "emailInUse": "This email address is already in use by another account.",
+      "deleteConfirmRequired": "Please type 'delete my account' to confirm.",
+      "sessionExpired": "Session expired. Please log in again.",
+      "deleteAccountFailed": "Failed to delete account",
+      "logoutFailed": "Failed to log out"
+    }
+  },
+  "privacy": {
+    "title": "Privacy",
+    "subtitle": "Manage your privacy settings",
+    "loading": "Loading privacy settings...",
+    "yourPrivacy": "Your Privacy",
+    "howWeProtect": "How we protect your data",
+    "protectionList": {
+      "encrypted": "Your business data is encrypted and stored securely",
+      "noSell": "We never sell your personal information to third parties",
+      "essentialCookies": "We only use essential cookies required for the app to function",
+      "stripePayments": "Payment processing is handled securely by Stripe"
+    },
+    "emailPreferences": "Email Preferences",
+    "emailPreferencesDescription": "Choose what emails you want to receive from Truck Command. Transactional emails (invoices, password resets, security alerts) will always be sent.",
+    "productUpdates": "Product updates & news",
+    "productUpdatesDescription": "Receive emails about new features, improvements, and tips for using Truck Command",
+    "promotionalEmails": "Promotional emails",
+    "promotionalEmailsDescription": "Receive occasional emails about special offers and promotions",
+    "saving": "Saving...",
+    "savePreferences": "Save Preferences",
+    "dataRights": "Your Data Rights",
+    "dataRightsDescription": "Under the California Consumer Privacy Act (CCPA), you have the right to access, download, and delete your personal data.",
+    "downloadData": "Download your data",
+    "downloadDataDescription": "Get a copy of all your data including loads, invoices, customers, expenses, and more.",
+    "exportData": "Export Data",
+    "deleteAccount": "Delete your account",
+    "deleteAccountDescription": "Permanently delete your account and all associated data from our systems.",
+    "goToAccountSettings": "Go to Account Settings",
+    "legalDocuments": "Legal Documents",
+    "legalDocumentsDescription": "Review our legal documents to understand how we collect, use, and protect your data.",
+    "privacyPolicy": "Privacy Policy",
+    "cookiePolicy": "Cookie Policy",
+    "termsOfService": "Terms of Service",
+    "acceptableUsePolicy": "Acceptable Use Policy",
+    "privacyQuestions": "Privacy Questions?",
+    "privacyQuestionsDescription": "If you have any questions about your privacy or how we handle your data, please contact us.",
+    "exportModal": {
+      "title": "Export Your Data",
+      "exportFormat": "Export Format",
+      "encrypted": "Encrypted (Recommended)",
+      "encryptedDescription": "Password-protected with AES-256 encryption",
+      "plainJson": "Plain JSON",
+      "plainJsonDescription": "Unencrypted, readable by anyone with the file",
+      "createPassword": "Create a Password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "confirmPassword": "Confirm Password",
+      "confirmPlaceholder": "Re-enter password",
+      "passwordWarning": "Keep this password safe. You will need it to decrypt your data. We cannot recover lost passwords.",
+      "plainWarning": "Warning: Plain JSON files contain sensitive business data that anyone can read. Only use this if you understand the risks.",
+      "exporting": "Exporting...",
+      "export": "Export"
+    },
+    "messages": {
+      "loadFailed": "Failed to load your privacy settings. Please try again later.",
+      "updateSuccess": "Privacy settings updated successfully!",
+      "updateFailed": "Failed to update privacy settings",
+      "passwordTooShort": "Password must be at least 8 characters long.",
+      "passwordsMismatch": "Passwords do not match.",
+      "exportEncryptedSuccess": "Your encrypted data has been exported. Keep your password safe - you will need it to decrypt the file.",
+      "exportPlainSuccess": "Your data has been exported successfully!",
+      "exportFailed": "Failed to export data. Please try again or contact support."
+    }
+  },
+  "notifications": {
+    "title": "Notification Preferences",
+    "subtitle": "Manage how and when you receive notifications",
+    "saveChanges": "Save Changes",
+    "deliveryChannels": {
+      "title": "Delivery Channels",
+      "description": "Enable or disable notification channels globally"
+    },
+    "channels": {
+      "email": "Email Notifications",
+      "emailDescription": "Receive notifications via email",
+      "inApp": "In-App Notifications",
+      "inAppDescription": "Show notifications in the dashboard",
+      "sms": "SMS Notifications",
+      "smsDescription": "Receive critical alerts via text message"
+    },
+    "categories": {
+      "title": "Notification Categories",
+      "description": "Customize notifications for each category",
+      "compliance": {
+        "name": "Compliance & Documents",
+        "description": "Document expiration alerts, compliance deadlines, and certification reminders"
+      },
+      "drivers": {
+        "name": "Driver Alerts",
+        "description": "Driver license expirations, medical card renewals, and driver-related updates"
+      },
+      "loads": {
+        "name": "Load Updates",
+        "description": "Load assignments, status changes, and delivery notifications"
+      },
+      "ifta": {
+        "name": "IFTA & Tax Deadlines",
+        "description": "IFTA filing deadlines, quarterly reminders, and tax-related alerts"
+      },
+      "maintenance": {
+        "name": "Maintenance Reminders",
+        "description": "Vehicle maintenance schedules, service reminders, and equipment alerts"
+      },
+      "fuel": {
+        "name": "Fuel Alerts",
+        "description": "Fuel purchase reminders and fuel-related notifications"
+      },
+      "billing": {
+        "name": "Billing & Payments",
+        "description": "Invoice reminders, payment received, and billing updates"
+      },
+      "system": {
+        "name": "System Alerts",
+        "description": "System errors, important updates, and general reminders"
+      }
+    },
+    "channelLabels": {
+      "email": "Email",
+      "app": "App",
+      "sms": "SMS"
+    },
+    "quietHours": {
+      "title": "Quiet Hours",
+      "description": "Pause non-critical notifications during specific hours",
+      "enable": "Enable Quiet Hours",
+      "enableDescription": "Only critical notifications will be delivered during quiet hours",
+      "startTime": "Start Time",
+      "endTime": "End Time"
+    },
+    "digest": {
+      "title": "Email Digest",
+      "description": "Choose how often you receive email notification digests",
+      "instant": "Instant",
+      "instantDescription": "Get emails as they happen",
+      "daily": "Daily Digest",
+      "dailyDescription": "One email per day",
+      "weekly": "Weekly Digest",
+      "weeklyDescription": "One email per week"
+    },
+    "test": {
+      "title": "Test Notifications",
+      "description": "Send a test notification to verify your settings are working correctly",
+      "testEmail": "Test Email",
+      "testSMS": "Test SMS",
+      "sendTest": "Send Test",
+      "noEmailFound": "No email found",
+      "noPhoneFound": "No phone found",
+      "tip": "If you don't receive test notifications, check your spam folder or verify your contact information in",
+      "profileSettings": "Profile Settings"
+    },
+    "upgrade": {
+      "premium": "Premium",
+      "fleet": "Fleet",
+      "upgrade": "Upgrade",
+      "upgradeToPremium": "Upgrade to Premium",
+      "upgradeToFleet": "Upgrade to Fleet",
+      "quietHoursFleet": "Set quiet hours to pause notifications during off-hours",
+      "digestPremium": "Control email frequency with daily or weekly digests"
+    },
+    "messages": {
+      "loginRequired": "Please log in to save preferences.",
+      "savedSuccess": "Notification preferences saved successfully.",
+      "tableSetup": "Notification preferences feature is being set up. Please try again later.",
+      "noEmail": "No email address found for your account.",
+      "noPhone": "No phone number found. Please add your phone number in Profile Settings first.",
+      "testEmailSuccess": "Test email sent successfully! Check your inbox.",
+      "testEmailFailed": "Failed to send test email. Email service may not be configured.",
+      "testEmailError": "Failed to send test email. Please try again.",
+      "testSMSSuccess": "Test SMS sent successfully! Check your phone.",
+      "testSMSFailed": "Failed to send test SMS. SMS service may not be configured.",
+      "testSMSError": "Failed to send test SMS. Please try again."
+    }
+  },
+  "viewAllPlans": "View All Plans",
+  "sidebar": {
+    "title": "Sidebar Customization",
+    "subtitle": "Customize your dashboard sidebar",
+    "description": "Drag and drop to reorder. Toggle visibility for each menu item.",
+    "visible": "Visible",
+    "hidden": "Hidden",
+    "reset": "Reset to Default"
+  },
+  "billing": {
+    "title": "Billing",
+    "subtitle": "Manage your billing and subscription",
+    "loading": "Loading billing information...",
+    "subscription": {
+      "title": "Current Subscription",
+      "freeTrial": "Free Trial",
+      "fullAccess": "Full access to Basic features",
+      "daysLeft": "days left",
+      "upgradePrompt": "Upgrade to keep your data and unlock more features",
+      "noActivePlan": "No Active Plan",
+      "subscribePrompt": "Subscribe to access all features"
+    },
+    "status": {
+      "active": "Active",
+      "trial": "Trial",
+      "canceled": "Canceled",
+      "inactive": "Inactive",
+      "freeTrial": "Free Trial"
+    },
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "For owner-operators just getting started",
+        "limits": "1 Truck • 1 Driver • 50 Loads/mo"
+      },
+      "premium": {
+        "name": "Premium",
+        "description": "For growing owner-operators",
+        "limits": "3 Trucks • 3 Drivers • Unlimited Loads",
+        "popular": "Popular"
+      },
+      "fleet": {
+        "name": "Fleet",
+        "description": "For small to medium fleets",
+        "limits": "12 Trucks • 12 Drivers • 6 Team Users"
+      }
+    },
+    "pricing": {
+      "perMonth": "/month",
+      "save": "Save",
+      "perYear": "/yr",
+      "billedAnnually": "Billed annually at"
+    },
+    "actions": {
+      "upgrade": "Upgrade",
+      "changePlan": "Change Plan",
+      "cancelSubscription": "Cancel Subscription",
+      "keepMyPlan": "Keep My Plan",
+      "reactivating": "Reactivating...",
+      "viewPlans": "View Plans"
+    },
+    "scheduledChanges": {
+      "planChange": "Plan change scheduled",
+      "billingChange": "Billing change scheduled",
+      "planWillChange": "Your plan will change to",
+      "billingWillSwitch": "Your billing will switch to",
+      "on": "on",
+      "changePlanLink": "Change plan"
+    },
+    "nextBilling": "Next billing",
+    "endDate": "Your subscription will end on",
+    "keepPlanPrompt": "Click \"Keep My Plan\" above to continue your subscription",
+    "includedFeatures": "Included features",
+    "compareAllPlans": "Compare all plans",
+    "nextPeriod": "next period",
+    "paymentMethod": {
+      "title": "Payment Method",
+      "stripeLink": "Stripe Link",
+      "expressCheckout": "Express Checkout",
+      "connected": "Connected",
+      "creditCard": "Credit Card",
+      "expires": "Expires",
+      "verified": "Verified",
+      "card": "card",
+      "paymentOnFile": "Payment method on file",
+      "update": "Update",
+      "noPaymentRequired": "No payment method required yet",
+      "noPaymentOnFile": "No payment method on file",
+      "trialPaymentPrompt": "You'll be asked to provide payment details when your trial ends in",
+      "days": "days",
+      "subscribePaymentPrompt": "You'll need to add a payment method when you subscribe to a plan.",
+      "viewPlansAndPricing": "View Plans & Pricing"
+    },
+    "history": {
+      "title": "Billing History",
+      "date": "Date",
+      "description": "Description",
+      "amount": "Amount",
+      "status": "Status",
+      "invoice": "Invoice",
+      "servicePeriod": "Service period",
+      "showLess": "Show less",
+      "showAll": "Show all",
+      "invoices": "invoices",
+      "viewCompleteHistory": "View Complete Billing History",
+      "noHistoryYet": "No billing history yet",
+      "historyPrompt": "Your invoice history will appear here once you've subscribed to a plan and made payments.",
+      "upgradeYourPlan": "Upgrade Your Plan",
+      "viewSubscriptionPlans": "View Subscription Plans"
+    },
+    "support": {
+      "title": "Need help with billing?",
+      "description": "Our support team is available to assist you with any billing questions or concerns.",
+      "contactSupport": "Contact Support",
+      "billingFAQ": "Billing FAQ",
+      "termsOfService": "Terms of Service",
+      "billingPortal": "Billing Portal"
+    },
+    "messages": {
+      "loadFailed": "Failed to load your billing information. Please try again later.",
+      "refreshSuccess": "Subscription information refreshed successfully",
+      "portalSignIn": "Please sign in again to access billing portal.",
+      "portalError": "Unable to open billing portal. Please try again.",
+      "cancelSignIn": "Please sign in again to cancel your subscription.",
+      "cancelSuccess": "Your subscription has been canceled. You will retain access until the end of your current billing period.",
+      "cancelFailed": "Failed to cancel subscription. Please try again.",
+      "reactivateSignIn": "Please sign in again to reactivate your subscription.",
+      "reactivateSuccess": "Your subscription has been reactivated! You will continue to be billed normally.",
+      "reactivateFailed": "Failed to reactivate subscription. Please try again.",
+      "paymentUpdated": "Payment method updated successfully!"
+    }
+  }
+}

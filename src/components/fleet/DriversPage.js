@@ -31,6 +31,7 @@ import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
 import TutorialCard from "@/components/shared/TutorialCard";
 import TableActions from "@/components/shared/TableActions";
 import { FileText, Shield, Calendar as CalendarDoc, Bell } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Local storage key for filter persistence
 const STORAGE_KEY = 'driver_filters';
@@ -61,6 +62,7 @@ function LoadingSkeleton() {
 }
 
 export default function DriversPage() {
+  const { t } = useTranslation('fleet');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -295,8 +297,8 @@ export default function DriversPage() {
     await loadData(user.id);
     setFormModalOpen(false);
     setDriverToEdit(null);
-    setMessage({ type: 'success', text: driverToEdit ? 'Driver updated successfully' : 'Driver added successfully' });
-  }, [user, loadData, driverToEdit]);
+    setMessage({ type: 'success', text: driverToEdit ? t('driversPage.driverUpdated') : t('driversPage.driverAdded') });
+  }, [user, loadData, driverToEdit, t]);
 
   // Handle deleting a driver
   const handleDeleteClick = useCallback((driver) => {
@@ -314,7 +316,7 @@ export default function DriversPage() {
       await loadData(user.id);
       setDeleteModalOpen(false);
       setDriverToDelete(null);
-      setMessage({ type: 'success', text: 'Driver deleted successfully' });
+      setMessage({ type: 'success', text: t('driversPage.driverDeleted') });
     } catch (error) {
       setMessage({ type: 'error', text: getUserFriendlyError(error) });
     } finally {
@@ -379,55 +381,55 @@ export default function DriversPage() {
     const status = checkDriverDocumentStatus(driver);
 
     if (status.licenseStatus === 'expired' || status.medicalCardStatus === 'expired') {
-      return { text: 'Expired', class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
+      return { text: t('driversPage.expired'), class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
     } else if (status.licenseStatus === 'expiring' || status.medicalCardStatus === 'expiring') {
-      return { text: 'Expiring Soon', class: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' };
+      return { text: t('driversPage.expiringSoon'), class: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' };
     } else {
-      return { text: 'Valid', class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
+      return { text: t('driversPage.valid'), class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
     }
-  }, []);
+  }, [t]);
 
   // Stat cards data
   const statCards = [
     {
-      label: "Total Drivers",
+      label: t('stats.totalDrivers'),
       value: stats.total,
       icon: Users,
       iconBg: "bg-blue-100 dark:bg-blue-900/40",
       iconColor: "text-blue-600 dark:text-blue-400",
       borderColor: "border-l-blue-500",
       footerBg: "bg-blue-50 dark:bg-blue-900/20",
-      description: "All registered drivers"
+      description: t('stats.allRegisteredDrivers')
     },
     {
-      label: "Valid Documents",
+      label: t('driversPage.validDocuments'),
       value: stats.valid,
       icon: CheckCircle,
       iconBg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
       borderColor: "border-l-green-500",
       footerBg: "bg-green-50 dark:bg-green-900/20",
-      description: "All documents current"
+      description: t('driversPage.allDocumentsCurrent')
     },
     {
-      label: "Expiring Soon",
+      label: t('driversPage.expiringSoon'),
       value: stats.expiringSoon,
       icon: Clock,
       iconBg: "bg-orange-100 dark:bg-orange-900/40",
       iconColor: "text-orange-600 dark:text-orange-400",
       borderColor: "border-l-orange-500",
       footerBg: "bg-orange-50 dark:bg-orange-900/20",
-      description: "Within 30 days"
+      description: t('driversPage.within30Days')
     },
     {
-      label: "Expired",
+      label: t('driversPage.expired'),
       value: stats.expired,
       icon: AlertTriangle,
       iconBg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
       borderColor: "border-l-red-500",
       footerBg: "bg-red-50 dark:bg-red-900/20",
-      description: "Needs immediate attention"
+      description: t('driversPage.needsImmediateAttention')
     }
   ];
 
@@ -463,8 +465,8 @@ export default function DriversPage() {
                     <ChevronLeft size={20} />
                   </Link>
                   <div>
-                    <h1 className="text-3xl font-bold mb-1">Driver Management</h1>
-                    <p className="text-blue-100">Manage your drivers and monitor document expirations</p>
+                    <h1 className="text-3xl font-bold mb-1">{t('driversPage.title')}</h1>
+                    <p className="text-blue-100">{t('driversPage.subtitle')}</p>
                   </div>
                 </div>
               </div>
@@ -478,7 +480,7 @@ export default function DriversPage() {
                         className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
                       >
                         <Lock size={18} className="mr-2" />
-                        Limit Reached ({drivers.length}/{driverLimit.limit})
+                        {t('driversPage.limitReached')} ({drivers.length}/{driverLimit.limit})
                       </Link>
                     );
                   }
@@ -488,7 +490,7 @@ export default function DriversPage() {
                       className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                     >
                       <Plus size={18} className="mr-2" />
-                      Add Driver
+                      {t('drivers.addDriver')}
                     </button>
                   );
                 })()}
@@ -498,7 +500,7 @@ export default function DriversPage() {
                   disabled={drivers.length === 0}
                 >
                   <Download size={18} className="mr-2" />
-                  Export
+                  {t('driversPage.export')}
                 </button>
               </div>
             </div>
@@ -514,37 +516,37 @@ export default function DriversPage() {
           {user && (
             <TutorialCard
               pageId="drivers"
-              title="Driver Management Guide"
-              description="Manage driver profiles and track document compliance"
+              title={t('driversPage.tutorialTitle')}
+              description={t('driversPage.tutorialDescription')}
               accentColor="green"
               userId={user.id}
               features={[
                 {
                   icon: Plus,
-                  title: "Add Drivers",
-                  description: "Create profiles with contact info, license, and medical card details"
+                  title: t('driversPage.tutorialFeature1Title'),
+                  description: t('driversPage.tutorialFeature1Desc')
                 },
                 {
                   icon: Shield,
-                  title: "Document Tracking",
-                  description: "Monitor license and medical card expiration dates"
+                  title: t('driversPage.tutorialFeature2Title'),
+                  description: t('driversPage.tutorialFeature2Desc')
                 },
                 {
                   icon: Bell,
-                  title: "Expiry Alerts",
-                  description: "See at-a-glance which documents are expiring or expired"
+                  title: t('driversPage.tutorialFeature3Title'),
+                  description: t('driversPage.tutorialFeature3Desc')
                 },
                 {
                   icon: Download,
-                  title: "Export Data",
-                  description: "Download driver list as CSV for compliance reporting"
+                  title: t('driversPage.tutorialFeature4Title'),
+                  description: t('driversPage.tutorialFeature4Desc')
                 }
               ]}
               tips={[
-                "Monitor document expiry - red/yellow badges show immediate attention needed",
-                "Medical card expiry is often overlooked - set calendar reminders",
-                "Use 'On Leave' status to preserve records without showing in active dispatch",
-                "Keep license numbers updated for DOT background checks"
+                t('driversPage.tip1'),
+                t('driversPage.tip2'),
+                t('driversPage.tip3'),
+                t('driversPage.tip4')
               ]}
             />
           )}
@@ -603,9 +605,9 @@ export default function DriversPage() {
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
-                      <span className="font-medium">Approaching limit:</span> You have {drivers.length} of {limit} drivers.
+                      <span className="font-medium">{t('driversPage.approachingLimit')}</span> {t('driversPage.youHaveXOfYDrivers', { current: drivers.length, limit })}
                       <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
-                        Upgrade for more drivers
+                        {t('driversPage.upgradeForMoreDrivers')}
                       </Link>
                     </p>
                   </div>
@@ -621,9 +623,11 @@ export default function DriversPage() {
               <div className="flex">
                 <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Document Expiration Alert</p>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('driversPage.documentExpirationAlert')}</p>
                   <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                    {stats.expired} driver{stats.expired !== 1 ? 's have' : ' has'} expired documents. Please update these documents to maintain compliance.
+                    {stats.expired !== 1
+                      ? t('driversPage.driversHaveExpiredDocsPlural', { count: stats.expired })
+                      : t('driversPage.driversHaveExpiredDocs', { count: stats.expired })}
                   </p>
                 </div>
               </div>
@@ -640,7 +644,7 @@ export default function DriversPage() {
                   type="text"
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  placeholder="Search by name, license, phone, email..."
+                  placeholder={t('driversPage.searchPlaceholder')}
                   className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
                 {filters.search && (
@@ -660,10 +664,10 @@ export default function DriversPage() {
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                   className="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto transition-colors min-h-[44px]"
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="On Leave">On Leave</option>
+                  <option value="all">{t('driversPage.allStatuses')}</option>
+                  <option value="Active">{t('driversPage.active')}</option>
+                  <option value="Inactive">{t('driversPage.inactive')}</option>
+                  <option value="On Leave">{t('driversPage.onLeave')}</option>
                 </select>
 
                 <select
@@ -671,10 +675,10 @@ export default function DriversPage() {
                   onChange={(e) => setFilters(prev => ({ ...prev, documentStatus: e.target.value }))}
                   className="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto transition-colors min-h-[44px]"
                 >
-                  <option value="all">All Documents</option>
-                  <option value="valid">Valid</option>
-                  <option value="expiring">Expiring Soon</option>
-                  <option value="expired">Expired</option>
+                  <option value="all">{t('driversPage.allDocuments')}</option>
+                  <option value="valid">{t('driversPage.valid')}</option>
+                  <option value="expiring">{t('driversPage.expiringSoon')}</option>
+                  <option value="expired">{t('driversPage.expired')}</option>
                 </select>
 
                 {/* Reset Filters Button */}
@@ -693,7 +697,7 @@ export default function DriversPage() {
           {/* Drivers Table */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
             <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-              <h3 className="font-medium text-gray-700 dark:text-gray-200">Drivers</h3>
+              <h3 className="font-medium text-gray-700 dark:text-gray-200">{t('driversPage.drivers')}</h3>
               {(() => {
                 const driverLimit = checkResourceUpgrade('drivers', drivers.length);
                 if (driverLimit.needsUpgrade) {
@@ -703,7 +707,7 @@ export default function DriversPage() {
                       className="flex items-center text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
                     >
                       <Lock size={16} className="mr-1" />
-                      Upgrade for more
+                      {t('driversPage.upgradeForMore')}
                     </Link>
                   );
                 }
@@ -713,7 +717,7 @@ export default function DriversPage() {
                     className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Plus size={16} className="mr-1" />
-                    Add Driver
+                    {t('drivers.addDriver')}
                   </button>
                 );
               })()}
@@ -725,25 +729,25 @@ export default function DriversPage() {
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
                     <th scope="col" className="w-[22%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Driver
+                      {t('driversPage.driver')}
                     </th>
                     <th scope="col" className="w-[14%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Position
+                      {t('driversPage.position')}
                     </th>
                     <th scope="col" className="w-[14%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Phone
+                      {t('driversPage.phone')}
                     </th>
                     <th scope="col" className="w-[14%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      License #
+                      {t('driversPage.licenseNumber')}
                     </th>
                     <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
+                      {t('driversPage.status')}
                     </th>
                     <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Documents
+                      {t('driversPage.documents')}
                     </th>
                     <th scope="col" className="w-[12%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
+                      {t('driversPage.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -756,8 +760,8 @@ export default function DriversPage() {
                             <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                               <Users className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
-                            <p className="text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first driver.</p>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('driversPage.noDriversFound')}</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('driversPage.getStartedAddFirstDriver')}</p>
                             {(() => {
                               const driverLimit = checkResourceUpgrade('drivers', drivers.length);
                               if (driverLimit.needsUpgrade) {
@@ -767,7 +771,7 @@ export default function DriversPage() {
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                                   >
                                     <Lock size={16} className="mr-2" />
-                                    Upgrade to Add Drivers
+                                    {t('driversPage.upgradeToAddDrivers')}
                                   </Link>
                                 );
                               }
@@ -777,20 +781,20 @@ export default function DriversPage() {
                                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                                 >
                                   <Plus size={16} className="mr-2" />
-                                  Add Driver
+                                  {t('drivers.addDriver')}
                                 </button>
                               );
                             })()}
                           </div>
                         ) : (
                           <div>
-                            <p className="text-gray-500 dark:text-gray-400 mb-2">No drivers match your current filters</p>
+                            <p className="text-gray-500 dark:text-gray-400 mb-2">{t('driversPage.noDriversMatchFilters')}</p>
                             <button
                               onClick={resetFilters}
                               className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                             >
                               <RefreshCw size={14} className="mr-1" />
-                              Reset Filters
+                              {t('driversPage.resetFilters')}
                             </button>
                           </div>
                         )}
@@ -812,13 +816,13 @@ export default function DriversPage() {
                             </button>
                           </td>
                           <td className="px-4 py-3 text-gray-900 dark:text-gray-100 truncate">
-                            {driver.position || 'Driver'}
+                            {driver.position || t('drivers.defaultPosition')}
                           </td>
                           <td className="px-4 py-3 text-gray-900 dark:text-gray-100 truncate">
-                            {driver.phone || 'N/A'}
+                            {driver.phone || t('driversPage.na')}
                           </td>
                           <td className="px-4 py-3 text-gray-900 dark:text-gray-100 truncate">
-                            {driver.license_number || 'N/A'}
+                            {driver.license_number || t('driversPage.na')}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(driver.status)}`}>
@@ -857,14 +861,14 @@ export default function DriversPage() {
                           <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                             <Users className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                           </div>
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
-                          <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add drivers.</p>
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('driversPage.noDriversFound')}</h3>
+                          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('driversPage.upgradeYourPlan')}</p>
                           <Link
                             href="/dashboard/upgrade"
                             className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                           >
                             <Lock size={16} className="mr-2" />
-                            Upgrade Plan
+                            {t('driversPage.upgradePlan')}
                           </Link>
                         </div>
                       );
@@ -872,10 +876,10 @@ export default function DriversPage() {
                     return (
                       <EmptyState
                         icon={Users}
-                        title="No drivers found"
-                        description="Get started by adding your first driver."
+                        title={t('driversPage.noDriversFound')}
+                        description={t('driversPage.getStartedAddFirstDriver')}
                         action={{
-                          label: 'Add Driver',
+                          label: t('drivers.addDriver'),
                           onClick: handleAddDriver,
                           icon: Plus
                         }}
@@ -884,13 +888,13 @@ export default function DriversPage() {
                   })()
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">No drivers match your current filters</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">{t('driversPage.noDriversMatchFilters')}</p>
                     <button
                       onClick={resetFilters}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                     >
                       <RefreshCw size={14} className="mr-2" />
-                      Reset Filters
+                      {t('driversPage.resetFilters')}
                     </button>
                   </div>
                 )
@@ -915,9 +919,9 @@ export default function DriversPage() {
                         </span>
                       </div>
                       <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                        <p><span className="font-medium">Position:</span> {driver.position || 'Driver'}</p>
-                        <p><span className="font-medium">Phone:</span> {driver.phone || 'N/A'}</p>
-                        <p><span className="font-medium">Documents:</span> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${docStatus.class}`}>{docStatus.text}</span></p>
+                        <p><span className="font-medium">{t('driversPage.position')}:</span> {driver.position || t('drivers.defaultPosition')}</p>
+                        <p><span className="font-medium">{t('driversPage.phone')}:</span> {driver.phone || t('driversPage.na')}</p>
+                        <p><span className="font-medium">{t('driversPage.documents')}:</span> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${docStatus.class}`}>{docStatus.text}</span></p>
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end">
                         <TableActions
@@ -968,8 +972,8 @@ export default function DriversPage() {
             setDriverToDelete(null);
           }}
           onConfirm={confirmDelete}
-          title="Delete Driver"
-          message={`Are you sure you want to delete "${driverToDelete?.name}"? This action cannot be undone.`}
+          title={t('driversPage.deleteDriver')}
+          message={t('driversPage.confirmDeleteDriver', { name: driverToDelete?.name })}
           isDeleting={isDeleting}
         />
       </main>

@@ -21,6 +21,7 @@ import FailedPaymentBanner from "@/components/billing/FailedPaymentBanner";
 import SetupChecklist from "@/components/onboarding/SetupChecklist";
 import TutorialCard from "@/components/shared/TutorialCard";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   LayoutDashboard, TrendingUp, Activity, Zap,
   FileText, DollarSign, BarChart3, Settings
@@ -33,6 +34,7 @@ import {
 export default function Dashboard() {
   // Subscription context for billing status
   const { subscription } = useSubscription();
+  const { t } = useTranslation('dashboard');
 
   // User and authentication state
   const [user, setUser] = useState(null);
@@ -353,47 +355,47 @@ export default function Dashboard() {
           {/* Date Range Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range:</div>
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dateRange.label')}:</div>
               <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
-                <button 
+                <button
                   onClick={() => handleDateRangeChange('month')}
-                  className={`px-3 py-1.5 text-sm rounded-l-lg ${dateRange === 'month' ? 
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                  className={`px-3 py-1.5 text-sm rounded-l-lg ${dateRange === 'month' ?
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
-                  This Month
+                  {t('dateRange.thisMonth')}
                 </button>
-                <button 
+                <button
                   onClick={() => handleDateRangeChange('lastMonth')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'lastMonth' ? 
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                  className={`px-3 py-1.5 text-sm ${dateRange === 'lastMonth' ?
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
-                  Last Month
+                  {t('dateRange.lastMonth')}
                 </button>
-                <button 
+                <button
                   onClick={() => handleDateRangeChange('quarter')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'quarter' ? 
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                  className={`px-3 py-1.5 text-sm ${dateRange === 'quarter' ?
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
-                  This Quarter
+                  {t('dateRange.thisQuarter')}
                 </button>
-                <button 
+                <button
                   onClick={() => handleDateRangeChange('year')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'year' ? 
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                  className={`px-3 py-1.5 text-sm ${dateRange === 'year' ?
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
-                  This Year
+                  {t('dateRange.thisYear')}
                 </button>
-                <button 
+                <button
                   onClick={() => handleDateRangeChange('all')}
-                  className={`px-3 py-1.5 text-sm rounded-r-lg ${dateRange === 'all' ? 
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 
+                  className={`px-3 py-1.5 text-sm rounded-r-lg ${dateRange === 'all' ?
+                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
                     'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                 >
-                  All Time
+                  {t('dateRange.allTime')}
                 </button>
               </div>
             </div>
@@ -454,15 +456,17 @@ export default function Dashboard() {
  * Shows the upcoming deliveries in a card
  */
 function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
+  const { t } = useTranslation('dashboard');
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/10 overflow-hidden border border-gray-200 dark:border-gray-700">
       <div className="bg-purple-500 dark:bg-purple-600 px-5 py-4 text-white flex justify-between items-center">
         <h3 className="font-semibold flex items-center">
           <CalendarIcon size={18} className="mr-2" />
-          Upcoming Deliveries
+          {t('deliveries.title')}
         </h3>
         <Link href="/dashboard/dispatching" className="text-sm text-white hover:text-purple-100">
-          View All
+          {t('deliveries.viewAll')}
         </Link>
       </div>
       <div className="p-6">
@@ -485,14 +489,14 @@ function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
             <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
               <Truck size={24} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No deliveries scheduled</h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Schedule your first delivery to see it here</p>
-            <Link 
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('deliveries.noDeliveries')}</h3>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('deliveries.scheduleFirst')}</p>
+            <Link
               href="/dashboard/dispatching/new"
               className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600"
             >
               <Plus size={16} className="mr-2" />
-              Schedule Delivery
+              {t('deliveries.scheduleDelivery')}
             </Link>
           </div>
         ) : (
@@ -510,6 +514,8 @@ function UpcomingDeliveries({ deliveries = [], isLoading = false }) {
  * Individual delivery in the upcoming deliveries list
  */
 function DeliveryItem({ delivery }) {
+  const { t } = useTranslation('dashboard');
+
   return (
     <div className="flex items-start py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
       <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 mr-4">
@@ -520,7 +526,7 @@ function DeliveryItem({ delivery }) {
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{delivery.client}</p>
           <span className="text-xs text-gray-500 dark:text-gray-400">{delivery.date}</span>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Destination: {delivery.destination}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{t('deliveries.destination')}: {delivery.destination}</p>
         <div className="mt-1">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
             delivery.status === 'In Transit' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' :
@@ -540,17 +546,19 @@ function DeliveryItem({ delivery }) {
  * Shows admin links when relevant (factoring, errors)
  */
 function AdminTools() {
+  const { t } = useTranslation('dashboard');
+
   return (
     <div className="text-center mb-6">
-      <Link 
+      <Link
         href="/dashboard/admin/fix-earnings"
         className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
       >
         <RefreshCw size={14} className="mr-1" />
-        Fix Earnings Records
+        {t('adminTools.fixEarningsRecords')}
       </Link>
       <p className="text-xs text-gray-500 mt-1">
-        Use this utility to fix any issues with earnings records from factored loads
+        {t('adminTools.fixEarningsDescription')}
       </p>
     </div>
   );

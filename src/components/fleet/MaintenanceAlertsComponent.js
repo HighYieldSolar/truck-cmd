@@ -7,6 +7,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
 const formatDate = (dateString) => {
@@ -20,19 +21,21 @@ const formatDate = (dateString) => {
 };
 
 export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
+  const { t } = useTranslation('fleet');
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
       <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <FileCog size={18} className="mr-2" />
-          Upcoming Maintenance
+          {t('maintenance.upcomingMaintenance')}
         </h3>
       </div>
       <div className="p-4">
         {upcomingMaintenance.length === 0 ? (
           <div className="text-center py-6 text-gray-500 dark:text-gray-400">
             <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-            <p>No upcoming maintenance</p>
+            <p>{t('maintenance.noUpcomingMaintenance')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -50,17 +53,17 @@ export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{item.maintenance_type}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.vehicles?.name || 'Unknown Vehicle'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.vehicles?.name || t('maintenance.unknownVehicle')}</p>
                     </div>
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${daysLeft <= 7
                         ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                         : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
                       }`}>
-                      {daysLeft} days
+                      {t('maintenance.daysLeft', { days: daysLeft })}
                     </span>
                   </div>
                   <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Due: {formatDate(item.due_date)}
+                    {t('maintenance.due')}: {formatDate(item.due_date)}
                   </div>
                 </Link>
               );
@@ -71,7 +74,7 @@ export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
                 href="/dashboard/fleet/maintenance"
                 className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
               >
-                View all maintenance
+                {t('maintenance.viewAllMaintenance')}
                 <ArrowRight size={14} className="ml-1" />
               </Link>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Customer Filter Bar
@@ -12,6 +13,7 @@ export default function CustomerFilterBar({
   availableStates = [],
   onReset
 }) {
+  const { t } = useTranslation('customers');
   const handleSearchChange = (e) => {
     setFilters(prev => ({ ...prev, search: e.target.value }));
   };
@@ -36,7 +38,7 @@ export default function CustomerFilterBar({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
-            placeholder="Search by company, contact, or email..."
+            placeholder={t('filters.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
             value={filters.search}
             onChange={handleSearchChange}
@@ -52,10 +54,10 @@ export default function CustomerFilterBar({
             value={filters.status}
             onChange={handleFilterChange}
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="pending">Pending</option>
+            <option value="all">{t('filters.allStatus')}</option>
+            <option value="active">{t('status.active')}</option>
+            <option value="inactive">{t('status.inactive')}</option>
+            <option value="pending">{t('status.pending')}</option>
           </select>
 
           {/* Type Filter */}
@@ -65,14 +67,14 @@ export default function CustomerFilterBar({
             value={filters.type}
             onChange={handleFilterChange}
           >
-            <option value="all">All Types</option>
-            <option value="shipper">Shipper</option>
-            <option value="broker">Broker</option>
-            <option value="consignee">Consignee</option>
-            <option value="direct">Direct Customer</option>
-            <option value="freight-forwarder">Freight Forwarder</option>
-            <option value="3pl">3PL</option>
-            <option value="business">Business</option>
+            <option value="all">{t('filters.allTypes')}</option>
+            <option value="shipper">{t('types.shipper')}</option>
+            <option value="broker">{t('types.broker')}</option>
+            <option value="consignee">{t('types.consignee')}</option>
+            <option value="direct">{t('filters.directCustomer')}</option>
+            <option value="freight-forwarder">{t('filters.freightForwarder')}</option>
+            <option value="3pl">{t('types.thirdPartyLogistics')}</option>
+            <option value="business">{t('types.business')}</option>
           </select>
 
           {/* State Filter */}
@@ -83,7 +85,7 @@ export default function CustomerFilterBar({
               value={filters.state}
               onChange={handleFilterChange}
             >
-              <option value="all">All States</option>
+              <option value="all">{t('filters.allStates')}</option>
               {availableStates.map(state => (
                 <option key={state} value={state}>{state}</option>
               ))}
@@ -97,10 +99,10 @@ export default function CustomerFilterBar({
             value={filters.sortBy}
             onChange={handleFilterChange}
           >
-            <option value="name">Sort: Name</option>
-            <option value="newest">Sort: Newest</option>
-            <option value="oldest">Sort: Oldest</option>
-            <option value="type">Sort: Type</option>
+            <option value="name">{t('filters.sortName')}</option>
+            <option value="newest">{t('filters.sortNewest')}</option>
+            <option value="oldest">{t('filters.sortOldest')}</option>
+            <option value="type">{t('filters.sortType')}</option>
           </select>
 
           {/* Clear Filters Button */}
@@ -108,10 +110,10 @@ export default function CustomerFilterBar({
             <button
               onClick={onReset}
               className="px-3 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1"
-              title="Clear all filters"
+              title={t('filters.clearFilters')}
             >
               <X className="h-4 w-4" />
-              <span className="hidden sm:inline text-sm">Clear</span>
+              <span className="hidden sm:inline text-sm">{t('filters.clear')}</span>
             </button>
           )}
         </div>

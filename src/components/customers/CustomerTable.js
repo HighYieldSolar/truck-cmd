@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { Pagination } from "@/hooks/usePagination";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Customer Table Component
@@ -29,6 +30,7 @@ export default function CustomerTable({
   onDelete,
   isLoading = false
 }) {
+  const { t } = useTranslation('customers');
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // Status badge colors
@@ -62,7 +64,7 @@ export default function CustomerTable({
   };
 
   const formatType = (type) => {
-    if (!type) return 'Business';
+    if (!type) return t('types.business');
     return type.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
@@ -96,10 +98,10 @@ export default function CustomerTable({
           <Building2 className="h-8 w-8 text-gray-400 dark:text-gray-500" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          No customers found
+          {t('table.noCustomersFound')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-          No customers match your current filters. Try adjusting your search criteria.
+          {t('table.noMatchFilters')}
         </p>
       </div>
     );
@@ -113,22 +115,22 @@ export default function CustomerTable({
           <thead className="bg-gray-50 dark:bg-gray-900/50">
             <tr>
               <th scope="col" className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Company
+                {t('table.company')}
               </th>
               <th scope="col" className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Contact
+                {t('table.contact')}
               </th>
               <th scope="col" className="w-[18%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Location
+                {t('table.location')}
               </th>
               <th scope="col" className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Type
+                {t('table.type')}
               </th>
               <th scope="col" className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
+                {t('table.status')}
               </th>
               <th scope="col" className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
+                {t('table.actions')}
               </th>
             </tr>
           </thead>
@@ -200,7 +202,7 @@ export default function CustomerTable({
                 </td>
                 <td className="px-4 py-4">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
-                    {customer.status || 'Active'}
+                    {customer.status || t('status.active')}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-center">
@@ -251,7 +253,7 @@ export default function CustomerTable({
                       }}
                       className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
-                      <Eye size={14} /> View
+                      <Eye size={14} /> {t('table.view')}
                     </button>
                     <button
                       onClick={() => {
@@ -260,7 +262,7 @@ export default function CustomerTable({
                       }}
                       className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                     >
-                      <Edit size={14} /> Edit
+                      <Edit size={14} /> {t('table.edit')}
                     </button>
                     <button
                       onClick={() => {
@@ -269,7 +271,7 @@ export default function CustomerTable({
                       }}
                       className="w-full px-4 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={14} /> {t('table.delete')}
                     </button>
                   </div>
                 )}
@@ -310,7 +312,7 @@ export default function CustomerTable({
                 {formatType(customer.customer_type)}
               </span>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
-                {customer.status || 'Active'}
+                {customer.status || t('status.active')}
               </span>
             </div>
           </div>

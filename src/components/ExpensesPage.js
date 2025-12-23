@@ -20,6 +20,7 @@ import {
   Upload
 } from 'lucide-react';
 import TutorialCard from "@/components/shared/TutorialCard";
+import { useTranslation } from '@/context/LanguageContext';
 
 // Import services
 import {
@@ -48,6 +49,7 @@ import ReceiptDirectory from '@/components/expenses/ReceiptDirectory';
 import ExportReportModal from '@/components/common/ExportReportModal';
 
 export default function ExpensesPage() {
+  const { t } = useTranslation('expenses');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -322,7 +324,7 @@ export default function ExpensesPage() {
 
     setOperationMessage({
       type: 'success',
-      text: currentExpense ? 'Expense updated successfully.' : 'Expense added successfully.'
+      text: currentExpense ? t('successMessages.expenseUpdated') : t('successMessages.expenseAdded')
     });
 
     await loadExpenses();
@@ -340,7 +342,7 @@ export default function ExpensesPage() {
 
       setOperationMessage({
         type: 'success',
-        text: 'Expense deleted successfully.'
+        text: t('successMessages.expenseDeleted')
       });
 
       await loadExpenses();
@@ -397,10 +399,10 @@ export default function ExpensesPage() {
       .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
     return {
-      'Total Records': filteredExpenses.length,
-      'Total Amount': '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-      'Deductible': '$' + deductibleTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-      'Date Range': filters.dateRange
+      [t('export.totalRecords')]: filteredExpenses.length,
+      [t('export.totalAmount')]: '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      [t('export.deductible')]: '$' + deductibleTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      [t('export.dateRange')]: filters.dateRange
     };
   };
 
@@ -460,10 +462,10 @@ export default function ExpensesPage() {
               <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                   <Wallet className="h-6 w-6" />
-                  Expense Tracking
+                  {t('page.title')}
                 </h1>
                 <p className="text-blue-100 mt-1">
-                  Track and manage all your business expenses
+                  {t('page.subtitle')}
                 </p>
               </div>
 
@@ -475,7 +477,7 @@ export default function ExpensesPage() {
                   className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors shadow-sm"
                 >
                   <Plus className="h-5 w-5 mr-2" />
-                  Add Expense
+                  {t('page.addExpense')}
                 </button>
 
                 {/* Secondary Action */}
@@ -485,7 +487,7 @@ export default function ExpensesPage() {
                   className="inline-flex items-center px-4 py-2 bg-blue-500/20 text-white border border-white/30 rounded-lg font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="h-5 w-5 mr-2" />
-                  Export Report
+                  {t('page.exportReport')}
                 </button>
               </div>
             </div>
@@ -501,38 +503,33 @@ export default function ExpensesPage() {
           {user && (
             <TutorialCard
               pageId="expenses"
-              title="Expense Tracking Guide"
-              description="Record and categorize business expenses for tax compliance"
+              title={t('tutorial.title')}
+              description={t('tutorial.description')}
               accentColor="orange"
               userId={user.id}
               features={[
                 {
                   icon: Plus,
-                  title: "Log Expenses",
-                  description: "Record expenses with category, amount, date, and payment method"
+                  title: t('tutorial.features.logExpenses.title'),
+                  description: t('tutorial.features.logExpenses.description')
                 },
                 {
                   icon: Upload,
-                  title: "Receipt Upload",
-                  description: "Attach receipt images for documentation and tax records"
+                  title: t('tutorial.features.receiptUpload.title'),
+                  description: t('tutorial.features.receiptUpload.description')
                 },
                 {
                   icon: Tags,
-                  title: "Smart Categories",
-                  description: "Fuel, Maintenance, Insurance, Tolls, Meals, Equipment & more"
+                  title: t('tutorial.features.smartCategories.title'),
+                  description: t('tutorial.features.smartCategories.description')
                 },
                 {
                   icon: Calculator,
-                  title: "Tax Deductions",
-                  description: "Track deductible expenses for accurate tax reporting"
+                  title: t('tutorial.features.taxDeductions.title'),
+                  description: t('tutorial.features.taxDeductions.description')
                 }
               ]}
-              tips={[
-                "Upload receipts immediately - don't lose documentation",
-                "Fuel expenses auto-sync from Fuel Tracker for convenience",
-                "Use category filters to review spending by type",
-                "Export reports quarterly for bookkeeping and tax prep"
-              ]}
+              tips={t('tutorial.tips', { returnObjects: true }) || []}
             />
           )}
 
@@ -552,7 +549,7 @@ export default function ExpensesPage() {
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-red-500" />
-                    Top Expenses
+                    {t('page.topExpenses')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -575,7 +572,7 @@ export default function ExpensesPage() {
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <BarChart2 className="h-4 w-4 text-blue-500" />
-                    Expense Categories
+                    {t('page.expenseCategories')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -608,14 +605,14 @@ export default function ExpensesPage() {
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-500" />
-                    Expense Records
+                    {t('page.expenseRecords')}
                   </h3>
                   <button
                     onClick={handleAddExpense}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
                   >
                     <Plus className="h-4 w-4" />
-                    Add New
+                    {t('page.addNew')}
                   </button>
                 </div>
 
@@ -627,14 +624,14 @@ export default function ExpensesPage() {
                 ) : filteredExpenses.length === 0 ? (
                   <EmptyState
                     icon={Wallet}
-                    title="No expenses found"
+                    title={t('emptyStateFiltered.title')}
                     description={
                       filters.search || filters.category !== 'All' || filters.dateRange !== 'This Month'
-                        ? 'Try adjusting your search or filters.'
-                        : 'Start tracking your expenses by adding your first entry.'
+                        ? t('emptyStateFiltered.description')
+                        : t('emptyStateNoData.description')
                     }
                     action={{
-                      label: 'Add Expense',
+                      label: t('emptyStateFiltered.addExpenseLabel'),
                       onClick: handleAddExpense,
                       icon: Plus
                     }}
@@ -673,22 +670,22 @@ export default function ExpensesPage() {
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Description
+                                {t('table.description')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Date
+                                {t('table.date')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Category
+                                {t('table.category')}
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Amount
+                                {t('table.amount')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Payment
+                                {t('table.paymentMethod')}
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Actions
+                                {t('table.actions')}
                               </th>
                             </tr>
                           </thead>
@@ -726,10 +723,10 @@ export default function ExpensesPage() {
                 {filteredExpenses.length > 0 && (
                   <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between lg:hidden">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {totalItems} expenses
+                      {totalItems} {t('page.expensesSuffix')}
                     </span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Total: {formatCurrency(filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0))}
+                      {t('page.total')} {formatCurrency(filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0))}
                     </span>
                   </div>
                 )}
@@ -748,7 +745,7 @@ export default function ExpensesPage() {
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                       <BarChart2 className="h-5 w-5 text-blue-500" />
-                      Expense Analysis
+                      {t('page.expenseAnalysis')}
                     </h3>
                   </div>
                   <div className="p-4">
@@ -798,8 +795,8 @@ export default function ExpensesPage() {
       <ExportReportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        title="Export Expenses Report"
-        description="Export your expense records in multiple formats. Choose PDF for a professional report or CSV for spreadsheet analysis."
+        title={t('export.modalTitle')}
+        description={t('export.modalDescription')}
         data={getExportData()}
         columns={exportColumns}
         filename="expenses_report"
@@ -808,7 +805,7 @@ export default function ExpensesPage() {
         onExportComplete={() => {
           setOperationMessage({
             type: 'success',
-            text: 'Report exported successfully!'
+            text: t('export.exportSuccess')
           });
         }}
       />

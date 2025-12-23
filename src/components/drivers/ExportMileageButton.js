@@ -9,6 +9,7 @@ import {
   Download
 } from "lucide-react";
 import { exportTripDataAsCSV } from "@/lib/services/mileageService";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ExportMileageButton({
   tripId,
@@ -18,6 +19,7 @@ export default function ExportMileageButton({
   mileageData = [],
   compact = false
 }) {
+  const { t } = useTranslation('mileage');
   const [loading, setLoading] = useState(false);
 
   // Handle export
@@ -46,7 +48,7 @@ export default function ExportMileageButton({
       document.body.removeChild(link);
 
     } catch (error) {
-      alert('Failed to export mileage data. Please try again.');
+      alert(t('export.failed'));
     } finally {
       setLoading(false);
     }
@@ -66,7 +68,7 @@ export default function ExportMileageButton({
       ) : (
         <FileDown className={compact ? "h-4 w-4 mr-1.5" : "h-4 w-4 mr-2"} />
       )}
-      {compact ? "Export" : "Export Mileage Report"}
+      {compact ? t('export.button') : t('export.buttonFull')}
     </button>
   );
 }

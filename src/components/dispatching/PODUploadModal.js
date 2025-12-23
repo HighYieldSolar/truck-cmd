@@ -5,8 +5,10 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Camera, FileText, Trash2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from "@/lib/supabaseClient";
 import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "@/lib/services/notificationService";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess }) {
+  const { t } = useTranslation('dispatching');
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,7 +28,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
 
   const handleUpload = async () => {
     if (files.length === 0) {
-      setError("Please select at least one file to upload");
+      setError(t('podUpload.selectAtLeastOne'));
       return;
     }
 
@@ -35,7 +37,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
 
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error("Authentication required");
+      if (userError || !user) throw new Error(t('podUpload.authenticationRequired'));
 
       // Get existing POD documents
       const { data: loadData, error: loadError } = await supabase
@@ -112,7 +114,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
       }, 1500);
 
     } catch (err) {
-      setError(err.message || 'Failed to upload documents. Please try again.');
+      setError(err.message || t('podUpload.failedToUpload'));
     } finally {
       setUploading(false);
     }
@@ -125,10 +127,10 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Upload Proof of Delivery
+              {t('podUpload.title')}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              Load #{loadNumber}
+              {t('podUpload.loadNumber', { loadNumber })}
             </p>
           </div>
           <button
@@ -149,10 +151,10 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
                 <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
               </div>
               <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Upload Successful!
+                {t('podUpload.uploadSuccessful')}
               </h4>
               <p className="text-gray-600 dark:text-gray-400">
-                Your documents have been uploaded successfully.
+                {t('podUpload.documentsUploaded')}
               </p>
             </div>
           ) : (
@@ -178,9 +180,9 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
                   </div>
                   <div className="text-sm">
                     <span className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
-                      Click to upload
+                      {t('podUpload.clickToUpload')}
                     </span>
-                    <span className="text-gray-600 dark:text-gray-400"> or drag and drop</span>
+                    <span className="text-gray-600 dark:text-gray-400"> {t('podUpload.orDragAndDrop')}</span>
                     <input
                       type="file"
                       multiple
@@ -192,7 +194,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
                     />
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    PNG, JPG, PDF up to 10MB
+                    {t('podUpload.supportedFiles')}
                   </p>
                 </div>
               </div>
@@ -202,7 +204,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
                     <CheckCircle size={16} className="text-green-500 dark:text-green-400 mr-2" />
-                    Selected Files ({files.length})
+                    {t('podUpload.selectedFiles', { count: files.length })}
                   </h4>
                   <ul className="space-y-2">
                     {files.map((file, index) => (
@@ -245,7 +247,7 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
               disabled={uploading}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
             >
-              Cancel
+              {t('podUpload.cancel')}
             </button>
             <button
               onClick={handleUpload}
@@ -255,12 +257,12 @@ export default function PODUploadModal({ loadId, loadNumber, onClose, onSuccess 
               {uploading ? (
                 <>
                   <Loader2 size={16} className="mr-2 animate-spin" />
-                  Uploading...
+                  {t('podUpload.uploading')}
                 </>
               ) : (
                 <>
                   <Upload size={16} className="mr-2" />
-                  Upload Documents
+                  {t('podUpload.uploadDocuments')}
                 </>
               )}
             </button>

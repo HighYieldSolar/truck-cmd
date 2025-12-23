@@ -6,8 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { KeyRound, AlertCircle, RefreshCw } from "lucide-react";
 import { resetPassword } from "@/lib/supabaseAuth";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ForgotPassword() {
+  const { t } = useTranslation('auth');
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   
@@ -20,7 +22,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     
     if (!userEmail || !userEmail.includes('@')) {
-      setError("Please enter a valid email address");
+      setError(t('forgotPassword.validEmail'));
       return;
     }
     
@@ -35,7 +37,7 @@ export default function ForgotPassword() {
       
       setIsSubmitted(true);
     } catch (error) {
-      setError(error.message || "Failed to send password reset email. Please try again.");
+      setError(error.message || t('forgotPassword.sendFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -51,12 +53,12 @@ export default function ForgotPassword() {
         </div>
         
         <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
-          {isSubmitted ? "Check Your Email" : "Reset Your Password"}
+          {isSubmitted ? t('forgotPassword.checkEmail') : t('forgotPassword.title')}
         </h1>
-        
+
         {!isSubmitted && (
           <p className="text-gray-600 mt-2 text-center">
-            Enter your email below to receive password reset instructions
+            {t('forgotPassword.description')}
           </p>
         )}
         
@@ -71,26 +73,26 @@ export default function ForgotPassword() {
           <div className="mt-4 w-full">
             <div className="bg-green-50 border border-green-200 text-green-600 p-4 rounded-md mb-6">
               <p className="text-center">
-                We&apos;ve sent a password reset link to <strong>{userEmail}</strong>.
-                Please check your inbox and follow the instructions.
+                {t('forgotPassword.emailSent')} <strong>{userEmail}</strong>.
+                {t('forgotPassword.checkInbox')}
               </p>
             </div>
-            
+
             <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
               <AlertCircle size={20} className="text-yellow-600 mr-2 flex-shrink-0 mt-1" />
               <p className="text-yellow-700 text-sm">
-                If you don&apos;t see the email in your inbox, please check your spam folder.
+                {t('forgotPassword.checkSpam')}
               </p>
             </div>
-            
+
             <div className="mt-6 space-y-4">
               <Link
                 href="/login"
                 className="block w-full text-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition"
               >
-                Back to Login
+                {t('forgotPassword.backToLogin')}
               </Link>
-              
+
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
@@ -99,10 +101,10 @@ export default function ForgotPassword() {
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
                     <RefreshCw size={18} className="animate-spin mr-2" />
-                    Sending...
+                    {t('forgotPassword.sending')}
                   </span>
                 ) : (
-                  "Resend Reset Email"
+                  t('forgotPassword.resendEmail')
                 )}
               </button>
             </div>
@@ -111,19 +113,19 @@ export default function ForgotPassword() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-6 w-full">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 text-left mb-1">
-                Email Address
+                {t('forgotPassword.emailLabel')}
               </label>
               <input
                 id="email"
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder={t('forgotPassword.enterEmail')}
                 className="w-full p-3 border rounded bg-white text-gray-900 focus:ring focus:ring-blue-300 focus:border-blue-300"
                 required
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={isSubmitting}
@@ -132,16 +134,16 @@ export default function ForgotPassword() {
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <RefreshCw size={18} className="animate-spin mr-2" />
-                  Sending...
+                  {t('forgotPassword.sending')}
                 </span>
               ) : (
-                "Send Reset Instructions"
+                t('forgotPassword.sendInstructions')
               )}
             </button>
-            
+
             <div className="text-center">
               <Link href="/login" className="text-blue-500 hover:underline text-sm">
-                Return to Login
+                {t('forgotPassword.returnToLogin')}
               </Link>
             </div>
           </form>

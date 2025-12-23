@@ -9,8 +9,11 @@ import {
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
+  const { t } = useTranslation('dispatching');
+
   // Format currency
   const formatCurrency = (amount) => {
     return '$' + parseFloat(amount || 0).toLocaleString(undefined, {
@@ -79,7 +82,7 @@ export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
       {/* Driver */}
       <td className="px-3 py-3">
         <span className={`text-sm block truncate max-w-[100px] ${load.driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}>
-          {load.driver || 'Unassigned'}
+          {load.driver || t('loadCard.unassigned')}
         </span>
       </td>
 
@@ -102,7 +105,7 @@ export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
             <Link
               href={`/dashboard/dispatching/complete/${load.id}`}
               className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
-              title="Mark Complete"
+              title={t('loadCard.markComplete')}
               onClick={(e) => e.stopPropagation()}
             >
               <CheckCircle size={16} />

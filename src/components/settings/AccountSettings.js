@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   RefreshCw,
   CheckCircle,
@@ -17,6 +18,7 @@ import {
 import Link from "next/link";
 
 export default function AccountSettings() {
+  const { t } = useTranslation('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
@@ -53,7 +55,7 @@ export default function AccountSettings() {
         setUser(user);
 
       } catch (error) {
-        setErrorMessage('Failed to load your account information. Please try again later.');
+        setErrorMessage(t('account.messages.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -78,18 +80,18 @@ export default function AccountSettings() {
     try {
       // Validate current password is provided
       if (!passwordData.currentPassword) {
-        setErrorMessage("Please enter your current password.");
+        setErrorMessage(t('account.messages.enterCurrentPassword'));
         return;
       }
 
       // Validate passwords
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setErrorMessage("New passwords don't match.");
+        setErrorMessage(t('account.messages.passwordsMismatch'));
         return;
       }
 
       if (passwordData.newPassword.length < 8) {
-        setErrorMessage("New password must be at least 8 characters long.");
+        setErrorMessage(t('account.messages.passwordTooShort'));
         return;
       }
 
@@ -104,7 +106,7 @@ export default function AccountSettings() {
       });
 
       if (signInError) {
-        setErrorMessage("Current password is incorrect.");
+        setErrorMessage(t('account.messages.incorrectPassword'));
         setSaving(false);
         return;
       }
@@ -123,7 +125,7 @@ export default function AccountSettings() {
         confirmPassword: ''
       });
 
-      setSuccessMessage('Password updated successfully!');
+      setSuccessMessage(t('account.messages.passwordUpdated'));
 
       // Hide success message after 5 seconds
       setTimeout(() => {
@@ -131,7 +133,7 @@ export default function AccountSettings() {
       }, 5000);
 
     } catch (error) {
-      setErrorMessage(`Failed to update password: ${error.message}`);
+      setErrorMessage(`${t('account.messages.passwordUpdateFailed')}: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -141,7 +143,7 @@ export default function AccountSettings() {
   const deleteAccount = async () => {
     try {
       if (deleteConfirmation !== 'delete my account') {
-        setErrorMessage("Please type 'delete my account' to confirm.");
+        setErrorMessage(t('account.messages.deleteConfirmRequired'));
         return;
       }
 
@@ -152,7 +154,7 @@ export default function AccountSettings() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        setErrorMessage('Session expired. Please log in again.');
+        setErrorMessage(t('account.messages.sessionExpired'));
         setSaving(false);
         return;
       }
@@ -180,7 +182,7 @@ export default function AccountSettings() {
       window.location.href = '/?deleted=true';
 
     } catch (error) {
-      setErrorMessage(`Failed to delete account: ${error.message}`);
+      setErrorMessage(`${t('account.messages.deleteAccountFailed')}: ${error.message}`);
       setSaving(false);
     }
   };
@@ -191,7 +193,7 @@ export default function AccountSettings() {
       await supabase.auth.signOut();
       window.location.href = '/login';
     } catch (error) {
-      setErrorMessage(`Failed to log out: ${error.message}`);
+      setErrorMessage(`${t('account.messages.logoutFailed')}: ${error.message}`);
     }
   };
 
@@ -204,13 +206,13 @@ export default function AccountSettings() {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage(t('account.messages.invalidEmail'));
       return;
     }
 
     // Check if new email is different
     if (newEmail.toLowerCase() === user.email.toLowerCase()) {
-      setErrorMessage('New email must be different from your current email.');
+      setErrorMessage(t('account.messages.sameEmail'));
       return;
     }
 
@@ -226,11 +228,7 @@ export default function AccountSettings() {
 
       // Show success message
       setEmailChangeSuccess(true);
-      setSuccessMessage(
-        'A confirmation email has been sent to your new email address. ' +
-        'Please click the link in that email to complete the change. ' +
-        'You may also need to confirm on your old email address.'
-      );
+      setSuccessMessage(t('account.messages.emailConfirmationSent'));
 
       // Reset form after a delay
       setTimeout(() => {
@@ -241,11 +239,11 @@ export default function AccountSettings() {
 
     } catch (error) {
       if (error.message.includes('rate limit')) {
-        setErrorMessage('Too many requests. Please wait a few minutes and try again.');
+        setErrorMessage(t('account.messages.emailRateLimit'));
       } else if (error.message.includes('already registered')) {
-        setErrorMessage('This email address is already in use by another account.');
+        setErrorMessage(t('account.messages.emailInUse'));
       } else {
-        setErrorMessage(`Failed to change email: ${error.message}`);
+        setErrorMessage(`${t('account.messages.emailChangeFailed')}: ${error.message}`);
       }
     } finally {
       setEmailChangeLoading(false);
@@ -256,7 +254,7 @@ export default function AccountSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
-        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading account settings...</span>
+        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('account.loading')}</span>
       </div>
     );
   }
@@ -285,14 +283,14 @@ export default function AccountSettings() {
       {/* Account Information */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Account Information</h3>
+          <h3 className="text-lg font-medium text-white">{t('account.accountInfo')}</h3>
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-600">
           <div className="flex items-center mb-4">
             <Mail className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Email Address</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">{t('account.email')}</div>
               <div className="font-medium text-gray-900 dark:text-white">{user?.email}</div>
             </div>
           </div>
@@ -300,15 +298,15 @@ export default function AccountSettings() {
           <div className="flex items-center">
             <Shield className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-3" />
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">Account Status</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">{t('account.accountStatus')}</div>
               <div className="font-medium text-gray-900 dark:text-white">
                 {user?.email_confirmed_at ? (
                   <span className="inline-flex items-center text-green-600 dark:text-green-400">
                     <CheckCircle size={16} className="mr-1" />
-                    Verified Account
+                    {t('account.verifiedAccount')}
                   </span>
                 ) : (
-                  <span className="text-orange-600 dark:text-orange-400">Unverified Account</span>
+                  <span className="text-orange-600 dark:text-orange-400">{t('account.unverifiedAccount')}</span>
                 )}
               </div>
             </div>
@@ -319,7 +317,7 @@ export default function AccountSettings() {
       {/* Change Email */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Change Email</h3>
+          <h3 className="text-lg font-medium text-white">{t('account.changeEmail')}</h3>
         </div>
 
         <div className="bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
@@ -327,10 +325,10 @@ export default function AccountSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Your current email address is <strong className="text-gray-900 dark:text-white">{user?.email}</strong>
+                  {t('account.currentEmail')} <strong className="text-gray-900 dark:text-white">{user?.email}</strong>
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Click the button to change your email address.
+                  {t('account.clickToChangeEmail')}
                 </p>
               </div>
               <button
@@ -338,7 +336,7 @@ export default function AccountSettings() {
                 className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <Edit2 size={18} className="mr-2" />
-                Change Email
+                {t('account.changeEmail')}
               </button>
             </div>
           ) : emailChangeSuccess ? (
@@ -346,10 +344,10 @@ export default function AccountSettings() {
               <div className="flex items-start">
                 <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <h4 className="font-medium text-green-800 dark:text-green-300">Confirmation Email Sent</h4>
+                  <h4 className="font-medium text-green-800 dark:text-green-300">{t('account.confirmationSent')}</h4>
                   <p className="text-green-700 dark:text-green-400 mt-1 text-sm">
-                    We&apos;ve sent a confirmation link to <strong>{newEmail}</strong>.
-                    Please check your inbox and click the link to complete the email change.
+                    {t('account.checkInbox')} <strong>{newEmail}</strong>.
+                    {t('account.checkInboxInstructions')}
                   </p>
                 </div>
               </div>
@@ -358,19 +356,19 @@ export default function AccountSettings() {
             <form onSubmit={handleEmailChange}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="newEmail">
-                  New Email Address
+                  {t('account.newEmailAddress')}
                 </label>
                 <input
                   type="email"
                   id="newEmail"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Enter your new email address"
+                  placeholder={t('account.enterNewEmail')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  You will need to verify your new email address before the change takes effect.
+                  {t('account.verifyNewEmail')}
                 </p>
               </div>
 
@@ -383,7 +381,7 @@ export default function AccountSettings() {
                   }}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                 >
-                  Cancel
+                  {t('common:buttons.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -393,12 +391,12 @@ export default function AccountSettings() {
                   {emailChangeLoading ? (
                     <>
                       <RefreshCw size={18} className="animate-spin mr-2" />
-                      Sending Confirmation...
+                      {t('account.sendingConfirmation')}
                     </>
                   ) : (
                     <>
                       <Mail size={18} className="mr-2" />
-                      Send Confirmation Email
+                      {t('account.sendConfirmation')}
                     </>
                   )}
                 </button>
@@ -411,13 +409,13 @@ export default function AccountSettings() {
       {/* Change Password */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Change Password</h3>
+          <h3 className="text-lg font-medium text-white">{t('account.changePassword')}</h3>
         </div>
 
         <form onSubmit={updatePassword} className="bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="currentPassword">
-              Current Password
+              {t('account.currentPassword')}
             </label>
             <input
               type="password"
@@ -432,7 +430,7 @@ export default function AccountSettings() {
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="newPassword">
-              New Password
+              {t('account.newPassword')}
             </label>
             <input
               type="password"
@@ -444,13 +442,13 @@ export default function AccountSettings() {
               required
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Password must be at least 8 characters long.
+              {t('account.passwordMinLength')}
             </p>
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="confirmPassword">
-              Confirm New Password
+              {t('account.confirmPassword')}
             </label>
             <input
               type="password"
@@ -472,12 +470,12 @@ export default function AccountSettings() {
               {saving ? (
                 <>
                   <RefreshCw size={18} className="animate-spin mr-2" />
-                  Updating...
+                  {t('account.updatingPassword')}
                 </>
               ) : (
                 <>
                   <Key size={18} className="mr-2" />
-                  Update Password
+                  {t('account.updatePassword')}
                 </>
               )}
             </button>
@@ -488,12 +486,12 @@ export default function AccountSettings() {
       {/* Sign Out */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Sign Out</h3>
+          <h3 className="text-lg font-medium text-white">{t('account.signOut')}</h3>
         </div>
 
         <div className="bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Sign out from your current session on this device.
+            {t('account.signOutDescription')}
           </p>
 
           <button
@@ -501,7 +499,7 @@ export default function AccountSettings() {
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <LogOut size={18} className="mr-2" />
-            Sign Out
+            {t('account.signOut')}
           </button>
         </div>
       </div>
@@ -509,23 +507,23 @@ export default function AccountSettings() {
       {/* Delete Account */}
       <div>
         <div className="bg-gradient-to-r from-red-600 to-red-500 dark:from-red-700 dark:to-red-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Delete Account</h3>
+          <h3 className="text-lg font-medium text-white">{t('account.deleteAccount')}</h3>
         </div>
 
         <div className="bg-white dark:bg-gray-700/30 rounded-lg border border-red-200 dark:border-red-900/50 p-6">
           <div className="flex items-start mb-4">
             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Delete Your Account</h4>
+              <h4 className="font-medium text-gray-900 dark:text-white">{t('account.deleteYourAccount')}</h4>
               <p className="text-gray-600 dark:text-gray-300 mt-1">
-                Permanently delete your account and all associated data. This action cannot be undone.
+                {t('account.deleteAccountDescription')}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                Review our{' '}
-                <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">Terms of Service</Link>
-                {' '}and{' '}
-                <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</Link>
-                {' '}for information about data retention and your rights.
+                {t('account.reviewPolicies')}{' '}
+                <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">{t('account.termsOfService')}</Link>
+                {' '}{t('account.and')}{' '}
+                <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">{t('account.privacyPolicy')}</Link>
+                {' '}{t('account.policyInfo')}
               </p>
             </div>
           </div>
@@ -536,12 +534,12 @@ export default function AccountSettings() {
               className="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg shadow-sm text-sm font-medium text-red-700 dark:text-red-400 bg-white dark:bg-transparent hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
             >
               <Trash2 size={18} className="mr-2" />
-              Delete Account
+              {t('account.deleteAccount')}
             </button>
           ) : (
             <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg border border-red-200 dark:border-red-800">
               <p className="text-red-700 dark:text-red-300 mb-4">
-                This action cannot be undone. All of your data will be permanently deleted. Please type <strong>delete my account</strong> to confirm.
+                {t('account.deleteWarning')} <strong>{t('account.typeToConfirm')}</strong> {t('account.toConfirm')}
               </p>
 
               <div className="mb-4">
@@ -550,7 +548,7 @@ export default function AccountSettings() {
                   value={deleteConfirmation}
                   onChange={(e) => setDeleteConfirmation(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Type 'delete my account' to confirm"
+                  placeholder={t('account.confirmDeletePlaceholder')}
                 />
               </div>
 
@@ -562,7 +560,7 @@ export default function AccountSettings() {
                   }}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                 >
-                  Cancel
+                  {t('common:buttons.cancel')}
                 </button>
 
                 <button
@@ -573,12 +571,12 @@ export default function AccountSettings() {
                   {saving ? (
                     <>
                       <RefreshCw size={18} className="animate-spin mr-2" />
-                      Deleting...
+                      {t('account.deleting')}
                     </>
                   ) : (
                     <>
                       <Trash2 size={18} className="mr-2" />
-                      Permanently Delete Account
+                      {t('account.permanentlyDelete')}
                     </>
                   )}
                 </button>

@@ -2,14 +2,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Truck } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
-export default function VehicleSelector({ 
-  selectedVehicleId, 
-  onChange, 
+export default function VehicleSelector({
+  selectedVehicleId,
+  onChange,
   className,
   required = false,
   disabled = false
 }) {
+  const { t } = useTranslation('fuel');
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,7 +60,7 @@ export default function VehicleSelector({
           })));
         }
       } catch (err) {
-        setError('Failed to load vehicles');
+        setError(t('vehicleSelector.failedToLoad'));
       } finally {
         setLoading(false);
       }
@@ -96,16 +98,16 @@ export default function VehicleSelector({
 
   return (
     <div className={className}>
-      <label htmlFor="vehicle_id" className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-        <Truck size={16} className="text-gray-400 mr-1" /> Vehicle ID {required && '*'}
+      <label htmlFor="vehicle_id" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+        <Truck size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('vehicleSelector.vehicleId')} {required && '*'}
       </label>
-      
+
       {loading ? (
         <select
           disabled
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
-          <option>Loading vehicles...</option>
+          <option>{t('vehicleSelector.loading')}</option>
         </select>
       ) : error ? (
         <div>
@@ -114,14 +116,14 @@ export default function VehicleSelector({
             name="vehicle_id"
             value={selectedVehicleId}
             onChange={handleChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+            className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             required={required}
             disabled={disabled}
           >
-            <option value="">Enter Vehicle ID</option>
+            <option value="">{t('vehicleSelector.enterVehicleId')}</option>
             {selectedVehicleId && <option value={selectedVehicleId}>{selectedVehicleId}</option>}
           </select>
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       ) : vehicles.length > 0 ? (
         <select
@@ -129,11 +131,11 @@ export default function VehicleSelector({
           name="vehicle_id"
           value={selectedVehicleId}
           onChange={handleChange}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           required={required}
           disabled={disabled}
         >
-          <option value="">Select Vehicle</option>
+          <option value="">{t('vehicleSelector.selectVehicle')}</option>
           {vehicles.map(vehicle => (
             <option key={vehicle.id} value={vehicle.id}>
               {vehicle.displayName}
@@ -148,12 +150,12 @@ export default function VehicleSelector({
             name="vehicle_id"
             value={selectedVehicleId}
             onChange={handleChange}
-            placeholder="Enter Vehicle ID"
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+            placeholder={t('vehicleSelector.enterVehicleId')}
+            className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             required={required}
             disabled={disabled}
           />
-          <p className="mt-1 text-sm text-gray-500">No saved vehicles found. Enter an ID for your vehicle.</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('vehicleSelector.noVehiclesFound')}</p>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabaseClient";
 import { getUSStates } from "@/lib/services/fuelService";
 import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Import the VehicleSelector component
 import VehicleSelector from "@/components/fuel/VehicleSelector";
@@ -35,6 +36,7 @@ const defaultFormData = {
 
 
 export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSubmitting = false, vehicles = [] }) {
+  const { t } = useTranslation('fuel');
 
   const formKey = fuelEntry ? `fuelEntry-${fuelEntry.id}` : `fuelEntry-${uuidv4()}`;
   const storedData = localStorage.getItem(formKey);
@@ -196,38 +198,38 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
 
   const validateField = (name, value) => {
     let error = null;
-    
+
     switch (name) {
       case 'date':
-        if (!value) error = 'Date is required';
+        if (!value) error = t('validation.dateRequired');
         break;
       case 'state':
-        if (!value) error = 'State is required';
+        if (!value) error = t('validation.stateRequired');
         break;
       case 'location':
-        if (!value) error = 'Location is required';
+        if (!value) error = t('validation.locationRequired');
         break;
       case 'gallons':
-        if (!value) error = 'Gallons is required';
-        if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) error = 'Enter a valid number greater than 0';
+        if (!value) error = t('validation.gallonsRequired');
+        if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) error = t('validation.validNumber');
         break;
       case 'price_per_gallon':
         if (calculationMode === 'total' && (!value || parseFloat(value) <= 0)) {
-          error = 'Enter a valid price per gallon';
+          error = t('validation.validPrice');
         }
         break;
       case 'total_amount':
         if (calculationMode === 'price' && (!value || parseFloat(value) <= 0)) {
-          error = 'Enter a valid total amount';
+          error = t('validation.validTotal');
         }
         break;
       case 'vehicle_id':
-        if (!value) error = 'Vehicle ID is required';
+        if (!value) error = t('validation.vehicleRequired');
         break;
       default:
         break;
     }
-    
+
     setErrors(prev => ({ ...prev, [name]: error }));
     return !error;
   };
@@ -293,7 +295,7 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
     } catch (error) {
       setErrors(prev => ({
         ...prev,
-        form: 'Failed to save fuel entry. Please try again.'
+        form: t('form.failedToSave')
       }));
     }
   };
@@ -314,7 +316,7 @@ if (!isOpen) return null;
         <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
             <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
-            {fuelEntry ? "Edit Fuel Purchase" : "Add New Fuel Purchase"}
+            {fuelEntry ? t('editFuelPurchase') : t('addNewFuelPurchase')}
           </h2>
           <button
             onClick={onClose}
@@ -343,7 +345,7 @@ if (!isOpen) return null;
             <div className="space-y-5">
               <div>
                 <label htmlFor="date" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <Calendar size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Date *
+                  <Calendar size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.dateRequired')}
                 </label>
                 <input
                   type="date"
@@ -367,7 +369,7 @@ if (!isOpen) return null;
 
               <div>
                 <label htmlFor="state" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <MapPin size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> State *
+                  <MapPin size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.stateRequired')}
                 </label>
                 <select
                   id="state"
@@ -389,7 +391,7 @@ if (!isOpen) return null;
                   } rounded-md shadow-sm text-sm focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                   required
                 >
-                  <option value="" disabled>Select State</option>
+                  <option value="" disabled>{t('form.selectState')}</option>
                   {states.map((state) =>
                     <option key={state.code} value={state.code}>{state.name} ({state.code})</option>
                   )}
@@ -404,13 +406,13 @@ if (!isOpen) return null;
 
               <div>
                 <label htmlFor="location" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <MapPin size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Location/Station *
+                  <MapPin size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.locationRequired')}
                 </label>
                 <input
                   type="text"
                   id="location"
                   name="location"
-                  placeholder="E.g., Flying J Truck Stop"
+                  placeholder={t('form.locationPlaceholder')}
                   value={formData.location}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -429,7 +431,7 @@ if (!isOpen) return null;
 
               <div>
                 <label htmlFor="gallons" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <Fuel size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Gallons *
+                  <Fuel size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.gallonsRequired')}
                 </label>
                 <input
                   type="number"
@@ -457,7 +459,7 @@ if (!isOpen) return null;
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="price_per_gallon" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <DollarSign size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Price/Gallon *
+                    <DollarSign size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.pricePerGallonRequired')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -490,7 +492,7 @@ if (!isOpen) return null;
 
                 <div>
                   <label htmlFor="total_amount" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <DollarSign size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Total Amount *
+                    <DollarSign size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.totalAmountRequired')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -528,7 +530,7 @@ if (!isOpen) return null;
                   onClick={toggleCalculationMode}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
-                  Switch to {calculationMode === 'total' ? 'calculate price per gallon' : 'calculate total amount'}
+                  {calculationMode === 'total' ? t('form.switchToCalculatePrice') : t('form.switchToCalculateTotal')}
                 </button>
               </div>
               
@@ -551,13 +553,13 @@ if (!isOpen) return null;
 
               <div>
                 <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Odometer Reading
+                  {t('form.odometerReading')}
                 </label>
                 <input
                   type="number"
                   id="odometer"
                   name="odometer"
-                  placeholder="Current mileage"
+                  placeholder={t('form.odometerPlaceholder')}
                   min="0"
                   value={formData.odometer}
                   onChange={handleChange}
@@ -567,7 +569,7 @@ if (!isOpen) return null;
 
               <div>
                 <label htmlFor="fuel_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Fuel Type
+                  {t('form.fuelType')}
                 </label>
                 <select
                   id="fuel_type"
@@ -576,18 +578,18 @@ if (!isOpen) return null;
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Diesel">Diesel</option>
-                  <option value="Gasoline">Gasoline</option>
-                  <option value="DEF">DEF</option>
-                  <option value="CNG">CNG</option>
-                  <option value="LNG">LNG</option>
-                  <option value="Other">Other</option>
+                  <option value="Diesel">{t('fuelTypesOptions.diesel')}</option>
+                  <option value="Gasoline">{t('fuelTypesOptions.gasoline')}</option>
+                  <option value="DEF">{t('fuelTypesOptions.def')}</option>
+                  <option value="CNG">{t('fuelTypesOptions.cng')}</option>
+                  <option value="LNG">{t('fuelTypesOptions.lng')}</option>
+                  <option value="Other">{t('fuelTypesOptions.other')}</option>
                 </select>
               </div>
 
               <div>
                 <label htmlFor="payment_method" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <CreditCard size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> Payment Method
+                  <CreditCard size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.paymentMethod')}
                 </label>
                 <select
                   id="payment_method"
@@ -596,12 +598,12 @@ if (!isOpen) return null;
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                  <option value="Cash">Cash</option>
-                  <option value="EFT">EFT</option>
-                  <option value="Fuel Card">Fuel Card</option>
-                  <option value="Other">Other</option>
+                  <option value="Credit Card">{t('paymentMethods.creditCard')}</option>
+                  <option value="Debit Card">{t('paymentMethods.debitCard')}</option>
+                  <option value="Cash">{t('paymentMethods.cash')}</option>
+                  <option value="EFT">{t('paymentMethods.eft')}</option>
+                  <option value="Fuel Card">{t('paymentMethods.fuelCard')}</option>
+                  <option value="Other">{t('paymentMethods.other')}</option>
                 </select>
               </div>
             </div>
@@ -610,7 +612,7 @@ if (!isOpen) return null;
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Receipt Image (optional)
+                  {t('form.receiptImage')}
                 </label>
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md bg-white dark:bg-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <div className="space-y-1 text-center">
@@ -633,7 +635,7 @@ if (!isOpen) return null;
                         htmlFor="receipt_image"
                         className="relative cursor-pointer rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 focus-within:outline-none"
                       >
-                        <span>Upload a file</span>
+                        <span>{t('form.uploadFile')}</span>
                         <input
                           id="receipt_image"
                           name="receipt_image"
@@ -643,10 +645,10 @@ if (!isOpen) return null;
                           onChange={handleChange}
                         />
                       </label>
-                      <p className="pl-1">or drag and drop</p>
+                      <p className="pl-1">{t('form.orDragDrop')}</p>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
-                      PNG, JPG, GIF up to 10MB
+                      {t('form.fileTypes')}
                     </p>
                   </div>
                 </div>
@@ -656,7 +658,7 @@ if (!isOpen) return null;
               {formData.receipt_preview && (
                 <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
                   <div className="mb-2 flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Receipt Preview</h3>
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.receiptPreview')}</h3>
                     <button
                       type="button"
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
@@ -678,7 +680,7 @@ if (!isOpen) return null;
               {/* Notes Field */}
               <div>
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes
+                  {t('form.notes')}
                 </label>
                 <textarea
                   id="notes"
@@ -686,7 +688,7 @@ if (!isOpen) return null;
                   rows="3"
                   value={formData.notes || ''}
                   onChange={handleChange}
-                  placeholder="Additional information about this purchase"
+                  placeholder={t('form.notesPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 ></textarea>
               </div>
@@ -696,9 +698,9 @@ if (!isOpen) return null;
                 <div className="flex items-start">
                   <Info size={16} className="text-yellow-700 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" />
                   <div>
-                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">IFTA Reporting Information</h3>
+                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{t('form.iftaInfo')}</h3>
                     <p className="text-sm text-yellow-700 dark:text-yellow-400/80 mt-1">
-                      This fuel purchase will be included in your IFTA quarterly reports. Accurate state information is critical for proper tax reporting.
+                      {t('form.iftaDescription')}
                     </p>
                   </div>
                 </div>
@@ -713,7 +715,7 @@ if (!isOpen) return null;
               className="bg-white dark:bg-gray-700 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -723,10 +725,10 @@ if (!isOpen) return null;
               {isSubmitting ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
-                  Saving...
+                  {t('common:buttons.saving')}
                 </>
               ) : (
-                fuelEntry ? "Update Fuel Entry" : "Save Fuel Entry"
+                fuelEntry ? t('updateFuelEntry') : t('saveFuelEntry')
               )}
             </button>
           </div>

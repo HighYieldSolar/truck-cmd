@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   RefreshCw,
   Save,
@@ -18,6 +19,7 @@ import {
 import Link from "next/link";
 
 export default function PrivacySettings() {
+  const { t } = useTranslation('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
@@ -61,7 +63,7 @@ export default function PrivacySettings() {
         }
 
       } catch (error) {
-        setErrorMessage('Failed to load your privacy settings. Please try again later.');
+        setErrorMessage(t('privacy.messages.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -95,14 +97,14 @@ export default function PrivacySettings() {
 
       if (error) throw error;
 
-      setSuccessMessage('Privacy settings updated successfully!');
+      setSuccessMessage(t('privacy.messages.updateSuccess'));
 
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
 
     } catch (error) {
-      setErrorMessage(`Failed to update privacy settings: ${error.message}`);
+      setErrorMessage(`${t('privacy.messages.updateFailed')}: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -167,11 +169,11 @@ export default function PrivacySettings() {
     // Validate passwords for encrypted export
     if (exportFormat === 'encrypted') {
       if (!exportPassword || exportPassword.length < 8) {
-        setErrorMessage('Password must be at least 8 characters long.');
+        setErrorMessage(t('privacy.messages.passwordTooShort'));
         return;
       }
       if (exportPassword !== confirmExportPassword) {
-        setErrorMessage('Passwords do not match.');
+        setErrorMessage(t('privacy.messages.passwordsMismatch'));
         return;
       }
     }
@@ -252,8 +254,8 @@ export default function PrivacySettings() {
 
       setSuccessMessage(
         exportFormat === 'encrypted'
-          ? 'Your encrypted data has been exported. Keep your password safe - you will need it to decrypt the file.'
-          : 'Your data has been exported successfully!'
+          ? t('privacy.messages.exportEncryptedSuccess')
+          : t('privacy.messages.exportPlainSuccess')
       );
 
       setTimeout(() => {
@@ -261,7 +263,7 @@ export default function PrivacySettings() {
       }, 7000);
 
     } catch (error) {
-      setErrorMessage('Failed to export data. Please try again or contact support.');
+      setErrorMessage(t('privacy.messages.exportFailed'));
     } finally {
       setExportingData(false);
     }
@@ -271,7 +273,7 @@ export default function PrivacySettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
-        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading privacy settings...</span>
+        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('privacy.loading')}</span>
       </div>
     );
   }
@@ -317,7 +319,7 @@ export default function PrivacySettings() {
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
           <h3 className="text-lg font-medium text-white flex items-center">
             <Shield size={20} className="mr-2" />
-            Your Privacy
+            {t('privacy.yourPrivacy')}
           </h3>
         </div>
 
@@ -325,12 +327,12 @@ export default function PrivacySettings() {
           <div className="flex items-start">
             <Info size={20} className="text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              <p className="font-medium mb-1">How we protect your data</p>
+              <p className="font-medium mb-1">{t('privacy.howWeProtect')}</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
-                <li>Your business data is encrypted and stored securely</li>
-                <li>We never sell your personal information to third parties</li>
-                <li>We only use essential cookies required for the app to function</li>
-                <li>Payment processing is handled securely by Stripe</li>
+                <li>{t('privacy.protectionList.encrypted')}</li>
+                <li>{t('privacy.protectionList.noSell')}</li>
+                <li>{t('privacy.protectionList.essentialCookies')}</li>
+                <li>{t('privacy.protectionList.stripePayments')}</li>
               </ul>
             </div>
           </div>
@@ -343,21 +345,21 @@ export default function PrivacySettings() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
             <h3 className="text-lg font-medium text-white flex items-center">
               <Mail size={20} className="mr-2" />
-              Email Preferences
+              {t('privacy.emailPreferences')}
             </h3>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Choose what emails you want to receive from Truck Command. Transactional emails (invoices, password resets, security alerts) will always be sent.
+            {t('privacy.emailPreferencesDescription')}
           </p>
 
           <div className="space-y-4 bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 dark:text-white">
-                  Product updates & news
+                  {t('privacy.productUpdates')}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Receive emails about new features, improvements, and tips for using Truck Command
+                  {t('privacy.productUpdatesDescription')}
                 </p>
               </div>
               <div className="flex-shrink-0 pt-0.5">
@@ -372,10 +374,10 @@ export default function PrivacySettings() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white">
-                    Promotional emails
+                    {t('privacy.promotionalEmails')}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Receive occasional emails about special offers and promotions
+                    {t('privacy.promotionalEmailsDescription')}
                   </p>
                 </div>
                 <div className="flex-shrink-0 pt-0.5">
@@ -399,12 +401,12 @@ export default function PrivacySettings() {
             {saving ? (
               <>
                 <RefreshCw size={18} className="animate-spin mr-2" />
-                Saving...
+                {t('privacy.saving')}
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                Save Preferences
+                {t('privacy.savePreferences')}
               </>
             )}
           </button>
@@ -416,11 +418,11 @@ export default function PrivacySettings() {
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
           <h3 className="text-lg font-medium text-white flex items-center">
             <FileText size={20} className="mr-2" />
-            Your Data Rights
+            {t('privacy.dataRights')}
           </h3>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Under the California Consumer Privacy Act (CCPA), you have the right to access, download, and delete your personal data.
+          {t('privacy.dataRightsDescription')}
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -429,9 +431,9 @@ export default function PrivacySettings() {
             <div className="flex items-start mb-4">
               <Download size={24} className="text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Download your data</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white">{t('privacy.downloadData')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Get a copy of all your data including loads, invoices, customers, expenses, and more.
+                  {t('privacy.downloadDataDescription')}
                 </p>
               </div>
             </div>
@@ -441,7 +443,7 @@ export default function PrivacySettings() {
               className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               <Download size={18} className="mr-2" />
-              Export Data
+              {t('privacy.exportData')}
             </button>
           </div>
 
@@ -450,9 +452,9 @@ export default function PrivacySettings() {
             <div className="flex items-start mb-4">
               <Trash2 size={24} className="text-red-500 dark:text-red-400 mr-3 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Delete your account</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white">{t('privacy.deleteAccount')}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Permanently delete your account and all associated data from our systems.
+                  {t('privacy.deleteAccountDescription')}
                 </p>
               </div>
             </div>
@@ -461,7 +463,7 @@ export default function PrivacySettings() {
               className="w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg shadow-sm text-sm font-medium text-red-700 dark:text-red-400 bg-white dark:bg-transparent hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
             >
               <Trash2 size={18} className="mr-2" />
-              Go to Account Settings
+              {t('privacy.goToAccountSettings')}
             </Link>
           </div>
         </div>
@@ -470,40 +472,40 @@ export default function PrivacySettings() {
       {/* Legal Documents */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-          <h3 className="text-lg font-medium text-white">Legal Documents</h3>
+          <h3 className="text-lg font-medium text-white">{t('privacy.legalDocuments')}</h3>
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
           <p className="text-gray-600 dark:text-gray-300 mb-4">
-            Review our legal documents to understand how we collect, use, and protect your data.
+            {t('privacy.legalDocumentsDescription')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link
               href="/privacy"
               className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
             >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Privacy Policy</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{t('privacy.privacyPolicy')}</span>
               <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
             </Link>
             <Link
               href="/cookies"
               className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
             >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Cookie Policy</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{t('privacy.cookiePolicy')}</span>
               <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
             </Link>
             <Link
               href="/terms"
               className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
             >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Terms of Service</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{t('privacy.termsOfService')}</span>
               <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
             </Link>
             <Link
               href="/acceptable-use"
               className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group"
             >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">Acceptable Use Policy</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{t('privacy.acceptableUsePolicy')}</span>
               <ExternalLink size={16} className="text-gray-400 group-hover:text-blue-500" />
             </Link>
           </div>
@@ -515,9 +517,9 @@ export default function PrivacySettings() {
         <div className="flex items-start">
           <Shield size={24} className="text-gray-400 dark:text-gray-500 mr-4 flex-shrink-0" />
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-1">Privacy Questions?</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{t('privacy.privacyQuestions')}</h4>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-              If you have any questions about your privacy or how we handle your data, please contact us.
+              {t('privacy.privacyQuestionsDescription')}
             </p>
             <a
               href="mailto:support@truckcommand.com"
@@ -537,14 +539,14 @@ export default function PrivacySettings() {
             <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Download size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
-                Export Your Data
+                {t('privacy.exportModal.title')}
               </h3>
 
               <div className="space-y-4">
                 {/* Export Format Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Export Format
+                    {t('privacy.exportModal.exportFormat')}
                   </label>
                   <div className="space-y-2">
                     <label className="flex items-start p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -559,10 +561,10 @@ export default function PrivacySettings() {
                       <div className="ml-3">
                         <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
                           <Shield size={14} className="mr-1 text-green-500" />
-                          Encrypted (Recommended)
+                          {t('privacy.exportModal.encrypted')}
                         </span>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Password-protected with AES-256 encryption
+                          {t('privacy.exportModal.encryptedDescription')}
                         </p>
                       </div>
                     </label>
@@ -578,10 +580,10 @@ export default function PrivacySettings() {
                       <div className="ml-3">
                         <span className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
                           <AlertCircle size={14} className="mr-1 text-yellow-500" />
-                          Plain JSON
+                          {t('privacy.exportModal.plainJson')}
                         </span>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Unencrypted, readable by anyone with the file
+                          {t('privacy.exportModal.plainJsonDescription')}
                         </p>
                       </div>
                     </label>
@@ -593,31 +595,31 @@ export default function PrivacySettings() {
                   <div className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Create a Password
+                        {t('privacy.exportModal.createPassword')}
                       </label>
                       <input
                         type="password"
                         value={exportPassword}
                         onChange={(e) => setExportPassword(e.target.value)}
-                        placeholder="Minimum 8 characters"
+                        placeholder={t('privacy.exportModal.passwordPlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Confirm Password
+                        {t('privacy.exportModal.confirmPassword')}
                       </label>
                       <input
                         type="password"
                         value={confirmExportPassword}
                         onChange={(e) => setConfirmExportPassword(e.target.value)}
-                        placeholder="Re-enter password"
+                        placeholder={t('privacy.exportModal.confirmPlaceholder')}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start">
                       <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
-                      Keep this password safe. You will need it to decrypt your data. We cannot recover lost passwords.
+                      {t('privacy.exportModal.passwordWarning')}
                     </p>
                   </div>
                 )}
@@ -627,7 +629,7 @@ export default function PrivacySettings() {
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start">
                       <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                      Warning: Plain JSON files contain sensitive business data that anyone can read. Only use this if you understand the risks.
+                      {t('privacy.exportModal.plainWarning')}
                     </p>
                   </div>
                 )}
@@ -640,7 +642,7 @@ export default function PrivacySettings() {
                   onClick={() => setShowExportModal(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
-                  Cancel
+                  {t('common:buttons.cancel')}
                 </button>
                 <button
                   type="button"
@@ -651,12 +653,12 @@ export default function PrivacySettings() {
                   {exportingData ? (
                     <>
                       <RefreshCw size={16} className="animate-spin mr-2" />
-                      Exporting...
+                      {t('privacy.exportModal.exporting')}
                     </>
                   ) : (
                     <>
                       <Download size={16} className="mr-2" />
-                      Export
+                      {t('privacy.exportModal.export')}
                     </>
                   )}
                 </button>

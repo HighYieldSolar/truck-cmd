@@ -1,8 +1,10 @@
 "use client";
 
 import { Fuel, DollarSign, Flag, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelStats({ stats, isLoading = false, period = "This Quarter", className="" }) {
+  const { t } = useTranslation('fuel');
   // Helper function to format numbers
   const formatNumber = (value, decimals = 0) => {
     if (value === undefined || value === null || isNaN(value)) return '0';
@@ -14,26 +16,26 @@ export default function FuelStats({ stats, isLoading = false, period = "This Qua
 
   const statsItems = [
     {
-      title: "Total Gallons",
+      title: t('stats.totalGallons'),
       value: `${formatNumber(stats.totalGallons, 3)} gal`,
       icon: <Fuel size={20} className="text-amber-600 dark:text-amber-400" />,
       color: "yellow"
     },
     {
-      title: "Total Spent",
+      title: t('stats.totalAmount'),
       value: `$${formatNumber(stats.totalAmount, 2)}`,
       icon: <DollarSign size={20} className="text-emerald-600 dark:text-emerald-400" />,
       color: "green"
     },
     {
-      title: "Average Price",
+      title: t('stats.avgPrice'),
       value: `$${formatNumber(stats.avgPricePerGallon, 3)}/gal`,
       icon: <DollarSign size={20} className="text-blue-600 dark:text-blue-400" />,
       color: "blue"
     },
     {
-      title: "States",
-      value: `${stats.uniqueStates} ${stats.uniqueStates === 1 ? 'state' : 'states'}`,
+      title: t('stats.uniqueStates'),
+      value: `${stats.uniqueStates} ${stats.uniqueStates === 1 ? t('common:state') : t('common:states')}`,
       icon: <Flag size={20} className="text-purple-600 dark:text-purple-400" />,
       color: "purple"
     }

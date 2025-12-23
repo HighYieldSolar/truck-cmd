@@ -36,10 +36,12 @@ import { fetchCustomers, deleteCustomer } from "@/lib/services/customerService";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { usePagination } from "@/hooks/usePagination";
 import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
+import { useTranslation } from "@/context/LanguageContext";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function CustomersPage() {
+  const { t } = useTranslation('customers');
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -287,14 +289,14 @@ export default function CustomersPage() {
 
   // Export columns configuration
   const exportColumns = [
-    { key: 'company_name', header: 'Company Name' },
-    { key: 'contact_name', header: 'Contact Name' },
-    { key: 'email', header: 'Email' },
-    { key: 'phone', header: 'Phone' },
-    { key: 'city', header: 'City' },
-    { key: 'state', header: 'State' },
-    { key: 'customer_type', header: 'Type' },
-    { key: 'status', header: 'Status' }
+    { key: 'company_name', header: t('exportModal.columns.companyName') },
+    { key: 'contact_name', header: t('exportModal.columns.contactName') },
+    { key: 'email', header: t('exportModal.columns.email') },
+    { key: 'phone', header: t('exportModal.columns.phone') },
+    { key: 'city', header: t('exportModal.columns.city') },
+    { key: 'state', header: t('exportModal.columns.state') },
+    { key: 'customer_type', header: t('exportModal.columns.type') },
+    { key: 'status', header: t('exportModal.columns.status') }
   ];
 
   // Get export data
@@ -321,13 +323,13 @@ export default function CustomersPage() {
     const uniqueStates = [...new Set(filteredCustomers.map(c => c.state).filter(Boolean))].length;
 
     return {
-      'Total Customers': filteredCustomers.length.toString(),
-      'Active': activeCount.toString(),
-      'Brokers': brokerCount.toString(),
-      'Shippers': shipperCount.toString(),
-      'States': uniqueStates.toString()
+      [t('exportModal.summary.totalCustomers')]: filteredCustomers.length.toString(),
+      [t('exportModal.summary.active')]: activeCount.toString(),
+      [t('exportModal.summary.brokers')]: brokerCount.toString(),
+      [t('exportModal.summary.shippers')]: shipperCount.toString(),
+      [t('exportModal.summary.states')]: uniqueStates.toString()
     };
-  }, [filteredCustomers]);
+  }, [filteredCustomers, t]);
 
   // Get date range for export
   const getExportDateRange = useCallback(() => {
@@ -349,7 +351,7 @@ export default function CustomersPage() {
   // Handle export
   const handleExportData = () => {
     if (filteredCustomers.length === 0) {
-      setMessage({ type: 'warning', text: 'No customers to export.' });
+      setMessage({ type: 'warning', text: t('exportModal.noCustomersToExport') });
       return;
     }
     setExportModalOpen(true);
@@ -369,7 +371,7 @@ export default function CustomersPage() {
         <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
           <div className="flex flex-col items-center gap-3">
             <RefreshCw size={32} className="animate-spin text-blue-500" />
-            <p className="text-gray-600 dark:text-gray-400">Loading customers...</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -384,9 +386,9 @@ export default function CustomersPage() {
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="text-white">
-                <h1 className="text-2xl md:text-3xl font-bold">Customer Management</h1>
+                <h1 className="text-2xl md:text-3xl font-bold">{t('header.title')}</h1>
                 <p className="text-blue-100 mt-1">
-                  Manage your customer relationships and contacts
+                  {t('header.subtitle')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -399,7 +401,7 @@ export default function CustomersPage() {
                         className="px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center gap-2 font-medium"
                       >
                         <Lock size={18} />
-                        Limit Reached ({customers.length}/{customerLimit.limit})
+                        {t('limits.limitReached')} ({customers.length}/{customerLimit.limit})
                       </Link>
                     );
                   }
@@ -412,7 +414,7 @@ export default function CustomersPage() {
                       className="px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2 font-medium"
                     >
                       <Plus size={18} />
-                      Add Customer
+                      {t('addCustomer')}
                     </button>
                   );
                 })()}
@@ -421,7 +423,7 @@ export default function CustomersPage() {
                   className="px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 transition-colors shadow-sm flex items-center gap-2 font-medium"
                 >
                   <Download size={18} />
-                  Export
+                  {t('export')}
                 </button>
               </div>
             </div>
@@ -437,37 +439,37 @@ export default function CustomersPage() {
           {user && (
             <TutorialCard
               pageId="customers"
-              title="Customer Management Guide"
-              description="Organize and maintain all your customer relationships"
+              title={t('tutorial.title')}
+              description={t('tutorial.description')}
               accentColor="green"
               userId={user.id}
               features={[
                 {
                   icon: UserPlus,
-                  title: "Add Customers",
-                  description: "Create profiles with company, contact, and location details"
+                  title: t('tutorial.features.addCustomers.title'),
+                  description: t('tutorial.features.addCustomers.description')
                 },
                 {
                   icon: Building,
-                  title: "Customer Types",
-                  description: "Categorize as Broker, Shipper, Direct, 3PL, or Freight Forwarder"
+                  title: t('tutorial.features.customerTypes.title'),
+                  description: t('tutorial.features.customerTypes.description')
                 },
                 {
                   icon: Mail,
-                  title: "Contact Management",
-                  description: "Store email, phone, and address for easy communication"
+                  title: t('tutorial.features.contactManagement.title'),
+                  description: t('tutorial.features.contactManagement.description')
                 },
                 {
                   icon: MapPin,
-                  title: "Location Tracking",
-                  description: "See customer distribution by state for business insights"
+                  title: t('tutorial.features.locationTracking.title'),
+                  description: t('tutorial.features.locationTracking.description')
                 }
               ]}
               tips={[
-                "Categorize customer types accurately - it affects reporting and workflows",
-                "Keep contact info updated for smooth invoice delivery",
-                "Use the Notes field to track special requirements or payment terms",
-                "Filter by state to manage regional customer relationships"
+                t('tutorial.tips.0'),
+                t('tutorial.tips.1'),
+                t('tutorial.tips.2'),
+                t('tutorial.tips.3')
               ]}
             />
           )}
@@ -497,9 +499,9 @@ export default function CustomersPage() {
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
-                      <span className="font-medium">Approaching limit:</span> You have {customers.length} of {limit} customers.
+                      <span className="font-medium">{t('limits.approaching')}</span> {t('limits.youHave', { current: customers.length, limit: limit })}
                       <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
-                        Upgrade for unlimited customers
+                        {t('limits.upgradeUnlimited')}
                       </Link>
                     </p>
                   </div>
@@ -546,14 +548,14 @@ export default function CustomersPage() {
                         <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                           <Users className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No customers yet</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">Upgrade your plan to add customers.</p>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('emptyState.title')}</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">{t('limits.upgradeToAdd')}</p>
                         <Link
                           href="/dashboard/upgrade"
                           className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200"
                         >
                           <Lock size={16} className="mr-2" />
-                          Upgrade Plan
+                          {t('limits.upgradePlan')}
                         </Link>
                       </div>
                     );
@@ -561,10 +563,10 @@ export default function CustomersPage() {
                   return (
                     <EmptyState
                       icon={Users}
-                      title="No customers yet"
-                      description="Start building your customer list by adding your first customer."
+                      title={t('emptyState.title')}
+                      description={t('emptyState.description')}
                       action={{
-                        label: 'Add Customer',
+                        label: t('addCustomer'),
                         icon: Plus,
                         onClick: () => {
                           setSelectedCustomer(null);
@@ -600,8 +602,8 @@ export default function CustomersPage() {
             setMessage({
               type: 'success',
               text: selectedCustomer
-                ? 'Customer updated successfully.'
-                : 'Customer created successfully.'
+                ? t('messages.customerUpdated')
+                : t('messages.customerCreated')
             });
           }}
           initialData={selectedCustomer}
@@ -632,21 +634,21 @@ export default function CustomersPage() {
         <ExportReportModal
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
-          title="Export Customers Report"
-          description="Export your customer records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+          title={t('exportModal.title')}
+          description={t('exportModal.description')}
           data={getExportData()}
           columns={exportColumns}
           filename="customers_report"
           summaryInfo={getExportSummaryInfo()}
           dateRange={getExportDateRange()}
           pdfConfig={{
-            title: 'Customer Report',
-            subtitle: 'Customer Relationship Management'
+            title: t('exportModal.pdfTitle'),
+            subtitle: t('exportModal.pdfSubtitle')
           }}
           onExportComplete={() => {
             setMessage({
               type: 'success',
-              text: `Exported ${filteredCustomers.length} customers successfully!`
+              text: t('exportModal.exportSuccess', { count: filteredCustomers.length })
             });
           }}
         />

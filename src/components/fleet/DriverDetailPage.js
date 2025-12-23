@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/context/LanguageContext";
 import { supabase } from "@/lib/supabaseClient";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -72,6 +73,7 @@ function LoadingSkeleton() {
 }
 
 export default function DriverDetailPage({ driverId }) {
+  const { t } = useTranslation('fleet');
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [driver, setDriver] = useState(null);
@@ -96,14 +98,14 @@ export default function DriverDetailPage({ driverId }) {
       const driverData = await getDriverById(driverId);
 
       if (!driverData) {
-        setMessage({ type: 'error', text: 'Driver not found' });
+        setMessage({ type: 'error', text: t('driverDetailPage.driverNotFoundError') });
         setLoading(false);
         return;
       }
 
       // Verify ownership
       if (driverData.user_id !== userId) {
-        setMessage({ type: 'error', text: 'Access denied' });
+        setMessage({ type: 'error', text: t('driverDetailPage.accessDenied') });
         setLoading(false);
         return;
       }
@@ -181,8 +183,8 @@ export default function DriverDetailPage({ driverId }) {
     if (!user) return;
     await loadDriverData(user.id);
     setFormModalOpen(false);
-    setMessage({ type: 'success', text: 'Driver updated successfully' });
-  }, [user, loadDriverData]);
+    setMessage({ type: 'success', text: t('driverDetailPage.driverUpdatedSuccess') });
+  }, [user, loadDriverData, t]);
 
   // Handle delete
   const handleDelete = useCallback(() => {
@@ -196,7 +198,7 @@ export default function DriverDetailPage({ driverId }) {
     try {
       setIsDeleting(true);
       await deleteDriver(driver.id);
-      setMessage({ type: 'success', text: 'Driver deleted successfully' });
+      setMessage({ type: 'success', text: t('driverDetailPage.driverDeletedSuccess') });
 
       // Redirect after short delay
       setTimeout(() => {
@@ -208,7 +210,7 @@ export default function DriverDetailPage({ driverId }) {
       setIsDeleting(false);
       setDeleteModalOpen(false);
     }
-  }, [driver, router]);
+  }, [driver, router, t]);
 
   // Get status badge styling
   const getStatusBadge = (status) => {
@@ -276,14 +278,14 @@ export default function DriverDetailPage({ driverId }) {
             <OperationMessage message={message} onDismiss={() => setMessage(null)} />
             <div className="text-center py-12">
               <User size={48} className="mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Driver Not Found</h2>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">The driver you&apos;re looking for doesn&apos;t exist or has been removed.</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('driverDetailPage.driverNotFound')}</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">{t('driverDetailPage.driverNotFoundDesc')}</p>
               <Link
                 href="/dashboard/fleet/drivers"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <ChevronLeft size={18} className="mr-2" />
-                Back to Drivers
+                {t('driverDetailPage.backToDrivers')}
               </Link>
             </div>
           </div>
@@ -347,14 +349,14 @@ export default function DriverDetailPage({ driverId }) {
                   className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Edit size={18} className="mr-2" />
-                  Edit
+                  {t('driverDetailPage.edit')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Trash2 size={18} className="mr-2" />
-                  Delete
+                  {t('driverDetailPage.delete')}
                 </button>
               </div>
             </div>
@@ -366,13 +368,13 @@ export default function DriverDetailPage({ driverId }) {
               <div className="flex items-start">
                 <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Document Expiration Alert</p>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('driverDetailPage.documentExpirationAlert')}</p>
                   <ul className="text-sm text-red-700 dark:text-red-300 mt-1 list-disc list-inside">
                     {docStatus.licenseStatus === 'expired' && (
-                      <li>Driver&apos;s license has expired</li>
+                      <li>{t('driverDetailPage.licenseExpired')}</li>
                     )}
                     {docStatus.medicalCardStatus === 'expired' && (
-                      <li>Medical card has expired</li>
+                      <li>{t('driverDetailPage.medicalCardExpired')}</li>
                     )}
                   </ul>
                 </div>
@@ -385,13 +387,13 @@ export default function DriverDetailPage({ driverId }) {
               <div className="flex items-start">
                 <Clock className="h-5 w-5 text-amber-500 dark:text-amber-400 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Documents Expiring Soon</p>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('driverDetailPage.documentsExpiringSoon')}</p>
                   <ul className="text-sm text-amber-700 dark:text-amber-300 mt-1 list-disc list-inside">
                     {docStatus.licenseStatus === 'warning' && (
-                      <li>Driver&apos;s license expires in {docStatus.licenseExpiryDays} days</li>
+                      <li>{t('driverDetailPage.licenseExpiresIn', { days: docStatus.licenseExpiryDays })}</li>
                     )}
                     {docStatus.medicalCardStatus === 'warning' && (
-                      <li>Medical card expires in {docStatus.medicalCardExpiryDays} days</li>
+                      <li>{t('driverDetailPage.medicalCardExpiresIn', { days: docStatus.medicalCardExpiryDays })}</li>
                     )}
                   </ul>
                 </div>
@@ -408,7 +410,7 @@ export default function DriverDetailPage({ driverId }) {
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
                     <Phone size={18} className="mr-2 text-blue-500" />
-                    Contact Information
+                    {t('driverDetailPage.contactInfo')}
                   </h3>
                 </div>
                 <div className="p-5">
@@ -418,9 +420,9 @@ export default function DriverDetailPage({ driverId }) {
                         <Phone size={16} className="text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Phone</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.phone')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
-                          {driver.phone || 'Not provided'}
+                          {driver.phone || t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -430,9 +432,9 @@ export default function DriverDetailPage({ driverId }) {
                         <Mail size={16} className="text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Email</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.email')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium break-all">
-                          {driver.email || 'Not provided'}
+                          {driver.email || t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -442,11 +444,11 @@ export default function DriverDetailPage({ driverId }) {
                         <MapPin size={16} className="text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Location</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.location')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
                           {driver.city && driver.state
                             ? `${driver.city}, ${driver.state}`
-                            : driver.city || driver.state || 'Not provided'}
+                            : driver.city || driver.state || t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -456,9 +458,9 @@ export default function DriverDetailPage({ driverId }) {
                         <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Hire Date</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.hireDate')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
-                          {driver.hire_date ? formatDateForDisplayMMDDYYYY(driver.hire_date) : 'Not provided'}
+                          {driver.hire_date ? formatDateForDisplayMMDDYYYY(driver.hire_date) : t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -471,7 +473,7 @@ export default function DriverDetailPage({ driverId }) {
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
                     <Shield size={18} className="mr-2 text-blue-500" />
-                    License & Compliance
+                    {t('driverDetailPage.licenseCompliance')}
                   </h3>
                 </div>
                 <div className="p-5">
@@ -481,9 +483,9 @@ export default function DriverDetailPage({ driverId }) {
                         <IdCard size={16} className="text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">License Number</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.licenseNumber')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
-                          {driver.license_number || 'Not provided'}
+                          {driver.license_number || t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -493,9 +495,9 @@ export default function DriverDetailPage({ driverId }) {
                         <MapPin size={16} className="text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">License State</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.licenseState')}</p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
-                          {driver.license_state || 'Not provided'}
+                          {driver.license_state || t('driverDetailPage.notProvided')}
                         </p>
                       </div>
                     </div>
@@ -517,19 +519,19 @@ export default function DriverDetailPage({ driverId }) {
                         } />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">License Expiry</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.licenseExpiry')}</p>
                         <div className="flex items-center gap-2">
                           <p className="text-gray-900 dark:text-gray-100 font-medium">
-                            {driver.license_expiry ? formatDateForDisplayMMDDYYYY(driver.license_expiry) : 'Not provided'}
+                            {driver.license_expiry ? formatDateForDisplayMMDDYYYY(driver.license_expiry) : t('driverDetailPage.notProvided')}
                           </p>
                           {docStatus?.licenseStatus === 'expired' && (
                             <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-full">
-                              Expired
+                              {t('driverDetailPage.expired')}
                             </span>
                           )}
                           {docStatus?.licenseStatus === 'warning' && (
                             <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded-full">
-                              {docStatus.licenseExpiryDays}d left
+                              {t('driverDetailPage.daysLeft', { days: docStatus.licenseExpiryDays })}
                             </span>
                           )}
                         </div>
@@ -553,19 +555,19 @@ export default function DriverDetailPage({ driverId }) {
                         } />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Medical Card Expiry</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.medicalCardExpiry')}</p>
                         <div className="flex items-center gap-2">
                           <p className="text-gray-900 dark:text-gray-100 font-medium">
-                            {driver.medical_card_expiry ? formatDateForDisplayMMDDYYYY(driver.medical_card_expiry) : 'Not provided'}
+                            {driver.medical_card_expiry ? formatDateForDisplayMMDDYYYY(driver.medical_card_expiry) : t('driverDetailPage.notProvided')}
                           </p>
                           {docStatus?.medicalCardStatus === 'expired' && (
                             <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded-full">
-                              Expired
+                              {t('driverDetailPage.expired')}
                             </span>
                           )}
                           {docStatus?.medicalCardStatus === 'warning' && (
                             <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded-full">
-                              {docStatus.medicalCardExpiryDays}d left
+                              {t('driverDetailPage.daysLeft', { days: docStatus.medicalCardExpiryDays })}
                             </span>
                           )}
                         </div>
@@ -581,7 +583,7 @@ export default function DriverDetailPage({ driverId }) {
                   <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
                       <AlertCircle size={18} className="mr-2 text-orange-500" />
-                      Emergency Contact
+                      {t('driverDetailPage.emergencyContact')}
                     </h3>
                   </div>
                   <div className="p-5">
@@ -591,9 +593,9 @@ export default function DriverDetailPage({ driverId }) {
                           <User size={16} className="text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Contact Name</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.contactName')}</p>
                           <p className="text-gray-900 dark:text-gray-100 font-medium">
-                            {driver.emergency_contact || 'Not provided'}
+                            {driver.emergency_contact || t('driverDetailPage.notProvided')}
                           </p>
                         </div>
                       </div>
@@ -603,9 +605,9 @@ export default function DriverDetailPage({ driverId }) {
                           <Phone size={16} className="text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Contact Phone</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">{t('driverDetailPage.contactPhone')}</p>
                           <p className="text-gray-900 dark:text-gray-100 font-medium">
-                            {driver.emergency_phone || 'Not provided'}
+                            {driver.emergency_phone || t('driverDetailPage.notProvided')}
                           </p>
                         </div>
                       </div>
@@ -619,20 +621,20 @@ export default function DriverDetailPage({ driverId }) {
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
                     <Package size={18} className="mr-2 text-blue-500" />
-                    Recent Loads
+                    {t('driverDetailPage.recentLoads')}
                   </h3>
                   <Link
                     href="/dashboard/dispatching"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
-                    View All
+                    {t('driverDetailPage.viewAll')}
                   </Link>
                 </div>
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {recentLoads.length === 0 ? (
                     <div className="p-8 text-center">
                       <Package size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-                      <p className="text-gray-500 dark:text-gray-400">No loads assigned to this driver</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('driverDetailPage.noLoadsAssigned')}</p>
                     </div>
                   ) : (
                     recentLoads.map(load => (
@@ -640,7 +642,7 @@ export default function DriverDetailPage({ driverId }) {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium text-gray-900 dark:text-gray-100">
-                              Load #{load.load_number || 'N/A'}
+                              {t('driverDetailPage.loadNumber', { number: load.load_number || 'N/A' })}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                               {load.origin} → {load.destination}
@@ -674,7 +676,7 @@ export default function DriverDetailPage({ driverId }) {
                   <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
                       <FileText size={18} className="mr-2 text-blue-500" />
-                      Notes
+                      {t('driverDetailPage.notes')}
                     </h3>
                   </div>
                   <div className="p-5">
@@ -689,13 +691,13 @@ export default function DriverDetailPage({ driverId }) {
               {/* Quick Stats */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Quick Stats</h3>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{t('driverDetailPage.quickStats')}</h3>
                 </div>
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div className="flex items-center">
                       <Package size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Total Loads</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('driverDetailPage.totalLoads')}</span>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-gray-100">{loadStats.total}</span>
                   </div>
@@ -703,7 +705,7 @@ export default function DriverDetailPage({ driverId }) {
                   <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <div className="flex items-center">
                       <CheckCircle size={18} className="text-green-600 dark:text-green-400 mr-2" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Completed</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('driverDetailPage.completed')}</span>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-gray-100">{loadStats.completed}</span>
                   </div>
@@ -711,7 +713,7 @@ export default function DriverDetailPage({ driverId }) {
                   <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
                     <div className="flex items-center">
                       <DollarSign size={18} className="text-emerald-600 dark:text-emerald-400 mr-2" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Total Revenue</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('driverDetailPage.totalRevenue')}</span>
                     </div>
                     <span className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(loadStats.revenue)}</span>
                   </div>
@@ -721,7 +723,7 @@ export default function DriverDetailPage({ driverId }) {
               {/* Document Status Summary */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Document Status</h3>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">{t('driverDetailPage.documentStatus')}</h3>
                 </div>
                 <div className="p-4 space-y-3">
                   <div className={`flex items-center justify-between p-3 rounded-lg ${
@@ -739,10 +741,10 @@ export default function DriverDetailPage({ driverId }) {
                             ? 'text-amber-600 dark:text-amber-400'
                             : 'text-green-600 dark:text-green-400'
                       } />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">License</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">{t('driverDetailPage.licenseLabel')}</span>
                     </div>
                     {docStatus?.licenseStatus === 'expired' ? (
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">Expired</span>
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400">{t('driverDetailPage.expired')}</span>
                     ) : docStatus?.licenseStatus === 'warning' ? (
                       <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{docStatus.licenseExpiryDays}d</span>
                     ) : (
@@ -765,10 +767,10 @@ export default function DriverDetailPage({ driverId }) {
                             ? 'text-amber-600 dark:text-amber-400'
                             : 'text-green-600 dark:text-green-400'
                       } />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">Medical Card</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300 ml-2">{t('driverDetailPage.medicalCard')}</span>
                     </div>
                     {docStatus?.medicalCardStatus === 'expired' ? (
-                      <span className="text-xs font-medium text-red-600 dark:text-red-400">Expired</span>
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400">{t('driverDetailPage.expired')}</span>
                     ) : docStatus?.medicalCardStatus === 'warning' ? (
                       <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{docStatus.medicalCardExpiryDays}d</span>
                     ) : (
@@ -782,10 +784,10 @@ export default function DriverDetailPage({ driverId }) {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
                 <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
                   {driver.created_at && (
-                    <p>Created: {formatDateForDisplayMMDDYYYY(driver.created_at)}</p>
+                    <p>{t('driverDetailPage.created')} {formatDateForDisplayMMDDYYYY(driver.created_at)}</p>
                   )}
                   {driver.updated_at && (
-                    <p>Updated: {formatDateForDisplayMMDDYYYY(driver.updated_at)}</p>
+                    <p>{t('driverDetailPage.updated')} {formatDateForDisplayMMDDYYYY(driver.updated_at)}</p>
                   )}
                 </div>
               </div>
@@ -806,8 +808,8 @@ export default function DriverDetailPage({ driverId }) {
           isOpen={deleteModalOpen}
           onClose={() => setDeleteModalOpen(false)}
           onConfirm={confirmDelete}
-          title="Delete Driver"
-          message={`Are you sure you want to delete "${driver?.name}"? This action cannot be undone and will remove all associated records.`}
+          title={t('driverDetailPage.deleteDriverTitle')}
+          message={t('driverDetailPage.confirmDeleteDriver', { name: driver?.name })}
           isDeleting={isDeleting}
         />
       </main>

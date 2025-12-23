@@ -11,6 +11,7 @@ import {
   Loader,
   LayoutGrid
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 const statusConfig = {
   "All": {
@@ -92,6 +93,22 @@ export default function LoadCategories({
   isLoading = false,
   className = ""
 }) {
+  const { t } = useTranslation('dispatching');
+
+  // Map status keys to translation keys
+  const statusToTranslationKey = {
+    "All": "filterBar.allStatus",
+    "Pending": "statusLabels.pending",
+    "Assigned": "statusLabels.assigned",
+    "In Transit": "statusLabels.inTransit",
+    "Loading": "statusLabels.loading",
+    "Unloading": "statusLabels.unloading",
+    "Delivered": "statusLabels.delivered",
+    "Completed": "statusLabels.completed",
+    "Cancelled": "statusLabels.cancelled",
+    "Delayed": "statusLabels.delayed"
+  };
+
   // Calculate counts for each status
   const getStatusCounts = () => {
     const counts = {
@@ -140,7 +157,7 @@ export default function LoadCategories({
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 ${className}`}>
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        Filter by Status
+        {t('filters.byStatus')}
       </h3>
 
       <div className="space-y-1.5">
@@ -149,6 +166,9 @@ export default function LoadCategories({
           const Icon = config.icon;
           const isActive = selectedStatus === status;
           const count = statusCounts[status];
+          const translatedStatus = statusToTranslationKey[status]
+            ? t(statusToTranslationKey[status])
+            : status;
 
           return (
             <button
@@ -169,7 +189,7 @@ export default function LoadCategories({
                 <span className={`text-sm font-medium ${
                   isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                 }`}>
-                  {status}
+                  {translatedStatus}
                 </span>
               </div>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${

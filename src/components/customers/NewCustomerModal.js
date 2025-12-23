@@ -6,8 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createCustomer, updateCustomer } from '@/lib/services/customerService';
 import { supabase } from '@/lib/supabaseClient';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
+import { useTranslation } from '@/context/LanguageContext';
 
 const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = null }) => {
+  const { t } = useTranslation('customers');
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -123,28 +125,28 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
       case 1:
         // Company name validation
         if (!formData.company_name.trim()) {
-          newErrors.company_name = 'Company name is required.';
+          newErrors.company_name = t('form.validation.companyNameRequired');
         }
 
         // Contact name validation
         if (!formData.contact_name.trim()) {
-          newErrors.contact_name = 'Contact name is required.';
+          newErrors.contact_name = t('form.validation.contactNameRequired');
         }
 
         // Phone validation
         if (!formData.phone.trim()) {
-          newErrors.phone = 'Phone number is required.';
+          newErrors.phone = t('form.validation.phoneRequired');
         } else if (!phoneRegex.test(formData.phone)) {
-          newErrors.phone = 'Please enter a valid phone number.';
+          newErrors.phone = t('form.validation.validPhone');
         } else if (formData.phone.replace(/\D/g, '').length < 10) {
-          newErrors.phone = 'Phone number must have at least 10 digits.';
+          newErrors.phone = t('form.validation.phoneMinDigits');
         }
 
         // Email validation
         if (!formData.email.trim()) {
-          newErrors.email = 'Email address is required.';
+          newErrors.email = t('form.validation.emailRequired');
         } else if (!emailRegex.test(formData.email)) {
-          newErrors.email = 'Please enter a valid email address.';
+          newErrors.email = t('form.validation.validEmail');
         }
         break;
       case 2:
@@ -212,8 +214,8 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
   };
 
   const steps = [
-    { number: 1, title: 'Basic Info', icon: Building2 },
-    { number: 2, title: 'Details', icon: FileText }
+    { number: 1, titleKey: 'newCustomerModal.basicInfo', icon: Building2 },
+    { number: 2, titleKey: 'newCustomerModal.details', icon: FileText }
   ];
 
   const renderStepContent = () => {
@@ -221,11 +223,11 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
-            
+            <h3 className="text-lg font-semibold mb-4">{t('newCustomerModal.customerInformation')}</h3>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Name <span className="text-red-500">*</span>
+                {t('form.companyName')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -233,7 +235,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 value={formData.company_name}
                 onChange={handleInputChange}
                 className={`block w-full px-4 py-3 border ${errors.company_name ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
-                placeholder="Enter company name"
+                placeholder={t('form.placeholders.companyName')}
               />
               {errors.company_name && (
                 <p className="text-red-500 text-sm mt-1">{errors.company_name}</p>
@@ -243,7 +245,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer Type
+                  {t('form.customerType')}
                 </label>
                 <select
                   name="customer_type"
@@ -251,19 +253,19 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
                 >
-                  <option value="direct">Direct Customer</option>
-                  <option value="broker">Broker</option>
-                  <option value="freight-forwarder">Freight Forwarder</option>
-                  <option value="3pl">3PL</option>
-                  <option value="shipper">Shipper</option>
-                  <option value="business">Business</option>
-                  <option value="other">Other</option>
+                  <option value="direct">{t('types.direct')}</option>
+                  <option value="broker">{t('types.broker')}</option>
+                  <option value="freight-forwarder">{t('types.freightForwarder')}</option>
+                  <option value="3pl">{t('types.thirdPartyLogistics')}</option>
+                  <option value="shipper">{t('types.shipper')}</option>
+                  <option value="business">{t('types.business')}</option>
+                  <option value="other">{t('types.other')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
+                  {t('form.status')}
                 </label>
                 <select
                   name="status"
@@ -271,9 +273,9 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
                 >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending Approval</option>
+                  <option value="active">{t('status.active')}</option>
+                  <option value="inactive">{t('status.inactive')}</option>
+                  <option value="pending">{t('newCustomerModal.pendingApproval')}</option>
                 </select>
               </div>
             </div>
@@ -281,7 +283,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Name <span className="text-red-500">*</span>
+                  {t('form.contactName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -289,7 +291,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                   value={formData.contact_name}
                   onChange={handleInputChange}
                   className={`block w-full px-4 py-3 border ${errors.contact_name ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
-                  placeholder="John Doe"
+                  placeholder={t('form.placeholders.contactName')}
                 />
                 {errors.contact_name && (
                   <p className="text-red-500 text-sm mt-1">{errors.contact_name}</p>
@@ -298,7 +300,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone <span className="text-red-500">*</span>
+                  {t('form.phone')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -306,7 +308,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                   value={formData.phone}
                   onChange={handleInputChange}
                   className={`block w-full px-4 py-3 border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
-                  placeholder="(555) 123-4567"
+                  placeholder={t('form.placeholders.phone')}
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
@@ -316,7 +318,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-red-500">*</span>
+                {t('form.email')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -324,7 +326,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`block w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base`}
-                placeholder="john@company.com"
+                placeholder={t('form.placeholders.email')}
               />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">{errors.email}</p>
@@ -336,11 +338,11 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Additional Details</h3>
-            
+            <h3 className="text-lg font-semibold mb-4">{t('newCustomerModal.additionalDetails')}</h3>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address
+                {t('form.address')}
               </label>
               <input
                 type="text"
@@ -348,14 +350,14 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 value={formData.address}
                 onChange={handleInputChange}
                 className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                placeholder="123 Main St"
+                placeholder={t('form.placeholders.address')}
               />
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
+                  {t('form.city')}
                 </label>
                 <input
                   type="text"
@@ -363,20 +365,20 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                   value={formData.city}
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
-                  placeholder="New York"
+                  placeholder={t('form.placeholders.city')}
                 />
               </div>
 
               <div className="relative" ref={stateDropdownRef}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State
+                  {t('form.state')}
                 </label>
                 <div
                   className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base cursor-pointer bg-white flex justify-between items-center"
                   onClick={() => setShowStateDropdown(!showStateDropdown)}
                 >
                   <span className={formData.state ? 'text-gray-900' : 'text-gray-400'}>
-                    {formData.state ? 
+                    {formData.state ?
                       {
                         'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
                         'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
@@ -391,7 +393,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                         'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
                         'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
                         'WI': 'Wisconsin', 'WY': 'Wyoming'
-                      }[formData.state] : 'Select State'
+                      }[formData.state] : t('placeholders.selectState')
                     }
                   </span>
                   <ChevronDown size={20} className={`text-gray-400 transition-transform ${showStateDropdown ? 'rotate-180' : ''}`} />
@@ -446,7 +448,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ZIP Code
+                  {t('form.zipCode')}
                 </label>
                 <input
                   type="text"
@@ -461,7 +463,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                {t('form.notes')}
               </label>
               <textarea
                 name="notes"
@@ -469,36 +471,36 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 onChange={handleInputChange}
                 className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base"
                 rows="4"
-                placeholder="Any additional notes about this customer..."
+                placeholder={t('form.placeholders.notes')}
               />
             </div>
 
             {/* Review Summary */}
             <div className="bg-gray-50 p-4 rounded-lg mt-6">
-              <h4 className="font-medium text-gray-900 mb-3">Review Customer Information</h4>
+              <h4 className="font-medium text-gray-900 mb-3">{t('newCustomerModal.reviewInfo')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600">Company:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.company')}</span>
                   <span className="ml-2 font-medium">{formData.company_name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Type:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.type')}</span>
                   <span className="ml-2 font-medium capitalize">{formData.customer_type.replace('-', ' ')}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Contact:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.contact')}</span>
                   <span className="ml-2 font-medium">{formData.contact_name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Email:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.email')}</span>
                   <span className="ml-2 font-medium">{formData.email}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Phone:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.phone')}</span>
                   <span className="ml-2 font-medium">{formData.phone}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Status:</span>
+                  <span className="text-gray-600">{t('newCustomerModal.status')}</span>
                   <span className="ml-2 font-medium capitalize">{formData.status}</span>
                 </div>
               </div>
@@ -523,7 +525,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-xl sm:text-2xl font-bold">
-              {initialData ? 'Edit Customer' : 'Create New Customer'}
+              {initialData ? t('newCustomerModal.editTitle') : t('newCustomerModal.createTitle')}
             </h2>
             <button
               onClick={handleClose}
@@ -561,7 +563,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                       )}
                     </motion.div>
                     <span className={`ml-2 text-sm ${isActive ? 'font-semibold' : ''}`}>
-                      {step.title}
+                      {t(step.titleKey)}
                     </span>
                   </div>
                   {index < steps.length - 1 && (
@@ -582,7 +584,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
               <div className="flex items-center">
                 <AlertCircle className="text-blue-500 mr-2" size={20} />
                 <p className="text-sm text-blue-700">
-                  We've restored your previous progress. You can continue where you left off.
+                  {t('newCustomerModal.restoredProgress')}
                 </p>
               </div>
               <button
@@ -590,7 +592,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 className="text-blue-700 hover:text-blue-900 flex items-center gap-1 text-sm"
               >
                 <Trash2 size={16} />
-                Clear
+                {t('form.clearDraft')}
               </button>
             </div>
           </div>
@@ -620,7 +622,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
               disabled={isSubmitting}
             >
               <ChevronLeft size={16} className="mr-2" />
-              {currentStep === 1 ? 'Cancel' : 'Previous'}
+              {currentStep === 1 ? t('newCustomerModal.cancel') : t('newCustomerModal.previous')}
             </button>
 
             {currentStep < 2 ? (
@@ -630,7 +632,7 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
                 disabled={isSubmitting}
               >
-                Next
+                {t('newCustomerModal.next')}
                 <ChevronRight size={16} className="ml-2" />
               </button>
             ) : (
@@ -643,12 +645,12 @@ const NewCustomerModal = ({ isOpen, onClose, onCustomerCreated, initialData = nu
                 {isSubmitting ? (
                   <>
                     <RefreshCw size={16} className="animate-spin mr-2" />
-                    {initialData ? 'Updating...' : 'Creating...'}
+                    {initialData ? t('form.updating') : t('form.creating')}
                   </>
                 ) : (
                   <>
                     <Check size={16} className="mr-2" />
-                    {initialData ? 'Update Customer' : 'Create Customer'}
+                    {initialData ? t('form.updateCustomer') : t('form.createCustomer')}
                   </>
                 )}
               </button>

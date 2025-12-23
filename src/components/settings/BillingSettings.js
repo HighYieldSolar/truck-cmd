@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTranslation } from "@/context/LanguageContext";
 import Link from "next/link";
 import CancellationModal from "@/components/billing/CancellationModal";
 import UpdatePaymentModal from "@/components/billing/UpdatePaymentModal";
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 
 export default function BillingSettings() {
+  const { t } = useTranslation('settings');
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -161,7 +163,7 @@ export default function BillingSettings() {
         }
 
       } catch (error) {
-        setErrorMessage('Failed to load your billing information. Please try again later.');
+        setErrorMessage(t('billing.messages.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -170,7 +172,7 @@ export default function BillingSettings() {
     if (!subscriptionLoading) {
       loadUserData();
     }
-  }, [subscription, subscriptionLoading]);
+  }, [subscription, subscriptionLoading, t]);
 
   // Load billing history from Stripe
   const loadBillingHistory = async (userId) => {
@@ -309,7 +311,7 @@ export default function BillingSettings() {
       ]);
     }
 
-    setSuccessMessage("Subscription information refreshed successfully");
+    setSuccessMessage(t('billing.messages.refreshSuccess'));
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
@@ -319,7 +321,7 @@ export default function BillingSettings() {
       // Get the current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setErrorMessage('Please sign in again to access billing portal.');
+        setErrorMessage(t('billing.messages.portalSignIn'));
         return;
       }
 
@@ -340,10 +342,10 @@ export default function BillingSettings() {
       if (result.url) {
         window.location.href = result.url;
       } else {
-        setErrorMessage('Unable to open billing portal. Please try again.');
+        setErrorMessage(t('billing.messages.portalError'));
       }
     } catch (error) {
-      setErrorMessage('Unable to open billing portal. Please try again.');
+      setErrorMessage(t('billing.messages.portalError'));
     }
   };
 
@@ -356,7 +358,7 @@ export default function BillingSettings() {
       // Get the current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setErrorMessage('Please sign in again to cancel your subscription.');
+        setErrorMessage(t('billing.messages.cancelSignIn'));
         return;
       }
 
@@ -376,13 +378,13 @@ export default function BillingSettings() {
       const result = await response.json();
 
       if (result.success) {
-        setSuccessMessage('Your subscription has been canceled. You will retain access until the end of your current billing period.');
+        setSuccessMessage(t('billing.messages.cancelSuccess'));
         refreshSubscription();
       } else {
-        setErrorMessage(result.error || 'Failed to cancel subscription. Please try again.');
+        setErrorMessage(result.error || t('billing.messages.cancelFailed'));
       }
     } catch (error) {
-      setErrorMessage('Failed to cancel subscription. Please try again.');
+      setErrorMessage(t('billing.messages.cancelFailed'));
     } finally {
       setCanceling(false);
     }
@@ -396,7 +398,7 @@ export default function BillingSettings() {
       // Get the current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setErrorMessage('Please sign in again to reactivate your subscription.');
+        setErrorMessage(t('billing.messages.reactivateSignIn'));
         return;
       }
 
@@ -412,13 +414,13 @@ export default function BillingSettings() {
       const result = await response.json();
 
       if (result.success) {
-        setSuccessMessage('Your subscription has been reactivated! You will continue to be billed normally.');
+        setSuccessMessage(t('billing.messages.reactivateSuccess'));
         refreshSubscription();
       } else {
-        setErrorMessage(result.error || 'Failed to reactivate subscription. Please try again.');
+        setErrorMessage(result.error || t('billing.messages.reactivateFailed'));
       }
     } catch (error) {
-      setErrorMessage('Failed to reactivate subscription. Please try again.');
+      setErrorMessage(t('billing.messages.reactivateFailed'));
     } finally {
       setReactivating(false);
     }
@@ -428,7 +430,7 @@ export default function BillingSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
-        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading billing information...</span>
+        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('billing.loading')}</span>
       </div>
     );
   }
@@ -468,11 +470,11 @@ export default function BillingSettings() {
         >
           <div className="flex items-center">
             <Zap size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Current Subscription</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('billing.subscription.title')}</h3>
           </div>
           <div className="flex items-center space-x-2">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-              {subscriptionStatus === 'trial' ? 'Free Trial' : statusInfo.label}
+              {subscriptionStatus === 'trial' ? t('billing.status.freeTrial') : t(`billing.status.${subscriptionStatus}`)}
             </span>
             {expandedSection === 'subscription' ?
               <ChevronUp size={18} className="text-gray-500 dark:text-gray-400" /> :
@@ -490,13 +492,13 @@ export default function BillingSettings() {
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                       <Clock size={18} className="mr-2 text-blue-500" />
-                      Free Trial
+                      {t('billing.subscription.freeTrial')}
                     </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Full access to Basic features</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('billing.subscription.fullAccess')}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{daysLeft}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">days left</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">{t('billing.subscription.daysLeft')}</span>
                   </div>
                 </div>
 
@@ -509,14 +511,14 @@ export default function BillingSettings() {
 
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Upgrade to keep your data and unlock more features
+                    {t('billing.subscription.upgradePrompt')}
                   </p>
                   <Link
                     href="/dashboard/upgrade"
                     className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-md transition-colors"
                   >
                     <Zap size={14} className="mr-1.5" />
-                    Upgrade
+                    {t('billing.actions.upgrade')}
                   </Link>
                 </div>
               </div>
@@ -530,19 +532,19 @@ export default function BillingSettings() {
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{planDetails.name}</h4>
                     {planDetails.id === 'premium' && !subscription?.scheduled_plan && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-400">
-                        Popular
+                        {t('billing.plans.premium.popular')}
                       </span>
                     )}
                     {subscription?.scheduled_plan && subscription.scheduled_plan !== subscription?.plan && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400">
                         <ArrowRight size={12} className="mr-1" />
-                        {subscription.scheduled_plan.charAt(0).toUpperCase() + subscription.scheduled_plan.slice(1)} next period
+                        {subscription.scheduled_plan.charAt(0).toUpperCase() + subscription.scheduled_plan.slice(1)} {t('billing.nextPeriod')}
                       </span>
                     )}
                     {!subscription?.scheduled_plan && subscription?.scheduled_billing_cycle && subscription.scheduled_billing_cycle !== subscription?.billing_cycle && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400">
                         <ArrowRight size={12} className="mr-1" />
-                        {subscription.scheduled_billing_cycle.charAt(0).toUpperCase() + subscription.scheduled_billing_cycle.slice(1)} next period
+                        {subscription.scheduled_billing_cycle.charAt(0).toUpperCase() + subscription.scheduled_billing_cycle.slice(1)} {t('billing.nextPeriod')}
                       </span>
                     )}
                   </div>
@@ -560,17 +562,17 @@ export default function BillingSettings() {
                     <span className="text-xl font-bold text-gray-900 dark:text-white">
                       ${subscription?.billing_cycle === 'yearly' ? planDetails.yearlyPrice : planDetails.monthlyPrice}
                     </span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-1 text-sm">/month</span>
+                    <span className="text-gray-500 dark:text-gray-400 ml-1 text-sm">{t('billing.pricing.perMonth')}</span>
                     {subscription?.billing_cycle === 'yearly' && (
                       <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">
-                        Save ${planDetails.savings}/yr
+                        {t('billing.pricing.save')} ${planDetails.savings}{t('billing.pricing.perYear')}
                       </span>
                     )}
                   </div>
 
                   {subscription?.billing_cycle === 'yearly' && (
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Billed annually at ${planDetails.yearlyTotal}
+                      {t('billing.pricing.billedAnnually')} ${planDetails.yearlyTotal}
                     </p>
                   )}
                 </div>
@@ -584,14 +586,14 @@ export default function BillingSettings() {
                         className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 transition-colors"
                       >
                         <Zap size={14} className="mr-1.5" />
-                        Change Plan
+                        {t('billing.actions.changePlan')}
                       </Link>
                       <button
                         onClick={() => setShowCancellationModal(true)}
                         disabled={canceling}
                         className="inline-flex items-center justify-center px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors disabled:opacity-50"
                       >
-                        Cancel Subscription
+                        {t('billing.actions.cancelSubscription')}
                       </button>
                     </>
                   )}
@@ -605,12 +607,12 @@ export default function BillingSettings() {
                         {reactivating ? (
                           <>
                             <RefreshCw size={14} className="mr-1.5 animate-spin" />
-                            Reactivating...
+                            {t('billing.actions.reactivating')}
                           </>
                         ) : (
                           <>
                             <CheckCircle size={14} className="mr-1.5" />
-                            Keep My Plan
+                            {t('billing.actions.keepMyPlan')}
                           </>
                         )}
                       </button>
@@ -619,7 +621,7 @@ export default function BillingSettings() {
                         className="inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       >
                         <Zap size={14} className="mr-1.5" />
-                        Change Plan
+                        {t('billing.actions.changePlan')}
                       </Link>
                     </>
                   )}
@@ -631,15 +633,15 @@ export default function BillingSettings() {
             {subscriptionStatus === 'inactive' && (
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">No Active Plan</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Subscribe to access all features</p>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{t('billing.subscription.noActivePlan')}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('billing.subscription.subscribePrompt')}</p>
                 </div>
                 <Link
                   href="/dashboard/upgrade"
                   className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-md transition-colors"
                 >
                   <CreditCard size={14} className="mr-1.5" />
-                  View Plans
+                  {t('billing.actions.viewPlans')}
                 </Link>
               </div>
             )}
@@ -653,21 +655,21 @@ export default function BillingSettings() {
                   <div>
                     <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
                       {subscription?.scheduled_plan && subscription.scheduled_plan !== subscription?.plan
-                        ? 'Plan change scheduled'
-                        : 'Billing change scheduled'}
+                        ? t('billing.scheduledChanges.planChange')
+                        : t('billing.scheduledChanges.billingChange')}
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-0.5">
                       {subscription?.scheduled_plan && subscription.scheduled_plan !== subscription?.plan ? (
                         <>
-                          Your plan will change to <span className="font-semibold capitalize">{subscription.scheduled_plan}</span>
+                          {t('billing.scheduledChanges.planWillChange')} <span className="font-semibold capitalize">{subscription.scheduled_plan}</span>
                           {subscription?.scheduled_billing_cycle && subscription.scheduled_billing_cycle !== subscription?.billing_cycle && (
                             <> ({subscription.scheduled_billing_cycle} billing)</>
                           )}
-                          {' '}on {formatDate(subscription.current_period_ends_at)}
+                          {' '}{t('billing.scheduledChanges.on')} {formatDate(subscription.current_period_ends_at)}
                         </>
                       ) : (
                         <>
-                          Your billing will switch to <span className="font-semibold capitalize">{subscription.scheduled_billing_cycle}</span> on {formatDate(subscription.current_period_ends_at)}
+                          {t('billing.scheduledChanges.billingWillSwitch')} <span className="font-semibold capitalize">{subscription.scheduled_billing_cycle}</span> {t('billing.scheduledChanges.on')} {formatDate(subscription.current_period_ends_at)}
                         </>
                       )}
                     </p>
@@ -675,7 +677,7 @@ export default function BillingSettings() {
                       href="/dashboard/upgrade"
                       className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2 transition-colors"
                     >
-                      Change plan
+                      {t('billing.scheduledChanges.changePlanLink')}
                       <ChevronRight size={12} className="ml-0.5" />
                     </Link>
                   </div>
@@ -687,7 +689,7 @@ export default function BillingSettings() {
             {subscriptionStatus === 'active' && subscription?.current_period_ends_at && !subscription?.scheduled_plan && (
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                 <Calendar size={14} className="mr-1.5" />
-                <span>Next billing: <span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(subscription.current_period_ends_at)}</span></span>
+                <span>{t('billing.nextBilling')}: <span className="font-medium text-gray-700 dark:text-gray-300">{formatDate(subscription.current_period_ends_at)}</span></span>
               </div>
             )}
 
@@ -696,8 +698,8 @@ export default function BillingSettings() {
                 <div className="flex items-start text-sm text-orange-700 dark:text-orange-300">
                   <AlertTriangle size={14} className="mr-1.5 flex-shrink-0 mt-0.5" />
                   <div>
-                    <span>Your subscription will end on <span className="font-medium">{formatDate(subscription.current_period_ends_at)}</span></span>
-                    <p className="text-xs mt-1 text-orange-600 dark:text-orange-400">Click "Keep My Plan" above to continue your subscription</p>
+                    <span>{t('billing.endDate')} <span className="font-medium">{formatDate(subscription.current_period_ends_at)}</span></span>
+                    <p className="text-xs mt-1 text-orange-600 dark:text-orange-400">{t('billing.keepPlanPrompt')}</p>
                   </div>
                 </div>
               </div>
@@ -706,7 +708,7 @@ export default function BillingSettings() {
             {/* Plan Features */}
             {(subscriptionStatus === 'active' || subscriptionStatus === 'canceled') && (
               <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
-                <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Included features</h5>
+                <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('billing.includedFeatures')}</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                   {planDetails.features.map((feature, index) => (
                     <div key={index} className="flex items-center text-xs text-gray-600 dark:text-gray-300">
@@ -719,7 +721,7 @@ export default function BillingSettings() {
                   href="/dashboard/upgrade"
                   className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2 transition-colors"
                 >
-                  Compare all plans
+                  {t('billing.compareAllPlans')}
                   <ChevronRight size={12} className="ml-0.5" />
                 </Link>
               </div>
@@ -736,7 +738,7 @@ export default function BillingSettings() {
         >
           <div className="flex items-center">
             <CardIcon size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Payment Method</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('billing.paymentMethod.title')}</h3>
           </div>
           {expandedSection === 'payment' ?
             <ChevronUp size={18} className="text-gray-500 dark:text-gray-400" /> :
@@ -771,9 +773,9 @@ export default function BillingSettings() {
                       {paymentMethod?.type === 'link' ? (
                         <>
                           <h5 className="font-medium text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                            Stripe Link
+                            {t('billing.paymentMethod.stripeLink')}
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
-                              Express Checkout
+                              {t('billing.paymentMethod.expressCheckout')}
                             </span>
                           </h5>
                           <p className="text-gray-600 dark:text-gray-300 text-sm">
@@ -782,42 +784,42 @@ export default function BillingSettings() {
                           <div className="mt-2 flex items-center text-sm">
                             <div className="flex items-center text-green-600 dark:text-green-400">
                               <CheckCircle size={14} className="mr-1" />
-                              <span className="text-xs">Connected</span>
+                              <span className="text-xs">{t('billing.paymentMethod.connected')}</span>
                             </div>
                           </div>
                         </>
                       ) : paymentMethod?.type === 'card' ? (
                         <>
                           <h5 className="font-medium text-gray-900 dark:text-white mb-1 capitalize">
-                            {paymentMethod.card?.brand || 'Credit Card'}
+                            {paymentMethod.card?.brand || t('billing.paymentMethod.creditCard')}
                           </h5>
                           <p className="text-gray-600 dark:text-gray-300 text-sm">
                             •••• •••• •••• {paymentMethod.card?.last4 || '••••'}
                           </p>
                           {paymentMethod.card?.exp_month && paymentMethod.card?.exp_year && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              Expires {paymentMethod.card.exp_month.toString().padStart(2, '0')}/{paymentMethod.card.exp_year}
+                              {t('billing.paymentMethod.expires')} {paymentMethod.card.exp_month.toString().padStart(2, '0')}/{paymentMethod.card.exp_year}
                             </p>
                           )}
                           <div className="mt-2 flex items-center gap-3 text-sm">
                             <div className="flex items-center text-green-600 dark:text-green-400">
                               <CheckCircle size={14} className="mr-1" />
-                              <span className="text-xs">Verified</span>
+                              <span className="text-xs">{t('billing.paymentMethod.verified')}</span>
                             </div>
                             {paymentMethod.card?.funding && (
                               <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                                {paymentMethod.card.funding} card
+                                {paymentMethod.card.funding} {t('billing.paymentMethod.card')}
                               </span>
                             )}
                           </div>
                         </>
                       ) : (
                         <>
-                          <h5 className="font-medium text-gray-900 dark:text-white mb-1">Payment Method</h5>
+                          <h5 className="font-medium text-gray-900 dark:text-white mb-1">{t('billing.paymentMethod.title')}</h5>
                           <p className="text-gray-600 dark:text-gray-300 text-sm">
                             {subscription?.card_last_four
                               ? `•••• •••• •••• ${subscription.card_last_four}`
-                              : 'Payment method on file'
+                              : t('billing.paymentMethod.paymentOnFile')
                             }
                           </p>
                         </>
@@ -831,7 +833,7 @@ export default function BillingSettings() {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
                   >
                     <Pencil size={14} />
-                    Update
+                    {t('billing.paymentMethod.update')}
                   </button>
                 </div>
 
@@ -852,14 +854,14 @@ export default function BillingSettings() {
                 <div className="flex-1">
                   <h5 className="font-medium text-gray-900 dark:text-white mb-2">
                     {subscriptionStatus === 'trial'
-                      ? 'No payment method required yet'
-                      : 'No payment method on file'
+                      ? t('billing.paymentMethod.noPaymentRequired')
+                      : t('billing.paymentMethod.noPaymentOnFile')
                     }
                   </h5>
                   <p className="text-gray-600 dark:text-gray-300 mb-4">
                     {subscriptionStatus === 'trial'
-                      ? `You'll be asked to provide payment details when your trial ends in ${daysLeft} days.`
-                      : 'You\'ll need to add a payment method when you subscribe to a plan.'
+                      ? `${t('billing.paymentMethod.trialPaymentPrompt')} ${daysLeft} ${t('billing.paymentMethod.days')}.`
+                      : t('billing.paymentMethod.subscribePaymentPrompt')
                     }
                   </p>
 
@@ -868,7 +870,7 @@ export default function BillingSettings() {
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <ExternalLink size={16} className="mr-2" />
-                    View Plans & Pricing
+                    {t('billing.paymentMethod.viewPlansAndPricing')}
                   </Link>
                 </div>
               </div>
@@ -885,7 +887,7 @@ export default function BillingSettings() {
         >
           <div className="flex items-center">
             <FileText size={18} className="text-blue-600 dark:text-blue-400 mr-2" />
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Billing History</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('billing.history.title')}</h3>
           </div>
           {expandedSection === 'history' ?
             <ChevronUp size={18} className="text-gray-500 dark:text-gray-400" /> :
@@ -906,19 +908,19 @@ export default function BillingSettings() {
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-600">
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Date
+                          {t('billing.history.date')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Description
+                          {t('billing.history.description')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Amount
+                          {t('billing.history.amount')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
+                          {t('billing.history.status')}
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Invoice
+                          {t('billing.history.invoice')}
                         </th>
                       </tr>
                     </thead>
@@ -932,7 +934,7 @@ export default function BillingSettings() {
                             <div className="font-medium">{invoice.description || `${planDetails.name} - ${subscription?.billing_cycle || 'monthly'}`}</div>
                             {invoice.period_start && invoice.period_end && (
                               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Service period: {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
+                                {t('billing.history.servicePeriod')}: {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
                               </div>
                             )}
                           </td>
@@ -973,7 +975,7 @@ export default function BillingSettings() {
                       onClick={() => setShowAllHistory(!showAllHistory)}
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors"
                     >
-                      {showAllHistory ? 'Show less' : `Show all ${billingHistory.length} invoices`}
+                      {showAllHistory ? t('billing.history.showLess') : `${t('billing.history.showAll')} ${billingHistory.length} ${t('billing.history.invoices')}`}
                     </button>
                   </div>
                 )}
@@ -984,16 +986,16 @@ export default function BillingSettings() {
                     className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <ExternalLink size={16} className="mr-2" />
-                    View Complete Billing History
+                    {t('billing.history.viewCompleteHistory')}
                   </button>
                 </div>
               </>
             ) : (
               <div className="text-center py-12">
                 <FileText size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                <h5 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No billing history yet</h5>
+                <h5 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('billing.history.noHistoryYet')}</h5>
                 <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
-                  Your invoice history will appear here once you&#39;ve subscribed to a plan and made payments.
+                  {t('billing.history.historyPrompt')}
                 </p>
 
                 {subscriptionStatus === 'trial' ? (
@@ -1002,7 +1004,7 @@ export default function BillingSettings() {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
                   >
                     <CreditCard size={16} className="mr-2" />
-                    Upgrade Your Plan
+                    {t('billing.history.upgradeYourPlan')}
                   </Link>
                 ) : (
                   <Link
@@ -1010,7 +1012,7 @@ export default function BillingSettings() {
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
                   >
                     <CreditCard size={16} className="mr-2" />
-                    View Subscription Plans
+                    {t('billing.history.viewSubscriptionPlans')}
                   </Link>
                 )}
               </div>
@@ -1026,9 +1028,9 @@ export default function BillingSettings() {
             <Shield size={24} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div className="ml-4 flex-1">
-            <h4 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">Need help with billing?</h4>
+            <h4 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">{t('billing.support.title')}</h4>
             <p className="text-blue-700 dark:text-blue-300 mb-4">
-              Our support team is available to assist you with any billing questions or concerns.
+              {t('billing.support.description')}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -1036,21 +1038,21 @@ export default function BillingSettings() {
                 className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
               >
                 <ExternalLink size={16} className="mr-2" />
-                Contact Support
+                {t('billing.support.contactSupport')}
               </Link>
               <Link
                 href="/faq"
                 className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
               >
                 <FileText size={16} className="mr-2" />
-                Billing FAQ
+                {t('billing.support.billingFAQ')}
               </Link>
               <Link
                 href="/terms"
                 className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
               >
                 <FileText size={16} className="mr-2" />
-                Terms of Service
+                {t('billing.support.termsOfService')}
               </Link>
               {subscriptionStatus === 'active' && (
                 <button
@@ -1058,7 +1060,7 @@ export default function BillingSettings() {
                   className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-md text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
                 >
                   <Settings size={16} className="mr-2" />
-                  Billing Portal
+                  {t('billing.support.billingPortal')}
                 </button>
               )}
             </div>
@@ -1082,7 +1084,7 @@ export default function BillingSettings() {
         currentPaymentMethod={paymentMethod}
         onUpdate={(newPaymentMethod) => {
           setPaymentMethod(newPaymentMethod);
-          setSuccessMessage("Payment method updated successfully!");
+          setSuccessMessage(t('billing.messages.paymentUpdated'));
           setTimeout(() => setSuccessMessage(null), 3000);
         }}
       />

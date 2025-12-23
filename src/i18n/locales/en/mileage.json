@@ -1,0 +1,193 @@
+{
+  "pageTitle": "State Mileage Tracker",
+  "pageSubtitle": "Record and export your state mileage for IFTA reporting",
+  "upgradeMessage": "Upgrade to Premium to access state mileage tracking",
+  "iftaCalculator": "IFTA Calculator",
+  "iftaCompliant": "IFTA Compliant",
+
+  "featurePreview": {
+    "title": "What you'll get with State Mileage Tracker:",
+    "activeTripRecording": "Active trip recording with state border crossings",
+    "autoCalculations": "Automatic state-by-state mileage calculations",
+    "iftaReports": "IFTA-compliant mileage reports",
+    "exportData": "Export trip data for quarterly IFTA filings",
+    "tripHistory": "Trip history with date and odometer tracking"
+  },
+
+  "tutorial": {
+    "features": {
+      "tripRecording": {
+        "title": "Trip Recording",
+        "description": "Start active trips and record state crossings with odometer readings"
+      },
+      "stateCrossings": {
+        "title": "State Crossings",
+        "description": "Log when you cross state lines to track miles per jurisdiction"
+      },
+      "tripHistory": {
+        "title": "Trip History",
+        "description": "View past trips and edit mileage entries as needed"
+      },
+      "iftaExport": {
+        "title": "IFTA Export",
+        "description": "Export mileage data in IFTA-ready format for quarterly filings"
+      }
+    },
+    "tips": [
+      "Start a trip before leaving and add state entries as you cross borders",
+      "Record odometer readings at each state line for accurate calculations",
+      "Use the IFTA Calculator to combine mileage with fuel data",
+      "Export your trip data before quarterly IFTA filing deadlines"
+    ]
+  },
+
+  "featureCards": {
+    "activeTripRecording": {
+      "title": "Active Trip Recording",
+      "description": "Add state crossings as you drive to automatically calculate miles by state."
+    },
+    "stateByStateTracking": {
+      "title": "State-by-State Tracking",
+      "description": "Automatically calculate miles driven in each state based on your odometer readings."
+    },
+    "iftaMileageReports": {
+      "title": "IFTA Mileage Reports",
+      "description": "Export your trip data in IFTA-compatible format for easy quarterly filings."
+    }
+  },
+
+  "tabs": {
+    "activeTrips": "Active Trips",
+    "pastTrips": "Past Trips",
+    "summary": "Summary"
+  },
+
+  "deleteModal": {
+    "title": "Delete Trip",
+    "confirmTitle": "Delete this trip?",
+    "confirmMessage": "Are you sure you want to delete the trip with {{vehicleName}} from {{tripDate}}? This will permanently remove all state crossings and mileage data associated with this trip.",
+    "iftaWarningTitle": "This trip has IFTA data",
+    "iftaWarningMessage": "{{count}} IFTA record{{plural}} ({{miles}} miles) in {{quarters}} will also be removed from your IFTA calculator.",
+    "cannotUndo": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "deleteTrip": "Delete Trip",
+    "deleteTripAndIfta": "Delete Trip & IFTA Data"
+  },
+
+  "activeTrips": {
+    "title": "Active Trips",
+    "noTrips": "No active trips",
+    "noTripsDescription": "Start a new trip to track state mileage",
+    "newTrip": "New Trip"
+  },
+
+  "newTrip": {
+    "title": "Start New Trip",
+    "selectVehicle": "Select Vehicle",
+    "selectVehiclePlaceholder": "Select Vehicle",
+    "startingState": "Starting State",
+    "selectState": "Select State",
+    "startingOdometer": "Starting Odometer",
+    "odometerPlaceholder": "Odometer reading",
+    "date": "Date",
+    "startTrip": "Start Trip"
+  },
+
+  "tripDetails": {
+    "startedOn": "Started on {{date}}",
+    "ending": "Ending...",
+    "endTrip": "End Trip"
+  },
+
+  "stateCrossings": {
+    "title": "State Crossings",
+    "noData": "No state crossings recorded yet",
+    "addTitle": "Add State Crossing",
+    "enteringState": "Entering State",
+    "odometerReading": "Odometer Reading",
+    "currentReading": "Current reading",
+    "crossingDate": "Crossing Date",
+    "adding": "Adding...",
+    "add": "Add",
+    "noDate": "No date"
+  },
+
+  "milesByState": {
+    "title": "Miles by State",
+    "total": "Total",
+    "milesUnit": "mi"
+  },
+
+  "selectPrompts": {
+    "selectActiveTrip": "Select an Active Trip",
+    "activeTripsCount": "You have {{count}} active trip{{plural}}.",
+    "selectFromList": "Please select one from the list on the left to view details or add state crossings.",
+    "moreTrips": "+{{count}} more",
+    "selectOrCreate": "Select or Create a Trip",
+    "selectOrCreateDescription": "To start tracking your state mileage, select an existing trip from the list or create a new one."
+  },
+
+  "pastTrips": {
+    "title": "Completed Trips",
+    "loading": "Loading completed trips...",
+    "noTrips": "No completed trips",
+    "noTripsDescription": "Complete active trips to see history",
+    "tripDetailsTitle": "Trip Details - {{vehicleName}}",
+    "importToIfta": "Import to IFTA",
+    "tripDuration": "Trip Duration",
+    "totalMiles": "Total Miles",
+    "calculating": "Calculating...",
+    "noMileageData": "No mileage data available",
+    "loadingTripData": "Loading trip data...",
+    "noStateCrossings": "No state crossings found for this trip",
+    "selectPastTrip": "Select a Past Trip",
+    "selectPastTripDescription": "Select a completed trip from the list to view details and mileage breakdown."
+  },
+
+  "summaryTab": {
+    "title": "Mileage Summary by State (All Time)",
+    "noData": "No historical mileage data available",
+    "noDataDescription": "Complete trips to see your mileage summary",
+    "totalMileageStats": "Total Mileage Stats",
+    "totalStatesDriven": "Total States Driven",
+    "totalMiles": "Total Miles",
+    "completedTrips": "Completed Trips"
+  },
+
+  "export": {
+    "button": "Export",
+    "buttonFull": "Export Mileage Report",
+    "failed": "Failed to export mileage data. Please try again."
+  },
+
+  "messages": {
+    "error": "Error",
+    "success": "Success",
+    "tripStarted": "Trip started successfully!",
+    "crossingAdded": "State crossing added successfully!",
+    "tripDeleted": "Trip deleted successfully",
+    "iftaRecordsRemoved": "({{count}} IFTA record{{plural}} also removed)",
+    "tripCompleted": "Trip completed successfully! You can now manually import it to your IFTA calculator.",
+    "alreadyImported": "This trip has already been imported to the IFTA calculator",
+    "noDataToImport": "No mileage data to import",
+    "importSuccess": "Successfully imported {{count}} state records to IFTA calculator",
+    "importSuccessQuarters": "Successfully imported {{count}} state records to IFTA calculator for {{quarter}}",
+    "importSuccessMultiQuarters": "Successfully imported {{count}} state records to IFTA calculator (split across {{quarters}})"
+  },
+
+  "errors": {
+    "loadTripDetails": "Failed to load trip details. Please try again.",
+    "loadActiveTrips": "Failed to load active trips. Please refresh the page.",
+    "loadTripHistory": "Failed to load trip history. Please refresh the page.",
+    "deleteTrip": "Failed to delete trip. Please try again.",
+    "fillRequired": "Please fill in all required fields.",
+    "odometerTooLow": "Odometer reading must be greater than the last reading ({{odometer}}).",
+    "startTrip": "Failed to start trip. Please try again.",
+    "addCrossing": "Failed to add state crossing. Please try again.",
+    "deleteCrossing": "Failed to delete crossing. Please try again.",
+    "endTrip": "Failed to end trip. Please try again.",
+    "authError": "Authentication error. Please try logging in again.",
+    "importIfta": "Failed to import to IFTA calculator. Please try again."
+  }
+}

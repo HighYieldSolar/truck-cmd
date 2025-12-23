@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   FileText,
   Plus,
@@ -84,6 +85,7 @@ function LoadingSkeleton() {
 
 // Main Invoices Dashboard Component
 export default function Page() {
+  const { t } = useTranslation('invoices');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
   const [user, setUser] = useState(null);
@@ -539,7 +541,7 @@ export default function Page() {
       calculateStats(updatedInvoices);
       setPaymentModalOpen(false);
       setCurrentInvoice(null);
-      setMessage({ type: 'success', text: 'Payment recorded successfully' });
+      setMessage({ type: 'success', text: t('messages.paymentRecorded') });
     } catch (error) {
       setMessage({ type: 'error', text: getUserFriendlyError(error) });
     } finally {
@@ -568,7 +570,7 @@ export default function Page() {
 
       setDeleteModalOpen(false);
       setCurrentInvoice(null);
-      setMessage({ type: 'success', text: 'Invoice deleted successfully' });
+      setMessage({ type: 'success', text: t('messages.invoiceDeleted') });
     } catch (error) {
       setMessage({ type: 'error', text: getUserFriendlyError(error) });
     } finally {
@@ -655,18 +657,18 @@ export default function Page() {
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold mb-1">Invoice Management</h1>
-                <p className="text-blue-100">Track and manage all your customer invoices and payments</p>
+                <h1 className="text-3xl font-bold mb-1">{t('page.title')}</h1>
+                <p className="text-blue-100">{t('page.subtitle')}</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 {isAtInvoiceLimit ? (
                   <button
                     disabled
                     className="px-4 py-2 bg-white/50 text-gray-400 rounded-lg shadow-sm flex items-center font-medium cursor-not-allowed"
-                    title={`Monthly invoice limit reached (${monthlyInvoiceCount}/${invoiceLimit})`}
+                    title={t('limits.usedOfTotal', { current: monthlyInvoiceCount, limit: invoiceLimit })}
                   >
                     <Lock size={18} className="mr-2" />
-                    Limit Reached
+                    {t('page.limitReached')}
                   </button>
                 ) : (
                   <Link
@@ -674,7 +676,7 @@ export default function Page() {
                     className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                   >
                     <Plus size={18} className="mr-2" />
-                    New Invoice
+                    {t('page.newInvoice')}
                   </Link>
                 )}
                 <button
@@ -683,7 +685,7 @@ export default function Page() {
                   disabled={invoices.length === 0}
                 >
                   <Download size={18} className="mr-2" />
-                  Export Data
+                  {t('page.exportData')}
                 </button>
               </div>
             </div>
@@ -698,36 +700,31 @@ export default function Page() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="invoices"
-            title="Invoice Management"
-            description="Create, track, and manage professional invoices for your trucking services. Get paid faster with organized billing."
+            title={t('tutorial.title')}
+            description={t('tutorial.fullDescription')}
             features={[
               {
                 icon: FileText,
-                title: "Create Professional Invoices",
-                description: "Generate detailed invoices with line items, tax calculations, and payment terms"
+                title: t('tutorial.features.createProfessional.title'),
+                description: t('tutorial.features.createProfessional.description')
               },
               {
                 icon: DollarSign,
-                title: "Track Payments",
-                description: "Monitor payment status, mark invoices as paid, and track outstanding balances"
+                title: t('tutorial.features.trackPaymentsFull.title'),
+                description: t('tutorial.features.trackPaymentsFull.description')
               },
               {
                 icon: Clock,
-                title: "Due Date Alerts",
-                description: "Stay on top of accounts receivable with upcoming and overdue payment alerts"
+                title: t('tutorial.features.dueDateAlertsFull.title'),
+                description: t('tutorial.features.dueDateAlertsFull.description')
               },
               {
                 icon: Download,
-                title: "Export Reports",
-                description: "Download invoice reports in PDF, CSV, or TXT format for your records"
+                title: t('tutorial.features.exportReports.title'),
+                description: t('tutorial.features.exportReports.description')
               }
             ]}
-            tips={[
-              "Complete loads can be automatically converted to invoices",
-              "Set appropriate payment terms (Net 15, Net 30) based on customer agreements",
-              "Review overdue invoices regularly and follow up with customers",
-              "Use the export feature to generate billing reports for accounting"
-            ]}
+            tips={t('tutorial.tipsList', { returnObjects: true }) || []}
             accentColor="blue"
             userId={user?.id}
           />
@@ -750,12 +747,12 @@ export default function Page() {
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <h3 className="font-medium text-amber-800 dark:text-amber-200">
-                    Approaching Invoice Limit
+                    {t('limits.approaching')}
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    You've used {monthlyInvoiceCount} of {invoiceLimit} invoices this month.
+                    {t('limits.usedOfTotal', { current: monthlyInvoiceCount, limit: invoiceLimit })}
                     <Link href="/dashboard/upgrade" className="ml-1 underline font-medium hover:text-amber-900 dark:hover:text-amber-100">
-                      Upgrade for unlimited invoices
+                      {t('limits.upgradeLink')}
                     </Link>
                   </p>
                 </div>
@@ -775,14 +772,14 @@ export default function Page() {
                 <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <Clock size={18} className="mr-2" />
-                    Payments Due Soon
+                    {t('sidebar.paymentsDueSoon')}
                   </h3>
                 </div>
                 <div className="p-4">
                   {upcomingPayments.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-                      <p>No payments due soon</p>
+                      <p>{t('sidebar.noPaymentsDueSoon')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -821,7 +818,7 @@ export default function Page() {
                           onClick={() => setFilters({ ...filters, status: 'pending' })}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                         >
-                          View all pending invoices
+                          {t('sidebar.viewAllPending')}
                           <ArrowRight size={14} className="ml-1" />
                         </button>
                       </div>
@@ -835,14 +832,14 @@ export default function Page() {
                 <div className="bg-red-500 dark:bg-red-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <AlertCircle size={18} className="mr-2" />
-                    Overdue Invoices
+                    {t('overdueInvoices.title')}
                   </h3>
                 </div>
                 <div className="p-4">
                   {overdueInvoices.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-                      <p>No overdue invoices</p>
+                      <p>{t('overdueInvoices.noOverdue')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -877,7 +874,7 @@ export default function Page() {
                           onClick={() => setFilters({ ...filters, status: 'overdue' })}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                         >
-                          View all overdue invoices
+                          {t('sidebar.viewAllOverdue')}
                           <ArrowRight size={14} className="ml-1" />
                         </button>
                       </div>
@@ -891,7 +888,7 @@ export default function Page() {
                 <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <FileText size={18} className="mr-2" />
-                    Quick Actions
+                    {t('quickActions.title')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -901,7 +898,7 @@ export default function Page() {
                         <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                       </div>
                       <span className="ml-3 text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Limit Reached ({monthlyInvoiceCount}/{invoiceLimit})
+                        {t('limits.limitReachedCount', { current: monthlyInvoiceCount, limit: invoiceLimit })}
                       </span>
                     </div>
                   ) : (
@@ -912,7 +909,7 @@ export default function Page() {
                       <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
                         <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Create Invoice</span>
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">{t('quickActions.createInvoice')}</span>
                     </Link>
                   )}
 
@@ -923,7 +920,7 @@ export default function Page() {
                     <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
                       <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Record Payment</span>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">{t('quickActions.recordPayment')}</span>
                   </button>
 
                   <button
@@ -933,7 +930,7 @@ export default function Page() {
                     <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
                       <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Draft Invoices</span>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">{t('quickActions.draftInvoices')}</span>
                   </button>
 
                   <button
@@ -944,21 +941,21 @@ export default function Page() {
                     <div className="rounded-md bg-white dark:bg-gray-800 p-2 shadow-sm">
                       <Download className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                     </div>
-                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">Export Invoices</span>
+                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200">{t('quickActions.exportInvoices')}</span>
                   </button>
 
                   <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-center">
                     {isAtInvoiceLimit ? (
                       <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center justify-center w-full">
                         <Lock size={14} className="mr-1" />
-                        Upgrade to create more invoices
+                        {t('limits.upgradeToCreate')}
                       </span>
                     ) : (
                       <Link
                         href="/dashboard/invoices/new"
                         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                       >
-                        Create new invoice
+                        {t('quickActions.createNewInvoice')}
                         <Plus size={14} className="ml-1" />
                       </Link>
                     )}
@@ -979,7 +976,7 @@ export default function Page() {
                       type="text"
                       value={filters.search}
                       onChange={handleSearch}
-                      placeholder="Search by invoice #, customer, or description..."
+                      placeholder={t('page.searchPlaceholder')}
                       className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
                     {filters.search && (
@@ -1000,12 +997,12 @@ export default function Page() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
                     >
-                      <option value="all">All Statuses</option>
-                      <option value="paid">Paid</option>
-                      <option value="pending">Pending</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="draft">Draft</option>
-                      <option value="sent">Sent</option>
+                      <option value="all">{t('list.allStatuses')}</option>
+                      <option value="paid">{t('status.paid')}</option>
+                      <option value="pending">{t('status.pending')}</option>
+                      <option value="overdue">{t('status.overdue')}</option>
+                      <option value="draft">{t('status.draft')}</option>
+                      <option value="sent">{t('status.sent')}</option>
                     </select>
 
                     <select
@@ -1014,12 +1011,12 @@ export default function Page() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
                     >
-                      <option value="all">All Time</option>
-                      <option value="last30">Last 30 Days</option>
-                      <option value="last90">Last 90 Days</option>
-                      <option value="thisMonth">This Month</option>
-                      <option value="lastMonth">Last Month</option>
-                      <option value="thisYear">This Year</option>
+                      <option value="all">{t('filters.allTime')}</option>
+                      <option value="last30">{t('filters.last30')}</option>
+                      <option value="last90">{t('filters.last90')}</option>
+                      <option value="thisMonth">{t('filters.thisMonth')}</option>
+                      <option value="lastMonth">{t('filters.lastMonth')}</option>
+                      <option value="thisYear">{t('filters.thisYear')}</option>
                     </select>
 
                     <select
@@ -1028,18 +1025,18 @@ export default function Page() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[130px] transition-colors"
                     >
-                      <option value="invoice_date">Invoice Date</option>
-                      <option value="due_date">Due Date</option>
-                      <option value="total">Amount</option>
-                      <option value="customer">Customer</option>
-                      <option value="status">Status</option>
+                      <option value="invoice_date">{t('filters.invoiceDate')}</option>
+                      <option value="due_date">{t('filters.dueDate')}</option>
+                      <option value="total">{t('filters.amount')}</option>
+                      <option value="customer">{t('filters.customer')}</option>
+                      <option value="status">{t('filters.status')}</option>
                     </select>
 
                     {/* Reset Filters Button */}
                     <button
                       onClick={resetFilters}
                       className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Reset Filters"
+                      title={t('list.resetFilters')}
                       disabled={
                         filters.status === "all" &&
                         filters.dateRange === "all" &&
@@ -1056,11 +1053,11 @@ export default function Page() {
               {/* Invoice Table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                  <h3 className="font-medium text-gray-700 dark:text-gray-200">Invoice Records</h3>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200">{t('list.invoiceRecords')}</h3>
                   {isAtInvoiceLimit ? (
                     <span className="flex items-center text-sm text-gray-400 dark:text-gray-500">
                       <Lock size={16} className="mr-1" />
-                      Limit Reached
+                      {t('page.limitReached')}
                     </span>
                   ) : (
                     <Link
@@ -1068,7 +1065,7 @@ export default function Page() {
                       className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     >
                       <Plus size={16} className="mr-1" />
-                      Add New
+                      {t('page.addNew')}
                     </Link>
                   )}
                 </div>
@@ -1079,25 +1076,25 @@ export default function Page() {
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
                         <th scope="col" className="w-[20%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Invoice
+                          {t('list.invoice')}
                         </th>
                         <th scope="col" className="w-[20%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Customer
+                          {t('list.customer')}
                         </th>
                         <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Invoice Date
+                          {t('list.invoiceDate')}
                         </th>
                         <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Due Date
+                          {t('list.dueDate')}
                         </th>
                         <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Amount
+                          {t('list.amount')}
                         </th>
                         <th scope="col" className="w-[10%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
+                          {t('list.status')}
                         </th>
                         <th scope="col" className="w-[14%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Actions
+                          {t('list.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -1110,15 +1107,15 @@ export default function Page() {
                                 <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                                   <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No invoices yet</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-4">Create your first invoice to start tracking payments.</p>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('emptyState.title')}</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">{t('emptyState.description')}</p>
                                 {isAtInvoiceLimit ? (
                                   <button
                                     disabled
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-400 cursor-not-allowed"
                                   >
                                     <Lock size={16} className="mr-2" />
-                                    Limit Reached
+                                    {t('page.limitReached')}
                                   </button>
                                 ) : (
                                   <Link
@@ -1126,19 +1123,19 @@ export default function Page() {
                                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                                   >
                                     <Plus size={16} className="mr-2" />
-                                    Create Invoice
+                                    {t('quickActions.createInvoice')}
                                   </Link>
                                 )}
                               </div>
                             ) : (
                               <div>
-                                <p className="text-gray-500 dark:text-gray-400 mb-2">No invoices match your current filters</p>
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">{t('page.noMatchingFilters')}</p>
                                 <button
                                   onClick={resetFilters}
                                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                                 >
                                   <RefreshCw size={14} className="mr-1" />
-                                  Reset Filters
+                                  {t('list.resetFilters')}
                                 </button>
                               </div>
                             )}
@@ -1178,7 +1175,7 @@ export default function Page() {
                                 <button
                                   onClick={() => handleViewInvoice(invoice.id)}
                                   className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                                  title="View"
+                                  title={t('page.view')}
                                 >
                                   <Eye size={16} />
                                 </button>
@@ -1186,7 +1183,7 @@ export default function Page() {
                                   <button
                                     onClick={() => handleMarkAsPaid(invoice.id)}
                                     className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                                    title="Mark as Paid"
+                                    title={t('page.markAsPaid')}
                                   >
                                     <DollarSign size={16} />
                                   </button>
@@ -1194,7 +1191,7 @@ export default function Page() {
                                 <button
                                   onClick={() => handleDeleteInvoice(invoice)}
                                   className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                                  title="Delete"
+                                  title={t('page.delete')}
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -1214,10 +1211,10 @@ export default function Page() {
                       isAtInvoiceLimit ? (
                         <EmptyState
                           icon={Lock}
-                          title="Invoice Limit Reached"
-                          description={`You've used ${monthlyInvoiceCount}/${invoiceLimit} invoices this month. Upgrade your plan for unlimited invoices.`}
+                          title={t('limits.reachedTitle')}
+                          description={t('limits.reachedDescription', { current: monthlyInvoiceCount, limit: invoiceLimit })}
                           action={{
-                            label: 'Upgrade Plan',
+                            label: t('limits.upgradePlan'),
                             onClick: () => window.location.href = '/dashboard/upgrade',
                             icon: Lock
                           }}
@@ -1225,10 +1222,10 @@ export default function Page() {
                       ) : (
                         <EmptyState
                           icon={FileText}
-                          title="No invoices yet"
-                          description="Create your first invoice to start tracking payments."
+                          title={t('emptyState.title')}
+                          description={t('emptyState.description')}
                           action={{
-                            label: 'Create Invoice',
+                            label: t('quickActions.createInvoice'),
                             onClick: () => window.location.href = '/dashboard/invoices/new',
                             icon: Plus
                           }}
@@ -1236,13 +1233,13 @@ export default function Page() {
                       )
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">No invoices match your current filters</p>
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">{t('page.noMatchingFilters')}</p>
                         <button
                           onClick={resetFilters}
                           className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                         >
                           <RefreshCw size={14} className="mr-2" />
-                          Reset Filters
+                          {t('list.resetFilters')}
                         </button>
                       </div>
                     )
@@ -1264,10 +1261,10 @@ export default function Page() {
                           </span>
                         </div>
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                          <p><span className="font-medium">Customer:</span> {invoice.customer}</p>
-                          <p><span className="font-medium">Amount:</span> {formatCurrency(invoice.total)}</p>
-                          <p><span className="font-medium">Invoice Date:</span> {invoice.invoice_date ? formatDateForDisplayMMDDYYYY(invoice.invoice_date) : '-'}</p>
-                          <p><span className="font-medium">Due Date:</span> {invoice.due_date ? formatDateForDisplayMMDDYYYY(invoice.due_date) : '-'}</p>
+                          <p><span className="font-medium">{t('list.customer')}:</span> {invoice.customer}</p>
+                          <p><span className="font-medium">{t('list.amount')}:</span> {formatCurrency(invoice.total)}</p>
+                          <p><span className="font-medium">{t('list.invoiceDate')}:</span> {invoice.invoice_date ? formatDateForDisplayMMDDYYYY(invoice.invoice_date) : '-'}</p>
+                          <p><span className="font-medium">{t('list.dueDate')}:</span> {invoice.due_date ? formatDateForDisplayMMDDYYYY(invoice.due_date) : '-'}</p>
                         </div>
                         <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
                           <button
@@ -1331,21 +1328,21 @@ export default function Page() {
         <ExportReportModal
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
-          title="Export Invoices Report"
-          description="Export your invoice records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+          title={t('export.title')}
+          description={t('export.description')}
           data={getExportData()}
           columns={exportColumns}
           filename="invoices_report"
           summaryInfo={getExportSummaryInfo()}
           dateRange={getExportDateRange()}
           pdfConfig={{
-            title: 'Invoice Report',
-            subtitle: 'Billing & Accounts Receivable'
+            title: t('export.pdf.title'),
+            subtitle: t('export.pdf.subtitle')
           }}
           onExportComplete={() => {
             setMessage({
               type: 'success',
-              text: 'Report exported successfully!'
+              text: t('export.success')
             });
           }}
         />

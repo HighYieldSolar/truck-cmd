@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   X,
   MapPin,
@@ -75,6 +76,8 @@ export default function NewLoadForm({
   onClose,
   onSubmit = () => { }
 }) {
+  const { t } = useTranslation('dispatching');
+
   // Form key for localStorage
   const formKey = 'loadForm-new';
 
@@ -110,9 +113,9 @@ export default function NewLoadForm({
 
   // Step configuration
   const steps = [
-    { number: 1, title: "Basic Info", icon: Building },
-    { number: 2, title: "Route Details", icon: Route },
-    { number: 3, title: "Pricing & Review", icon: DollarSign }
+    { number: 1, title: t('wizard.steps.basicInfo'), icon: Building },
+    { number: 2, title: t('wizard.steps.routeDetails'), icon: Route },
+    { number: 3, title: t('wizard.steps.pricingReview'), icon: DollarSign }
   ];
 
   // Load initial data from localStorage
@@ -157,7 +160,7 @@ export default function NewLoadForm({
 
         setCustomers(data || []);
       } catch (err) {
-        setError("Failed to load customers. You can still enter customer name manually.");
+        setError(t('newLoadModal.failedLoadCustomers'));
       } finally {
         setCustomersLoading(false);
       }
@@ -246,26 +249,26 @@ export default function NewLoadForm({
     switch (step) {
       case 1:
         if (!formData.customer.trim()) {
-          setError("Customer name is required");
+          setError(t('newLoadModal.validation.customerRequired'));
           return false;
         }
         return true;
 
       case 2:
         if (!formData.origin.trim()) {
-          setError("Pickup location is required");
+          setError(t('newLoadModal.validation.pickupLocationRequired'));
           return false;
         }
         if (!formData.destination.trim()) {
-          setError("Delivery location is required");
+          setError(t('newLoadModal.validation.deliveryLocationRequired'));
           return false;
         }
         if (!formData.pickupDate) {
-          setError("Pickup date is required");
+          setError(t('newLoadModal.validation.pickupDateRequired'));
           return false;
         }
         if (!formData.deliveryDate) {
-          setError("Delivery date is required");
+          setError(t('newLoadModal.validation.deliveryDateRequired'));
           return false;
         }
 
@@ -273,14 +276,14 @@ export default function NewLoadForm({
         const deliveryDateTime = new Date(formData.deliveryDate);
 
         if (deliveryDateTime < pickupDateTime) {
-          setError("Delivery date cannot be before pickup date");
+          setError(t('newLoadModal.validation.deliveryBeforePickup'));
           return false;
         }
         return true;
 
       case 3:
         if (!formData.rate || isNaN(parseFloat(formData.rate)) || parseFloat(formData.rate) <= 0) {
-          setError("Please enter a valid rate amount");
+          setError(t('newLoadModal.validation.validRateRequired'));
           return false;
         }
         return true;
@@ -404,14 +407,14 @@ export default function NewLoadForm({
         return (
           <div className="space-y-6">
             <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Basic Information</h3>
-              <p className="text-sm text-blue-700 dark:text-blue-300">Let's start with the customer and load details</p>
+              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('newLoadModal.basicInfo.title')}</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">{t('newLoadModal.basicInfo.description')}</p>
             </div>
 
             {/* Customer section */}
             <div>
               <label htmlFor="customer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Customer Name <span className="text-red-500">*</span>
+                {t('newLoadModal.labels.customerName')} <span className="text-red-500">*</span>
               </label>
               <div className="flex space-x-2">
                 {customersLoading ? (
@@ -419,7 +422,7 @@ export default function NewLoadForm({
                     <input
                       type="text"
                       className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="Loading customers..."
+                      placeholder={t('newLoadModal.placeholders.loadingCustomers')}
                       disabled
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -436,7 +439,7 @@ export default function NewLoadForm({
                     required
                     autoFocus
                   >
-                    <option value="">Select a customer</option>
+                    <option value="">{t('newLoadModal.placeholders.selectCustomer')}</option>
                     {customers.map((customer) => (
                       <option key={customer.id} value={customer.company_name}>
                         {customer.company_name}
@@ -451,20 +454,20 @@ export default function NewLoadForm({
                     value={formData.customer}
                     onChange={handleChange}
                     className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Enter customer name"
+                    placeholder={t('newLoadModal.placeholders.enterCustomerName')}
                     required
                     autoFocus
                   />
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Select an existing customer or type a new name</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('newLoadModal.hints.selectOrType')}</p>
             </div>
 
             {/* Load Number section - now optional */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <label htmlFor="load_number" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Load Number (Optional)
+                  {t('newLoadModal.labels.loadNumberOptional')}
                 </label>
                 <div className="flex items-center">
                   <input
@@ -480,7 +483,7 @@ export default function NewLoadForm({
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
                   <label htmlFor="autoGenerate" className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                    Auto-generate
+                    {t('newLoadModal.labels.autoGenerate')}
                   </label>
                 </div>
               </div>
@@ -508,13 +511,13 @@ export default function NewLoadForm({
                     }
                   }}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder={autoGenerateNumber ? "Will be auto-generated (type to override)" : "Enter load number"}
+                  placeholder={autoGenerateNumber ? t('newLoadModal.placeholders.willBeAutoGenerated') : t('newLoadModal.placeholders.enterLoadNumber')}
                 />
               </div>
 
               {autoGenerateNumber && (
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Format: LC-YYYYMMDD-XXXX (e.g., {generateLoadNumber()})
+                  {t('newLoadModal.hints.loadNumberFormat', { example: generateLoadNumber() })}
                 </p>
               )}
             </div>
@@ -525,14 +528,14 @@ export default function NewLoadForm({
         return (
           <div className="space-y-6">
             <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">Route Details</h3>
-              <p className="text-sm text-green-700 dark:text-green-300">Where and when will the load be picked up and delivered?</p>
+              <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">{t('newLoadModal.routeDetails.title')}</h3>
+              <p className="text-sm text-green-700 dark:text-green-300">{t('newLoadModal.routeDetails.description')}</p>
             </div>
 
             {/* Pickup Location */}
             <div>
               <label htmlFor="origin" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Pickup Location <span className="text-red-500">*</span>
+                {t('newLoadModal.labels.pickupLocation')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -545,7 +548,7 @@ export default function NewLoadForm({
                   value={formData.origin}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="City, State (e.g., Denver, CO)"
+                  placeholder={t('newLoadModal.placeholders.cityStatePickup')}
                   required
                   autoFocus
                 />
@@ -555,7 +558,7 @@ export default function NewLoadForm({
             {/* Delivery Location */}
             <div>
               <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Delivery Location <span className="text-red-500">*</span>
+                {t('newLoadModal.labels.deliveryLocation')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -568,7 +571,7 @@ export default function NewLoadForm({
                   value={formData.destination}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="City, State (e.g., Chicago, IL)"
+                  placeholder={t('newLoadModal.placeholders.cityStateDelivery')}
                   required
                 />
               </div>
@@ -579,7 +582,7 @@ export default function NewLoadForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Pickup Date <span className="text-red-500">*</span>
+                    {t('newLoadModal.labels.pickupDate')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -599,7 +602,7 @@ export default function NewLoadForm({
 
                 <div>
                   <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Delivery Date <span className="text-red-500">*</span>
+                    {t('newLoadModal.labels.deliveryDate')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -622,7 +625,7 @@ export default function NewLoadForm({
                 <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     <Clock size={16} className="inline mr-1" />
-                    Transit time: {Math.ceil((new Date(formData.deliveryDate) - new Date(formData.pickupDate)) / (1000 * 60 * 60 * 24))} days
+                    {t('newLoadModal.transitTime', { days: Math.ceil((new Date(formData.deliveryDate) - new Date(formData.pickupDate)) / (1000 * 60 * 60 * 24)) })}
                   </p>
                 </div>
               )}
@@ -634,14 +637,14 @@ export default function NewLoadForm({
         return (
           <div className="space-y-6">
             <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">Pricing & Assignment</h3>
-              <p className="text-sm text-purple-700 dark:text-purple-300">Set the rate and optionally assign resources</p>
+              <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">{t('newLoadModal.pricingAssignment.title')}</h3>
+              <p className="text-sm text-purple-700 dark:text-purple-300">{t('newLoadModal.pricingAssignment.description')}</p>
             </div>
 
             {/* Rate section */}
             <div>
               <label htmlFor="rate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Load Rate <span className="text-red-500">*</span>
+                {t('newLoadModal.labels.loadRate')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -661,7 +664,7 @@ export default function NewLoadForm({
                   autoFocus
                 />
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Total amount for this load</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('newLoadModal.hints.totalAmount')}</p>
             </div>
 
             {/* Optional fields section with better UI */}
@@ -696,10 +699,10 @@ export default function NewLoadForm({
                     </div>
                     <div className="text-left">
                       <h4 className={`font-semibold ${showOptionalFields ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}>
-                        Optional Information
+                        {t('newLoadModal.optional.title')}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Assign driver, truck, or add special notes
+                        {t('newLoadModal.optional.description')}
                       </p>
                     </div>
                   </div>
@@ -708,7 +711,7 @@ export default function NewLoadForm({
                     ${showOptionalFields ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}
                   `}>
                     <span className="text-sm font-medium">
-                      {showOptionalFields ? 'Hide' : 'Show'}
+                      {showOptionalFields ? t('newLoadModal.optional.hide') : t('newLoadModal.optional.show')}
                     </span>
                     <div className={`
                       w-8 h-8 rounded-full flex items-center justify-center transition-all
@@ -728,13 +731,13 @@ export default function NewLoadForm({
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-4">
                       <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                         <Users size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
-                        Resource Assignment
+                        {t('newLoadModal.resourceAssignment')}
                       </h5>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="driver_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Assign Driver
+                            {t('newLoadModal.labels.assignDriver')}
                           </label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -747,7 +750,7 @@ export default function NewLoadForm({
                               onChange={handleChange}
                               className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
-                              <option value="">Assign later</option>
+                              <option value="">{t('newLoadModal.placeholders.assignLater')}</option>
                               {drivers.map((driver) => (
                                 <option key={driver.id} value={driver.id}>
                                   {driver.name}
@@ -759,7 +762,7 @@ export default function NewLoadForm({
 
                         <div>
                           <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Assign Truck
+                            {t('newLoadModal.labels.assignTruck')}
                           </label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -772,7 +775,7 @@ export default function NewLoadForm({
                               onChange={handleChange}
                               className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             >
-                              <option value="">Assign later</option>
+                              <option value="">{t('newLoadModal.placeholders.assignLater')}</option>
                               {trucks.map((truck) => (
                                 <option key={truck.id} value={truck.id}>
                                   {truck.name} ({truck.license_plate})
@@ -787,7 +790,7 @@ export default function NewLoadForm({
                         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                           <p className="text-sm text-blue-700 dark:text-blue-300">
                             <CheckCircle size={16} className="inline mr-1" />
-                            Load will be marked as "Assigned" when created
+                            {t('newLoadModal.markedAsAssigned')}
                           </p>
                         </div>
                       )}
@@ -797,7 +800,7 @@ export default function NewLoadForm({
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                       <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         <FileText size={18} className="inline mr-2 text-blue-500 dark:text-blue-400" />
-                        Notes / Special Instructions
+                        {t('newLoadModal.labels.notesInstructions')}
                       </label>
                       <div className="relative">
                         <textarea
@@ -807,11 +810,11 @@ export default function NewLoadForm({
                           onChange={handleChange}
                           rows="3"
                           className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                          placeholder="Any special instructions or notes about this load..."
+                          placeholder={t('newLoadModal.placeholders.specialInstructions')}
                         ></textarea>
                       </div>
                       <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        Add any delivery instructions, special requirements, or other important information
+                        {t('newLoadModal.hints.deliveryInstructions')}
                       </p>
                     </div>
                   </div>
@@ -821,25 +824,25 @@ export default function NewLoadForm({
 
             {/* Load Summary */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Load Summary</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t('newLoadModal.loadSummary')}</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Customer:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('newLoadModal.summary.customer')}:</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">{formData.customer || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Route:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('newLoadModal.summary.route')}:</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">{formData.origin || '-'} → {formData.destination || '-'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Dates:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('newLoadModal.summary.dates')}:</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString() : '-'} →
                     {formData.deliveryDate ? new Date(formData.deliveryDate).toLocaleDateString() : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Rate:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('newLoadModal.summary.rate')}:</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
                     ${formData.rate || '0.00'}
                   </span>
@@ -860,7 +863,7 @@ export default function NewLoadForm({
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold flex items-center">
                 <Route size={20} className="mr-2" />
-                Create New Load
+                {t('newLoadModal.title')}
               </h2>
               <button
                 onClick={handleClose}
@@ -905,13 +908,13 @@ export default function NewLoadForm({
                         {/* Step details */}
                         <div className="ml-3">
                           <div className={`text-xs font-medium transition-all ${
-                            isActive 
-                              ? 'text-white/90' 
+                            isActive
+                              ? 'text-white/90'
                               : isCompleted
                                 ? 'text-white/80'
                                 : 'text-white/60'
                           }`}>
-                            Step {step.number}
+                            {t('wizard.step')} {step.number}
                           </div>
                           <div className={`text-sm font-semibold transition-all ${
                             isActive 
@@ -965,13 +968,13 @@ export default function NewLoadForm({
             <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-md flex items-start justify-between">
               <div className="flex items-start">
                 <Info className="h-5 w-5 text-blue-400 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
-                <p className="text-sm text-blue-700 dark:text-blue-300">Your previous form data has been restored.</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">{t('newLoadModal.formRestored')}</p>
               </div>
               <button
                 onClick={handleClearForm}
                 className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
               >
-                Clear all
+                {t('newLoadModal.clearAll')}
               </button>
             </div>
           )}
@@ -988,7 +991,7 @@ export default function NewLoadForm({
                 disabled={saving}
               >
                 <ChevronLeft size={16} className="mr-2" />
-                {currentStep === 1 ? 'Cancel' : 'Previous'}
+                {currentStep === 1 ? t('common:buttons.cancel') : t('common:buttons.previous')}
               </button>
 
               {currentStep < steps.length ? (
@@ -997,7 +1000,7 @@ export default function NewLoadForm({
                   onClick={handleNext}
                   className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
                 >
-                  Next
+                  {t('common:buttons.next')}
                   <ChevronRight size={16} className="ml-2" />
                 </button>
               ) : (
@@ -1009,12 +1012,12 @@ export default function NewLoadForm({
                   {saving ? (
                     <>
                       <RefreshCw size={16} className="animate-spin mr-2" />
-                      Creating...
+                      {t('newLoadModal.buttons.creating')}
                     </>
                   ) : (
                     <>
                       <CheckCircle size={16} className="mr-2" />
-                      Create Load
+                      {t('newLoadModal.buttons.createLoad')}
                     </>
                   )}
                 </button>

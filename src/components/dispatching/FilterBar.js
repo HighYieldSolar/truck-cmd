@@ -2,40 +2,43 @@
 "use client";
 
 import { Search, Filter, Truck, CheckCircle, Clock, SlidersHorizontal } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FilterBar({ filters, setFilters }) {
+  const { t } = useTranslation('dispatching');
+
   const statusOptions = [
-    { value: "All", label: "All Status", icon: <SlidersHorizontal size={14} /> },
-    { value: "Pending", label: "Pending", icon: <Clock size={14} /> },
-    { value: "Assigned", label: "Assigned", icon: <Truck size={14} /> },
-    { value: "In Transit", label: "In Transit", icon: <Truck size={14} /> },
-    { value: "Loading", label: "Loading", icon: <SlidersHorizontal size={14} /> },
-    { value: "Unloading", label: "Unloading", icon: <SlidersHorizontal size={14} /> },
-    { value: "Delivered", label: "Delivered", icon: <CheckCircle size={14} /> },
-    { value: "Completed", label: "Completed", icon: <CheckCircle size={14} /> },
-    { value: "Cancelled", label: "Cancelled", icon: <SlidersHorizontal size={14} /> },
-    { value: "Delayed", label: "Delayed", icon: <Clock size={14} /> }
+    { value: "All", label: t('filterBar.allStatus'), icon: <SlidersHorizontal size={14} /> },
+    { value: "Pending", label: t('statusLabels.pending'), icon: <Clock size={14} /> },
+    { value: "Assigned", label: t('statusLabels.assigned'), icon: <Truck size={14} /> },
+    { value: "In Transit", label: t('statusLabels.inTransit'), icon: <Truck size={14} /> },
+    { value: "Loading", label: t('statusLabels.loading'), icon: <SlidersHorizontal size={14} /> },
+    { value: "Unloading", label: t('statusLabels.unloading'), icon: <SlidersHorizontal size={14} /> },
+    { value: "Delivered", label: t('statusLabels.delivered'), icon: <CheckCircle size={14} /> },
+    { value: "Completed", label: t('statusLabels.completed'), icon: <CheckCircle size={14} /> },
+    { value: "Cancelled", label: t('statusLabels.cancelled'), icon: <SlidersHorizontal size={14} /> },
+    { value: "Delayed", label: t('statusLabels.delayed'), icon: <Clock size={14} /> }
   ];
 
   const dateRangeOptions = [
-    { value: "all", label: "All Time" },
-    { value: "today", label: "Today" },
-    { value: "tomorrow", label: "Tomorrow" },
-    { value: "thisWeek", label: "This Week" },
-    { value: "lastWeek", label: "Last Week" },
-    { value: "thisMonth", label: "This Month" },
-    { value: "lastMonth", label: "Last Month" },
-    { value: "thisQuarter", label: "This Quarter" },
-    { value: "lastQuarter", label: "Last Quarter" },
+    { value: "all", label: t('filterBar.dateRanges.all') },
+    { value: "today", label: t('filterBar.dateRanges.today') },
+    { value: "tomorrow", label: t('filterBar.dateRanges.tomorrow') },
+    { value: "thisWeek", label: t('filterBar.dateRanges.thisWeek') },
+    { value: "lastWeek", label: t('filterBar.dateRanges.lastWeek') },
+    { value: "thisMonth", label: t('filterBar.dateRanges.thisMonth') },
+    { value: "lastMonth", label: t('filterBar.dateRanges.lastMonth') },
+    { value: "thisQuarter", label: t('filterBar.dateRanges.thisQuarter') },
+    { value: "lastQuarter", label: t('filterBar.dateRanges.lastQuarter') },
   ];
 
   const sortOptions = [
-    { value: "deliveryDate", label: "Delivery Date" },
-    { value: "pickupDate", label: "Pickup Date" },
-    { value: "completedDate", label: "Completed Date" },
-    { value: "status", label: "Status" },
-    { value: "customer", label: "Customer" },
-    { value: "rate", label: "Rate (High to Low)" },
+    { value: "deliveryDate", label: t('filterBar.sortOptions.deliveryDate') },
+    { value: "pickupDate", label: t('filterBar.sortOptions.pickupDate') },
+    { value: "completedDate", label: t('filterBar.sortOptions.completedDate') },
+    { value: "status", label: t('filterBar.sortOptions.status') },
+    { value: "customer", label: t('filterBar.sortOptions.customer') },
+    { value: "rate", label: t('filterBar.sortOptions.rate') },
   ];
 
   return (
@@ -46,7 +49,7 @@ export default function FilterBar({ filters, setFilters }) {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search loads by number, customer, or driver..."
+              placeholder={t('filterBar.searchPlaceholder')}
               className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50"
               value={filters.search}
               onChange={(e) => setFilters({...filters, search: e.target.value})}
@@ -96,31 +99,31 @@ export default function FilterBar({ filters, setFilters }) {
               onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
             >
               {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>Sort by {option.label}</option>
+                <option key={option.value} value={option.value}>{t('filterBar.sortBy')} {option.label}</option>
               ))}
             </select>
           </div>
         </div>
       </div>
-      
+
       {/* Quick filter chips */}
       <div className="flex flex-wrap gap-2 mt-4">
-        <FilterChip 
-          label="All"
+        <FilterChip
+          label={t('filterBar.quickFilters.all')}
           icon={<SlidersHorizontal size={12} />}
-          isActive={filters.status === "All"} 
+          isActive={filters.status === "All"}
           onClick={() => setFilters({...filters, status: "All"})}
         />
-        <FilterChip 
-          label="Active"
+        <FilterChip
+          label={t('filterBar.quickFilters.active')}
           icon={<Truck size={12} />}
-          isActive={filters.status === "Active"} 
+          isActive={filters.status === "Active"}
           onClick={() => setFilters({...filters, status: "Active"})}
         />
-        <FilterChip 
-          label="Completed"
+        <FilterChip
+          label={t('filterBar.quickFilters.completed')}
           icon={<CheckCircle size={12} />}
-          isActive={filters.status === "Completed"} 
+          isActive={filters.status === "Completed"}
           onClick={() => setFilters({...filters, status: "Completed"})}
         />
       </div>

@@ -2,8 +2,10 @@
 "use client";
 
 import { Calendar, ChevronDown } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoading = false }) {
+  const { t } = useTranslation('ifta');
   // Get current date
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -29,11 +31,11 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
 
   // Format label for display
   const getDisplayLabel = (value) => {
-    if (!value) return "Select Quarter";
+    if (!value) return t('quarterSelector.selectQuarter');
 
     const selectedQuarter = quarters.find(q => q.value === value);
     if (selectedQuarter) {
-      return `${selectedQuarter.label}${selectedQuarter.year === currentYear && selectedQuarter.quarter === currentQuarter ? " (Current)" : ""}`;
+      return `${selectedQuarter.label}${selectedQuarter.year === currentYear && selectedQuarter.quarter === currentQuarter ? ` ${t('quarterSelector.current')}` : ""}`;
     }
     return value;
   };
@@ -52,12 +54,12 @@ export default function QuarterSelector({ activeQuarter, setActiveQuarter, isLoa
         bg-gray-800 text-white"
         style={{ backgroundImage: "url('/path/to/your/icon.svg')" }} // Optional: Add a custom background image
       >
-        <option value="" className="bg-gray-800 text-white">Select Quarter</option>
+        <option value="" className="bg-gray-800 text-white">{t('quarterSelector.selectQuarter')}</option>
         {
           quarters.map((q) => (
             <option key={q.value} value={q.value} className="bg-gray-800 text-white">
               {q.label}
-              {q.year === currentYear && q.quarter === currentQuarter ? " (Current)" : ""}
+              {q.year === currentYear && q.quarter === currentQuarter ? ` ${t('quarterSelector.current')}` : ""}
             </option>
           ))
         }

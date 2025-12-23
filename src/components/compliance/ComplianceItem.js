@@ -2,11 +2,14 @@
 
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ComplianceItem({ item, onEdit, onDelete, onView }) {
+  const { t } = useTranslation('compliance');
+
   // Format dates for better display (fixed timezone issue)
-  const issueDate = item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : 'N/A';
-  const expirationDate = item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : 'N/A';
+  const issueDate = item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : t('table.notAvailable');
+  const expirationDate = item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : t('table.notAvailable');
 
   // Determine status class based on status
   let statusClass = "";
@@ -53,7 +56,7 @@ export default function ComplianceItem({ item, onEdit, onDelete, onView }) {
 
       <td className="px-6 py-4">
         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusClass} ${statusTextColor}`}>
-          {item.status || "Active"}
+          {item.status ? t(`status.${item.status.toLowerCase().replace(' ', '')}`, { defaultValue: item.status }) : t('status.active')}
         </span>
       </td>
 

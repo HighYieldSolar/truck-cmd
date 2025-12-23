@@ -31,6 +31,7 @@ import OperationMessage from "@/components/ui/OperationMessage";
 import { usePagination, Pagination } from "@/hooks/usePagination";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
+import { useTranslation } from "@/context/LanguageContext";
 import TutorialCard from "@/components/shared/TutorialCard";
 import TableActions from "@/components/shared/TableActions";
 import { Settings, FileCheck2, Gauge, MapPin } from "lucide-react";
@@ -38,6 +39,7 @@ import { Settings, FileCheck2, Gauge, MapPin } from "lucide-react";
 const STORAGE_KEY = 'truck_filters';
 
 export default function TrucksPage() {
+  const { t } = useTranslation('fleet');
   const searchParams = useSearchParams();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -67,44 +69,44 @@ export default function TrucksPage() {
   // Stat cards configuration
   const statCards = [
     {
-      label: "Total Vehicles",
+      label: t('vehicles.totalVehicles'),
       value: stats.total,
       icon: Truck,
       iconBg: "bg-blue-100 dark:bg-blue-900/40",
       iconColor: "text-blue-600 dark:text-blue-400",
       borderColor: "border-l-blue-500",
       footerBg: "bg-blue-50 dark:bg-blue-900/20",
-      description: "All registered vehicles"
+      description: t('vehicles.allRegistered')
     },
     {
-      label: "Active",
+      label: t('vehicles.activeVehicles'),
       value: stats.active,
       icon: CheckCircle,
       iconBg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
       borderColor: "border-l-green-500",
       footerBg: "bg-green-50 dark:bg-green-900/20",
-      description: "Ready for operation"
+      description: t('vehicles.readyForOperation')
     },
     {
-      label: "In Maintenance",
+      label: t('vehicles.inMaintenance'),
       value: stats.inMaintenance,
       icon: Wrench,
       iconBg: "bg-yellow-100 dark:bg-yellow-900/40",
       iconColor: "text-yellow-600 dark:text-yellow-400",
       borderColor: "border-l-yellow-500",
       footerBg: "bg-yellow-50 dark:bg-yellow-900/20",
-      description: "Currently being serviced"
+      description: t('vehicles.beingServiced')
     },
     {
-      label: "Out of Service",
+      label: t('vehicles.outOfService'),
       value: stats.outOfService,
       icon: AlertTriangle,
       iconBg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
       borderColor: "border-l-red-500",
       footerBg: "bg-red-50 dark:bg-red-900/20",
-      description: "Needs attention"
+      description: t('vehicles.needsAttention')
     }
   ];
 
@@ -217,10 +219,10 @@ export default function TrucksPage() {
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to load vehicles. Please try again later.'
+        text: t('vehicles.failedToLoad')
       });
     }
-  }, []);
+  }, [t]);
 
   // Get user and load initial data with real-time subscription
   useEffect(() => {
@@ -275,7 +277,7 @@ export default function TrucksPage() {
       } catch (error) {
         setOperationMessage({
           type: 'error',
-          text: 'Failed to initialize. Please refresh the page.'
+          text: t('vehicles.failedToInitialize')
         });
       } finally {
         setLoading(false);
@@ -313,14 +315,14 @@ export default function TrucksPage() {
 
       setOperationMessage({
         type: 'success',
-        text: truckToEdit ? 'Vehicle updated successfully!' : 'Vehicle added successfully!'
+        text: truckToEdit ? t('vehicles.vehicleUpdated') : t('vehicles.vehicleAdded')
       });
 
       return true;
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to save vehicle. Please try again.'
+        text: t('vehicles.failedToSave')
       });
       return false;
     }
@@ -346,12 +348,12 @@ export default function TrucksPage() {
 
       setOperationMessage({
         type: 'success',
-        text: 'Vehicle deleted successfully!'
+        text: t('vehicles.vehicleDeleted')
       });
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to delete vehicle. Please try again.'
+        text: t('vehicles.failedToDelete')
       });
     } finally {
       setIsDeleting(false);
@@ -444,9 +446,9 @@ export default function TrucksPage() {
 
     setOperationMessage({
       type: 'success',
-      text: `Exported ${filteredTrucks.length} vehicles to CSV`
+      text: t('vehicles.exported', { count: filteredTrucks.length })
     });
-  }, [filteredTrucks]);
+  }, [filteredTrucks, t]);
 
   // Loading skeleton
   if (loading) {
@@ -507,8 +509,8 @@ export default function TrucksPage() {
                     <ChevronLeft size={20} />
                   </Link>
                   <div>
-                    <h1 className="text-3xl font-bold mb-1">Vehicle Management</h1>
-                    <p className="text-blue-100">Add, edit and manage vehicles in your fleet</p>
+                    <h1 className="text-3xl font-bold mb-1">{t('vehicles.vehicleManagement')}</h1>
+                    <p className="text-blue-100">{t('vehicles.addEditVehicles')}</p>
                   </div>
                 </div>
               </div>
@@ -522,7 +524,7 @@ export default function TrucksPage() {
                         className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors shadow-sm flex items-center font-medium"
                       >
                         <Lock size={18} className="mr-2" />
-                        Limit Reached ({trucks.length}/{truckLimit.limit})
+                        {t('vehicles.limitReached')} ({trucks.length}/{truckLimit.limit})
                       </Link>
                     );
                   }
@@ -532,7 +534,7 @@ export default function TrucksPage() {
                       className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                     >
                       <Plus size={18} className="mr-2" />
-                      Add Vehicle
+                      {t('vehicles.addVehicle')}
                     </button>
                   );
                 })()}
@@ -541,7 +543,7 @@ export default function TrucksPage() {
                   className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Download size={18} className="mr-2" />
-                  Export CSV
+                  {t('vehicles.exportCsv')}
                 </button>
               </div>
             </div>
@@ -551,37 +553,37 @@ export default function TrucksPage() {
           {user && (
             <TutorialCard
               pageId="trucks"
-              title="Vehicle Management Guide"
-              description="Register and track all vehicles in your fleet"
+              title={t('vehicles.tutorialTitle')}
+              description={t('vehicles.tutorialDescription')}
               accentColor="blue"
               userId={user.id}
               features={[
                 {
                   icon: Plus,
-                  title: "Add Vehicles",
-                  description: "Register trucks with year, make, model, VIN, and license plate"
+                  title: t('vehicles.tutorialFeature1Title'),
+                  description: t('vehicles.tutorialFeature1Desc')
                 },
                 {
                   icon: Settings,
-                  title: "Track Status",
-                  description: "Monitor Active, In Maintenance, Out of Service, or Idle vehicles"
+                  title: t('vehicles.tutorialFeature2Title'),
+                  description: t('vehicles.tutorialFeature2Desc')
                 },
                 {
                   icon: FileCheck2,
-                  title: "Compliance Ready",
-                  description: "VIN and registration info for DOT and IFTA compliance"
+                  title: t('vehicles.tutorialFeature3Title'),
+                  description: t('vehicles.tutorialFeature3Desc')
                 },
                 {
                   icon: Download,
-                  title: "Export Data",
-                  description: "Download your vehicle list as CSV for reporting"
+                  title: t('vehicles.tutorialFeature4Title'),
+                  description: t('vehicles.tutorialFeature4Desc')
                 }
               ]}
               tips={[
-                "Keep vehicle status updated - it affects dispatch availability",
-                "Add VIN for recall tracking and compliance documentation",
-                "Use the search to quickly find vehicles by name, make, or license plate",
-                "Link vehicles to loads for accurate mileage and fuel tracking"
+                t('vehicles.tip1'),
+                t('vehicles.tip2'),
+                t('vehicles.tip3'),
+                t('vehicles.tip4')
               ]}
             />
           )}
@@ -640,9 +642,9 @@ export default function TrucksPage() {
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-amber-600 dark:text-amber-400" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
-                      <span className="font-medium">Approaching limit:</span> You have {trucks.length} of {limit} vehicles.
+                      <span className="font-medium">{t('vehicles.approachingLimit')}:</span> {t('vehicles.vehiclesOfLimit', { current: trucks.length, limit: limit })}
                       <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
-                        Upgrade for more vehicles
+                        {t('vehicles.upgradeForMore')}
                       </Link>
                     </p>
                   </div>
@@ -658,9 +660,11 @@ export default function TrucksPage() {
               <div className="flex">
                 <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Vehicle Status Alert</p>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('vehicles.vehicleStatusAlert')}</p>
                   <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                    {stats.outOfService} vehicle{stats.outOfService !== 1 ? 's are' : ' is'} currently out of service. Please schedule maintenance or repairs.
+                    {stats.outOfService !== 1
+                      ? t('vehicles.outOfServiceAlertPlural', { count: stats.outOfService })
+                      : t('vehicles.outOfServiceAlert', { count: stats.outOfService })}
                   </p>
                 </div>
               </div>
@@ -675,10 +679,10 @@ export default function TrucksPage() {
                 <div className="flex items-center">
                   <Truck size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">
-                    Vehicles List
+                    {t('vehicles.vehiclesList')}
                   </h3>
                   <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-                    {filteredTrucks.length} of {trucks.length} vehicles
+                    {filteredTrucks.length} {t('vehicles.ofVehicles', { total: trucks.length })}
                   </span>
                 </div>
 
@@ -690,7 +694,7 @@ export default function TrucksPage() {
                       type="text"
                       value={filters.search}
                       onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                      placeholder="Search vehicles..."
+                      placeholder={t('vehicles.searchVehicles')}
                       className="pl-9 pr-3 py-2 w-full sm:w-56 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
@@ -701,11 +705,11 @@ export default function TrucksPage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="In Maintenance">In Maintenance</option>
-                    <option value="Out of Service">Out of Service</option>
-                    <option value="Idle">Idle</option>
+                    <option value="all">{t('vehicles.allStatuses')}</option>
+                    <option value="Active">{t('status.active')}</option>
+                    <option value="In Maintenance">{t('status.inMaintenance')}</option>
+                    <option value="Out of Service">{t('status.outOfService')}</option>
+                    <option value="Idle">{t('status.inactive')}</option>
                   </select>
 
                   {/* Year Filter */}
@@ -714,7 +718,7 @@ export default function TrucksPage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, year: e.target.value }))}
                     className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Years</option>
+                    <option value="all">{t('vehicles.allYears')}</option>
                     {availableYears.map(year => (
                       <option key={year} value={year}>{year}</option>
                     ))}
@@ -727,7 +731,7 @@ export default function TrucksPage() {
                       className="flex items-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >
                       <X size={14} className="mr-1" />
-                      Clear
+                      {t('vehicles.clear')}
                     </button>
                   )}
                 </div>
@@ -743,10 +747,10 @@ export default function TrucksPage() {
                       <Truck size={32} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      No vehicles yet
+                      {t('vehicles.noVehiclesYet')}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-6">
-                      Get started by adding your first vehicle to your fleet.
+                      {t('vehicles.addFirstVehicle')}
                     </p>
                     {(() => {
                       const truckLimit = checkResourceUpgrade('trucks', trucks.length);
@@ -757,7 +761,7 @@ export default function TrucksPage() {
                             className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-medium hover:bg-amber-200 transition-colors"
                           >
                             <Lock size={18} className="mr-2" />
-                            Upgrade to Add Vehicles
+                            {t('vehicles.upgradeForMore')}
                           </Link>
                         );
                       }
@@ -767,7 +771,7 @@ export default function TrucksPage() {
                           className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                         >
                           <Plus size={18} className="mr-2" />
-                          Add Vehicle
+                          {t('vehicles.addVehicle')}
                         </button>
                       );
                     })()}
@@ -778,17 +782,17 @@ export default function TrucksPage() {
                       <Search size={32} className="text-gray-400 dark:text-gray-500" />
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      No matching vehicles
+                      {t('vehicles.noMatchingVehicles')}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      Try adjusting your search or filter criteria.
+                      {t('vehicles.tryAdjustingSearch')}
                     </p>
                     <button
                       onClick={resetFilters}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                     >
                       <RefreshCw size={16} className="mr-2" />
-                      Reset Filters
+                      {t('vehicles.resetFilters')}
                     </button>
                   </div>
                 )}
@@ -801,25 +805,25 @@ export default function TrucksPage() {
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
                         <th className="w-[18%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Vehicle
+                          {t('vehicles.vehicle')}
                         </th>
                         <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Year/Make/Model
+                          {t('vehicles.yearMakeModel')}
                         </th>
                         <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          License
+                          {t('vehicles.license')}
                         </th>
                         <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          VIN
+                          {t('vehicles.vin')}
                         </th>
                         <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Status
+                          {t('vehicles.status')}
                         </th>
                         <th className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Added
+                          {t('vehicles.added')}
                         </th>
                         <th className="w-[12%] px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Actions
+                          {t('vehicles.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -903,11 +907,11 @@ export default function TrucksPage() {
 
                         <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                           <div>
-                            <span className="text-gray-500 dark:text-gray-400">License:</span>
+                            <span className="text-gray-500 dark:text-gray-400">{t('vehicles.license')}:</span>
                             <span className="ml-1 text-gray-900 dark:text-gray-100">{truck.license_plate || 'N/A'}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500 dark:text-gray-400">VIN:</span>
+                            <span className="text-gray-500 dark:text-gray-400">{t('vehicles.vin')}:</span>
                             <span className="ml-1 text-gray-900 dark:text-gray-100 font-mono">
                               {truck.vin ? `...${truck.vin.slice(-6)}` : 'N/A'}
                             </span>
@@ -917,7 +921,7 @@ export default function TrucksPage() {
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                           <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                             <Calendar size={12} className="mr-1" />
-                            Added {formatDate(truck.created_at)}
+                            {t('vehicles.added')} {formatDate(truck.created_at)}
                           </div>
                           <TableActions
                             onEdit={() => handleEditTruck(truck)}
@@ -956,20 +960,20 @@ export default function TrucksPage() {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">
-                  Vehicle Management Tips
+                  {t('vehicles.tipsTitle')}
                 </h3>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Keep vehicle records updated for accurate IFTA reporting and compliance tracking.
+                    {t('vehicles.tip5')}
                   </li>
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Schedule regular maintenance to prevent unexpected breakdowns.
+                    {t('vehicles.tip6')}
                   </li>
                   <li className="flex items-start">
                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 mt-1.5 flex-shrink-0"></span>
-                    Track service history to identify recurring issues and predict maintenance needs.
+                    {t('vehicles.tip7')}
                   </li>
                 </ul>
               </div>
@@ -995,8 +999,8 @@ export default function TrucksPage() {
           setTruckToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Delete Vehicle"
-        message={`Are you sure you want to delete "${truckToDelete?.name}"? This action cannot be undone.`}
+        title={t('vehicles.deleteVehicle')}
+        message={t('vehicles.confirmDelete', { name: truckToDelete?.name })}
         isDeleting={isDeleting}
       />
     </DashboardLayout>

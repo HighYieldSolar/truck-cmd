@@ -13,6 +13,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useTranslation } from "@/context/LanguageContext";
 import { createExpense, updateExpense, uploadReceiptImage } from '@/lib/services/expenseService';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from '@/lib/utils/dateUtils';
@@ -53,6 +54,8 @@ const clearFormDataFromLocalStorage = (formKey) => {
  * Follows the design spec modal pattern.
  */
 export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
+  const { t } = useTranslation('expenses');
+
   // Initial form state
   const initialFormData = {
     description: '',
@@ -82,10 +85,10 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
   // Field labels for user-friendly error messages
   const fieldLabels = {
-    description: 'Description',
-    amount: 'Amount',
-    date: 'Date',
-    category: 'Category'
+    description: t('form.description'),
+    amount: t('form.amount'),
+    date: t('form.date'),
+    category: t('form.category')
   };
 
   // Load initial data
@@ -196,46 +199,46 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
     // Description validation
     if (!formData.description.trim()) {
-      errors.description = `${fieldLabels.description} is required.`;
+      errors.description = t('validation.descriptionRequired');
     } else if (formData.description.trim().length < 3) {
-      errors.description = `${fieldLabels.description} must be at least 3 characters.`;
+      errors.description = t('validation.descriptionMinLength');
     }
 
     // Amount validation
     if (!formData.amount) {
-      errors.amount = `${fieldLabels.amount} is required.`;
+      errors.amount = t('validation.amountRequired');
     } else {
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) {
-        errors.amount = `${fieldLabels.amount} must be a positive number.`;
+        errors.amount = t('validation.amountPositive');
       } else if (amount > 1000000) {
-        errors.amount = `${fieldLabels.amount} exceeds maximum allowed value.`;
+        errors.amount = t('validation.amountMax');
       }
     }
 
     // Date validation
     if (!formData.date) {
-      errors.date = `${fieldLabels.date} is required.`;
+      errors.date = t('validation.dateRequired');
     } else {
       const selectedDate = new Date(formData.date);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
 
       if (selectedDate > today) {
-        errors.date = 'Date cannot be in the future.';
+        errors.date = t('validation.dateFuture');
       }
 
       // Check if date is not too old (more than 2 years)
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       if (selectedDate < twoYearsAgo) {
-        errors.date = 'Date is too far in the past.';
+        errors.date = t('validation.datePast');
       }
     }
 
     // Category validation
     if (!formData.category) {
-      errors.category = `${fieldLabels.category} is required.`;
+      errors.category = t('validation.categoryRequired');
     }
 
     setFieldErrors(errors);
@@ -324,7 +327,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
           <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              {expense ? 'Edit Expense' : 'Add Expense'}
+              {expense ? t('form.editExpense') : t('form.addExpense')}
             </h2>
             <button
               onClick={onClose}
@@ -351,7 +354,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
               <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-2">
                 <Info className="h-5 w-5 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Your previous form data has been restored.
+                  {t('form.formRestored')}
                 </p>
               </div>
             )}
@@ -361,20 +364,20 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
                   <Info className="h-4 w-4 text-blue-500" />
-                  Basic Information
+                  {t('form.basicInformation')}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Description <span className="text-red-500">*</span>
+                      {t('form.description')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
-                      placeholder="e.g. Fuel for Truck #123"
+                      placeholder={t('form.descriptionPlaceholder')}
                       className={`w-full px-3 py-2 border ${fieldErrors.description ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     />
                     {fieldErrors.description && (
@@ -384,7 +387,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Amount ($) <span className="text-red-500">*</span>
+                      {t('form.amount')} ($) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -405,7 +408,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Date <span className="text-red-500">*</span>
+                      {t('form.date')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -421,7 +424,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Category <span className="text-red-500">*</span>
+                      {t('form.category')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="category"
@@ -429,14 +432,14 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       onChange={handleChange}
                       className={`w-full px-3 py-2 border ${fieldErrors.category ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     >
-                      <option value="Fuel">Fuel</option>
-                      <option value="Maintenance">Maintenance</option>
-                      <option value="Insurance">Insurance</option>
-                      <option value="Tolls">Tolls</option>
-                      <option value="Office">Office</option>
-                      <option value="Permits">Permits</option>
-                      <option value="Meals">Meals</option>
-                      <option value="Other">Other</option>
+                      <option value="Fuel">{t('categories.fuel')}</option>
+                      <option value="Maintenance">{t('categories.maintenance')}</option>
+                      <option value="Insurance">{t('categories.insurance')}</option>
+                      <option value="Tolls">{t('categories.tolls')}</option>
+                      <option value="Office">{t('categories.office')}</option>
+                      <option value="Permits">{t('categories.permits')}</option>
+                      <option value="Meals">{t('categories.meals')}</option>
+                      <option value="Other">{t('categories.other')}</option>
                     </select>
                     {fieldErrors.category && (
                       <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.category}</p>
@@ -445,7 +448,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Payment Method
+                      {t('form.paymentMethod')}
                     </label>
                     <select
                       name="payment_method"
@@ -453,12 +456,12 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     >
-                      <option value="Credit Card">Credit Card</option>
-                      <option value="Debit Card">Debit Card</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Check">Check</option>
-                      <option value="EFT">EFT</option>
-                      <option value="Other">Other</option>
+                      <option value="Credit Card">{t('paymentMethods.creditCard')}</option>
+                      <option value="Debit Card">{t('paymentMethods.debitCard')}</option>
+                      <option value="Cash">{t('paymentMethods.cash')}</option>
+                      <option value="Check">{t('paymentMethods.check')}</option>
+                      <option value="EFT">{t('paymentMethods.eft')}</option>
+                      <option value="Other">{t('paymentMethods.other')}</option>
                     </select>
                   </div>
                 </div>
@@ -468,13 +471,13 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
                   <FileText className="h-4 w-4 text-blue-500" />
-                  Vehicle & Receipt
+                  {t('form.vehicleReceipt')}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Vehicle
+                      {t('form.vehicle')}
                     </label>
                     <select
                       name="vehicle_id"
@@ -482,9 +485,9 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     >
-                      <option value="">Select Vehicle (optional)</option>
+                      <option value="">{t('form.selectVehicle')}</option>
                       {vehiclesLoading ? (
-                        <option disabled>Loading...</option>
+                        <option disabled>{t('form.loading')}</option>
                       ) : (
                         vehicles.map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
@@ -497,7 +500,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Receipt Image
+                      {t('form.receiptImage')}
                     </label>
                     <div className="relative">
                       <input
@@ -516,7 +519,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                   <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Receipt Preview
+                        {t('form.receiptPreview')}
                       </span>
                       <button
                         type="button"
@@ -524,7 +527,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                         className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        Remove
+                        {t('form.remove')}
                       </button>
                     </div>
                     <div className="relative aspect-[3/4] max-h-32 sm:max-h-48 overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -547,7 +550,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                     className="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-700"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Tax Deductible
+                    {t('form.taxDeductible')}
                   </span>
                 </label>
               </div>
@@ -556,19 +559,19 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
                   <Info className="h-4 w-4 text-blue-500" />
-                  Additional Notes
+                  {t('form.additionalNotes')}
                 </h3>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Notes
+                    {t('form.notes')}
                   </label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleChange}
                     rows={3}
-                    placeholder="Any additional information..."
+                    placeholder={t('form.notesPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-colors"
                   />
                 </div>
@@ -582,7 +585,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                   disabled={isSubmitting}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('form.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -592,12 +595,12 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
                   {isSubmitting ? (
                     <>
                       <RefreshCw className="h-4 w-4 animate-spin" />
-                      Saving...
+                      {t('form.saving')}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4" />
-                      {expense ? 'Update Expense' : 'Save Expense'}
+                      {expense ? t('form.updateExpense') : t('form.saveExpense')}
                     </>
                   )}
                 </button>

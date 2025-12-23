@@ -1,5 +1,8 @@
 // src/components/dashboard/EarningsBreakdown.js
+"use client";
+
 import { BarChart2, FileText, Truck, DollarSign } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Earnings Breakdown Component
@@ -9,6 +12,8 @@ import { BarChart2, FileText, Truck, DollarSign } from "lucide-react";
  * @param {Object} props.stats Dashboard statistics containing earnings data
  */
 export default function EarningsBreakdown({ stats }) {
+  const { t } = useTranslation('dashboard');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -29,21 +34,21 @@ export default function EarningsBreakdown({ stats }) {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/10 mb-6 p-5 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
       <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
         <BarChart2 size={20} className="mr-2 text-blue-500 dark:text-blue-400" />
-        Earnings Breakdown
+        {t('earningsBreakdown.title')}
       </h3>
 
       {/* Main earnings sources */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Factored Loads</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('earningsBreakdown.factoredLoads')}</p>
             <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(factoredEarnings)}</p>
           </div>
           <Truck size={22} className="text-green-600 dark:text-green-400" />
         </div>
         <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Invoiced Loads</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('earningsBreakdown.invoicedLoads')}</p>
             <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(invoicedLoadEarnings)}</p>
           </div>
           <FileText size={22} className="text-blue-600 dark:text-blue-400" />
@@ -54,7 +59,7 @@ export default function EarningsBreakdown({ stats }) {
       {standaloneInvoiceEarnings > 0 && (
         <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
           <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Other Invoice Payments</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('earningsBreakdown.otherInvoicePayments')}</p>
             <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(standaloneInvoiceEarnings)}</p>
           </div>
           <DollarSign size={22} className="text-purple-600 dark:text-purple-400" />
@@ -64,39 +69,39 @@ export default function EarningsBreakdown({ stats }) {
       {/* Progress bar visualization */}
       {stats.earnings > 0 && (
         <div className="mt-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Earnings Distribution</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('earningsBreakdown.earningsDistribution')}</p>
           <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-green-500 float-left"
               style={{ width: `${(factoredEarnings / stats.earnings) * 100}%` }}
-              title={`Factored Loads: ${formatCurrency(factoredEarnings)}`}
+              title={`${t('earningsBreakdown.factoredLoads')}: ${formatCurrency(factoredEarnings)}`}
             ></div>
             <div
               className="h-full bg-blue-500 float-left"
               style={{ width: `${(invoicedLoadEarnings / stats.earnings) * 100}%` }}
-              title={`Invoiced Loads: ${formatCurrency(invoicedLoadEarnings)}`}
+              title={`${t('earningsBreakdown.invoicedLoads')}: ${formatCurrency(invoicedLoadEarnings)}`}
             ></div>
             {standaloneInvoiceEarnings > 0 && (
               <div
                 className="h-full bg-purple-500 float-left"
                 style={{ width: `${(standaloneInvoiceEarnings / stats.earnings) * 100}%` }}
-                title={`Other Invoices: ${formatCurrency(standaloneInvoiceEarnings)}`}
+                title={`${t('earningsBreakdown.otherInvoicePayments')}: ${formatCurrency(standaloneInvoiceEarnings)}`}
               ></div>
             )}
           </div>
           <div className="flex flex-wrap justify-between mt-1 text-xs text-gray-500 dark:text-gray-400 gap-2">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-              <span>Factored ({stats.earnings > 0 ? Math.round((factoredEarnings / stats.earnings) * 100) : 0}%)</span>
+              <span>{t('earningsBreakdown.factored')} ({stats.earnings > 0 ? Math.round((factoredEarnings / stats.earnings) * 100) : 0}%)</span>
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
-              <span>Invoiced ({stats.earnings > 0 ? Math.round((invoicedLoadEarnings / stats.earnings) * 100) : 0}%)</span>
+              <span>{t('earningsBreakdown.invoiced')} ({stats.earnings > 0 ? Math.round((invoicedLoadEarnings / stats.earnings) * 100) : 0}%)</span>
             </div>
             {standaloneInvoiceEarnings > 0 && (
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-purple-500 rounded-full mr-1"></div>
-                <span>Other ({stats.earnings > 0 ? Math.round((standaloneInvoiceEarnings / stats.earnings) * 100) : 0}%)</span>
+                <span>{t('earningsBreakdown.other')} ({stats.earnings > 0 ? Math.round((standaloneInvoiceEarnings / stats.earnings) * 100) : 0}%)</span>
               </div>
             )}
           </div>

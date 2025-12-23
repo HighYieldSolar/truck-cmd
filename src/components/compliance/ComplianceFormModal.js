@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { X, RefreshCw, CheckCircle, FileText, AlertCircle, ChevronRight, ChevronLeft, Check, Trash2, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ComplianceFormModal({ isOpen, onClose, compliance, onSave, isSubmitting }) {
+  const { t } = useTranslation('compliance');
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
   const [hasRestoredData, setHasRestoredData] = useState(false);
@@ -113,15 +115,15 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
     switch (step) {
       case 1:
         if (!formData.title.trim()) {
-          newErrors.title = 'Title is required';
+          newErrors.title = t('form.validation.titleRequired');
         }
         if (!formData.entity_name.trim()) {
-          newErrors.entity_name = 'Entity name is required';
+          newErrors.entity_name = t('form.validation.entityNameRequired');
         }
         break;
       case 2:
         if (!formData.expiration_date) {
-          newErrors.expiration_date = 'Expiration date is required';
+          newErrors.expiration_date = t('form.validation.expirationRequired');
         }
         break;
     }
@@ -156,8 +158,8 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
   };
 
   const steps = [
-    { number: 1, title: 'Basic Info', icon: Shield },
-    { number: 2, title: 'Document Details', icon: FileText }
+    { number: 1, title: t('form.steps.basicInfo'), icon: Shield },
+    { number: 2, title: t('form.steps.documentDetails'), icon: FileText }
   ];
 
   const renderStepContent = () => {
@@ -165,11 +167,11 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Compliance Information</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('form.sections.complianceInformation')}</h3>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Title <span className="text-red-500">*</span>
+                {t('form.labels.title')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -177,7 +179,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 value={formData.title}
                 onChange={handleInputChange}
                 className={`block w-full px-4 py-3 border ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
-                placeholder="e.g. Vehicle Registration for Truck #12"
+                placeholder={t('placeholders.titleExample')}
               />
               {errors.title && (
                 <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.title}</p>
@@ -187,7 +189,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Compliance Type
+                  {t('form.labels.complianceType')}
                 </label>
                 <select
                   name="compliance_type"
@@ -205,7 +207,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
+                  {t('form.labels.status')}
                 </label>
                 <select
                   name="status"
@@ -213,10 +215,10 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Active">Active</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Expiring Soon">Expiring Soon</option>
-                  <option value="Expired">Expired</option>
+                  <option value="Active">{t('status.active')}</option>
+                  <option value="Pending">{t('status.pending')}</option>
+                  <option value="Expiring Soon">{t('status.expiringSoon')}</option>
+                  <option value="Expired">{t('status.expired')}</option>
                 </select>
               </div>
             </div>
@@ -224,7 +226,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Entity Type
+                  {t('form.labels.entityType')}
                 </label>
                 <select
                   name="entity_type"
@@ -232,16 +234,16 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Vehicle">Vehicle</option>
-                  <option value="Driver">Driver</option>
-                  <option value="Company">Company</option>
-                  <option value="Other">Other</option>
+                  <option value="Vehicle">{t('entityTypes.vehicle')}</option>
+                  <option value="Driver">{t('entityTypes.driver')}</option>
+                  <option value="Company">{t('entityTypes.company')}</option>
+                  <option value="Other">{t('entityTypes.other')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Entity Name <span className="text-red-500">*</span>
+                  {t('form.labels.entityName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -249,7 +251,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   value={formData.entity_name}
                   onChange={handleInputChange}
                   className={`block w-full px-4 py-3 border ${errors.entity_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
-                  placeholder="e.g. Truck #12 or John Smith"
+                  placeholder={t('placeholders.entityNameExample')}
                 />
                 {errors.entity_name && (
                   <p className="text-red-500 dark:text-red-400 text-sm mt-1">{errors.entity_name}</p>
@@ -262,12 +264,12 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Document Details</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('form.sections.documentDetails')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Document Number
+                  {t('form.labels.documentNumber')}
                 </label>
                 <input
                   type="text"
@@ -275,13 +277,13 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   value={formData.document_number}
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="e.g. License or Permit Number"
+                  placeholder={t('placeholders.documentNumberExample')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Issuing Authority
+                  {t('form.labels.issuingAuthority')}
                 </label>
                 <input
                   type="text"
@@ -289,7 +291,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                   value={formData.issuing_authority}
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="e.g. DMV or DOT"
+                  placeholder={t('placeholders.issuingAuthorityExample')}
                 />
               </div>
             </div>
@@ -297,7 +299,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Issue Date
+                  {t('form.labels.issueDate')}
                 </label>
                 <input
                   type="date"
@@ -310,7 +312,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Expiration Date <span className="text-red-500">*</span>
+                  {t('form.labels.expirationDate')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -327,7 +329,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Document File
+                {t('form.labels.documentFile')}
               </label>
               <input
                 type="file"
@@ -339,20 +341,20 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               {formData.document_file && (
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center">
                   <CheckCircle size={14} className="text-green-500 dark:text-green-400 mr-1" />
-                  Selected file: {formData.document_file.name}
+                  {t('form.labels.selectedFile')}: {formData.document_file.name}
                 </p>
               )}
               {compliance?.document_url && !formData.document_file && (
                 <div className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
                   <FileText size={14} className="text-blue-500 dark:text-blue-400 mr-1" />
-                  Current document on file
+                  {t('form.labels.currentDocumentOnFile')}
                 </div>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Notes
+                {t('form.labels.notes')}
               </label>
               <textarea
                 name="notes"
@@ -360,37 +362,37 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 onChange={handleInputChange}
                 className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 rows="4"
-                placeholder="Any additional notes about this compliance record..."
+                placeholder={t('placeholders.notesPlaceholder')}
               />
             </div>
 
             {/* Review Summary */}
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mt-6 border border-gray-200 dark:border-gray-600">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Review Compliance Information</h4>
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">{t('form.sections.reviewInformation')}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Title:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.title')}:</span>
                   <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.title}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.type')}:</span>
                   <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{COMPLIANCE_TYPES[formData.compliance_type]?.name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Entity:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.entity')}:</span>
                   <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.entity_type} - {formData.entity_name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.status')}:</span>
                   <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.status}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Expiration:</span>
-                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.expiration_date || 'Not set'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.expiration')}:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.expiration_date || t('form.review.notSet')}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Document #:</span>
-                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.document_number || 'Not provided'}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.review.documentNumber')}:</span>
+                  <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formData.document_number || t('form.review.notProvided')}</span>
                 </div>
               </div>
             </div>
@@ -413,7 +415,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-6 rounded-t-xl">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold">
-              {compliance ? 'Edit Compliance Record' : 'Create New Compliance Record'}
+              {compliance ? t('form.editTitle') : t('form.createTitle')}
             </h2>
             <button
               onClick={handleClose}
@@ -471,7 +473,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               <div className="flex items-center">
                 <AlertCircle className="text-blue-500 dark:text-blue-400 mr-2" size={20} />
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  We&apos;ve restored your previous progress. You can continue where you left off.
+                  {t('messages.restoredProgress')}
                 </p>
               </div>
               <button
@@ -479,7 +481,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 flex items-center gap-1 text-sm"
               >
                 <Trash2 size={16} />
-                Clear
+                {t('common:buttons.clear')}
               </button>
             </div>
           </div>
@@ -509,7 +511,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
               disabled={isSubmitting}
             >
               <ChevronLeft size={16} className="mr-2" />
-              {currentStep === 1 ? 'Cancel' : 'Previous'}
+              {currentStep === 1 ? t('common:buttons.cancel') : t('form.buttons.previous')}
             </button>
 
             {currentStep < 2 ? (
@@ -519,7 +521,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
                 disabled={isSubmitting}
               >
-                Next
+                {t('form.buttons.next')}
                 <ChevronRight size={16} className="ml-2" />
               </button>
             ) : (
@@ -532,12 +534,12 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
                 {isSubmitting ? (
                   <>
                     <RefreshCw size={16} className="animate-spin mr-2" />
-                    {compliance ? 'Updating...' : 'Creating...'}
+                    {compliance ? t('form.buttons.updating') : t('form.buttons.creating')}
                   </>
                 ) : (
                   <>
                     <Check size={16} className="mr-2" />
-                    {compliance ? 'Update Record' : 'Create Record'}
+                    {compliance ? t('form.buttons.updateRecord') : t('form.buttons.createRecord')}
                   </>
                 )}
               </button>

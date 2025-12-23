@@ -10,6 +10,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import { TIER_LIMITS, FEATURE_DESCRIPTIONS } from '@/config/tierConfig';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Inline upgrade prompt for locked features
@@ -21,6 +22,7 @@ export function UpgradePrompt({
   onClose,
   className = ''
 }) {
+  const { t } = useTranslation('billing');
   const featureInfo = FEATURE_DESCRIPTIONS[feature];
   const requiredTier = featureInfo?.requiredTier || 'premium';
   const tierInfo = TIER_LIMITS[requiredTier];
@@ -30,9 +32,9 @@ export function UpgradePrompt({
       <div className={`flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 ${className}`}>
         <LockClosedIcon className="w-4 h-4" />
         <span>
-          Requires {tierInfo?.name || 'Premium'} plan.{' '}
+          {t('upgradePrompt.requires', { plan: tierInfo?.name || 'Premium' })}{' '}
           <Link href="/dashboard/upgrade" className="text-blue-600 dark:text-blue-400 hover:underline">
-            Upgrade
+            {t('upgradePrompt.upgrade')}
           </Link>
         </span>
       </div>
@@ -46,7 +48,7 @@ export function UpgradePrompt({
           <div className="flex items-center gap-3">
             <SparklesIcon className="w-6 h-6" />
             <div>
-              <p className="font-medium">{featureInfo?.name || 'Premium Feature'}</p>
+              <p className="font-medium">{featureInfo?.name || t('upgradePrompt.premiumFeature')}</p>
               <p className="text-sm text-blue-100">{featureInfo?.description}</p>
             </div>
           </div>
@@ -54,7 +56,7 @@ export function UpgradePrompt({
             href="/dashboard/upgrade"
             className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors flex items-center gap-2"
           >
-            Upgrade to {tierInfo?.name}
+            {t('upgradePrompt.upgradeTo', { plan: tierInfo?.name })}
             <ArrowRightIcon className="w-4 h-4" />
           </Link>
         </div>
@@ -71,21 +73,21 @@ export function UpgradePrompt({
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            {featureInfo?.name || 'Premium Feature'}
+            {featureInfo?.name || t('upgradePrompt.premiumFeature')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-            {featureInfo?.description || 'This feature requires an upgraded subscription.'}
+            {featureInfo?.description || t('upgradePrompt.defaultDescription')}
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/dashboard/upgrade"
               className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
-              Upgrade to {tierInfo?.name}
+              {t('upgradePrompt.upgradeTo', { plan: tierInfo?.name })}
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Starting at ${tierInfo?.price?.monthly}/mo
+              {t('upgradePrompt.startingAt', { price: tierInfo?.price?.monthly })}
             </span>
           </div>
         </div>
@@ -103,41 +105,28 @@ export function UpgradeModal({
   feature,
   currentTier = 'basic'
 }) {
+  const { t } = useTranslation('billing');
+
   if (!isOpen) return null;
 
   const featureInfo = FEATURE_DESCRIPTIONS[feature];
   const requiredTier = featureInfo?.requiredTier || 'premium';
   const tierInfo = TIER_LIMITS[requiredTier];
 
-  // Get features for the required tier
-  const tierFeatures = {
-    premium: [
-      'Up to 3 trucks and drivers',
-      'Unlimited loads and invoices',
-      'Compliance tracking',
-      'IFTA Calculator',
-      'State Mileage Tracker',
-      'Email notifications',
-      'PDF exports'
-    ],
-    fleet: [
-      'Up to 12 trucks and drivers',
-      'Advanced fleet reports',
-      'Maintenance scheduling',
-      'SMS notifications',
-      'Quiet hours',
-      'CSV/Excel exports',
-      'Priority phone support'
-    ],
-    enterprise: [
-      'Unlimited trucks and drivers',
-      'Dedicated account manager',
-      'Custom integrations',
-      'API access',
-      'SLA guarantees',
-      'Custom reporting'
-    ]
+  // Get features for the required tier using translations
+  const getTierFeatures = (tier) => {
+    const featureKeys = {
+      premium: ['trucks', 'unlimited', 'compliance', 'ifta', 'mileage', 'email', 'pdf'],
+      fleet: ['trucks', 'reports', 'maintenance', 'sms', 'quiet', 'exports', 'support'],
+      enterprise: ['unlimited', 'manager', 'integrations', 'api', 'sla', 'reports']
+    };
+
+    return (featureKeys[tier] || []).map(key =>
+      t(`upgradePrompt.tierFeatures.${tier}.${key}`)
+    );
   };
+
+  const tierFeatures = getTierFeatures(requiredTier);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -160,28 +149,28 @@ export function UpgradeModal({
           </button>
           <div className="flex items-center gap-3 mb-2">
             <SparklesIcon className="w-8 h-8" />
-            <h2 className="text-xl font-bold">Upgrade Required</h2>
+            <h2 className="text-xl font-bold">{t('upgradePrompt.upgradeRequired')}</h2>
           </div>
           <p className="text-blue-100 dark:text-blue-200">
-            {featureInfo?.name || 'This feature'} requires the {tierInfo?.name} plan
+            {featureInfo?.name || t('upgradePrompt.premiumFeature')} {t('upgradePrompt.requiresPlan', { plan: tierInfo?.name })}
           </p>
         </div>
 
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {featureInfo?.description || 'Unlock this feature and more by upgrading your subscription.'}
+            {featureInfo?.description || t('upgradePrompt.unlockFeature')}
           </p>
 
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-              {tierInfo?.name} Plan includes:
+              {t('upgradePrompt.planIncludes', { plan: tierInfo?.name })}
             </h4>
             <ul className="space-y-2">
-              {tierFeatures[requiredTier]?.slice(0, 5).map((feature, i) => (
+              {tierFeatures.slice(0, 5).map((featureText, i) => (
                 <li key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                   <CheckIcon className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0" />
-                  {feature}
+                  {featureText}
                 </li>
               ))}
             </ul>
@@ -192,13 +181,13 @@ export function UpgradeModal({
               href="/dashboard/upgrade"
               className="w-full bg-blue-600 dark:bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-center"
             >
-              Upgrade to {tierInfo?.name} - ${tierInfo?.price?.monthly}/mo
+              {t('upgradePrompt.upgradeWithPrice', { plan: tierInfo?.name, price: tierInfo?.price?.monthly })}
             </Link>
             <button
               onClick={onClose}
               className="w-full text-gray-600 dark:text-gray-400 py-2 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
             >
-              Maybe later
+              {t('upgradePrompt.maybeLater')}
             </button>
           </div>
         </div>
@@ -218,6 +207,7 @@ export function LimitReachedPrompt({
   resourceName = 'items',
   className = ''
 }) {
+  const { t } = useTranslation('billing');
   const tierInfo = TIER_LIMITS[nextTier];
 
   return (
@@ -228,18 +218,18 @@ export function LimitReachedPrompt({
         </div>
         <div className="flex-1">
           <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-1">
-            {resourceName} limit reached
+            {t('upgradePrompt.limitReached', { resource: resourceName })}
           </h4>
           <p className="text-amber-700 dark:text-amber-300 text-sm mb-3">
-            You've used {currentCount} of {limit} {resourceName.toLowerCase()} on your current plan.
-            {nextTier && ` Upgrade to ${tierInfo?.name} for more.`}
+            {t('upgradePrompt.usedLimit', { current: currentCount, limit: limit, resource: resourceName.toLowerCase() })}
+            {nextTier && ` ${t('upgradePrompt.upgradeForMore', { plan: tierInfo?.name })}`}
           </p>
           {nextTier && nextTier !== 'enterprise' && (
             <Link
               href="/dashboard/upgrade"
               className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
             >
-              Upgrade to {tierInfo?.name}
+              {t('upgradePrompt.upgradeTo', { plan: tierInfo?.name })}
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
           )}
@@ -248,7 +238,7 @@ export function LimitReachedPrompt({
               href="/contact"
               className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200"
             >
-              Contact sales for Enterprise
+              {t('upgradePrompt.contactSales')}
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
           )}

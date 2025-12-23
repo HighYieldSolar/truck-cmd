@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function PaymentForm({ loading, onSubmit }) {
+  const { t } = useTranslation('billing');
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
@@ -14,9 +16,9 @@ export default function PaymentForm({ loading, onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800">Enter Billing Details</h3>
+      <h3 className="text-lg font-semibold text-gray-800">{t('paymentForm.enterBillingDetails')}</h3>
       <div>
-        <label className="block text-gray-700">Card Number</label>
+        <label className="block text-gray-700">{t('paymentForm.cardNumber')}</label>
         <input
           type="text"
           placeholder="1234 5678 9012 3456"
@@ -29,7 +31,7 @@ export default function PaymentForm({ loading, onSubmit }) {
 
       <div className="flex space-x-4">
         <div className="w-1/2">
-          <label className="block text-gray-700">Expiry Date</label>
+          <label className="block text-gray-700">{t('paymentForm.expiryDate')}</label>
           <input
             type="text"
             placeholder="MM/YY"
@@ -40,7 +42,7 @@ export default function PaymentForm({ loading, onSubmit }) {
           />
         </div>
         <div className="w-1/2">
-          <label className="block text-gray-700">CVV</label>
+          <label className="block text-gray-700">{t('paymentForm.cvv')}</label>
           <input
             type="text"
             placeholder="123"
@@ -57,7 +59,7 @@ export default function PaymentForm({ loading, onSubmit }) {
         className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition"
         disabled={loading}
       >
-        {loading ? "Processing Payment..." : "Confirm & Start Subscription"}
+        {loading ? t('paymentForm.processingPayment') : t('paymentForm.confirmSubscription')}
       </button>
     </form>
   );

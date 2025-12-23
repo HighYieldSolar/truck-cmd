@@ -9,6 +9,7 @@ import {
   Truck
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
 const formatDate = (dateString) => {
@@ -27,6 +28,8 @@ export default function DocumentAlertsComponent({
   handleDriverSelect,
   handleVehicleSelect
 }) {
+  const { t } = useTranslation('fleet');
+
   // Combine and sort all reminders by days remaining
   const allReminders = [
     ...documentReminders.map(r => ({ ...r, category: 'driver' })),
@@ -46,14 +49,14 @@ export default function DocumentAlertsComponent({
       <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <AlertTriangle size={18} className="mr-2" />
-          Document Alerts
+          {t('documentAlerts.title')}
         </h3>
       </div>
       <div className="p-4">
         {allReminders.length === 0 ? (
           <div className="text-center py-6 text-gray-500 dark:text-gray-400">
             <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-            <p>No documents expiring soon</p>
+            <p>{t('documentAlerts.noDocumentsExpiringSoon')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -84,7 +87,7 @@ export default function DocumentAlertsComponent({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {item.type} expires {formatDate(item.expiryDate)}
+                          {item.type} {t('documentAlerts.expires')} {formatDate(item.expiryDate)}
                         </p>
                       </div>
                     </div>
@@ -95,7 +98,7 @@ export default function DocumentAlertsComponent({
                           ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                           : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
                     }`}>
-                      {item.daysRemaining <= 0 ? 'Expired' : `${item.daysRemaining}d`}
+                      {item.daysRemaining <= 0 ? t('documentAlerts.expired') : `${item.daysRemaining}d`}
                     </span>
                   </div>
                 </div>
@@ -104,7 +107,7 @@ export default function DocumentAlertsComponent({
 
             {allReminders.length > 5 && (
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                +{allReminders.length - 5} more alerts
+                {t('documentAlerts.moreAlerts', { count: allReminders.length - 5 })}
               </p>
             )}
 
@@ -113,7 +116,7 @@ export default function DocumentAlertsComponent({
                 href="/dashboard/compliance"
                 className="text-sm text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 flex items-center justify-center w-full"
               >
-                View compliance details
+                {t('documentAlerts.viewComplianceDetails')}
                 <ArrowRight size={14} className="ml-1" />
               </Link>
             </div>

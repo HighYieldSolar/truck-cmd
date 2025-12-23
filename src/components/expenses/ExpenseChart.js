@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from "@/context/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -24,6 +25,7 @@ import { TrendingUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
  * Inspired by shadcn/ui chart design patterns.
  */
 export default function ExpenseChart({ data = {}, period = 'This Month' }) {
+  const { t } = useTranslation('expenses');
   const [chartType, setChartType] = useState('bar');
 
   // Category colors matching the expense system
@@ -75,7 +77,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
             {formatCurrency(data.amount)}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {percentage}% of total
+            {percentage}% {t('chartWidget.ofTotal')}
           </p>
         </div>
       );
@@ -97,7 +99,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
             {formatCurrency(data.amount)}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {percentage}% of total
+            {percentage}% {t('chartWidget.ofTotal')}
           </p>
         </div>
       );
@@ -112,7 +114,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Expense Analysis
+              {t('chartWidget.title')}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{period}</p>
           </div>
@@ -122,10 +124,10 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
             <BarChart3 className="h-8 w-8 text-gray-400 dark:text-gray-500" />
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-center">
-            No expense data available
+            {t('chartWidget.noData')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-            Add expenses to see your spending analysis
+            {t('chartWidget.addExpenses')}
           </p>
         </div>
       </div>
@@ -139,7 +141,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Expense Analysis
+              {t('chartWidget.title')}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{period}</p>
           </div>
@@ -155,7 +157,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
               }`}
             >
               <BarChart3 className="h-4 w-4" />
-              Bar
+              {t('chartWidget.bar')}
             </button>
             <button
               onClick={() => setChartType('pie')}
@@ -166,7 +168,7 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
               }`}
             >
               <PieChartIcon className="h-4 w-4" />
-              Pie
+              {t('chartWidget.pie')}
             </button>
           </div>
         </div>
@@ -290,11 +292,11 @@ export default function ExpenseChart({ data = {}, period = 'This Month' }) {
               {formatCurrency(totalAmount)}
             </span>
             <span className="text-gray-500 dark:text-gray-400">
-              total for {period.toLowerCase()}
+              {t('chartWidget.totalFor')} {period.toLowerCase()}
             </span>
           </div>
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {chartData.length} {chartData.length === 1 ? 'category' : 'categories'}
+            {chartData.length} {chartData.length === 1 ? t('chartWidget.category') : t('chartWidget.categories')}
           </span>
         </div>
       </div>

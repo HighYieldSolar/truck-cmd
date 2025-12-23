@@ -1,0 +1,367 @@
+{
+  "navigation": {
+    "main": "Main",
+    "system": "System",
+    "dashboard": "Dashboard",
+    "loadManagement": "Load Management",
+    "stateMileage": "State Mileage",
+    "invoices": "Invoices",
+    "expenses": "Expenses",
+    "customers": "Customers",
+    "fleet": "Fleet",
+    "compliance": "Compliance",
+    "iftaCalculator": "IFTA Calculator",
+    "fuelTracker": "Fuel Tracker",
+    "settings": "Settings",
+    "logout": "Logout",
+    "home": "Home"
+  },
+  "userDropdown": {
+    "yourProfile": "Your Profile",
+    "freeTrial": "Free trial",
+    "basicPlan": "Basic plan",
+    "premiumPlan": "Premium plan",
+    "fleetPlan": "Fleet plan",
+    "settings": "Settings",
+    "language": "Language",
+    "beta": "BETA",
+    "getHelp": "Get help",
+    "viewAllPlans": "View all plans",
+    "learnMore": "Learn more",
+    "aboutUs": "About Us",
+    "feedback": "Feedback",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "cookiePolicy": "Cookie Policy",
+    "acceptableUse": "Acceptable Use",
+    "logOut": "Log out",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "buttons": {
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "viewAll": "View All",
+    "create": "Create",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "confirm": "Confirm",
+    "continue": "Continue",
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "done": "Done",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "print": "Print",
+    "send": "Send",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "reset": "Reset",
+    "apply": "Apply",
+    "more": "More",
+    "moreOptions": "More Options",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "upgrade": "Upgrade",
+    "upgradeNow": "Upgrade Now",
+    "viewPlans": "View Plans",
+    "subscribe": "Subscribe",
+    "subscribeNow": "Subscribe Now"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "draft": "Draft",
+    "sent": "Sent",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "overdue": "Overdue",
+    "pastDue": "Past Due",
+    "inTransit": "In Transit",
+    "assigned": "Assigned",
+    "delivered": "Delivered",
+    "archived": "Archived",
+    "expired": "Expired",
+    "verified": "Verified",
+    "unverified": "Unverified"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisQuarter": "This Quarter",
+    "thisYear": "This Year",
+    "lastYear": "Last Year",
+    "allTime": "All Time",
+    "dateRange": "Date Range",
+    "from": "From",
+    "to": "To",
+    "days": "days",
+    "day": "day",
+    "hours": "hours",
+    "hour": "hour",
+    "minutes": "minutes",
+    "minute": "minute",
+    "ago": "ago",
+    "left": "left",
+    "remaining": "remaining"
+  },
+  "validation": {
+    "required": "This field is required",
+    "requiredField": "Required field",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPhone": "Please enter a valid phone number",
+    "invalidFormat": "Invalid format",
+    "tooShort": "Too short",
+    "tooLong": "Too long",
+    "passwordTooWeak": "Password is too weak",
+    "passwordMismatch": "Passwords do not match",
+    "emailInUse": "This email is already in use",
+    "minLength": "Minimum {{count}} characters required",
+    "maxLength": "Maximum {{count}} characters allowed",
+    "selectOption": "Please select an option"
+  },
+  "messages": {
+    "successSaved": "Successfully saved",
+    "successDeleted": "Successfully deleted",
+    "successUpdated": "Successfully updated",
+    "successCreated": "Successfully created",
+    "errorOccurred": "An error occurred",
+    "tryAgain": "Please try again",
+    "noDataAvailable": "No data available",
+    "noRecordsFound": "No records found",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "actionCannotBeUndone": "This action cannot be undone",
+    "changesNotSaved": "You have unsaved changes",
+    "sessionExpired": "Your session has expired",
+    "pleaseLogin": "Please log in to continue"
+  },
+  "emptyStates": {
+    "noData": "No data available",
+    "noRecords": "No records found",
+    "noResults": "No results found",
+    "getStarted": "Get started",
+    "createFirst": "Create your first {{item}} to see it here"
+  },
+  "footer": {
+    "copyright": "© {{year}} Truck Command LLC. All rights reserved.",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "acceptableUse": "Acceptable Use",
+    "contact": "Contact"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "searchLoads": "Search loads, invoices...",
+    "noResults": "No results found",
+    "recentSearches": "Recent searches"
+  },
+  "globalSearch": {
+    "placeholder": "Search loads, invoices, customers...",
+    "recentSearches": "Recent Searches",
+    "clear": "Clear",
+    "typeAtLeast": "Type at least 2 characters to search",
+    "pleaseLogIn": "Please log in to search",
+    "noResults": "No results found",
+    "result": "result",
+    "results": "results",
+    "keyboard": {
+      "navigate": "Navigate",
+      "select": "Select",
+      "close": "Close"
+    },
+    "categories": {
+      "create": "Create",
+      "navigate": "Navigate",
+      "manage": "Manage"
+    },
+    "quickLinks": {
+      "newLoad": "New Load",
+      "newLoadDesc": "Add a new load",
+      "newInvoice": "New Invoice",
+      "newInvoiceDesc": "Create an invoice",
+      "addExpense": "Add Expense",
+      "addExpenseDesc": "Record an expense",
+      "addCustomer": "Add Customer",
+      "addCustomerDesc": "Add a new customer",
+      "dashboard": "Dashboard",
+      "dashboardDesc": "Overview & stats",
+      "iftaCalculator": "IFTA Calculator",
+      "iftaCalculatorDesc": "Calculate IFTA taxes",
+      "stateMileage": "State Mileage",
+      "stateMileageDesc": "Track miles by state",
+      "fuelTracker": "Fuel Tracker",
+      "fuelTrackerDesc": "Log fuel purchases",
+      "fleet": "Fleet",
+      "fleetDesc": "Trucks & drivers",
+      "compliance": "Compliance",
+      "complianceDesc": "Documents & expiry",
+      "settings": "Settings",
+      "settingsDesc": "Account settings"
+    }
+  },
+  "trial": {
+    "freeTrial": "Free Trial",
+    "freeTrialStatus": "Free Trial Status",
+    "truckCommandFreeTrial": "Truck Command Free Trial",
+    "daysLeft": "{{count}} days left in your trial",
+    "daysRemaining": "Days Remaining",
+    "trialExpired": "Your trial has expired",
+    "upgradeMessage": "Upgrade now to continue accessing all features",
+    "subscribeMessage": "Subscribe now to continue using all features",
+    "banner": {
+      "trialEnded": "Your free trial has ended. Subscribe now to regain access to all features.",
+      "lastDay": "Last day",
+      "daysLeftInTrial": "{{count}} days left in your free trial",
+      "actNow": "Act now to avoid losing access.",
+      "subscribeNow": "Subscribe Now",
+      "upgradePlan": "Upgrade Plan"
+    }
+  },
+  "accessibility": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "toggleTheme": "Toggle theme",
+    "userMenu": "User menu",
+    "notifications": "Notifications",
+    "mainNavigation": "Main navigation",
+    "skipToContent": "Skip to content"
+  },
+  "currency": {
+    "usd": "USD",
+    "symbol": "$"
+  },
+  "units": {
+    "miles": "miles",
+    "gallons": "gallons",
+    "gal": "gal",
+    "perGallon": "per gallon",
+    "perMile": "per mile"
+  },
+  "state": "state",
+  "states": "states",
+  "tip": "Tip",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "showingPage": "Showing page {{current}} of {{total}}",
+    "of": "of"
+  },
+  "filters": {
+    "adjustFilters": "Try adjusting your filters or search criteria."
+  },
+  "export": {
+    "success": "Report exported successfully!",
+    "exporting": "Exporting...",
+    "exported": "Exported",
+    "exportReport": "Export Report",
+    "selectFormat": "Select Export Format",
+    "dateRange": "Date range:",
+    "generated": "Generated",
+    "page": "Page",
+    "of": "of",
+    "summary": "SUMMARY",
+    "details": "DETAILS",
+    "data": "DATA",
+    "formats": {
+      "pdf": {
+        "label": "PDF Report",
+        "description": "Professional format with branding"
+      },
+      "csv": {
+        "label": "Spreadsheet (CSV)",
+        "description": "For Excel or Google Sheets"
+      },
+      "txt": {
+        "label": "Plain Text",
+        "description": "Simple format for email"
+      },
+      "print": {
+        "label": "Print",
+        "description": "Send to printer"
+      }
+    },
+    "errors": {
+      "csvFailed": "Failed to export CSV. Please try again.",
+      "txtFailed": "Failed to export text file. Please try again.",
+      "pdfFailed": "Failed to generate PDF. Please try again."
+    }
+  },
+  "deleteConfirmation": {
+    "title": "Delete Item",
+    "confirmTitle": "Confirm deletion",
+    "deleteItem": "Delete \"{{itemName}}\"?",
+    "message": "Are you sure you want to delete this item? This action cannot be undone.",
+    "deleting": "Deleting..."
+  },
+  "lockedFeature": {
+    "title": "Premium Feature",
+    "description": "This feature requires an upgraded plan.",
+    "upgradeNow": "Upgrade Now",
+    "viewPlans": "View Plans"
+  },
+  "statusAlert": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "readAll": "Read all",
+    "viewAll": "View all notifications",
+    "markAsRead": "Mark as read",
+    "deleteNotification": "Delete notification",
+    "emptyState": {
+      "title": "All caught up!",
+      "description": "No new notifications"
+    },
+    "urgency": {
+      "critical": "Critical",
+      "highPriority": "High Priority",
+      "medium": "Medium"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minuteAgo": "1 minute ago",
+      "minutesAgo": "{{count}} minutes ago",
+      "hourAgo": "1 hour ago",
+      "hoursAgo": "{{count}} hours ago",
+      "dayAgo": "1 day ago",
+      "daysAgo": "{{count}} days ago",
+      "yesterday": "Yesterday",
+      "mAgo": "{{count}}m ago",
+      "hAgo": "{{count}}h ago",
+      "dAgo": "{{count}}d ago"
+    },
+    "due": "Due:"
+  }
+}

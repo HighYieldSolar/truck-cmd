@@ -13,6 +13,7 @@ import {
   Calculator,
   Download
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Import custom hooks and components
 import useFuel from "@/hooks/useFuel";
@@ -37,7 +38,8 @@ import { MapPin, Receipt, TrendingUp, BarChart } from "lucide-react";
 
 export default function FuelTrackerPage() {
   const router = useRouter();
-  
+  const { t } = useTranslation('fuel');
+
   // State for user authentication
   const [user, setUser] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -162,18 +164,18 @@ export default function FuelTrackerPage() {
   const handleAddFuelEntry = async (formData) => {
     try {
       await addFuelEntry(formData);
-      
+
       setOperationMessage({
         type: 'success',
-        text: 'Fuel entry added and expense record created.'
+        text: t('operationMessages.entryAddedWithExpense')
       });
-      
+
       setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: error.message || 'Failed to add fuel entry. Please try again.'
+        text: error.message || t('operationMessages.failedToAdd')
       });
 
       setTimeout(() => setOperationMessage(null), 5000);
@@ -185,18 +187,18 @@ export default function FuelTrackerPage() {
   const handleUpdateFuelEntry = async (id, formData) => {
     try {
       await updateFuelEntry(id, formData);
-      
+
       setOperationMessage({
         type: 'success',
-        text: 'Fuel entry updated successfully.'
+        text: t('operationMessages.entryUpdatedSuccess')
       });
-      
+
       setTimeout(() => setOperationMessage(null), 3000);
       return true;
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: error.message || 'Failed to update fuel entry. Please try again.'
+        text: error.message || t('operationMessages.failedToUpdate')
       });
 
       setTimeout(() => setOperationMessage(null), 5000);
@@ -228,28 +230,30 @@ export default function FuelTrackerPage() {
   // Confirm deletion of a fuel entry
   const handleConfirmDelete = async (deleteLinkedExpense = false) => {
     if (!fuelEntryToDelete) return;
-    
+
     try {
       setDeleteLoading(true); // Use dedicated loading state for deletion
-      
+
       // Pass the deleteLinkedExpense flag to the deleteFuelEntry function
       await deleteFuelEntry(fuelEntryToDelete.id, deleteLinkedExpense);
-      
+
       setDeleteModalOpen(false);
       setFuelEntryToDelete(null);
-      
+
       // Show a success message
       setOperationMessage({
         type: 'success',
-        text: `Fuel entry deleted successfully${deleteLinkedExpense && fuelEntryToDelete.expense_id ? ' along with linked expense' : ''}.`
+        text: deleteLinkedExpense && fuelEntryToDelete.expense_id
+          ? t('operationMessages.entryDeletedWithLinked')
+          : t('operationMessages.entryDeletedSuccess')
       });
-      
+
       // Clear the message after a few seconds
       setTimeout(() => setOperationMessage(null), 3000);
     } catch (error) {
       setOperationMessage({
         type: 'error',
-        text: error.message || 'Failed to delete fuel entry. Please try again.'
+        text: error.message || t('operationMessages.failedToDelete')
       });
     } finally {
       setDeleteLoading(false);
@@ -299,15 +303,15 @@ export default function FuelTrackerPage() {
   };
 
   // Export columns configuration
-  const exportColumns = [
-    { key: 'date', header: 'Date', format: 'date' },
-    { key: 'location', header: 'Location' },
-    { key: 'state', header: 'State' },
-    { key: 'gallons', header: 'Gallons', format: 'number' },
-    { key: 'price_per_gallon', header: 'Price/Gal', format: 'currency' },
-    { key: 'total_amount', header: 'Total', format: 'currency' },
-    { key: 'vehicle_name', header: 'Vehicle' }
-  ];
+  const exportColumns = useMemo(() => [
+    { key: 'date', header: t('export.columnDate'), format: 'date' },
+    { key: 'location', header: t('export.columnLocation') },
+    { key: 'state', header: t('export.columnState') },
+    { key: 'gallons', header: t('export.columnGallons'), format: 'number' },
+    { key: 'price_per_gallon', header: t('export.columnPricePerGal'), format: 'currency' },
+    { key: 'total_amount', header: t('export.columnTotal'), format: 'currency' },
+    { key: 'vehicle_name', header: t('export.columnVehicle') }
+  ], [t]);
 
   // Get export data - must be before conditional returns
   const getExportData = useCallback(() => {
@@ -330,13 +334,13 @@ export default function FuelTrackerPage() {
     const uniqueStates = [...new Set(filteredFuelEntries.map(e => e.state).filter(Boolean))].length;
 
     return {
-      'Total Entries': filteredFuelEntries.length.toString(),
-      'Total Gallons': totalGallons.toFixed(2),
-      'Total Spent': `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      'Avg Price/Gal': `$${avgPricePerGallon.toFixed(3)}`,
-      'States': uniqueStates.toString()
+      [t('export.totalEntries')]: filteredFuelEntries.length.toString(),
+      [t('export.totalGallons')]: totalGallons.toFixed(2),
+      [t('export.totalSpent')]: `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      [t('export.avgPricePerGal')]: `$${avgPricePerGallon.toFixed(3)}`,
+      [t('export.states')]: uniqueStates.toString()
     };
-  }, [filteredFuelEntries]);
+  }, [filteredFuelEntries, t]);
 
   // Get date range for export - must be before conditional returns
   const getExportDateRange = useCallback(() => {
@@ -400,8 +404,8 @@ export default function FuelTrackerPage() {
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-2xl shadow-lg p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold mb-1">Fuel Tracker</h1>
-                <p className="text-blue-100 dark:text-blue-200">Track fuel purchases and generate IFTA reports by state</p>
+                <h1 className="text-3xl font-bold mb-1">{t('page.title')}</h1>
+                <p className="text-blue-100 dark:text-blue-200">{t('page.subtitle')}</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -410,21 +414,21 @@ export default function FuelTrackerPage() {
                   className="px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-xl hover:bg-blue-800 dark:hover:bg-blue-900 transition-all duration-200 shadow-md flex items-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download size={18} className="mr-2" />
-                  Export
+                  {t('page.exportButton')}
                 </button>
                 <button
                   onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
                   className="px-4 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-md hover:shadow-lg flex items-center font-semibold"
                 >
                   <Plus size={18} className="mr-2" />
-                  Add Fuel Purchase
+                  {t('page.addFuelButton')}
                 </button>
                 <button
                   onClick={handleGoToIFTA}
                   className="px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 shadow-md flex items-center font-semibold"
                 >
                   <Calculator size={18} className="mr-2" />
-                  IFTA Calculator
+                  {t('page.iftaCalculatorButton')}
                 </button>
               </div>
             </div>
@@ -455,46 +459,46 @@ export default function FuelTrackerPage() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="fuel"
-            title="Fuel Tracker"
-            description="Track fuel purchases and generate IFTA reports by state"
+            title={t('page.title')}
+            description={t('page.subtitle')}
             features={[
               {
                 icon: Fuel,
-                title: "Log Purchases",
-                description: "Record fuel purchases with gallons, cost, location, and state"
+                title: t('tutorial.logPurchasesTitle'),
+                description: t('tutorial.logPurchasesDescription')
               },
               {
                 icon: Receipt,
-                title: "Receipt Upload",
-                description: "Attach receipt images to fuel entries for record keeping"
+                title: t('tutorial.receiptUploadTitle'),
+                description: t('tutorial.receiptUploadDescription')
               },
               {
                 icon: MapPin,
-                title: "State Tracking",
-                description: "Track fuel by state for IFTA compliance reporting"
+                title: t('tutorial.stateTrackingTitle'),
+                description: t('tutorial.stateTrackingDescription')
               },
               {
                 icon: Calculator,
-                title: "IFTA Reports",
-                description: "Generate quarterly IFTA reports with fuel data by jurisdiction"
+                title: t('tutorial.iftaReportsTitle'),
+                description: t('tutorial.iftaReportsDescription')
               }
             ]}
             tips={[
-              "Fuel purchases automatically sync to your Expenses page for easy bookkeeping",
-              "Always record the state where fuel was purchased for accurate IFTA reporting",
-              "Upload receipt photos to keep proof of purchase organized",
-              "Link fuel entries to vehicles to track per-truck consumption"
+              t('tutorial.tipExpenseSync'),
+              t('tutorial.tipStateRecord'),
+              t('tutorial.tipReceipts'),
+              t('tutorial.tipVehicleLink')
             ]}
             accentColor="blue"
             userId={user?.id}
           />
 
           {/* Statistics */}
-          <FuelStats 
+          <FuelStats
             stats={stats}
-            isLoading={loading} 
-            period={filters.dateRange === 'This Quarter' ? 'This Quarter' : filters.dateRange === 'Last Quarter' ? 'Last Quarter' : 'Selected Period'}
-            className="mb-6" 
+            isLoading={loading}
+            period={filters.dateRange === 'This Quarter' ? t('period.thisQuarter') : filters.dateRange === 'Last Quarter' ? t('period.lastQuarter') : t('period.selectedPeriod')}
+            className="mb-6"
           />
 
           {/* Main Content Grid */}
@@ -508,7 +512,7 @@ export default function FuelTrackerPage() {
                     <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mr-3">
                       <Fuel size={16} className="text-amber-600 dark:text-amber-400" />
                     </div>
-                    Top Fuel Purchases
+                    {t('page.topFuelPurchases')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -533,7 +537,7 @@ export default function FuelTrackerPage() {
                     <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3">
                       <BarChart2 size={16} className="text-purple-600 dark:text-purple-400" />
                     </div>
-                    States
+                    {t('page.statesTitle')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -559,7 +563,7 @@ export default function FuelTrackerPage() {
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
                     <Filter size={18} className="mr-2 text-gray-500 dark:text-gray-400" />
-                    Filter Fuel Purchases
+                    {t('page.filterTitle')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -577,14 +581,14 @@ export default function FuelTrackerPage() {
                 <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
                     <FileText size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
-                    Fuel Purchase Records
+                    {t('page.recordsTitle')}
                   </h3>
                   <button
                     onClick={() => { setCurrentFuelEntry(null); setFormModalOpen(true); }}
                     className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Plus size={16} className="mr-1" />
-                    Add New
+                    {t('page.addNewButton')}
                   </button>
                 </div>
                 
@@ -595,14 +599,14 @@ export default function FuelTrackerPage() {
                   </div>
                 ) : filteredFuelEntries.length === 0 ? (
                   <EmptyState
-                    message="No fuel entries found"
+                    message={t('emptyStateMessages.noEntriesFound')}
                     description={
                       filters.search || filters.state || filters.vehicleId || filters.dateRange !== 'This Quarter'
-                        ? "Try adjusting your search or filters."
-                        : "Start tracking your fuel purchases by adding your first entry."
+                        ? t('emptyStateMessages.adjustFilters')
+                        : t('emptyStateMessages.startTracking')
                     }
                     icon={<Fuel size={28} className="text-gray-400" />}
-                    actionText="Add Fuel Purchase"
+                    actionText={t('page.addFuelButton')}
                     onAction={() => {
                       setCurrentFuelEntry(null);
                       setFormModalOpen(true);
@@ -642,25 +646,25 @@ export default function FuelTrackerPage() {
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Location
+                                {t('table.location')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Date
+                                {t('table.date')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Gallons
+                                {t('table.gallons')}
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Amount
+                                {t('table.amount')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Vehicle
+                                {t('table.vehicle')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Receipt
+                                {t('table.receipt')}
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                Actions
+                                {t('table.actions')}
                               </th>
                             </tr>
                           </thead>
@@ -698,10 +702,10 @@ export default function FuelTrackerPage() {
                 {filteredFuelEntries.length > 0 && (
                   <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between lg:hidden">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {totalItems} fuel entries
+                      {t('page.fuelEntriesCount', { count: totalItems })}
                     </span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Total: {formatCurrency(filteredFuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
+                      {t('page.total')} {formatCurrency(filteredFuelEntries.reduce((sum, entry) => sum + parseFloat(entry.total_amount), 0))}
                     </span>
                   </div>
                 )}
@@ -713,7 +717,7 @@ export default function FuelTrackerPage() {
                   <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
                       <BarChart2 size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
-                      IFTA State Summary
+                      {t('page.iftaStateSummary')}
                     </h3>
                   </div>
                   <div className="p-0">
@@ -768,21 +772,21 @@ export default function FuelTrackerPage() {
       <ExportReportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        title="Export Fuel Report"
-        description="Export your fuel purchase records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+        title={t('export.title')}
+        description={t('export.description')}
         data={getExportData()}
         columns={exportColumns}
         filename="fuel_report"
         summaryInfo={getExportSummaryInfo()}
         dateRange={getExportDateRange()}
         pdfConfig={{
-          title: 'Fuel Purchase Report',
-          subtitle: 'IFTA Fuel Tracking'
+          title: t('export.pdfTitle'),
+          subtitle: t('export.pdfSubtitle')
         }}
         onExportComplete={() => {
           setOperationMessage({
             type: 'success',
-            text: 'Report exported successfully!'
+            text: t('export.success')
           });
           setTimeout(() => setOperationMessage(null), 3000);
         }}

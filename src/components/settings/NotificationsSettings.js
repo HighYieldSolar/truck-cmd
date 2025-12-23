@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 import { OperationMessage } from '@/components/ui/OperationMessage';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -114,6 +115,7 @@ const DEFAULT_PREFERENCES = {
 };
 
 export default function NotificationsSettings() {
+  const { t } = useTranslation('settings');
   const { user } = useSubscription();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,7 +199,7 @@ export default function NotificationsSettings() {
   // Save preferences
   const savePreferences = async () => {
     if (!user?.id) {
-      setOperationMessage({ type: 'error', text: 'Please log in to save preferences.' });
+      setOperationMessage({ type: 'error', text: t('notifications.messages.loginRequired') });
       return;
     }
 
@@ -241,12 +243,12 @@ export default function NotificationsSettings() {
       if (error) {
         // If table doesn't exist, show a specific message
         if (error.code === '42P01') {
-          throw new Error('Notification preferences feature is being set up. Please try again later.');
+          throw new Error(t('notifications.messages.tableSetup'));
         }
         throw error;
       }
 
-      setOperationMessage({ type: 'success', text: 'Notification preferences saved successfully.' });
+      setOperationMessage({ type: 'success', text: t('notifications.messages.savedSuccess') });
       setHasChanges(false);
     } catch (err) {
       setOperationMessage({ type: 'error', text: getUserFriendlyError(err) });
@@ -291,7 +293,7 @@ export default function NotificationsSettings() {
   // Test email notification
   const testEmailNotification = async () => {
     if (!user?.email) {
-      setOperationMessage({ type: 'error', text: 'No email address found for your account.' });
+      setOperationMessage({ type: 'error', text: t('notifications.messages.noEmail') });
       return;
     }
 
@@ -313,17 +315,17 @@ export default function NotificationsSettings() {
 
       if (data.results?.email?.success) {
         setTestResults(prev => ({ ...prev, email: 'success' }));
-        setOperationMessage({ type: 'success', text: 'Test email sent successfully! Check your inbox.' });
+        setOperationMessage({ type: 'success', text: t('notifications.messages.testEmailSuccess') });
       } else {
         setTestResults(prev => ({ ...prev, email: 'error' }));
         setOperationMessage({
           type: 'error',
-          text: data.results?.email?.error || 'Failed to send test email. Email service may not be configured.'
+          text: data.results?.email?.error || t('notifications.messages.testEmailFailed')
         });
       }
     } catch (err) {
       setTestResults(prev => ({ ...prev, email: 'error' }));
-      setOperationMessage({ type: 'error', text: 'Failed to send test email. Please try again.' });
+      setOperationMessage({ type: 'error', text: t('notifications.messages.testEmailError') });
     } finally {
       setTestingEmail(false);
     }
@@ -334,7 +336,7 @@ export default function NotificationsSettings() {
     if (!userPhone) {
       setOperationMessage({
         type: 'error',
-        text: 'No phone number found. Please add your phone number in Profile Settings first.'
+        text: t('notifications.messages.noPhone')
       });
       return;
     }
@@ -357,17 +359,17 @@ export default function NotificationsSettings() {
 
       if (data.results?.sms?.success) {
         setTestResults(prev => ({ ...prev, sms: 'success' }));
-        setOperationMessage({ type: 'success', text: 'Test SMS sent successfully! Check your phone.' });
+        setOperationMessage({ type: 'success', text: t('notifications.messages.testSMSSuccess') });
       } else {
         setTestResults(prev => ({ ...prev, sms: 'error' }));
         setOperationMessage({
           type: 'error',
-          text: data.results?.sms?.error || 'Failed to send test SMS. SMS service may not be configured.'
+          text: data.results?.sms?.error || t('notifications.messages.testSMSFailed')
         });
       }
     } catch (err) {
       setTestResults(prev => ({ ...prev, sms: 'error' }));
-      setOperationMessage({ type: 'error', text: 'Failed to send test SMS. Please try again.' });
+      setOperationMessage({ type: 'error', text: t('notifications.messages.testSMSError') });
     } finally {
       setTestingSMS(false);
     }
@@ -435,10 +437,10 @@ export default function NotificationsSettings() {
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bell className="h-5 w-5 text-blue-500" />
-            Notification Preferences
+            {t('notifications.title')}
           </h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage how and when you receive notifications
+            {t('notifications.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -446,7 +448,7 @@ export default function NotificationsSettings() {
             onClick={loadPreferences}
             disabled={isSaving}
             className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-            title="Refresh"
+            title={t('common:buttons.refresh')}
           >
             <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -467,7 +469,7 @@ export default function NotificationsSettings() {
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            Save Changes
+            {t('notifications.saveChanges')}
           </button>
         </div>
       </div>
@@ -483,10 +485,10 @@ export default function NotificationsSettings() {
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Settings className="h-4 w-4 text-blue-500" />
-            Delivery Channels
+            {t('notifications.deliveryChannels.title')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Enable or disable notification channels globally
+            {t('notifications.deliveryChannels.description')}
           </p>
         </div>
         <div className="p-6 space-y-4">
@@ -498,15 +500,15 @@ export default function NotificationsSettings() {
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  Email Notifications
+                  {t('notifications.channels.email')}
                   {!hasEmailNotifications && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                       <Lock className="h-3 w-3 mr-1" />
-                      Premium
+                      {t('notifications.upgrade.premium')}
                     </span>
                   )}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.emailDescription')}</p>
               </div>
             </div>
             {hasEmailNotifications ? (
@@ -519,7 +521,7 @@ export default function NotificationsSettings() {
                 href="/dashboard/upgrade"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
-                Upgrade <ArrowRight className="h-3 w-3" />
+                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
               </Link>
             )}
           </div>
@@ -531,8 +533,8 @@ export default function NotificationsSettings() {
                 <Monitor className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">In-App Notifications</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Show notifications in the dashboard</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.channels.inApp')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.inAppDescription')}</p>
               </div>
             </div>
             <Toggle
@@ -549,15 +551,15 @@ export default function NotificationsSettings() {
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                  SMS Notifications
+                  {t('notifications.channels.sms')}
                   {!hasSMSNotifications && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
                       <Lock className="h-3 w-3 mr-1" />
-                      Fleet
+                      {t('notifications.upgrade.fleet')}
                     </span>
                   )}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Receive critical alerts via text message</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.smsDescription')}</p>
               </div>
             </div>
             {hasSMSNotifications ? (
@@ -570,7 +572,7 @@ export default function NotificationsSettings() {
                 href="/dashboard/upgrade"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
-                Upgrade <ArrowRight className="h-3 w-3" />
+                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
               </Link>
             )}
           </div>
@@ -582,10 +584,10 @@ export default function NotificationsSettings() {
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm">
             <Bell className="h-4 w-4 text-blue-500" />
-            Notification Categories
+            {t('notifications.categories.title')}
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Customize notifications for each category
+            {t('notifications.categories.description')}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-200 dark:bg-gray-700">
@@ -601,7 +603,7 @@ export default function NotificationsSettings() {
                     <CategoryIcon className={`h-3.5 w-3.5 ${category.iconColor}`} />
                   </div>
                   <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
-                    {category.name}
+                    {t(`notifications.categories.${category.id}.name`)}
                   </h4>
                 </div>
 
@@ -620,7 +622,7 @@ export default function NotificationsSettings() {
                         ? 'text-gray-600 dark:text-gray-400'
                         : 'text-gray-400 dark:text-gray-500'
                     }`}>
-                      Email
+                      {t('notifications.channelLabels.email')}
                     </span>
                   </label>
 
@@ -637,7 +639,7 @@ export default function NotificationsSettings() {
                         ? 'text-gray-600 dark:text-gray-400'
                         : 'text-gray-400 dark:text-gray-500'
                     }`}>
-                      App
+                      {t('notifications.channelLabels.app')}
                     </span>
                   </label>
 
@@ -654,7 +656,7 @@ export default function NotificationsSettings() {
                         ? 'text-gray-600 dark:text-gray-400'
                         : 'text-gray-400 dark:text-gray-500'
                     }`}>
-                      SMS
+                      {t('notifications.channelLabels.sms')}
                     </span>
                   </label>
                 </div>
@@ -669,25 +671,25 @@ export default function NotificationsSettings() {
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bell className="h-4 w-4 text-blue-500" />
-            Quiet Hours
+            {t('notifications.quietHours.title')}
             {!hasQuietHours && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
                 <Lock className="h-3 w-3 mr-1" />
-                Fleet
+                {t('notifications.upgrade.fleet')}
               </span>
             )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Pause non-critical notifications during specific hours
+            {t('notifications.quietHours.description')}
           </p>
         </div>
         {hasQuietHours ? (
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">Enable Quiet Hours</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.quietHours.enable')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Only critical notifications will be delivered during quiet hours
+                  {t('notifications.quietHours.enableDescription')}
                 </p>
               </div>
               <Toggle
@@ -700,7 +702,7 @@ export default function NotificationsSettings() {
               <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Start Time
+                    {t('notifications.quietHours.startTime')}
                   </label>
                   <input
                     type="time"
@@ -711,7 +713,7 @@ export default function NotificationsSettings() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    End Time
+                    {t('notifications.quietHours.endTime')}
                   </label>
                   <input
                     type="time"
@@ -731,9 +733,9 @@ export default function NotificationsSettings() {
                   <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">Upgrade to Fleet</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.upgrade.upgradeToFleet')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Set quiet hours to pause notifications during off-hours
+                    {t('notifications.upgrade.quietHoursFleet')}
                   </p>
                 </div>
               </div>
@@ -741,7 +743,7 @@ export default function NotificationsSettings() {
                 href="/dashboard/upgrade"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
               >
-                Upgrade <ArrowRight className="h-4 w-4" />
+                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -753,25 +755,25 @@ export default function NotificationsSettings() {
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Mail className="h-4 w-4 text-blue-500" />
-            Email Digest
+            {t('notifications.digest.title')}
             {!hasDigestMode && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                 <Lock className="h-3 w-3 mr-1" />
-                Premium
+                {t('notifications.upgrade.premium')}
               </span>
             )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Choose how often you receive email notification digests
+            {t('notifications.digest.description')}
           </p>
         </div>
         {hasDigestMode ? (
           <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { value: 'instant', label: 'Instant', description: 'Get emails as they happen' },
-                { value: 'daily', label: 'Daily Digest', description: 'One email per day' },
-                { value: 'weekly', label: 'Weekly Digest', description: 'One email per week' }
+                { value: 'instant', labelKey: 'notifications.digest.instant', descKey: 'notifications.digest.instantDescription' },
+                { value: 'daily', labelKey: 'notifications.digest.daily', descKey: 'notifications.digest.dailyDescription' },
+                { value: 'weekly', labelKey: 'notifications.digest.weekly', descKey: 'notifications.digest.weeklyDescription' }
               ].map((option) => (
                 <label
                   key={option.value}
@@ -800,10 +802,10 @@ export default function NotificationsSettings() {
                         ? 'text-blue-700 dark:text-blue-300'
                         : 'text-gray-900 dark:text-gray-100'
                     }`}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {option.description}
+                      {t(option.descKey)}
                     </span>
                   </div>
                   {preferences.digest_mode === option.value && (
@@ -823,9 +825,9 @@ export default function NotificationsSettings() {
                   <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">Upgrade to Premium</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.upgrade.upgradeToPremium')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Control email frequency with daily or weekly digests
+                    {t('notifications.upgrade.digestPremium')}
                   </p>
                 </div>
               </div>
@@ -833,7 +835,7 @@ export default function NotificationsSettings() {
                 href="/dashboard/upgrade"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
               >
-                Upgrade <ArrowRight className="h-4 w-4" />
+                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -845,10 +847,10 @@ export default function NotificationsSettings() {
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Send className="h-4 w-4 text-blue-500" />
-            Test Notifications
+            {t('notifications.test.title')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Send a test notification to verify your settings are working correctly
+            {t('notifications.test.description')}
           </p>
         </div>
         <div className="p-6">
@@ -860,9 +862,9 @@ export default function NotificationsSettings() {
                   <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">Test Email</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testEmail')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-                    {user?.email || 'No email found'}
+                    {user?.email || t('notifications.test.noEmailFound')}
                   </p>
                 </div>
               </div>
@@ -887,7 +889,7 @@ export default function NotificationsSettings() {
                   {testingEmail ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
-                    'Send Test'
+                    t('notifications.test.sendTest')
                   )}
                 </button>
               </div>
@@ -900,9 +902,9 @@ export default function NotificationsSettings() {
                   <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">Test SMS</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testSMS')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {userPhone ? `+1${userPhone}` : 'No phone found'}
+                    {userPhone ? `+1${userPhone}` : t('notifications.test.noPhoneFound')}
                   </p>
                 </div>
               </div>
@@ -928,13 +930,13 @@ export default function NotificationsSettings() {
                     {testingSMS ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Send Test'
+                      t('notifications.test.sendTest')
                     )}
                   </button>
                 ) : (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
                     <Lock className="h-3 w-3 mr-1" />
-                    Fleet
+                    {t('notifications.upgrade.fleet')}
                   </span>
                 )}
               </div>
@@ -944,9 +946,9 @@ export default function NotificationsSettings() {
           {/* Help text */}
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>Tip:</strong> If you don&apos;t receive test notifications, check your spam folder or verify your contact information in{' '}
+              <strong>{t('common:tip')}:</strong> {t('notifications.test.tip')}{' '}
               <Link href="/dashboard/settings/profile" className="underline hover:no-underline">
-                Profile Settings
+                {t('notifications.test.profileSettings')}
               </Link>.
             </p>
           </div>

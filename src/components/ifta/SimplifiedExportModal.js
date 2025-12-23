@@ -1,6 +1,7 @@
 // src/components/ifta/SimplifiedExportModal.js - Enhanced with PDF export and branding
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from 'react-i18next';
 import {
   Download,
   X,
@@ -23,6 +24,7 @@ export default function SimplifiedExportModal({
   selectedVehicle = "all", // Add selectedVehicle prop
   companyInfo = null // Add company info for branding
 }) {
+  const { t } = useTranslation('ifta');
   const [exportFormat, setExportFormat] = useState('pdf'); // Default to PDF for professional export
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
   const [error, setError] = useState(null);
@@ -208,7 +210,7 @@ export default function SimplifiedExportModal({
       }, 1500);
     } catch (error) {
       setExportState('error');
-      setError('Failed to export data. Please try again.');
+      setError(t('exportModal.failedToExport'));
     }
   };
 
@@ -262,7 +264,7 @@ export default function SimplifiedExportModal({
       }, 1500);
     } catch (error) {
       setExportState('error');
-      setError('Failed to export data. Please try again.');
+      setError(t('exportModal.failedToExport'));
     }
   };
 
@@ -576,7 +578,7 @@ export default function SimplifiedExportModal({
       }, 1500);
     } catch (error) {
       setExportState('error');
-      setError('Failed to generate PDF. Please try again.');
+      setError(t('exportModal.failedToPdf'));
     }
   };
 
@@ -594,7 +596,7 @@ export default function SimplifiedExportModal({
       });
     } catch (error) {
       setExportState('error');
-      setError('Failed to print. Please try again.');
+      setError(t('exportModal.failedToPrint'));
     }
   };
 
@@ -639,7 +641,7 @@ export default function SimplifiedExportModal({
               <FileDown size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Export IFTA Report
+              {t('exportModal.title')}
             </h2>
           </div>
           <button
@@ -657,27 +659,27 @@ export default function SimplifiedExportModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Mobile-optimized description */}
           <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
-            Choose how to export your IFTA report for {quarter}
-            {selectedVehicle !== "all" ? ` (${selectedVehicle})` : ""}.
+            {t('exportModal.chooseFormat', { quarter })}
+            {selectedVehicle !== "all" ? ` (${selectedVehicle})` : ""}
           </p>
 
           {/* Compact Summary info */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg mb-4 border border-blue-100 dark:border-blue-800">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-gray-600 dark:text-gray-400">Quarter:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('exportModal.quarterLabel')}</span>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{quarter}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">Vehicle:</span>
-                <p className="font-medium text-gray-900 dark:text-gray-100">{selectedVehicle === "all" ? "All" : selectedVehicle}</p>
+                <span className="text-gray-600 dark:text-gray-400">{t('exportModal.vehicleLabel')}</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{selectedVehicle === "all" ? t('exportModal.all') : selectedVehicle}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">Trips:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('exportModal.tripsLabel')}</span>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{filteredTrips.length}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400">Fuel Records:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('exportModal.fuelRecordsLabel')}</span>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{filteredFuelData.length}</p>
               </div>
             </div>
@@ -686,7 +688,7 @@ export default function SimplifiedExportModal({
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">
-                Select Export Format
+                {t('exportModal.selectFormat')}
               </label>
 
               {/* Mobile-optimized format selection */}
@@ -709,8 +711,8 @@ export default function SimplifiedExportModal({
                     <FileText size={24} className={exportFormat === 'pdf' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">PDF Report</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Professional format with branding</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{t('exportModal.pdfReport')}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{t('exportModal.pdfDescription')}</div>
                   </div>
                   {exportFormat === 'pdf' && (
                     <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
@@ -735,8 +737,8 @@ export default function SimplifiedExportModal({
                     <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">Spreadsheet (CSV)</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">For Excel or Google Sheets</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{t('exportModal.spreadsheetCsv')}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{t('exportModal.csvDescription')}</div>
                   </div>
                   {exportFormat === 'csv' && (
                     <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
@@ -761,8 +763,8 @@ export default function SimplifiedExportModal({
                     <File size={24} className={exportFormat === 'txt' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">Plain Text</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Simple format for email</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{t('exportModal.plainText')}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{t('exportModal.txtDescription')}</div>
                   </div>
                   {exportFormat === 'txt' && (
                     <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
@@ -787,8 +789,8 @@ export default function SimplifiedExportModal({
                     <Printer size={24} className={exportFormat === 'print' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">Print</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Send to printer</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{t('exportModal.print')}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{t('exportModal.printDescription')}</div>
                   </div>
                   {exportFormat === 'print' && (
                     <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
@@ -806,7 +808,7 @@ export default function SimplifiedExportModal({
             {exportState === 'success' && (
               <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md flex items-center border border-green-200 dark:border-green-800">
                 <Check size={16} className="text-green-500 dark:text-green-400 mr-2" />
-                <p className="text-sm text-green-700 dark:text-green-300">Export successful!</p>
+                <p className="text-sm text-green-700 dark:text-green-300">{t('exportModal.exportSuccessful')}</p>
               </div>
             )}
           </div>
@@ -820,7 +822,7 @@ export default function SimplifiedExportModal({
             className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 touch-manipulation transition-colors"
             disabled={exportState === 'loading'}
           >
-            Cancel
+            {t('exportModal.cancel')}
           </button>
           <button
             type="button"
@@ -831,17 +833,17 @@ export default function SimplifiedExportModal({
             {exportState === 'loading' ? (
               <>
                 <Download size={18} className="animate-bounce mr-2" />
-                Exporting...
+                {t('exportModal.exporting')}
               </>
             ) : exportState === 'success' ? (
               <>
                 <Check size={18} className="mr-2" />
-                Exported
+                {t('exportModal.exported')}
               </>
             ) : (
               <>
                 <FileDown size={18} className="mr-2" />
-                Export Report
+                {t('exportModal.exportReport')}
               </>
             )}
           </button>

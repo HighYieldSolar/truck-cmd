@@ -8,12 +8,11 @@ import {
   CheckCircle, Circle, ChevronRight, Truck, Users, FileText,
   DollarSign, User, X, Sparkles, ArrowRight, Trophy
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 const checklistItems = [
   {
     id: 'truck',
-    title: 'Add your first truck',
-    description: 'Track mileage and manage your fleet',
     icon: <Truck size={18} />,
     href: '/dashboard/fleet/trucks?addNew=true',
     table: 'vehicles',
@@ -21,8 +20,6 @@ const checklistItems = [
   },
   {
     id: 'customer',
-    title: 'Add a customer',
-    description: 'Get ready to invoice clients',
     icon: <Users size={18} />,
     href: '/dashboard/customers?addNew=true',
     table: 'customers',
@@ -30,8 +27,6 @@ const checklistItems = [
   },
   {
     id: 'load',
-    title: 'Create your first load',
-    description: 'Start tracking your hauls',
     icon: <FileText size={18} />,
     href: '/dashboard/dispatching?addNew=true',
     table: 'loads',
@@ -39,8 +34,6 @@ const checklistItems = [
   },
   {
     id: 'expense',
-    title: 'Log an expense',
-    description: 'Track your business costs',
     icon: <DollarSign size={18} />,
     href: '/dashboard/expenses?addNew=true',
     table: 'expenses',
@@ -48,8 +41,6 @@ const checklistItems = [
   },
   {
     id: 'profile',
-    title: 'Complete your profile',
-    description: 'Add phone & company name for invoices',
     icon: <User size={18} />,
     href: '/dashboard/settings/profile',
     checkFields: ['phone', 'company_name'], // Required for invoices
@@ -58,6 +49,7 @@ const checklistItems = [
 ];
 
 export default function SetupChecklist({ userId }) {
+  const { t } = useTranslation('onboarding');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
@@ -204,8 +196,8 @@ export default function SetupChecklist({ userId }) {
               <Trophy size={28} className="text-yellow-300" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Setup Complete!</h3>
-              <p className="text-green-100 mt-0.5">You're all set to run your trucking business with Truck Command</p>
+              <h3 className="text-xl font-bold">{t('setupChecklist.celebration.title')}</h3>
+              <p className="text-green-100 mt-0.5">{t('setupChecklist.celebration.message')}</p>
             </div>
           </div>
           <button
@@ -235,8 +227,8 @@ export default function SetupChecklist({ userId }) {
             <Sparkles size={20} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Get Started with Truck Command</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Complete these steps to set up your business</p>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('setupChecklist.title')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('setupChecklist.subtitle')}</p>
           </div>
         </div>
         <button
@@ -250,8 +242,8 @@ export default function SetupChecklist({ userId }) {
       {/* Progress Bar */}
       <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800/50">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-gray-600 dark:text-gray-400">Your progress</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{progressPercent}% complete</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('setupChecklist.yourProgress')}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{t('setupChecklist.percentComplete', { percent: progressPercent })}</span>
         </div>
         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <motion.div
@@ -304,15 +296,15 @@ export default function SetupChecklist({ userId }) {
                       ? 'text-gray-500 dark:text-gray-400 line-through'
                       : 'text-gray-900 dark:text-gray-100 font-medium'
                   }`}>
-                    {item.title}
+                    {t(`setupChecklist.items.${item.id}.title`)}
                   </span>
                   {isNext && (
                     <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                      Next
+                      {t('setupChecklist.next')}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t(`setupChecklist.items.${item.id}.description`)}</p>
               </div>
 
               {/* Action Icon */}
@@ -338,7 +330,7 @@ export default function SetupChecklist({ userId }) {
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
           >
             {nextStep.icon}
-            <span>{nextStep.title}</span>
+            <span>{t(`setupChecklist.items.${nextStep.id}.title`)}</span>
             <ArrowRight size={16} />
           </Link>
         </div>

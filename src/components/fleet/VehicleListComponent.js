@@ -7,6 +7,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
 const formatDate = (dateString) => {
@@ -20,6 +21,7 @@ const formatDate = (dateString) => {
 };
 
 export default function VehicleListComponent({ trucks, handleTruckSelect }) {
+  const { t } = useTranslation('fleet');
   // Status badge styling with dark mode
   const getStatusColors = (status) => {
     switch (status) {
@@ -41,13 +43,13 @@ export default function VehicleListComponent({ trucks, handleTruckSelect }) {
       <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
         <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
           <Truck size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-          Recent Vehicles
+          {t('vehicles.recentVehicles')}
         </h3>
         <Link
           href="/dashboard/fleet/trucks"
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
         >
-          View All
+          {t('vehicles.viewAll')}
           <ArrowRight size={14} className="ml-1" />
         </Link>
       </div>
@@ -57,14 +59,14 @@ export default function VehicleListComponent({ trucks, handleTruckSelect }) {
             <div className="mx-auto h-12 w-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4">
               <Truck size={24} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No vehicles found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">Add your first vehicle to start managing your fleet.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('emptyState.noVehiclesFound')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('emptyState.addFirstVehicle')}</p>
             <Link
               href="/dashboard/fleet/trucks"
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <Plus size={16} className="mr-2" />
-              Add Vehicle
+              {t('vehicles.addVehicle')}
             </Link>
           </div>
         ) : (
@@ -88,15 +90,15 @@ export default function VehicleListComponent({ trucks, handleTruckSelect }) {
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">VIN</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('vehicles.vin')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{truck.vin ? `...${truck.vin.slice(-6)}` : 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">License</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('vehicles.license')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{truck.license_plate || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Added</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('vehicles.added')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(truck.created_at)?.split(' ').slice(0, 2).join(' ')}</p>
                     </div>
                   </div>

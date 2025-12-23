@@ -8,8 +8,10 @@ import {
   HelpCircle, Mail, MessageSquare, Sparkles, ArrowRight, BarChart3,
   DollarSign, Shield
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function Navigation() {
+  const { t } = useTranslation('landing');
   const [menuOpen, setMenuOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -78,36 +80,36 @@ export default function Navigation() {
   // Features organized by category
   const featureCategories = [
     {
-      title: "Core Operations",
+      title: t('nav.coreOperations'),
       features: [
-        { icon: FileText, title: "Invoicing", href: "/features/invoicing", desc: "Professional invoices in seconds", color: "text-blue-600", bg: "bg-blue-50" },
-        { icon: Truck, title: "Dispatching", href: "/features/dispatching", desc: "Manage loads & assignments", color: "text-green-600", bg: "bg-green-50" },
-        { icon: Wallet, title: "Expense Tracking", href: "/features/expense-tracking", desc: "Monitor all expenses", color: "text-purple-600", bg: "bg-purple-50" },
+        { icon: FileText, title: t('nav.invoicing'), href: "/features/invoicing", desc: t('nav.invoicingDesc'), color: "text-blue-600", bg: "bg-blue-50" },
+        { icon: Truck, title: t('nav.dispatching'), href: "/features/dispatching", desc: t('nav.dispatchingDesc'), color: "text-green-600", bg: "bg-green-50" },
+        { icon: Wallet, title: t('nav.expenseTracking'), href: "/features/expense-tracking", desc: t('nav.expenseTrackingDesc'), color: "text-purple-600", bg: "bg-purple-50" },
       ]
     },
     {
-      title: "Fleet & Compliance",
+      title: t('nav.fleetCompliance'),
       features: [
-        { icon: Package, title: "Fleet Tracking", href: "/features/fleet-tracking", desc: "Track all your vehicles", color: "text-orange-600", bg: "bg-orange-50" },
-        { icon: CheckCircle, title: "Compliance", href: "/features/compliance", desc: "Stay DOT compliant", color: "text-emerald-600", bg: "bg-emerald-50" },
-        { icon: Users, title: "Customer CRM", href: "/features/customer-management", desc: "Manage client relationships", color: "text-pink-600", bg: "bg-pink-50" },
+        { icon: Package, title: t('nav.fleetTracking'), href: "/features/fleet-tracking", desc: t('nav.fleetTrackingDesc'), color: "text-orange-600", bg: "bg-orange-50" },
+        { icon: CheckCircle, title: t('nav.compliance'), href: "/features/compliance", desc: t('nav.complianceDesc'), color: "text-emerald-600", bg: "bg-emerald-50" },
+        { icon: Users, title: t('nav.customerCrm'), href: "/features/customer-management", desc: t('nav.customerCrmDesc'), color: "text-pink-600", bg: "bg-pink-50" },
       ]
     },
     {
-      title: "Fuel & Taxes",
+      title: t('nav.fuelTaxes'),
       features: [
-        { icon: Calculator, title: "IFTA Calculator", href: "/features/ifta-calculator", desc: "Simplified tax filings", color: "text-indigo-600", bg: "bg-indigo-50", badge: "Popular" },
-        { icon: Fuel, title: "Fuel Tracker", href: "/features/fuel-tracker", desc: "Track fuel consumption", color: "text-amber-600", bg: "bg-amber-50" },
-        { icon: MapPin, title: "State Mileage", href: "/features/state-mileage", desc: "Track miles by state", color: "text-cyan-600", bg: "bg-cyan-50" },
+        { icon: Calculator, title: t('nav.iftaCalculator'), href: "/features/ifta-calculator", desc: t('nav.iftaCalculatorDesc'), color: "text-indigo-600", bg: "bg-indigo-50", badge: t('pricing.popular') },
+        { icon: Fuel, title: t('nav.fuelTracker'), href: "/features/fuel-tracker", desc: t('nav.fuelTrackerDesc'), color: "text-amber-600", bg: "bg-amber-50" },
+        { icon: MapPin, title: t('nav.stateMileage'), href: "/features/state-mileage", desc: t('nav.stateMileageDesc'), color: "text-cyan-600", bg: "bg-cyan-50" },
       ]
     }
   ];
 
   // Support menu items
   const supports = [
-    { icon: HelpCircle, title: "Help Center", href: "/faq", desc: "Find answers fast", color: "text-blue-600", bg: "bg-blue-50" },
-    { icon: Mail, title: "Contact Us", href: "/contact", desc: "Get in touch", color: "text-green-600", bg: "bg-green-50" },
-    { icon: MessageSquare, title: "Feedback", href: "/feedback", desc: "Share your thoughts", color: "text-purple-600", bg: "bg-purple-50" }
+    { icon: HelpCircle, title: t('nav.helpCenter'), href: "/faq", desc: t('nav.helpCenterDesc'), color: "text-blue-600", bg: "bg-blue-50" },
+    { icon: Mail, title: t('nav.contactUs'), href: "/contact", desc: t('nav.contactUsDesc'), color: "text-green-600", bg: "bg-green-50" },
+    { icon: MessageSquare, title: t('nav.feedback'), href: "/feedback", desc: t('nav.feedbackDesc'), color: "text-purple-600", bg: "bg-purple-50" }
   ];
 
   // Handle hover with delay for better UX
@@ -179,7 +181,7 @@ export default function Navigation() {
                     aria-expanded={featuresOpen}
                     aria-haspopup="true"
                   >
-                    <span>Features</span>
+                    <span>{t('nav.features')}</span>
                     <ChevronDown
                       size={16}
                       className={`ml-1 transition-transform duration-200 ${featuresOpen ? 'rotate-180' : ''}`}
@@ -199,14 +201,14 @@ export default function Navigation() {
                       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h3 className="text-white font-semibold">Powerful Features</h3>
-                            <p className="text-blue-100 text-sm">Everything you need to run your trucking business</p>
+                            <h3 className="text-white font-semibold">{t('nav.powerfulFeatures')}</h3>
+                            <p className="text-blue-100 text-sm">{t('nav.everythingYouNeed')}</p>
                           </div>
                           <Link
                             href="/features"
                             className="flex items-center text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors"
                           >
-                            View All
+                            {t('nav.viewAll')}
                             <ArrowRight size={14} className="ml-1" />
                           </Link>
                         </div>
@@ -254,13 +256,13 @@ export default function Navigation() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center text-sm text-gray-600">
                             <Sparkles size={16} className="text-yellow-500 mr-2" />
-                            <span>New features added regularly</span>
+                            <span>{t('nav.newFeaturesAdded')}</span>
                           </div>
                           <Link
                             href="/signup"
                             className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                           >
-                            Start Free Trial
+                            {t('nav.startFreeTrial')}
                             <ChevronRight size={16} className="ml-1" />
                           </Link>
                         </div>
@@ -274,7 +276,7 @@ export default function Navigation() {
                   href="/pricing"
                   className="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200"
                 >
-                  Pricing
+                  {t('nav.pricing')}
                 </Link>
 
                 {/* Support Dropdown */}
@@ -293,7 +295,7 @@ export default function Navigation() {
                     aria-expanded={supportOpen}
                     aria-haspopup="true"
                   >
-                    <span>Support</span>
+                    <span>{t('nav.support')}</span>
                     <ChevronDown
                       size={16}
                       className={`ml-1 transition-transform duration-200 ${supportOpen ? 'rotate-180' : ''}`}
@@ -343,13 +345,13 @@ export default function Navigation() {
                     href="/login"
                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                   >
-                    Log in
+                    {t('nav.login')}
                   </Link>
                   <Link
                     href="/signup"
                     className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center"
                   >
-                    Start Free Trial
+                    {t('nav.startFreeTrial')}
                     <ArrowRight size={16} className="ml-1.5" />
                   </Link>
                 </div>
@@ -363,13 +365,13 @@ export default function Navigation() {
                   href="/login"
                   className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  Log in
+                  {t('nav.login')}
                 </Link>
                 <Link
                   href="/signup"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                 >
-                  Start Free
+                  {t('nav.startFree')}
                 </Link>
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
@@ -436,7 +438,7 @@ export default function Navigation() {
                   >
                     <div className="flex items-center">
                       <BarChart3 size={20} className={featuresOpen ? 'text-blue-600' : 'text-gray-400'} />
-                      <span className="ml-3 font-medium">Features</span>
+                      <span className="ml-3 font-medium">{t('nav.features')}</span>
                     </div>
                     <ChevronDown
                       size={20}
@@ -482,7 +484,7 @@ export default function Navigation() {
                   onClick={() => setMenuOpen(false)}
                 >
                   <DollarSign size={20} className="text-gray-400" />
-                  <span className="ml-3">Pricing</span>
+                  <span className="ml-3">{t('nav.pricing')}</span>
                   <ChevronRight size={18} className="ml-auto text-gray-300" />
                 </Link>
 
@@ -496,7 +498,7 @@ export default function Navigation() {
                   >
                     <div className="flex items-center">
                       <HelpCircle size={20} className={supportOpen ? 'text-blue-600' : 'text-gray-400'} />
-                      <span className="ml-3 font-medium">Support</span>
+                      <span className="ml-3 font-medium">{t('nav.support')}</span>
                     </div>
                     <ChevronDown
                       size={20}
@@ -534,7 +536,7 @@ export default function Navigation() {
                   className="flex items-center justify-center w-full px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-xl font-medium transition-colors"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Start Your Free Trial
+                  {t('nav.startYourFreeTrial')}
                   <ArrowRight size={18} className="ml-2" />
                 </Link>
                 <Link
@@ -542,11 +544,11 @@ export default function Navigation() {
                   className="flex items-center justify-center w-full px-4 py-3 text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl font-medium transition-colors"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Log in to your account
+                  {t('nav.loginToAccount')}
                 </Link>
                 <div className="flex items-center justify-center pt-2 text-xs text-gray-500">
                   <Shield size={12} className="mr-1.5 text-green-500" />
-                  7-day free trial • No credit card required
+                  {t('nav.freeTrialNoCreditCard')}
                 </div>
               </div>
             </div>

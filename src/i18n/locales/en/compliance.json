@@ -1,0 +1,365 @@
+{
+  "title": "Compliance",
+  "subtitle": "Manage your compliance documents and certifications",
+  "page": {
+    "title": "Compliance Management",
+    "subtitle": "Track and manage all your regulatory compliance documents",
+    "buttons": {
+      "addRecord": "Add Record",
+      "exportReport": "Export Report",
+      "addNew": "Add New"
+    },
+    "upcomingExpirations": {
+      "title": "Upcoming Expirations",
+      "noExpiring": "No documents expiring soon",
+      "viewAll": "View all expiring items",
+      "days": "{{count}} days"
+    },
+    "categories": {
+      "title": "Compliance Categories",
+      "noItems": "No compliance items found",
+      "addRecord": "Add compliance record"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by title, entity, or document number...",
+      "allStatuses": "All Statuses",
+      "allTypes": "All Types",
+      "allEntities": "All Entities",
+      "vehicles": "Vehicles",
+      "drivers": "Drivers",
+      "company": "Company",
+      "other": "Other"
+    },
+    "table": {
+      "title": "Compliance Records",
+      "complianceItem": "Compliance Item",
+      "entity": "Entity",
+      "issueDate": "Issue Date",
+      "expiration": "Expiration",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "emptyState": {
+      "noRecords": "No compliance records",
+      "startTracking": "Start tracking your compliance documents and stay on top of expirations.",
+      "addRecord": "Add Compliance Record",
+      "noMatchingFilters": "No records match your current filters",
+      "resetFilters": "Reset Filters"
+    },
+    "mobile": {
+      "entity": "Entity",
+      "issue": "Issue",
+      "expires": "Expires"
+    },
+    "upgrade": {
+      "title": "Compliance Management",
+      "subtitle": "Upgrade to Premium to access compliance tracking",
+      "featuresTitle": "What you'll get with Compliance Tracking:",
+      "features": {
+        "documentTracking": "Track document expirations for licenses, registrations, and permits",
+        "alerts": "Get alerts before documents expire to stay DOT compliant",
+        "storage": "Store digital copies of all compliance documents",
+        "fleetTracking": "Track driver medical cards, CDLs, and vehicle inspections",
+        "export": "Export compliance reports for audits"
+      }
+    },
+    "tutorial": {
+      "title": "Compliance Management",
+      "description": "Track and manage all your regulatory compliance documents",
+      "features": {
+        "documentTracking": {
+          "title": "Document Tracking",
+          "description": "Store and track licenses, permits, insurance, and other compliance documents"
+        },
+        "expirationAlerts": {
+          "title": "Expiration Alerts",
+          "description": "Get notified before documents expire to stay compliant"
+        },
+        "documentUpload": {
+          "title": "Document Upload",
+          "description": "Upload copies of documents for easy access and backup"
+        },
+        "fleetCoverage": {
+          "title": "Fleet Coverage",
+          "description": "Track compliance for drivers, trucks, and company-wide documents"
+        }
+      },
+      "tips": [
+        "Add all document expiration dates to get automatic reminders",
+        "Upload scanned copies of documents for quick reference",
+        "Use the 'Expiring Soon' filter to prioritize renewals",
+        "Keep company-wide documents like authority and insurance updated"
+      ]
+    },
+    "export": {
+      "title": "Compliance Report",
+      "description": "Export your compliance records and expiration tracking data",
+      "summaryLabels": {
+        "totalRecords": "Total Records",
+        "active": "Active",
+        "expiringSoon": "Expiring Soon",
+        "expired": "Expired",
+        "pending": "Pending",
+        "vehicleRecords": "Vehicle Records",
+        "driverRecords": "Driver Records",
+        "companyRecords": "Company Records"
+      },
+      "pdfTitle": "Compliance Report",
+      "pdfSubtitle": "Document Expiration & Compliance Tracking"
+    }
+  },
+  "addDocument": "Add Document",
+  "editDocument": "Edit Document",
+  "deleteDocument": "Delete Document",
+  "viewDocument": "View Document",
+  "uploadDocument": "Upload Document",
+  "documents": {
+    "title": "Documents",
+    "all": "All Documents",
+    "active": "Active",
+    "expiringSoon": "Expiring Soon",
+    "expired": "Expired"
+  },
+  "types": {
+    "title": "Document Types",
+    "complianceTypes": "Compliance Types",
+    "insurance": "Insurance",
+    "registration": "Registration",
+    "license": "License",
+    "cdl": "CDL",
+    "medicalCard": "Medical Card",
+    "inspection": "Inspection",
+    "dotInspection": "DOT Inspection",
+    "permit": "Permit",
+    "ifta": "IFTA",
+    "irp": "IRP",
+    "hazmat": "Hazmat Certification",
+    "twic": "TWIC Card",
+    "passport": "Passport",
+    "other": "Other"
+  },
+  "fields": {
+    "documentName": "Document Name",
+    "documentType": "Document Type",
+    "entity": "Entity",
+    "entityType": "Entity Type",
+    "driver": "Driver",
+    "truck": "Truck",
+    "issueDate": "Issue Date",
+    "expirationDate": "Expiration Date",
+    "alertDays": "Alert Days Before Expiring",
+    "notes": "Notes",
+    "status": "Status",
+    "file": "File",
+    "documentNumber": "Document Number",
+    "title": "Title",
+    "complianceType": "Compliance Type",
+    "entityName": "Entity Name",
+    "issuingAuthority": "Issuing Authority",
+    "documentFile": "Document File",
+    "renewalFrequency": "Renewal Frequency",
+    "createdOn": "Created On"
+  },
+  "entityTypes": {
+    "driver": "Driver",
+    "truck": "Truck",
+    "vehicle": "Vehicle",
+    "company": "Company",
+    "trailer": "Trailer",
+    "other": "Other",
+    "unknown": "Unknown"
+  },
+  "status": {
+    "active": "Active",
+    "expiringSoon": "Expiring Soon",
+    "expired": "Expired",
+    "pending": "Pending"
+  },
+  "placeholders": {
+    "enterDocumentName": "Enter document name",
+    "selectDocumentType": "Select document type",
+    "selectEntity": "Select entity",
+    "enterDocumentNumber": "Enter document number",
+    "addNotes": "Add any notes...",
+    "searchRecords": "Search records...",
+    "titleExample": "e.g. Vehicle Registration for Truck #12",
+    "entityNameExample": "e.g. Truck #12 or John Smith",
+    "documentNumberExample": "e.g. License or Permit Number",
+    "issuingAuthorityExample": "e.g. DMV or DOT",
+    "notesPlaceholder": "Any additional notes about this compliance record..."
+  },
+  "filters": {
+    "title": "Filters",
+    "byType": "Filter by Type",
+    "byStatus": "Filter by Status",
+    "byEntity": "Filter by Entity",
+    "clearFilters": "Clear Filters",
+    "allTypes": "All Types",
+    "allStatuses": "All Statuses",
+    "allEntities": "All Entities",
+    "status": "Status",
+    "type": "Type",
+    "entity": "Entity",
+    "search": "Search",
+    "vehicles": "Vehicles",
+    "drivers": "Drivers"
+  },
+  "expiration": {
+    "title": "Upcoming Expirations",
+    "expiresIn": "Expires in {{days}} days",
+    "expiredDaysAgo": "Expired {{days}} days ago",
+    "expiringThisWeek": "Expiring This Week",
+    "expiringThisMonth": "Expiring This Month",
+    "noExpiringSoon": "No documents expiring soon",
+    "noUpcoming": "No upcoming expirations",
+    "daysLeft": "{{days}} days left",
+    "oneDayLeft": "1 day left"
+  },
+  "stats": {
+    "title": "Compliance Summary",
+    "totalDocuments": "Total Documents",
+    "activeDocuments": "Active",
+    "expiringSoon": "Expiring Soon",
+    "expired": "Expired",
+    "complianceRate": "Compliance Rate",
+    "total": "Total",
+    "pending": "Pending"
+  },
+  "statsDescriptions": {
+    "total": "All compliance documents",
+    "active": "Valid documents",
+    "expiringSoon": "Due in 30 days or less",
+    "expired": "Needs immediate attention",
+    "pending": "Awaiting processing"
+  },
+  "alerts": {
+    "title": "Compliance Alerts",
+    "documentExpiring": "{{document}} is expiring soon",
+    "documentExpired": "{{document}} has expired",
+    "renewNow": "Renew Now",
+    "viewAll": "View All Alerts"
+  },
+  "emptyState": {
+    "title": "No compliance documents",
+    "description": "Upload your first compliance document to start tracking",
+    "noDocuments": "No documents found",
+    "noExpiring": "No expiring documents",
+    "noRecords": "No compliance records found",
+    "startTracking": "Start tracking your compliance documents",
+    "noMatchingRecords": "No matching records found",
+    "tryAdjustingFilters": "Try adjusting your filters",
+    "noComplianceItems": "No compliance items found"
+  },
+  "messages": {
+    "documentCreated": "Document added successfully",
+    "documentUpdated": "Document updated successfully",
+    "documentDeleted": "Document deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this document?",
+    "failedToCreate": "Failed to add document",
+    "failedToUpdate": "Failed to update document",
+    "failedToDelete": "Failed to delete document",
+    "fileUploaded": "File uploaded successfully",
+    "restoredProgress": "We've restored your previous progress. You can continue where you left off."
+  },
+  "table": {
+    "document": "Document",
+    "type": "Type",
+    "entity": "Entity",
+    "expiration": "Expiration",
+    "status": "Status",
+    "actions": "Actions",
+    "complianceRecords": "Compliance Records",
+    "complianceItem": "Compliance Item",
+    "issueDate": "Issue Date",
+    "expirationDate": "Expiration Date",
+    "showingRecords": "Showing {{filtered}} of {{total}} records",
+    "addNew": "Add New",
+    "addComplianceRecord": "Add Compliance Record",
+    "resetFilters": "Reset Filters",
+    "notAvailable": "N/A"
+  },
+  "itemCount": {
+    "item": "item",
+    "items": "items"
+  },
+  "viewModal": {
+    "title": "Compliance Details",
+    "complianceInformation": "Compliance Information",
+    "entityDetails": "Entity Details",
+    "notes": "Notes",
+    "document": "Document",
+    "documentPreview": "Document Preview",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "viewPdf": "View PDF",
+    "viewDocument": "View Document",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "close": "Close",
+    "currentDocumentOnFile": "Current document on file",
+    "selectedFile": "Selected file"
+  },
+  "deleteModal": {
+    "title": "Delete Confirmation",
+    "deleteRecord": "Delete Compliance Record",
+    "confirmText": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+    "deleting": "Deleting..."
+  },
+  "form": {
+    "createTitle": "Create New Compliance Record",
+    "editTitle": "Edit Compliance Record",
+    "steps": {
+      "basicInfo": "Basic Info",
+      "documentDetails": "Document Details"
+    },
+    "sections": {
+      "complianceInformation": "Compliance Information",
+      "documentDetails": "Document Details",
+      "reviewInformation": "Review Compliance Information"
+    },
+    "labels": {
+      "title": "Title",
+      "titleRequired": "Title",
+      "complianceType": "Compliance Type",
+      "status": "Status",
+      "entityType": "Entity Type",
+      "entityName": "Entity Name",
+      "entityNameRequired": "Entity Name",
+      "documentNumber": "Document Number",
+      "issuingAuthority": "Issuing Authority",
+      "issueDate": "Issue Date",
+      "expirationDate": "Expiration Date",
+      "expirationDateRequired": "Expiration Date",
+      "documentFile": "Document File",
+      "notes": "Notes",
+      "selectedFile": "Selected file",
+      "currentDocumentOnFile": "Current document on file"
+    },
+    "review": {
+      "title": "Title",
+      "type": "Type",
+      "entity": "Entity",
+      "status": "Status",
+      "expiration": "Expiration",
+      "documentNumber": "Document #",
+      "notSet": "Not set",
+      "notProvided": "Not provided"
+    },
+    "validation": {
+      "titleRequired": "Title is required",
+      "entityNameRequired": "Entity name is required",
+      "expirationRequired": "Expiration date is required"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "previous": "Previous",
+      "next": "Next",
+      "creating": "Creating...",
+      "updating": "Updating...",
+      "createRecord": "Create Record",
+      "updateRecord": "Update Record",
+      "clear": "Clear"
+    },
+    "complianceDocument": "Compliance document"
+  }
+}

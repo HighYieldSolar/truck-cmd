@@ -20,12 +20,13 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 // Payment Form Component
-function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
+function PaymentForm({ onSuccess, onError, onCancel, userEmail, t }) {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -51,7 +52,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
         const { complete: addressComplete, value: addressValue } = await addressElement.getValue();
 
         if (!addressComplete) {
-          setError("Please complete the billing address.");
+          setError(t('updatePayment.pleaseCompleteBillingAddress'));
           setProcessing(false);
           return;
         }
@@ -88,7 +89,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
         onSuccess(setupIntent.payment_method);
       }
     } catch (err) {
-      const userMessage = 'Failed to update payment method. Please try again or contact support.';
+      const userMessage = t('updatePayment.failedToUpdate');
       setError(userMessage);
       onError(userMessage);
     } finally {
@@ -101,7 +102,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
       {/* Email for Link integration */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Email
+          {t('updatePayment.email')}
         </label>
         <LinkAuthenticationElement
           options={{
@@ -116,7 +117,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
       {/* Billing Address */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Billing address
+          {t('updatePayment.billingAddress')}
         </label>
         <AddressElement
           options={{
@@ -137,7 +138,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
       {/* Payment Method */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Payment method
+          {t('updatePayment.paymentMethod')}
         </label>
         <PaymentElement
           options={{
@@ -168,7 +169,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
           disabled={processing}
           className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors disabled:opacity-50 text-sm"
         >
-          Cancel
+          {t('updatePayment.cancel')}
         </button>
         <button
           type="submit"
@@ -178,12 +179,12 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
           {processing ? (
             <>
               <RefreshCw size={16} className="animate-spin" />
-              Updating...
+              {t('updatePayment.updating')}
             </>
           ) : (
             <>
               <Lock size={14} />
-              Update Payment
+              {t('updatePayment.updatePayment')}
             </>
           )}
         </button>
@@ -191,7 +192,7 @@ function PaymentForm({ onSuccess, onError, onCancel, userEmail }) {
 
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
         <Lock size={12} />
-        <span>Secured by Stripe</span>
+        <span>{t('updatePayment.securedByStripe')}</span>
       </div>
     </form>
   );
@@ -205,6 +206,7 @@ export default function UpdatePaymentModal({
   currentPaymentMethod,
   onUpdate
 }) {
+  const { t } = useTranslation('billing');
   const [clientSecret, setClientSecret] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -250,7 +252,7 @@ export default function UpdatePaymentModal({
       // Get the current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setError("Please sign in again to update your payment method");
+        setError(t('updatePayment.pleaseSignIn'));
         setLoading(false);
         return;
       }
@@ -270,10 +272,10 @@ export default function UpdatePaymentModal({
         setClientSecret(data.clientSecret);
         setCustomerEmail(data.customerEmail || null);
       } else {
-        setError(data.error || "Failed to initialize payment form");
+        setError(data.error || t('updatePayment.failedToInitialize'));
       }
     } catch (err) {
-      setError("Failed to connect to payment service");
+      setError(t('updatePayment.failedToConnect'));
     } finally {
       setLoading(false);
     }
@@ -285,7 +287,7 @@ export default function UpdatePaymentModal({
       // Get the current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setError("Please sign in again to update your payment method");
+        setError(t('updatePayment.pleaseSignIn'));
         return;
       }
 
@@ -310,10 +312,10 @@ export default function UpdatePaymentModal({
           onClose();
         }, 1500);
       } else {
-        setError(data.error || "Failed to update payment method");
+        setError(data.error || t('updatePayment.failedToUpdate'));
       }
     } catch (err) {
-      setError("Failed to save payment method");
+      setError(t('updatePayment.failedToSave'));
     }
   };
 
@@ -373,10 +375,10 @@ export default function UpdatePaymentModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Update Payment Method
+                {t('updatePayment.title')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Enter your new payment details
+                {t('updatePayment.subtitle')}
               </p>
             </div>
           </div>
@@ -394,7 +396,7 @@ export default function UpdatePaymentModal({
           {/* Current Payment Method */}
           {currentPaymentMethod && !success && (
             <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Current payment method</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('updatePayment.currentPaymentMethod')}</p>
               <div className="flex items-center gap-3">
                 {currentPaymentMethod.type === 'link' ? (
                   <>
@@ -402,7 +404,7 @@ export default function UpdatePaymentModal({
                       <LinkIcon size={14} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">Link</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{t('updatePayment.link')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {currentPaymentMethod.email}
                       </p>
@@ -415,11 +417,11 @@ export default function UpdatePaymentModal({
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
-                        {currentPaymentMethod.card?.brand || 'Card'} •••• {currentPaymentMethod.card?.last4}
+                        {currentPaymentMethod.card?.brand || t('updatePayment.card')} •••• {currentPaymentMethod.card?.last4}
                       </p>
                       {currentPaymentMethod.card?.exp_month && (
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Expires {currentPaymentMethod.card.exp_month}/{currentPaymentMethod.card.exp_year}
+                          {t('updatePayment.expiresDate', { month: currentPaymentMethod.card.exp_month, year: currentPaymentMethod.card.exp_year })}
                         </p>
                       )}
                     </div>
@@ -436,10 +438,10 @@ export default function UpdatePaymentModal({
                 <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Payment Method Updated
+                {t('updatePayment.successTitle')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Your new payment method has been saved successfully.
+                {t('updatePayment.successMessage')}
               </p>
             </div>
           )}
@@ -448,7 +450,7 @@ export default function UpdatePaymentModal({
           {loading && !success && (
             <div className="flex flex-col items-center justify-center py-12">
               <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Loading payment form...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('updatePayment.loadingPaymentForm')}</p>
             </div>
           )}
 
@@ -459,14 +461,14 @@ export default function UpdatePaymentModal({
                 <AlertCircle size={32} className="text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Something went wrong
+                {t('updatePayment.somethingWentWrong')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
               <button
                 onClick={fetchSetupIntent}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
-                Try Again
+                {t('updatePayment.tryAgain')}
               </button>
             </div>
           )}
@@ -486,6 +488,7 @@ export default function UpdatePaymentModal({
                 onError={handleError}
                 onCancel={onClose}
                 userEmail={customerEmail || currentPaymentMethod?.email}
+                t={t}
               />
             </Elements>
           )}

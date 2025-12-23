@@ -1,12 +1,15 @@
 // src/components/fuel/FuelEntryItem.js
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Fuel, MapPin, Calendar, DollarSign, Truck, FileImage, Edit, Trash2, CheckCircle, ExternalLink, Calculator } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
+  const { t } = useTranslation('fuel');
   // Add state for IFTA link status
   const [iftaLinkHovered, setIftaLinkHovered] = useState(false);
   const [vehicleInfo, setVehicleInfo] = useState(null);
@@ -149,22 +152,22 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
               className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
             >
               <FileImage size={12} className="mr-1" />
-              View
+              {t('entryItem.viewReceipt')}
             </button>
           ) : (
             <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md">
               <FileImage size={12} className="mr-1 opacity-50" />
-              N/A
+              {t('entryItem.notAvailable')}
             </span>
           )}
           {fuelEntry.expense_id ? (
             <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 rounded-full">
               <CheckCircle size={10} className="mr-0.5" />
-              Synced
+              {t('entryItem.synced')}
             </span>
           ) : (
             <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/40 rounded-full">
-              Pending
+              {t('entryItem.pending')}
             </span>
           )}
         </div>

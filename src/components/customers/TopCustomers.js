@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendingUp, Building2, MapPin, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Top Customers Sidebar Widget
@@ -11,6 +12,8 @@ export default function TopCustomers({
   isLoading = false,
   onViewCustomer
 }) {
+  const { t } = useTranslation('customers');
+
   // Format date to relative time
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -18,10 +21,10 @@ export default function TopCustomers({
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays === 0) return t('topCustomers.today');
+    if (diffDays === 1) return t('topCustomers.yesterday');
+    if (diffDays < 7) return t('topCustomers.daysAgo', { days: diffDays });
+    if (diffDays < 30) return t('topCustomers.weeksAgo', { weeks: Math.floor(diffDays / 7) });
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -33,7 +36,7 @@ export default function TopCustomers({
             <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3">
               <TrendingUp size={16} className="text-blue-600 dark:text-blue-400" />
             </div>
-            Recent Customers
+            {t('topCustomers.recentCustomers')}
           </h3>
         </div>
         <div className="p-4">
@@ -53,12 +56,12 @@ export default function TopCustomers({
             <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3">
               <TrendingUp size={16} className="text-blue-600 dark:text-blue-400" />
             </div>
-            Recent Customers
+            {t('topCustomers.recentCustomers')}
           </h3>
         </div>
         <div className="p-6 text-center">
           <Building2 size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No customers yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('topCustomers.noCustomersYet')}</p>
         </div>
       </div>
     );
@@ -71,7 +74,7 @@ export default function TopCustomers({
           <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mr-3">
             <TrendingUp size={16} className="text-blue-600 dark:text-blue-400" />
           </div>
-          Recent Customers
+          {t('topCustomers.recentCustomers')}
         </h3>
       </div>
       <div className="divide-y divide-gray-200 dark:divide-gray-700">

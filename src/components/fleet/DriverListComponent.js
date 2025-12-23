@@ -7,6 +7,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
 const formatDate = (dateString) => {
@@ -20,6 +21,7 @@ const formatDate = (dateString) => {
 };
 
 export default function DriverListComponent({ drivers, handleDriverSelect }) {
+  const { t } = useTranslation('fleet');
   // Status badge styling with dark mode
   const getStatusColors = (status) => {
     switch (status) {
@@ -43,11 +45,11 @@ export default function DriverListComponent({ drivers, handleDriverSelect }) {
     const daysUntilExpiry = Math.floor((expiry - now) / (1000 * 60 * 60 * 24));
 
     if (daysUntilExpiry < 0) {
-      return { text: 'Expired', class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
+      return { text: t('drivers.expired'), class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' };
     } else if (daysUntilExpiry < 30) {
-      return { text: `${daysUntilExpiry} days`, class: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' };
+      return { text: t('drivers.daysUntilExpiry', { days: daysUntilExpiry }), class: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' };
     } else {
-      return { text: 'Valid', class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
+      return { text: t('drivers.valid'), class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' };
     }
   };
 
@@ -56,13 +58,13 @@ export default function DriverListComponent({ drivers, handleDriverSelect }) {
       <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
         <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
           <Users size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-          Recent Drivers
+          {t('drivers.recentDrivers')}
         </h3>
         <Link
           href="/dashboard/fleet/drivers"
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
         >
-          View All
+          {t('drivers.viewAll')}
           <ArrowRight size={14} className="ml-1" />
         </Link>
       </div>
@@ -72,14 +74,14 @@ export default function DriverListComponent({ drivers, handleDriverSelect }) {
             <div className="mx-auto h-12 w-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4">
               <Users size={24} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No drivers found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">Add your first driver to start managing your team.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('emptyState.noDrivers')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('drivers.addFirstDriverHint')}</p>
             <Link
               href="/dashboard/fleet/drivers"
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <Plus size={16} className="mr-2" />
-              Add Driver
+              {t('drivers.addDriver')}
             </Link>
           </div>
         ) : (
@@ -101,15 +103,15 @@ export default function DriverListComponent({ drivers, handleDriverSelect }) {
                   </div>
                   <div className="flex items-center text-gray-500 dark:text-gray-400 mb-3">
                     <Users size={14} className="mr-2" />
-                    <span className="text-sm">{driver.position || 'Driver'}</span>
+                    <span className="text-sm">{driver.position || t('drivers.defaultPosition')}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Phone</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('drivers.phone')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{driver.phone || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">License</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('drivers.license')}</p>
                       <div className="flex items-center">
                         {licenseStatus ? (
                           <span className={`px-1.5 py-0.5 text-xs rounded-full ${licenseStatus.class}`}>
@@ -121,7 +123,7 @@ export default function DriverListComponent({ drivers, handleDriverSelect }) {
                       </div>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Hire Date</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('drivers.hireDate')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(driver.hire_date)?.split(' ').slice(0, 2).join(' ') || 'N/A'}</p>
                     </div>
                   </div>

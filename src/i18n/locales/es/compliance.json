@@ -1,0 +1,365 @@
+{
+  "title": "Cumplimiento",
+  "subtitle": "Administre sus documentos y certificaciones de cumplimiento",
+  "page": {
+    "title": "Gestión de Cumplimiento",
+    "subtitle": "Rastree y administre todos sus documentos de cumplimiento regulatorio",
+    "buttons": {
+      "addRecord": "Agregar Registro",
+      "exportReport": "Exportar Reporte",
+      "addNew": "Agregar Nuevo"
+    },
+    "upcomingExpirations": {
+      "title": "Próximos Vencimientos",
+      "noExpiring": "No hay documentos por vencer",
+      "viewAll": "Ver todos los elementos por vencer",
+      "days": "{{count}} días"
+    },
+    "categories": {
+      "title": "Categorías de Cumplimiento",
+      "noItems": "No se encontraron elementos de cumplimiento",
+      "addRecord": "Agregar registro de cumplimiento"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por título, entidad o número de documento...",
+      "allStatuses": "Todos los Estados",
+      "allTypes": "Todos los Tipos",
+      "allEntities": "Todas las Entidades",
+      "vehicles": "Vehículos",
+      "drivers": "Conductores",
+      "company": "Empresa",
+      "other": "Otro"
+    },
+    "table": {
+      "title": "Registros de Cumplimiento",
+      "complianceItem": "Elemento de Cumplimiento",
+      "entity": "Entidad",
+      "issueDate": "Fecha de Emisión",
+      "expiration": "Vencimiento",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "emptyState": {
+      "noRecords": "No hay registros de cumplimiento",
+      "startTracking": "Comience a rastrear sus documentos de cumplimiento y manténgase al día con los vencimientos.",
+      "addRecord": "Agregar Registro de Cumplimiento",
+      "noMatchingFilters": "Ningún registro coincide con sus filtros actuales",
+      "resetFilters": "Restablecer Filtros"
+    },
+    "mobile": {
+      "entity": "Entidad",
+      "issue": "Emisión",
+      "expires": "Vence"
+    },
+    "upgrade": {
+      "title": "Gestión de Cumplimiento",
+      "subtitle": "Actualice a Premium para acceder al seguimiento de cumplimiento",
+      "featuresTitle": "Lo que obtendrá con el Seguimiento de Cumplimiento:",
+      "features": {
+        "documentTracking": "Rastree vencimientos de documentos para licencias, registros y permisos",
+        "alerts": "Reciba alertas antes de que los documentos venzan para cumplir con DOT",
+        "storage": "Almacene copias digitales de todos los documentos de cumplimiento",
+        "fleetTracking": "Rastree tarjetas médicas de conductores, CDLs e inspecciones de vehículos",
+        "export": "Exporte reportes de cumplimiento para auditorías"
+      }
+    },
+    "tutorial": {
+      "title": "Gestión de Cumplimiento",
+      "description": "Rastree y administre todos sus documentos de cumplimiento regulatorio",
+      "features": {
+        "documentTracking": {
+          "title": "Seguimiento de Documentos",
+          "description": "Almacene y rastree licencias, permisos, seguros y otros documentos de cumplimiento"
+        },
+        "expirationAlerts": {
+          "title": "Alertas de Vencimiento",
+          "description": "Reciba notificaciones antes de que los documentos venzan para mantenerse en cumplimiento"
+        },
+        "documentUpload": {
+          "title": "Carga de Documentos",
+          "description": "Suba copias de documentos para fácil acceso y respaldo"
+        },
+        "fleetCoverage": {
+          "title": "Cobertura de Flota",
+          "description": "Rastree cumplimiento para conductores, camiones y documentos de toda la empresa"
+        }
+      },
+      "tips": [
+        "Agregue todas las fechas de vencimiento de documentos para recibir recordatorios automáticos",
+        "Suba copias escaneadas de documentos para referencia rápida",
+        "Use el filtro 'Por Vencer' para priorizar renovaciones",
+        "Mantenga actualizados los documentos de toda la empresa como autoridad y seguros"
+      ]
+    },
+    "export": {
+      "title": "Reporte de Cumplimiento",
+      "description": "Exporte sus registros de cumplimiento y datos de seguimiento de vencimientos",
+      "summaryLabels": {
+        "totalRecords": "Total de Registros",
+        "active": "Activos",
+        "expiringSoon": "Por Vencer",
+        "expired": "Vencidos",
+        "pending": "Pendientes",
+        "vehicleRecords": "Registros de Vehículos",
+        "driverRecords": "Registros de Conductores",
+        "companyRecords": "Registros de Empresa"
+      },
+      "pdfTitle": "Reporte de Cumplimiento",
+      "pdfSubtitle": "Vencimiento de Documentos y Seguimiento de Cumplimiento"
+    }
+  },
+  "addDocument": "Agregar Documento",
+  "editDocument": "Editar Documento",
+  "deleteDocument": "Eliminar Documento",
+  "viewDocument": "Ver Documento",
+  "uploadDocument": "Subir Documento",
+  "documents": {
+    "title": "Documentos",
+    "all": "Todos los Documentos",
+    "active": "Activos",
+    "expiringSoon": "Por Vencer",
+    "expired": "Vencidos"
+  },
+  "types": {
+    "title": "Tipos de Documento",
+    "complianceTypes": "Tipos de Cumplimiento",
+    "insurance": "Seguro",
+    "registration": "Registro",
+    "license": "Licencia",
+    "cdl": "CDL",
+    "medicalCard": "Tarjeta Médica",
+    "inspection": "Inspección",
+    "dotInspection": "Inspección DOT",
+    "permit": "Permiso",
+    "ifta": "IFTA",
+    "irp": "IRP",
+    "hazmat": "Certificación Hazmat",
+    "twic": "Tarjeta TWIC",
+    "passport": "Pasaporte",
+    "other": "Otro"
+  },
+  "fields": {
+    "documentName": "Nombre del Documento",
+    "documentType": "Tipo de Documento",
+    "entity": "Entidad",
+    "entityType": "Tipo de Entidad",
+    "driver": "Conductor",
+    "truck": "Camión",
+    "issueDate": "Fecha de Emisión",
+    "expirationDate": "Fecha de Vencimiento",
+    "alertDays": "Días de Alerta Antes de Vencer",
+    "notes": "Notas",
+    "status": "Estado",
+    "file": "Archivo",
+    "documentNumber": "Número de Documento",
+    "title": "Título",
+    "complianceType": "Tipo de Cumplimiento",
+    "entityName": "Nombre de Entidad",
+    "issuingAuthority": "Autoridad Emisora",
+    "documentFile": "Archivo del Documento",
+    "renewalFrequency": "Frecuencia de Renovación",
+    "createdOn": "Creado el"
+  },
+  "entityTypes": {
+    "driver": "Conductor",
+    "truck": "Camión",
+    "vehicle": "Vehículo",
+    "company": "Empresa",
+    "trailer": "Remolque",
+    "other": "Otro",
+    "unknown": "Desconocido"
+  },
+  "status": {
+    "active": "Activo",
+    "expiringSoon": "Por Vencer",
+    "expired": "Vencido",
+    "pending": "Pendiente"
+  },
+  "placeholders": {
+    "enterDocumentName": "Ingrese nombre del documento",
+    "selectDocumentType": "Seleccione tipo de documento",
+    "selectEntity": "Seleccione entidad",
+    "enterDocumentNumber": "Ingrese número de documento",
+    "addNotes": "Agregue notas...",
+    "searchRecords": "Buscar registros...",
+    "titleExample": "ej. Registro de Vehículo para Camión #12",
+    "entityNameExample": "ej. Camión #12 o Juan Pérez",
+    "documentNumberExample": "ej. Número de Licencia o Permiso",
+    "issuingAuthorityExample": "ej. DMV o DOT",
+    "notesPlaceholder": "Notas adicionales sobre este registro de cumplimiento..."
+  },
+  "filters": {
+    "title": "Filtros",
+    "byType": "Filtrar por Tipo",
+    "byStatus": "Filtrar por Estado",
+    "byEntity": "Filtrar por Entidad",
+    "clearFilters": "Limpiar Filtros",
+    "allTypes": "Todos los Tipos",
+    "allStatuses": "Todos los Estados",
+    "allEntities": "Todas las Entidades",
+    "status": "Estado",
+    "type": "Tipo",
+    "entity": "Entidad",
+    "search": "Buscar",
+    "vehicles": "Vehículos",
+    "drivers": "Conductores"
+  },
+  "expiration": {
+    "title": "Próximos Vencimientos",
+    "expiresIn": "Vence en {{days}} días",
+    "expiredDaysAgo": "Venció hace {{days}} días",
+    "expiringThisWeek": "Vence Esta Semana",
+    "expiringThisMonth": "Vence Este Mes",
+    "noExpiringSoon": "No hay documentos por vencer",
+    "noUpcoming": "No hay vencimientos próximos",
+    "daysLeft": "{{days}} días restantes",
+    "oneDayLeft": "1 día restante"
+  },
+  "stats": {
+    "title": "Resumen de Cumplimiento",
+    "totalDocuments": "Total de Documentos",
+    "activeDocuments": "Activos",
+    "expiringSoon": "Por Vencer",
+    "expired": "Vencidos",
+    "complianceRate": "Tasa de Cumplimiento",
+    "total": "Total",
+    "pending": "Pendiente"
+  },
+  "statsDescriptions": {
+    "total": "Todos los documentos de cumplimiento",
+    "active": "Documentos válidos",
+    "expiringSoon": "Vencen en 30 días o menos",
+    "expired": "Requiere atención inmediata",
+    "pending": "En espera de procesamiento"
+  },
+  "alerts": {
+    "title": "Alertas de Cumplimiento",
+    "documentExpiring": "{{document}} está por vencer",
+    "documentExpired": "{{document}} ha vencido",
+    "renewNow": "Renovar Ahora",
+    "viewAll": "Ver Todas las Alertas"
+  },
+  "emptyState": {
+    "title": "No hay documentos de cumplimiento",
+    "description": "Suba su primer documento de cumplimiento para comenzar a rastrear",
+    "noDocuments": "No se encontraron documentos",
+    "noExpiring": "No hay documentos por vencer",
+    "noRecords": "No se encontraron registros de cumplimiento",
+    "startTracking": "Comience a rastrear sus documentos de cumplimiento",
+    "noMatchingRecords": "No se encontraron registros coincidentes",
+    "tryAdjustingFilters": "Intente ajustar sus filtros",
+    "noComplianceItems": "No se encontraron elementos de cumplimiento"
+  },
+  "messages": {
+    "documentCreated": "Documento agregado exitosamente",
+    "documentUpdated": "Documento actualizado exitosamente",
+    "documentDeleted": "Documento eliminado exitosamente",
+    "confirmDelete": "¿Está seguro que desea eliminar este documento?",
+    "failedToCreate": "Error al agregar documento",
+    "failedToUpdate": "Error al actualizar documento",
+    "failedToDelete": "Error al eliminar documento",
+    "fileUploaded": "Archivo subido exitosamente",
+    "restoredProgress": "Hemos restaurado su progreso anterior. Puede continuar donde lo dejó."
+  },
+  "table": {
+    "document": "Documento",
+    "type": "Tipo",
+    "entity": "Entidad",
+    "expiration": "Vencimiento",
+    "status": "Estado",
+    "actions": "Acciones",
+    "complianceRecords": "Registros de Cumplimiento",
+    "complianceItem": "Elemento de Cumplimiento",
+    "issueDate": "Fecha de Emisión",
+    "expirationDate": "Fecha de Vencimiento",
+    "showingRecords": "Mostrando {{filtered}} de {{total}} registros",
+    "addNew": "Agregar Nuevo",
+    "addComplianceRecord": "Agregar Registro de Cumplimiento",
+    "resetFilters": "Restablecer Filtros",
+    "notAvailable": "N/D"
+  },
+  "itemCount": {
+    "item": "elemento",
+    "items": "elementos"
+  },
+  "viewModal": {
+    "title": "Detalles de Cumplimiento",
+    "complianceInformation": "Información de Cumplimiento",
+    "entityDetails": "Detalles de Entidad",
+    "notes": "Notas",
+    "document": "Documento",
+    "documentPreview": "Vista Previa del Documento",
+    "expand": "Expandir",
+    "collapse": "Contraer",
+    "viewPdf": "Ver PDF",
+    "viewDocument": "Ver Documento",
+    "download": "Descargar",
+    "downloading": "Descargando...",
+    "close": "Cerrar",
+    "currentDocumentOnFile": "Documento actual en archivo",
+    "selectedFile": "Archivo seleccionado"
+  },
+  "deleteModal": {
+    "title": "Confirmación de Eliminación",
+    "deleteRecord": "Eliminar Registro de Cumplimiento",
+    "confirmText": "¿Está seguro que desea eliminar \"{{title}}\"? Esta acción no se puede deshacer.",
+    "deleting": "Eliminando..."
+  },
+  "form": {
+    "createTitle": "Crear Nuevo Registro de Cumplimiento",
+    "editTitle": "Editar Registro de Cumplimiento",
+    "steps": {
+      "basicInfo": "Info Básica",
+      "documentDetails": "Detalles del Documento"
+    },
+    "sections": {
+      "complianceInformation": "Información de Cumplimiento",
+      "documentDetails": "Detalles del Documento",
+      "reviewInformation": "Revisar Información de Cumplimiento"
+    },
+    "labels": {
+      "title": "Título",
+      "titleRequired": "Título",
+      "complianceType": "Tipo de Cumplimiento",
+      "status": "Estado",
+      "entityType": "Tipo de Entidad",
+      "entityName": "Nombre de Entidad",
+      "entityNameRequired": "Nombre de Entidad",
+      "documentNumber": "Número de Documento",
+      "issuingAuthority": "Autoridad Emisora",
+      "issueDate": "Fecha de Emisión",
+      "expirationDate": "Fecha de Vencimiento",
+      "expirationDateRequired": "Fecha de Vencimiento",
+      "documentFile": "Archivo del Documento",
+      "notes": "Notas",
+      "selectedFile": "Archivo seleccionado",
+      "currentDocumentOnFile": "Documento actual en archivo"
+    },
+    "review": {
+      "title": "Título",
+      "type": "Tipo",
+      "entity": "Entidad",
+      "status": "Estado",
+      "expiration": "Vencimiento",
+      "documentNumber": "Documento #",
+      "notSet": "No establecido",
+      "notProvided": "No proporcionado"
+    },
+    "validation": {
+      "titleRequired": "El título es requerido",
+      "entityNameRequired": "El nombre de entidad es requerido",
+      "expirationRequired": "La fecha de vencimiento es requerida"
+    },
+    "buttons": {
+      "cancel": "Cancelar",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "creating": "Creando...",
+      "updating": "Actualizando...",
+      "createRecord": "Crear Registro",
+      "updateRecord": "Actualizar Registro",
+      "clear": "Limpiar"
+    },
+    "complianceDocument": "Documento de cumplimiento"
+  }
+}

@@ -12,6 +12,7 @@ import {
   BarChart2,
   Gauge
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SimplifiedIFTASummary({
   userId,
@@ -21,6 +22,7 @@ export default function SimplifiedIFTASummary({
   selectedVehicle = "all",
   isLoading = false
 }) {
+  const { t } = useTranslation('ifta');
   const [showDetails, setShowDetails] = useState(false);
   const [jurisdictionSummary, setJurisdictionSummary] = useState([]);
   const [summary, setSummary] = useState({
@@ -184,7 +186,7 @@ export default function SimplifiedIFTASummary({
       document.body.removeChild(link);
 
     } catch (err) {
-      alert("Failed to export report. Please try again.");
+      alert(t('summary.failedToExport'));
     }
   };
 
@@ -212,13 +214,13 @@ export default function SimplifiedIFTASummary({
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-4 text-white">
           <h3 className="font-semibold flex items-center">
             <Calculator size={18} className="mr-2" />
-            IFTA Quarterly Summary
+            {t('summary.quarterlyTitle')}
           </h3>
         </div>
         <div className="p-8 text-center">
           <Flag size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No IFTA Data Available</h3>
-          <p className="text-gray-500">Add trips and fuel data to see your IFTA summary</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-1">{t('summary.noDataAvailable')}</h3>
+          <p className="text-gray-500">{t('summary.addTripsAndFuel')}</p>
         </div>
       </div>
     );
@@ -230,7 +232,7 @@ export default function SimplifiedIFTASummary({
         <div className="flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <Calculator size={18} className="mr-2" />
-            IFTA Quarterly Summary
+            {t('summary.quarterlyTitle')}
           </h3>
 
           <button
@@ -238,7 +240,7 @@ export default function SimplifiedIFTASummary({
             className="flex items-center text-sm text-white hover:text-blue-100"
           >
             <DownloadCloud size={16} className="mr-1" />
-            Export Report
+            {t('summary.exportReport')}
           </button>
         </div>
       </div>
@@ -248,7 +250,7 @@ export default function SimplifiedIFTASummary({
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm text-blue-600 mb-1">Total Miles</div>
+                <div className="text-sm text-blue-600 mb-1">{t('summary.totalMiles')}</div>
                 <div className="text-2xl font-bold text-blue-900">{formatNumber(summary.totalMiles, 1)}</div>
               </div>
               <div className="bg-blue-200 p-3 rounded-lg">
@@ -260,7 +262,7 @@ export default function SimplifiedIFTASummary({
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm text-green-600 mb-1">Total Gallons</div>
+                <div className="text-sm text-green-600 mb-1">{t('summary.totalGallons')}</div>
                 <div className="text-2xl font-bold text-green-900">{formatNumber(summary.totalGallons, 3)}</div>
               </div>
               <div className="bg-green-200 p-3 rounded-lg">
@@ -272,7 +274,7 @@ export default function SimplifiedIFTASummary({
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm text-purple-600 mb-1">Average MPG</div>
+                <div className="text-sm text-purple-600 mb-1">{t('summary.averageMpg')}</div>
                 <div className="text-2xl font-bold text-purple-900">{formatNumber(summary.avgMpg, 2)}</div>
               </div>
               <div className="bg-purple-200 p-3 rounded-lg">
@@ -283,7 +285,7 @@ export default function SimplifiedIFTASummary({
         </div>
 
         <div className="mb-4">
-          <h4 className="text-lg font-medium text-gray-900">Jurisdiction Summary</h4>
+          <h4 className="text-lg font-medium text-gray-900">{t('summary.jurisdictionSummary')}</h4>
         </div>
 
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -291,13 +293,13 @@ export default function SimplifiedIFTASummary({
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jurisdiction
+                  {t('summary.jurisdiction')}
                 </th>
                 <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Miles
+                  {t('summary.miles')}
                 </th>
                 <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fuel Gallons
+                  {t('summary.fuelGallons')}
                 </th>
               </tr>
             </thead>
@@ -327,7 +329,7 @@ export default function SimplifiedIFTASummary({
             <tfoot>
               <tr className="bg-gray-100">
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  Total
+                  {t('summary.total')}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
                   {formatNumber(summary.totalMiles, 1)}
@@ -344,11 +346,9 @@ export default function SimplifiedIFTASummary({
           <div className="flex items-start">
             <Fuel className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
             <div>
-              <h5 className="text-sm font-medium text-blue-800">About IFTA Reporting</h5>
+              <h5 className="text-sm font-medium text-blue-800">{t('summary.aboutReporting')}</h5>
               <p className="text-sm text-blue-700 mt-1">
-                This summary shows total miles driven and fuel gallons purchased by jurisdiction.
-                Use this data to complete your quarterly IFTA tax return. Be sure to keep all
-                fuel receipts and trip records for your files.
+                {t('summary.reportingInfo')}
               </p>
             </div>
           </div>

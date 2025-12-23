@@ -1,0 +1,380 @@
+{
+  "title": "Expenses",
+  "subtitle": "Track and manage your business expenses",
+  "addExpense": "Add Expense",
+  "editExpense": "Edit Expense",
+  "deleteExpense": "Delete Expense",
+  "newExpense": "New Expense",
+  "viewExpense": "View Expense",
+  "expenses": {
+    "all": "All Expenses",
+    "recent": "Recent Expenses",
+    "byCategory": "By Category",
+    "byMonth": "By Month"
+  },
+  "fields": {
+    "date": "Date",
+    "amount": "Amount",
+    "category": "Category",
+    "description": "Description",
+    "vendor": "Vendor",
+    "paymentMethod": "Payment Method",
+    "receipt": "Receipt",
+    "notes": "Notes",
+    "tax": "Tax",
+    "taxDeductible": "Tax Deductible",
+    "reimbursable": "Reimbursable"
+  },
+  "categories": {
+    "title": "Categories",
+    "fuel": "Fuel",
+    "maintenance": "Maintenance",
+    "repairs": "Repairs",
+    "insurance": "Insurance",
+    "permits": "Permits & Licenses",
+    "tolls": "Tolls",
+    "parking": "Parking",
+    "lodging": "Lodging",
+    "meals": "Meals",
+    "supplies": "Supplies",
+    "equipment": "Equipment",
+    "office": "Office",
+    "professional": "Professional Services",
+    "taxes": "Taxes",
+    "other": "Other"
+  },
+  "placeholders": {
+    "selectCategory": "Select a category",
+    "enterAmount": "Enter amount",
+    "enterDescription": "Enter description",
+    "enterVendor": "Enter vendor name",
+    "addNotes": "Add any notes..."
+  },
+  "receipt": {
+    "title": "Receipt",
+    "upload": "Upload Receipt",
+    "view": "View Receipt",
+    "download": "Download Receipt",
+    "noReceipt": "No receipt uploaded",
+    "dragDrop": "Drag and drop or click to upload"
+  },
+  "filters": {
+    "title": "Filters",
+    "byCategory": "Filter by Category",
+    "byDate": "Filter by Date",
+    "byAmount": "Filter by Amount",
+    "clearFilters": "Clear Filters",
+    "allCategories": "All Categories"
+  },
+  "stats": {
+    "title": "Expense Summary",
+    "totalExpenses": "Total Expenses",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "avgPerDay": "Average Per Day",
+    "topCategory": "Top Category",
+    "expenseCount": "Expense Count"
+  },
+  "chart": {
+    "title": "Expense Trends",
+    "byCategory": "By Category",
+    "byMonth": "By Month",
+    "comparison": "Month Comparison"
+  },
+  "emptyState": {
+    "title": "No expenses recorded",
+    "description": "Track your first expense to start managing your business finances",
+    "noExpenses": "No expenses for this period"
+  },
+  "messages": {
+    "expenseCreated": "Expense added successfully",
+    "expenseUpdated": "Expense updated successfully",
+    "expenseDeleted": "Expense deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this expense?",
+    "failedToCreate": "Failed to add expense",
+    "failedToUpdate": "Failed to update expense",
+    "failedToDelete": "Failed to delete expense",
+    "receiptUploaded": "Receipt uploaded successfully",
+    "receiptDeleted": "Receipt removed successfully"
+  },
+  "topExpenses": {
+    "title": "Top Expenses",
+    "byAmount": "By Amount",
+    "byCategory": "By Category"
+  },
+  "receiptDirectory": {
+    "title": "Receipt Directory",
+    "allReceipts": "All Receipts",
+    "noReceipts": "No receipts found"
+  },
+  "table": {
+    "date": "Date",
+    "description": "Description",
+    "category": "Category",
+    "amount": "Amount",
+    "receipt": "Receipt",
+    "actions": "Actions",
+    "paymentMethod": "Payment Method",
+    "total": "Total",
+    "noExpensesFound": "No expenses found",
+    "getStarted": "Get started by adding your first expense"
+  },
+  "form": {
+    "editExpense": "Edit Expense",
+    "addExpense": "Add Expense",
+    "basicInformation": "Basic Information",
+    "vehicleReceipt": "Vehicle & Receipt",
+    "additionalNotes": "Additional Notes",
+    "description": "Description",
+    "amount": "Amount",
+    "date": "Date",
+    "category": "Category",
+    "paymentMethod": "Payment Method",
+    "vehicle": "Vehicle",
+    "selectVehicle": "Select Vehicle (optional)",
+    "loading": "Loading...",
+    "receiptImage": "Receipt Image",
+    "receiptPreview": "Receipt Preview",
+    "remove": "Remove",
+    "taxDeductible": "Tax Deductible",
+    "notes": "Notes",
+    "notesPlaceholder": "Any additional information...",
+    "descriptionPlaceholder": "e.g. Fuel for Truck #123",
+    "formRestored": "Your previous form data has been restored.",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveExpense": "Save Expense",
+    "updateExpense": "Update Expense"
+  },
+  "paymentMethods": {
+    "creditCard": "Credit Card",
+    "debitCard": "Debit Card",
+    "cash": "Cash",
+    "check": "Check",
+    "eft": "EFT",
+    "other": "Other"
+  },
+  "validation": {
+    "descriptionRequired": "Description is required.",
+    "descriptionMinLength": "Description must be at least 3 characters.",
+    "amountRequired": "Amount is required.",
+    "amountPositive": "Amount must be a positive number.",
+    "amountMax": "Amount exceeds maximum allowed value.",
+    "dateRequired": "Date is required.",
+    "dateFuture": "Date cannot be in the future.",
+    "datePast": "Date is too far in the past.",
+    "categoryRequired": "Category is required."
+  },
+  "statsLabels": {
+    "totalExpenses": "Total Expenses",
+    "dailyAverage": "Daily Average",
+    "topCategory": "Top Category",
+    "totalEntries": "Total Entries",
+    "entry": "entry",
+    "entries": "entries"
+  },
+  "deleteModal": {
+    "title": "Delete Expense?",
+    "description": "This action cannot be undone. The following expense will be permanently deleted:",
+    "descriptionLabel": "Description:",
+    "dateLabel": "Date:",
+    "categoryLabel": "Category:",
+    "amountLabel": "Amount:",
+    "noDescription": "No description",
+    "receiptWarning": "The attached receipt image will also be deleted.",
+    "note": "Note:",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting..."
+  },
+  "filtersExpanded": {
+    "category": "Category",
+    "allCategories": "All Categories",
+    "dateRange": "Date Range",
+    "allTime": "All Time",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisQuarter": "This Quarter",
+    "lastQuarter": "Last Quarter",
+    "thisYear": "This Year",
+    "customRange": "Custom Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "sortBy": "Sort By",
+    "sortDate": "Date",
+    "sortAmount": "Amount",
+    "sortCategory": "Category",
+    "sortDescription": "Description",
+    "search": "Search",
+    "searchPlaceholder": "Search expenses...",
+    "resetFilters": "Reset Filters"
+  },
+  "item": {
+    "loading": "Loading...",
+    "noDescription": "No description"
+  },
+  "summary": {
+    "total": "Total",
+    "expenses": "expenses",
+    "topCategory": "Top Category",
+    "none": "None",
+    "noDataAvailable": "No data available",
+    "dailyAverage": "Daily Average",
+    "averageSpendingPerDay": "Average spending per day",
+    "monthlyTrend": "Monthly Trend",
+    "comparedToPrevMonth": "Compared to previous month",
+    "categories": "Categories",
+    "activeCategories": "Active spending categories"
+  },
+  "categoryWidget": {
+    "noCategoriesYet": "No expense categories yet",
+    "allCategories": "All Categories"
+  },
+  "topExpensesWidget": {
+    "noExpensesYet": "No expenses yet",
+    "viewReceipt": "View Receipt",
+    "edit": "Edit"
+  },
+  "chartWidget": {
+    "title": "Expense Analysis",
+    "noData": "No expense data available",
+    "addExpenses": "Add expenses to see your spending analysis",
+    "bar": "Bar",
+    "pie": "Pie",
+    "ofTotal": "of total",
+    "totalFor": "total for",
+    "category": "category",
+    "categories": "categories"
+  },
+  "receiptDirectoryWidget": {
+    "title": "Receipt Directory",
+    "receipts": "receipts",
+    "searchPlaceholder": "Search receipts...",
+    "allYears": "All Years",
+    "allCategories": "All Categories",
+    "selected": "selected",
+    "downloadSelected": "Download Selected",
+    "downloading": "Downloading receipts...",
+    "noReceiptsFound": "No Receipts Found",
+    "uploadReceiptsHint": "Upload receipts when adding expenses to see them here.",
+    "noMatchingReceipts": "No Matching Receipts",
+    "adjustFilters": "Try adjusting your filters.",
+    "downloadAllYear": "Download all receipts",
+    "deselectAll": "Deselect all",
+    "selectAll": "Select all",
+    "downloadMonth": "Download receipts",
+    "untitledReceipt": "Untitled Receipt",
+    "viewReceipt": "View receipt",
+    "downloadReceipt": "Download receipt"
+  },
+  "receiptViewer": {
+    "title": "Receipt Details",
+    "receiptImage": "Receipt Image",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "rotate": "Rotate",
+    "downloading": "Downloading...",
+    "download": "Download",
+    "pdfReceipt": "PDF Receipt",
+    "pdfStored": "This receipt is stored as a PDF document.",
+    "viewPdf": "View PDF",
+    "unableToDisplay": "Unable to display receipt",
+    "imageUnavailable": "The image might be unavailable or in an unsupported format.",
+    "openInNewTab": "Open in New Tab",
+    "noReceiptAvailable": "No Receipt Available",
+    "noReceiptAttached": "This expense doesn't have an attached receipt.",
+    "expenseInformation": "Expense Information",
+    "paymentInformation": "Payment Information",
+    "vehicleInformation": "Vehicle Information",
+    "vehicleId": "Vehicle ID",
+    "notes": "Notes",
+    "noNotesAvailable": "No notes available.",
+    "downloadReceipt": "Download Receipt",
+    "close": "Close"
+  },
+  "card": {
+    "date": "Date",
+    "category": "Category",
+    "payment": "Payment",
+    "deductible": "Deductible",
+    "receipt": "Receipt",
+    "noReceipt": "No receipt",
+    "noDescription": "No description",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "common": {
+    "description": "Description",
+    "amount": "Amount",
+    "category": "Category",
+    "date": "Date",
+    "paymentMethod": "Payment Method",
+    "taxDeductible": "Tax Deductible",
+    "yes": "Yes",
+    "no": "No",
+    "na": "N/A"
+  },
+  "page": {
+    "title": "Expense Tracking",
+    "subtitle": "Track and manage all your business expenses",
+    "addExpense": "Add Expense",
+    "exportReport": "Export Report",
+    "topExpenses": "Top Expenses",
+    "expenseCategories": "Expense Categories",
+    "expenseRecords": "Expense Records",
+    "addNew": "Add New",
+    "expenseAnalysis": "Expense Analysis",
+    "expensesSuffix": "expenses",
+    "total": "Total:"
+  },
+  "emptyStateFiltered": {
+    "title": "No expenses found",
+    "description": "Try adjusting your search or filters.",
+    "addExpenseLabel": "Add Expense"
+  },
+  "emptyStateNoData": {
+    "description": "Start tracking your expenses by adding your first entry."
+  },
+  "tutorial": {
+    "title": "Expense Tracking Guide",
+    "description": "Record and categorize business expenses for tax compliance",
+    "features": {
+      "logExpenses": {
+        "title": "Log Expenses",
+        "description": "Record expenses with category, amount, date, and payment method"
+      },
+      "receiptUpload": {
+        "title": "Receipt Upload",
+        "description": "Attach receipt images for documentation and tax records"
+      },
+      "smartCategories": {
+        "title": "Smart Categories",
+        "description": "Fuel, Maintenance, Insurance, Tolls, Meals, Equipment & more"
+      },
+      "taxDeductions": {
+        "title": "Tax Deductions",
+        "description": "Track deductible expenses for accurate tax reporting"
+      }
+    },
+    "tips": [
+      "Upload receipts immediately - don't lose documentation",
+      "Fuel expenses auto-sync from Fuel Tracker for convenience",
+      "Use category filters to review spending by type",
+      "Export reports quarterly for bookkeeping and tax prep"
+    ]
+  },
+  "export": {
+    "modalTitle": "Export Expenses Report",
+    "modalDescription": "Export your expense records in multiple formats. Choose PDF for a professional report or CSV for spreadsheet analysis.",
+    "totalRecords": "Total Records",
+    "totalAmount": "Total Amount",
+    "deductible": "Deductible",
+    "dateRange": "Date Range",
+    "exportSuccess": "Report exported successfully!"
+  },
+  "successMessages": {
+    "expenseAdded": "Expense added successfully.",
+    "expenseUpdated": "Expense updated successfully.",
+    "expenseDeleted": "Expense deleted successfully."
+  }
+}

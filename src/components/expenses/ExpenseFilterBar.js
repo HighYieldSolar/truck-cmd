@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, X, Filter, ChevronDown } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Filter Bar Component
@@ -10,6 +11,7 @@ import { Search, X, Filter, ChevronDown } from 'lucide-react';
  * following the design spec filter bar pattern.
  */
 export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
+  const { t } = useTranslation('expenses');
   const [showCustomDates, setShowCustomDates] = useState(filters.dateRange === 'Custom');
 
   // Handle filter changes
@@ -50,7 +52,7 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by description, category, or payment method..."
+            placeholder={t('filtersExpanded.searchPlaceholder')}
             className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
             value={filters.search}
             onChange={handleSearchChange}
@@ -73,15 +75,15 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
             value={filters.category}
             onChange={(e) => handleFilterChange('category', e.target.value)}
           >
-            <option value="All">All Categories</option>
-            <option value="Fuel">Fuel</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Insurance">Insurance</option>
-            <option value="Tolls">Tolls</option>
-            <option value="Office">Office</option>
-            <option value="Permits">Permits</option>
-            <option value="Meals">Meals</option>
-            <option value="Other">Other</option>
+            <option value="All">{t('filtersExpanded.allCategories')}</option>
+            <option value="Fuel">{t('categories.fuel')}</option>
+            <option value="Maintenance">{t('categories.maintenance')}</option>
+            <option value="Insurance">{t('categories.insurance')}</option>
+            <option value="Tolls">{t('categories.tolls')}</option>
+            <option value="Office">{t('categories.office')}</option>
+            <option value="Permits">{t('categories.permits')}</option>
+            <option value="Meals">{t('categories.meals')}</option>
+            <option value="Other">{t('categories.other')}</option>
           </select>
 
           {/* Date Range Filter */}
@@ -90,13 +92,13 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
             value={filters.dateRange}
             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
           >
-            <option value="All Time">All Time</option>
-            <option value="This Month">This Month</option>
-            <option value="Last Month">Last Month</option>
-            <option value="This Quarter">This Quarter</option>
-            <option value="Last Quarter">Last Quarter</option>
-            <option value="This Year">This Year</option>
-            <option value="Custom">Custom Range</option>
+            <option value="All Time">{t('filtersExpanded.allTime')}</option>
+            <option value="This Month">{t('filtersExpanded.thisMonth')}</option>
+            <option value="Last Month">{t('filtersExpanded.lastMonth')}</option>
+            <option value="This Quarter">{t('filtersExpanded.thisQuarter')}</option>
+            <option value="Last Quarter">{t('filtersExpanded.lastQuarter')}</option>
+            <option value="This Year">{t('filtersExpanded.thisYear')}</option>
+            <option value="Custom">{t('filtersExpanded.customRange')}</option>
           </select>
 
           {/* Sort By Filter */}
@@ -105,16 +107,16 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
             value={filters.sortBy}
             onChange={(e) => handleFilterChange('sortBy', e.target.value)}
           >
-            <option value="date">Sort by Date</option>
-            <option value="amount">Sort by Amount</option>
-            <option value="category">Sort by Category</option>
+            <option value="date">{t('filtersExpanded.sortDate')}</option>
+            <option value="amount">{t('filtersExpanded.sortAmount')}</option>
+            <option value="category">{t('filtersExpanded.sortCategory')}</option>
           </select>
 
           {/* Reset Filters Button */}
           <button
             onClick={onReset}
             className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Reset Filters"
+            title={t('filtersExpanded.resetFilters')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -127,7 +129,7 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Start Date
+                {t('filtersExpanded.startDate')}
               </label>
               <input
                 type="date"
@@ -138,7 +140,7 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                End Date
+                {t('filtersExpanded.endDate')}
               </label>
               <input
                 type="date"

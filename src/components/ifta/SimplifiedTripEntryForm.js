@@ -15,8 +15,10 @@ import {
   Fuel
 } from "lucide-react";
 import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { useTranslation } from 'react-i18next';
 
 export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, vehicles = [] }) {
+  const { t } = useTranslation('ifta');
   const [formData, setFormData] = useState({
     vehicleId: "",
     date: getCurrentDateLocal(),
@@ -106,12 +108,12 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.vehicleId) newErrors.vehicleId = "Vehicle is required";
-    if (!formData.date) newErrors.date = "Date is required";
-    if (!formData.startJurisdiction) newErrors.startJurisdiction = "Starting jurisdiction is required";
-    if (!formData.endJurisdiction) newErrors.endJurisdiction = "Ending jurisdiction is required";
+    if (!formData.vehicleId) newErrors.vehicleId = t('tripForm.errors.vehicleRequired');
+    if (!formData.date) newErrors.date = t('tripForm.errors.dateRequired');
+    if (!formData.startJurisdiction) newErrors.startJurisdiction = t('tripForm.errors.startRequired');
+    if (!formData.endJurisdiction) newErrors.endJurisdiction = t('tripForm.errors.endRequired');
     if (!formData.miles || parseFloat(formData.miles) <= 0) {
-      newErrors.miles = "Miles must be greater than 0";
+      newErrors.miles = t('tripForm.errors.milesRequired');
     }
 
     setErrors(newErrors);
@@ -146,11 +148,11 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         });
 
         // Show success message
-        setSuccessMessage("Trip added successfully!");
+        setSuccessMessage(t('tripForm.tripAddedSuccess'));
         setTimeout(() => setSuccessMessage(null), 3000);
       }
     } catch (error) {
-      setErrors(prev => ({ ...prev, submit: error.message || 'Failed to add trip' }));
+      setErrors(prev => ({ ...prev, submit: error.message || t('tripForm.errors.failedToAdd') }));
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +163,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <p className="text-sm text-blue-800 flex items-center">
           <Info size={16} className="mr-2 flex-shrink-0" />
-          Enter trip details manually. For bulk imports, use the "Import from Mileage Tracker" option above.
+          {t('tripForm.infoMessage')}
         </p>
       </div>
       {/* Success message */}
@@ -177,7 +179,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Vehicle Selection */}
         <div className="lg:col-span-1">
           <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-1">
-            Vehicle <span className="text-red-500">*</span>
+            {t('tripForm.vehicle')} <span className="text-red-500">{t('tripForm.required')}</span>
           </label>
           <div className="relative">
             <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -191,7 +193,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                   } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
                 required
               >
-                <option value="">Select Vehicle</option>
+                <option value="">{t('tripForm.selectVehicle')}</option>
                 {vehicles.map((vehicle) => (
                   <option key={vehicle.id || vehicle} value={vehicle.id || vehicle}>
                     {vehicle.name || vehicle.id || vehicle}
@@ -203,7 +205,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                 type="text"
                 id="vehicleId"
                 name="vehicleId"
-                placeholder="Enter vehicle ID"
+                placeholder={t('tripForm.enterVehicleId')}
                 value={formData.vehicleId}
                 onChange={handleChange}
                 className={`block w-full pl-10 pr-3 py-2.5 rounded-lg border ${errors.vehicleId ? 'border-red-300' : 'border-gray-300'
@@ -220,7 +222,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Date */}
         <div className="lg:col-span-1">
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-            Trip Date <span className="text-red-500">*</span>
+            {t('tripForm.tripDate')} <span className="text-red-500">{t('tripForm.required')}</span>
           </label>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -243,7 +245,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Start Jurisdiction */}
         <div className="lg:col-span-1">
           <label htmlFor="startJurisdiction" className="block text-sm font-medium text-gray-700 mb-1">
-            From <span className="text-red-500">*</span>
+            {t('tripForm.from')} <span className="text-red-500">{t('tripForm.required')}</span>
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -256,7 +258,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                 } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
               required
             >
-              <option value="">Starting State</option>
+              <option value="">{t('tripForm.startingState')}</option>
               {jurisdictions.map((state) => (
                 <option key={state.code} value={state.code}>
                   {state.code} - {state.name}
@@ -272,7 +274,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* End Jurisdiction */}
         <div className="lg:col-span-1">
           <label htmlFor="endJurisdiction" className="block text-sm font-medium text-gray-700 mb-1">
-            To <span className="text-red-500">*</span>
+            {t('tripForm.to')} <span className="text-red-500">{t('tripForm.required')}</span>
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -285,7 +287,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
                 } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm`}
               required
             >
-              <option value="">Ending State</option>
+              <option value="">{t('tripForm.endingState')}</option>
               {jurisdictions.map((state) => (
                 <option key={state.code} value={state.code}>
                   {state.code} - {state.name}
@@ -304,7 +306,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Miles */}
         <div>
           <label htmlFor="miles" className="block text-sm font-medium text-gray-700 mb-1">
-            Miles <span className="text-red-500">*</span>
+            {t('tripForm.miles')} <span className="text-red-500">{t('tripForm.required')}</span>
           </label>
           <div className="relative">
             <Route className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -330,7 +332,7 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Gallons */}
         <div>
           <label htmlFor="gallons" className="block text-sm font-medium text-gray-700 mb-1">
-            Gallons <span className="text-gray-400 text-xs">(optional)</span>
+            {t('tripForm.gallons')} <span className="text-gray-400 text-xs">({t('tripForm.optional')})</span>
           </label>
           <div className="relative">
             <Fuel className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -351,13 +353,13 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
         {/* Notes */}
         <div className="md:col-span-2">
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes <span className="text-gray-400 text-xs">(optional)</span>
+            {t('tripForm.notes')} <span className="text-gray-400 text-xs">({t('tripForm.optional')})</span>
           </label>
           <textarea
             id="notes"
             name="notes"
             rows="1"
-            placeholder="Any additional trip details..."
+            placeholder={t('tripForm.notesPlaceholder')}
             value={formData.notes}
             onChange={handleChange}
             className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
@@ -375,12 +377,12 @@ export default function SimplifiedTripEntryForm({ onAddTrip, isLoading = false, 
           {isSubmitting ? (
             <>
               <RefreshCw size={16} className="animate-spin mr-2" />
-              Adding Trip...
+              {t('tripForm.addingTrip')}
             </>
           ) : (
             <>
               <Plus size={16} className="mr-2" />
-              Add Trip Record
+              {t('tripForm.addTripRecord')}
             </>
           )}
         </button>

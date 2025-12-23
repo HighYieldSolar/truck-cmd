@@ -1,0 +1,138 @@
+{
+  "general": {
+    "title": "Error",
+    "somethingWentWrong": "Algo salió mal",
+    "tryAgain": "Por favor intente de nuevo",
+    "tryAgainLater": "Por favor intente de nuevo más tarde",
+    "contactSupport": "Contacte a soporte si el problema persiste",
+    "unexpectedError": "Ocurrió un error inesperado",
+    "networkError": "Error de red. Por favor verifique su conexión.",
+    "serverError": "Error del servidor. Por favor intente de nuevo más tarde.",
+    "timeout": "La solicitud tardó demasiado. Por favor intente de nuevo.",
+    "notFound": "No encontrado",
+    "accessDenied": "Acceso denegado",
+    "unauthorized": "No autorizado. Por favor inicie sesión.",
+    "forbidden": "No tiene permiso para realizar esta acción.",
+    "sessionExpired": "Su sesión ha expirado. Por favor inicie sesión de nuevo."
+  },
+  "auth": {
+    "loginFailed": "Error de inicio de sesión. Por favor verifique sus credenciales.",
+    "invalidCredentials": "Correo electrónico o contraseña inválidos",
+    "accountNotFound": "Cuenta no encontrada",
+    "emailNotVerified": "Por favor verifique su correo electrónico",
+    "accountDisabled": "Su cuenta ha sido deshabilitada",
+    "tooManyAttempts": "Demasiados intentos de inicio de sesión. Por favor intente de nuevo más tarde.",
+    "passwordResetFailed": "Error al restablecer contraseña",
+    "signupFailed": "Error al crear cuenta",
+    "emailInUse": "Este correo electrónico ya está en uso",
+    "weakPassword": "La contraseña es muy débil",
+    "logoutFailed": "Error al cerrar sesión"
+  },
+  "data": {
+    "loadFailed": "Error al cargar datos",
+    "saveFailed": "Error al guardar datos",
+    "deleteFailed": "Error al eliminar",
+    "updateFailed": "Error al actualizar",
+    "createFailed": "Error al crear",
+    "notFound": "Registro no encontrado",
+    "duplicate": "Este registro ya existe",
+    "validationFailed": "Error de validación",
+    "invalidData": "Datos inválidos proporcionados"
+  },
+  "file": {
+    "uploadFailed": "Error al subir archivo",
+    "downloadFailed": "Error al descargar archivo",
+    "deleteFailed": "Error al eliminar archivo",
+    "tooLarge": "El archivo es muy grande",
+    "invalidType": "Tipo de archivo inválido",
+    "notFound": "Archivo no encontrado"
+  },
+  "subscription": {
+    "loadFailed": "Error al cargar suscripción",
+    "updateFailed": "Error al actualizar suscripción",
+    "cancelFailed": "Error al cancelar suscripción",
+    "paymentFailed": "Error en el pago",
+    "cardDeclined": "Su tarjeta fue rechazada",
+    "expired": "Su suscripción ha expirado",
+    "trialExpired": "Su prueba gratuita ha expirado",
+    "limitReached": "Ha alcanzado el límite de su plan",
+    "upgradeRequired": "Por favor mejore su plan para continuar"
+  },
+  "form": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Por favor ingrese un correo válido",
+    "invalidPhone": "Por favor ingrese un número de teléfono válido",
+    "invalidDate": "Por favor ingrese una fecha válida",
+    "invalidNumber": "Por favor ingrese un número válido",
+    "minLength": "Debe tener al menos {{count}} caracteres",
+    "maxLength": "Debe tener máximo {{count}} caracteres",
+    "minValue": "Debe ser al menos {{value}}",
+    "maxValue": "Debe ser máximo {{value}}",
+    "patternMismatch": "Formato inválido"
+  },
+  "invoice": {
+    "createFailed": "Error al crear factura",
+    "updateFailed": "Error al actualizar factura",
+    "deleteFailed": "Error al eliminar factura",
+    "sendFailed": "Error al enviar factura",
+    "pdfFailed": "Error al generar PDF"
+  },
+  "load": {
+    "createFailed": "Error al crear carga",
+    "updateFailed": "Error al actualizar carga",
+    "deleteFailed": "Error al eliminar carga",
+    "completeFailed": "Error al completar carga"
+  },
+  "expense": {
+    "createFailed": "Error al agregar gasto",
+    "updateFailed": "Error al actualizar gasto",
+    "deleteFailed": "Error al eliminar gasto"
+  },
+  "customer": {
+    "createFailed": "Error al agregar cliente",
+    "updateFailed": "Error al actualizar cliente",
+    "deleteFailed": "Error al eliminar cliente"
+  },
+  "fleet": {
+    "driverCreateFailed": "Error al agregar conductor",
+    "driverUpdateFailed": "Error al actualizar conductor",
+    "driverDeleteFailed": "Error al eliminar conductor",
+    "truckCreateFailed": "Error al agregar camión",
+    "truckUpdateFailed": "Error al actualizar camión",
+    "truckDeleteFailed": "Error al eliminar camión",
+    "maintenanceCreateFailed": "Error al agregar registro de mantenimiento",
+    "maintenanceUpdateFailed": "Error al actualizar registro de mantenimiento",
+    "maintenanceDeleteFailed": "Error al eliminar registro de mantenimiento"
+  },
+  "compliance": {
+    "createFailed": "Error al agregar documento",
+    "updateFailed": "Error al actualizar documento",
+    "deleteFailed": "Error al eliminar documento"
+  },
+  "fuel": {
+    "createFailed": "Error al agregar registro de combustible",
+    "updateFailed": "Error al actualizar registro de combustible",
+    "deleteFailed": "Error al eliminar registro de combustible"
+  },
+  "ifta": {
+    "calculateFailed": "Error al calcular IFTA",
+    "exportFailed": "Error al exportar reporte",
+    "importFailed": "Error al importar datos"
+  },
+  "pages": {
+    "404": {
+      "title": "Página No Encontrada",
+      "message": "La página que busca no existe.",
+      "goHome": "Ir al Panel de Control"
+    },
+    "500": {
+      "title": "Error del Servidor",
+      "message": "Algo salió mal de nuestro lado.",
+      "tryAgain": "Intentar de Nuevo"
+    },
+    "maintenance": {
+      "title": "En Mantenimiento",
+      "message": "Estamos realizando mantenimiento programado. Por favor vuelva pronto."
+    }
+  }
+}

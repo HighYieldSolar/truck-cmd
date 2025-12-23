@@ -10,6 +10,7 @@ import { getDriverStats } from "@/lib/services/driverService";
 import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 import { OperationMessage } from "@/components/ui/OperationMessage";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Import custom components
 import FleetManagementHeader from "@/components/fleet/FleetManagementHeader";
@@ -57,6 +58,7 @@ function LoadingSkeleton() {
 }
 
 export default function FleetManagementPage() {
+  const { t } = useTranslation('fleet');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -309,7 +311,7 @@ export default function FleetManagementPage() {
           .subscribe();
 
       } catch (error) {
-        setMessage({ type: 'error', text: "Failed to load fleet data. Please try again later." });
+        setMessage({ type: 'error', text: t('messages.failedToLoad') });
       } finally {
         setLoading(false);
       }
@@ -411,11 +413,11 @@ export default function FleetManagementPage() {
               <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                 <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
                   <FileText size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-                  Fleet Reports
+                  {t('reports.title')}
                 </h3>
                 <span className="inline-flex items-center px-2.5 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium rounded-full">
                   <Lock size={12} className="mr-1" />
-                  Fleet Plan
+                  {t('reports.fleetPlan')}
                 </span>
               </div>
               <div className="p-6">
@@ -424,31 +426,30 @@ export default function FleetManagementPage() {
                     <BarChart2 size={28} className="text-gray-400 dark:text-gray-500" />
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    Advanced Fleet Reports
+                    {t('reports.advancedReports')}
                   </h4>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                    Unlock comprehensive fleet reports including fleet summaries, maintenance schedules,
-                    document expiration reports, and automated weekly reporting.
+                    {t('reports.unlockDescription')}
                   </p>
                   <div className="flex flex-wrap justify-center gap-3 mb-6">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <BarChart2 size={16} className="text-blue-600 dark:text-blue-400" />
-                      Fleet Summary Report
+                      {t('reports.fleetSummary')}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
-                      Maintenance Schedule
+                      {t('reports.maintenanceSchedule')}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <Download size={16} className="text-green-600 dark:text-green-400" />
-                      Export Fleet Data
+                      {t('reports.exportFleetData')}
                     </div>
                   </div>
                   <Link
                     href="/dashboard/upgrade"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                   >
-                    Upgrade to Fleet Plan
+                    {t('reports.upgradeToFleet')}
                   </Link>
                 </div>
               </div>

@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function OverdueInvoicesComponent({ invoices, onViewInvoice }) {
+  const { t } = useTranslation('invoices');
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -26,13 +29,13 @@ export default function OverdueInvoicesComponent({ invoices, onViewInvoice }) {
       <div className="bg-blue-500 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <AlertCircle size={18} className="mr-2" />
-          Overdue Invoices
+          {t('overdueInvoices.title')}
         </h3>
       </div>
       <div className="p-4">
         {invoices.length === 0 ? (
           <div className="text-gray-500 text-center py-6">
-            No overdue invoices
+            {t('overdueInvoices.noOverdue')}
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
@@ -50,7 +53,7 @@ export default function OverdueInvoicesComponent({ invoices, onViewInvoice }) {
                         {invoice.customer}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Due: {formatDate(invoice.due_date)} ({daysOverdue} {daysOverdue === 1 ? 'day' : 'days'} overdue)
+                        {t('fields.dueDate')}: {formatDate(invoice.due_date)} ({daysOverdue === 1 ? t('sidebar.dayOverdue', { days: daysOverdue }) : t('sidebar.daysOverdue', { days: daysOverdue })})
                       </div>
                     </div>
                     <div className="flex items-center">
@@ -68,7 +71,7 @@ export default function OverdueInvoicesComponent({ invoices, onViewInvoice }) {
               href="/dashboard/invoices?filter=overdue"
               className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
             >
-              View all overdue invoices
+              {t('sidebar.viewAllOverdue')}
             </Link>
           </div>
         )}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useLanguage, useTranslation, SUPPORTED_LANGUAGES } from "@/context/LanguageContext";
 import {
   Settings,
   LogOut,
@@ -26,12 +27,13 @@ export default function UserDropdown() {
   const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
   const [languageMenuClicked, setLanguageMenuClicked] = useState(false);
   const [learnMoreMenuClicked, setLearnMoreMenuClicked] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const dropdownRef = useRef(null);
   const languageTimeoutRef = useRef(null);
   const learnMoreTimeoutRef = useRef(null);
   const router = useRouter();
   const { user, userProfile, subscription } = useSubscription();
+  const { language: currentLanguage, setLanguage } = useLanguage();
+  const { t } = useTranslation('common');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -51,11 +53,6 @@ export default function UserDropdown() {
     };
   }, []);
 
-  // Load saved language preference
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem("language") || "en";
-    setSelectedLanguage(savedLanguage);
-  }, []);
 
   // Helper functions for menu hover with delay
   const handleLanguageMenuEnter = () => {
@@ -107,15 +104,15 @@ export default function UserDropdown() {
 
   // Get user's current plan name
   const getPlanName = () => {
-    if (!subscription) return 'Free trial';
-    
+    if (!subscription) return t('userDropdown.freeTrial');
+
     const plan = subscription.plan || 'basic';
-    
+
     switch(plan) {
-      case 'basic': return 'Basic plan';
-      case 'premium': return 'Premium plan';
-      case 'fleet': return 'Fleet plan';
-      default: return 'Free trial';
+      case 'basic': return t('userDropdown.basicPlan');
+      case 'premium': return t('userDropdown.premiumPlan');
+      case 'fleet': return t('userDropdown.fleetPlan');
+      default: return t('userDropdown.freeTrial');
     }
   };
 
@@ -163,7 +160,7 @@ export default function UserDropdown() {
               className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
-              <span>Settings</span>
+              <span>{t('userDropdown.settings')}</span>
             </Link>
 
             <button
@@ -185,7 +182,7 @@ export default function UserDropdown() {
               }}
             >
               <div className="flex items-center">
-                <span>Language</span>
+                <span>{t('userDropdown.language')}</span>
                 <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded text-gray-700 dark:text-gray-300">BETA</span>
               </div>
               <ChevronLeft size={16} className="text-gray-400 dark:text-gray-500" />
@@ -196,7 +193,7 @@ export default function UserDropdown() {
               className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
-              <span>Get help</span>
+              <span>{t('userDropdown.getHelp')}</span>
             </Link>
           </div>
 
@@ -206,7 +203,7 @@ export default function UserDropdown() {
               className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
               onClick={() => setIsOpen(false)}
             >
-              <span>View all plans</span>
+              <span>{t('userDropdown.viewAllPlans')}</span>
             </Link>
 
             <button
@@ -227,7 +224,7 @@ export default function UserDropdown() {
                 setLanguageMenuClicked(false);
               }}
             >
-              <span>Learn more</span>
+              <span>{t('userDropdown.learnMore')}</span>
               <ChevronLeft size={16} className="text-gray-400 dark:text-gray-500" />
             </button>
           </div>
@@ -240,7 +237,7 @@ export default function UserDropdown() {
               }}
               className="block w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-150 ease-in-out"
             >
-              Log out
+              {t('userDropdown.logOut')}
             </button>
           </div>
         </div>
@@ -252,31 +249,22 @@ export default function UserDropdown() {
             onMouseEnter={handleLanguageMenuEnter}
             onMouseLeave={handleLanguageMenuLeave}
           >
-            <button
-              className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setSelectedLanguage("en");
-                setShowLanguageMenu(false);
-                setLanguageMenuClicked(false);
-                localStorage.setItem("language", "en");
-              }}
-            >
-              <span>English</span>
-              {selectedLanguage === "en" && <Check size={16} className="text-green-600 dark:text-green-400" />}
-            </button>
-            <div className="border-t border-gray-200 dark:border-gray-700"></div>
-            <button
-              className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setSelectedLanguage("es");
-                setShowLanguageMenu(false);
-                setLanguageMenuClicked(false);
-                localStorage.setItem("language", "es");
-              }}
-            >
-              <span>Español</span>
-              {selectedLanguage === "es" && <Check size={16} className="text-green-600 dark:text-green-400" />}
-            </button>
+            {Object.values(SUPPORTED_LANGUAGES).map((lang, index) => (
+              <div key={lang.code}>
+                {index > 0 && <div className="border-t border-gray-200 dark:border-gray-700"></div>}
+                <button
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                  onClick={() => {
+                    setLanguage(lang.code);
+                    setShowLanguageMenu(false);
+                    setLanguageMenuClicked(false);
+                  }}
+                >
+                  <span>{lang.nativeName}</span>
+                  {currentLanguage === lang.code && <Check size={16} className="text-green-600 dark:text-green-400" />}
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
@@ -296,7 +284,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              About Us
+              {t('userDropdown.aboutUs')}
             </Link>
             <Link
               href="/feedback"
@@ -307,7 +295,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              Feedback
+              {t('userDropdown.feedback')}
             </Link>
             <div className="border-t border-gray-200 dark:border-gray-700"></div>
             <Link
@@ -319,7 +307,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              Terms of Service
+              {t('userDropdown.termsOfService')}
             </Link>
             <Link
               href="/privacy"
@@ -330,7 +318,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              Privacy Policy
+              {t('userDropdown.privacyPolicy')}
             </Link>
             <Link
               href="/cookies"
@@ -341,7 +329,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              Cookie Policy
+              {t('userDropdown.cookiePolicy')}
             </Link>
             <Link
               href="/acceptable-use"
@@ -352,7 +340,7 @@ export default function UserDropdown() {
                 setLearnMoreMenuClicked(false);
               }}
             >
-              Acceptable Use
+              {t('userDropdown.acceptableUse')}
             </Link>
           </div>
         )}

@@ -1,6 +1,9 @@
 // src/components/dashboard/BusinessOverview.js
+"use client";
+
 import Link from "next/link";
 import { Truck, FileText, Calendar, ChevronRight } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Business Overview Component
@@ -11,6 +14,8 @@ import { Truck, FileText, Calendar, ChevronRight } from "lucide-react";
  * @param {boolean} props.isLoading Whether data is loading
  */
 export default function BusinessOverview({ stats, isLoading }) {
+  const { t } = useTranslation('dashboard');
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       {isLoading ? (
@@ -32,21 +37,21 @@ export default function BusinessOverview({ stats, isLoading }) {
       ) : (
         <>
           <InfoCard
-            title="Active Loads"
+            title={t('stats.activeLoads')}
             value={stats.activeLoads}
             icon={<Truck size={20} className="text-blue-600 dark:text-blue-400" />}
             href="/dashboard/dispatching"
             color="blue"
           />
           <InfoCard
-            title="Pending Invoices"
+            title={t('stats.pendingInvoices')}
             value={stats.pendingInvoices}
             icon={<FileText size={20} className="text-yellow-600 dark:text-yellow-400" />}
             href="/dashboard/invoices"
             color="yellow"
           />
           <InfoCard
-            title="Upcoming Deliveries"
+            title={t('stats.upcomingDeliveries')}
             value={stats.upcomingDeliveries}
             icon={<Calendar size={20} className="text-purple-600 dark:text-purple-400" />}
             href="/dashboard/dispatching"

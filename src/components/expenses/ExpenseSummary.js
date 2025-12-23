@@ -1,15 +1,18 @@
 // src/components/expenses/ExpenseSummary.js
 "use client";
 
-import { 
-  Wallet, 
-  BarChart2, 
-  Calendar, 
-  Clock, 
-  TrendingUp 
+import {
+  Wallet,
+  BarChart2,
+  Calendar,
+  Clock,
+  TrendingUp
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ExpenseSummary({ stats, dateRange }) {
+  const { t } = useTranslation('expenses');
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -24,7 +27,7 @@ export default function ExpenseSummary({ stats, dateRange }) {
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Total</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{t('summary.total')}</p>
             <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(stats.total)}</p>
           </div>
           <div className="bg-red-100 p-3 rounded-xl">
@@ -32,16 +35,16 @@ export default function ExpenseSummary({ stats, dateRange }) {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">{dateRange} expenses</span>
+          <span className="text-xs text-gray-500">{dateRange} {t('summary.expenses')}</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Top Category</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{t('summary.topCategory')}</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">
-              {stats.topCategory ? stats.topCategory.name : "None"}
+              {stats.topCategory ? stats.topCategory.name : t('summary.none')}
             </p>
           </div>
           <div className="bg-blue-100 p-3 rounded-xl">
@@ -50,17 +53,17 @@ export default function ExpenseSummary({ stats, dateRange }) {
         </div>
         <div className="px-4 py-2 bg-gray-50">
           <span className="text-xs text-gray-500">
-            {stats.topCategory 
-              ? `${formatCurrency(stats.topCategory.amount)}` 
-              : "No data available"}
+            {stats.topCategory
+              ? `${formatCurrency(stats.topCategory.amount)}`
+              : t('summary.noDataAvailable')}
           </span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Daily Average</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{t('summary.dailyAverage')}</p>
             <p className="text-2xl font-bold text-purple-600 mt-1">{formatCurrency(stats.dailyAverage)}</p>
           </div>
           <div className="bg-purple-100 p-3 rounded-xl">
@@ -68,14 +71,14 @@ export default function ExpenseSummary({ stats, dateRange }) {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Average spending per day</span>
+          <span className="text-xs text-gray-500">{t('summary.averageSpendingPerDay')}</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Monthly Trend</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{t('summary.monthlyTrend')}</p>
             <p className="text-2xl font-bold text-green-600 mt-1">
               {stats.monthlyTrend > 0 ? '+' : ''}{stats.monthlyTrend !== undefined ? `${stats.monthlyTrend}%` : "N/A"}
             </p>
@@ -85,14 +88,14 @@ export default function ExpenseSummary({ stats, dateRange }) {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Compared to previous month</span>
+          <span className="text-xs text-gray-500">{t('summary.comparedToPrevMonth')}</span>
         </div>
       </div>
-      
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-all">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Categories</p>
+            <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide">{t('summary.categories')}</p>
             <p className="text-2xl font-bold text-orange-600 mt-1">
               {Object.keys(stats.byCategory).filter(cat => stats.byCategory[cat] > 0).length}
             </p>
@@ -102,7 +105,7 @@ export default function ExpenseSummary({ stats, dateRange }) {
           </div>
         </div>
         <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs text-gray-500">Active spending categories</span>
+          <span className="text-xs text-gray-500">{t('summary.activeCategories')}</span>
         </div>
       </div>
     </div>

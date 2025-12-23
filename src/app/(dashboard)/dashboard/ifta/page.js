@@ -1,7 +1,8 @@
 // src/app/(dashboard)/dashboard/ifta/page.js
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -68,6 +69,7 @@ const STATE_NAMES = {
 
 export default function IFTACalculatorPage() {
   const router = useRouter();
+  const { t } = useTranslation('ifta');
 
   // Feature access check
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
@@ -110,7 +112,7 @@ export default function IFTACalculatorPage() {
 
       if (tripsError) {
         if (tripsError.code === '42P01') {
-          setError("The IFTA database table doesn't exist. Please contact support.");
+          setError(t('page.tableDoesNotExist'));
           return [];
         }
         throw tripsError;
@@ -143,10 +145,10 @@ export default function IFTACalculatorPage() {
         license_plate: vehicleInfo[trip.vehicle_id]?.license_plate || null
       }));
     } catch (err) {
-      setError('Failed to load trip records.');
+      setError(t('page.failedToLoadTrips'));
       return [];
     }
-  }, [user?.id, activeQuarter]);
+  }, [user?.id, activeQuarter, t]);
 
   // Load fuel data
   const loadFuelData = useCallback(async () => {
@@ -168,10 +170,10 @@ export default function IFTACalculatorPage() {
         gallons: parseFloat(entry.gallons) || 0
       }));
     } catch {
-      setError('Failed to load fuel data.');
+      setError(t('page.failedToLoadFuel'));
       return [];
     }
-  }, [user?.id, activeQuarter]);
+  }, [user?.id, activeQuarter, t]);
 
   // Get unique vehicles from data
   const getUniqueVehicles = useCallback(() => {
@@ -298,7 +300,7 @@ export default function IFTACalculatorPage() {
           setActiveQuarter(`${now.getFullYear()}-Q${quarter}`);
         }
       } catch {
-        setError('Authentication error. Please try logging in again.');
+        setError(t('page.authError'));
       } finally {
         setInitialLoading(false);
       }
@@ -335,7 +337,7 @@ export default function IFTACalculatorPage() {
         setTrips(tripsData);
         setFuelData(fuelEntries);
       } catch {
-        setError('Failed to load data.');
+        setError(t('page.failedToLoadData'));
       } finally {
         setLoading(false);
       }
@@ -355,7 +357,7 @@ export default function IFTACalculatorPage() {
     setFuelData(fuelEntries);
     setLoading(false);
 
-    setStatusMessage({ type: 'success', text: 'Data refreshed successfully!' });
+    setStatusMessage({ type: 'success', text: t('page.dataRefreshed') });
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -378,10 +380,10 @@ export default function IFTACalculatorPage() {
       if (deleteError) throw deleteError;
 
       setTrips(prev => prev.filter(t => t.id !== tripToDelete.id));
-      setStatusMessage({ type: 'success', text: 'Trip deleted successfully!' });
+      setStatusMessage({ type: 'success', text: t('page.tripDeleted') });
       setTimeout(() => setStatusMessage(null), 3000);
     } catch {
-      setError('Failed to delete trip.');
+      setError(t('page.failedToDeleteTrip'));
     } finally {
       setLoading(false);
       setDeleteModalOpen(false);
@@ -392,7 +394,7 @@ export default function IFTACalculatorPage() {
   // Export handler
   const handleExport = () => {
     if (!trips.length) {
-      setError("No trip data available to export.");
+      setError(t('page.noDataToExport'));
       return;
     }
     setExportModalOpen(true);
@@ -428,9 +430,9 @@ export default function IFTACalculatorPage() {
                   <Calculator size={28} />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold">{t('page.title')}</h1>
                   <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                    Upgrade to Premium to access IFTA tax reporting
+                    {t('page.upgradeSubtitle')}
                   </p>
                 </div>
               </div>
@@ -442,38 +444,38 @@ export default function IFTACalculatorPage() {
             {/* Feature Preview */}
             <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                What you'll get with IFTA Calculator:
+                {t('upgrade.whatYouGet')}
               </h3>
               <ul className="space-y-3 text-gray-600 dark:text-gray-300">
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                     <Route size={16} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span>Automatic mileage tracking by jurisdiction</span>
+                  <span>{t('upgrade.featureMileageTracking')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
                     <Fuel size={16} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <span>Fuel purchase tracking integrated with Fuel Tracker</span>
+                  <span>{t('upgrade.featureFuelIntegration')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
                     <Gauge size={16} className="text-orange-600 dark:text-orange-400" />
                   </div>
-                  <span>Average MPG calculations per jurisdiction</span>
+                  <span>{t('upgrade.featureMpgCalculations')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
                     <FileDown size={16} className="text-purple-600 dark:text-purple-400" />
                   </div>
-                  <span>Export quarterly IFTA reports in PDF format</span>
+                  <span>{t('upgrade.featureExportReports')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                     <MapPin size={16} className="text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <span>Multi-jurisdiction summary for all 48 IFTA states</span>
+                  <span>{t('upgrade.featureMultiJurisdiction')}</span>
                 </li>
               </ul>
             </div>
@@ -497,9 +499,9 @@ export default function IFTACalculatorPage() {
                     <Calculator size={28} />
                   </div>
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">IFTA Calculator</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold">{t('page.title')}</h1>
                     <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                      Generate your quarterly IFTA tax report
+                      {t('page.subtitle')}
                     </p>
                   </div>
                 </div>
@@ -510,7 +512,7 @@ export default function IFTACalculatorPage() {
                   className="px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 flex items-center font-medium"
                 >
                   <Fuel size={18} className="mr-2" />
-                  Fuel Tracker
+                  {t('page.fuelTrackerButton')}
                 </Link>
                 <button
                   onClick={handleExport}
@@ -518,7 +520,7 @@ export default function IFTACalculatorPage() {
                   className="px-4 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 shadow-md flex items-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FileDown size={18} className="mr-2" />
-                  Export Report
+                  {t('page.exportReportButton')}
                 </button>
               </div>
             </div>
@@ -560,35 +562,35 @@ export default function IFTACalculatorPage() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="ifta"
-            title="IFTA Calculator"
-            description="Generate your quarterly IFTA tax report"
+            title={t('page.title')}
+            description={t('page.subtitle')}
             features={[
               {
                 icon: Calculator,
-                title: "Tax Calculation",
-                description: "Automatically calculate fuel tax owed or credits by jurisdiction"
+                title: t('tutorial.taxCalculationTitle'),
+                description: t('tutorial.taxCalculationDesc')
               },
               {
                 icon: MapPinned,
-                title: "State Breakdown",
-                description: "View mileage and fuel gallons by state/province for reporting"
+                title: t('tutorial.stateBreakdownTitle'),
+                description: t('tutorial.stateBreakdownDesc')
               },
               {
                 icon: Route,
-                title: "Trip Records",
-                description: "Track trip mileage data to support your IFTA filing"
+                title: t('tutorial.tripRecordsTitle'),
+                description: t('tutorial.tripRecordsDesc')
               },
               {
                 icon: FileText,
-                title: "Export Reports",
-                description: "Generate PDF or CSV reports for quarterly IFTA filing"
+                title: t('tutorial.exportReportsTitle'),
+                description: t('tutorial.exportReportsDesc')
               }
             ]}
             tips={[
-              "Select the correct quarter and year before generating reports",
-              "Filter by vehicle to see individual truck IFTA data",
-              "Ensure all fuel purchases have the correct state recorded",
-              "Export your report to file with your state IFTA office"
+              t('tutorial.tipSelectQuarter'),
+              t('tutorial.tipFilterVehicle'),
+              t('tutorial.tipFuelState'),
+              t('tutorial.tipExportFile')
             ]}
             accentColor="indigo"
             userId={user?.id}
@@ -599,7 +601,7 @@ export default function IFTACalculatorPage() {
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  IFTA Quarter
+                  {t('page.quarterLabel')}
                 </label>
                 <QuarterSelector
                   activeQuarter={activeQuarter}
@@ -609,7 +611,7 @@ export default function IFTACalculatorPage() {
               </div>
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Vehicle Filter
+                  {t('page.vehicleFilterLabel')}
                 </label>
                 <VehicleSelector
                   selectedVehicle={selectedVehicle}
@@ -625,7 +627,7 @@ export default function IFTACalculatorPage() {
                 className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center font-medium"
               >
                 <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
+                {t('page.refreshButton')}
               </button>
             </div>
           </div>
@@ -637,12 +639,12 @@ export default function IFTACalculatorPage() {
                 <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                   <Route size={20} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Miles</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('stats.miles')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {Math.round(stats.totalMiles).toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total driven</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('stats.totalDriven')}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -650,12 +652,12 @@ export default function IFTACalculatorPage() {
                 <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
                   <Fuel size={20} className="text-green-600 dark:text-green-400" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fuel</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('stats.fuel')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {Math.round(stats.totalGallons).toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Gallons purchased</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('stats.gallonsPurchased')}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -663,12 +665,12 @@ export default function IFTACalculatorPage() {
                 <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
                   <Gauge size={20} className="text-orange-600 dark:text-orange-400" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">MPG</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('stats.mpg')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {stats.avgMpg.toFixed(2)}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Average efficiency</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('stats.averageEfficiency')}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -676,12 +678,12 @@ export default function IFTACalculatorPage() {
                 <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
                   <MapPin size={20} className="text-purple-600 dark:text-purple-400" />
                 </div>
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">States</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('stats.states')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {stats.jurisdictionCount}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Jurisdictions</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('stats.jurisdictions')}</p>
             </div>
           </div>
 
@@ -690,7 +692,7 @@ export default function IFTACalculatorPage() {
             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <MapPin size={20} className="mr-2 text-blue-500" />
-                IFTA Jurisdiction Summary
+                {t('table.jurisdictionSummary')}
               </h2>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {activeQuarter}
@@ -707,10 +709,10 @@ export default function IFTACalculatorPage() {
                   <MapPin size={32} className="text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  No IFTA Data Yet
+                  {t('emptyState.noDataYet')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                  Start by recording trips in the State Mileage Tracker and fuel purchases in the Fuel Tracker.
+                  {t('emptyState.startByRecording')}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Link
@@ -718,14 +720,14 @@ export default function IFTACalculatorPage() {
                     className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center font-medium"
                   >
                     <Route size={18} className="mr-2" />
-                    Go to State Mileage
+                    {t('emptyState.goToStateMileage')}
                   </Link>
                   <Link
                     href="/dashboard/fuel"
                     className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center font-medium"
                   >
                     <Fuel size={18} className="mr-2" />
-                    Go to Fuel Tracker
+                    {t('emptyState.goToFuelTracker')}
                   </Link>
                 </div>
               </div>
@@ -737,13 +739,13 @@ export default function IFTACalculatorPage() {
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
                         <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Jurisdiction
+                          {t('table.jurisdiction')}
                         </th>
                         <th className="px-5 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Miles Driven
+                          {t('table.milesDriven')}
                         </th>
                         <th className="px-5 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                          Fuel Purchased (gal)
+                          {t('table.fuelPurchasedGal')}
                         </th>
                       </tr>
                     </thead>
@@ -774,7 +776,7 @@ export default function IFTACalculatorPage() {
                     <tfoot className="bg-gray-100 dark:bg-gray-700">
                       <tr>
                         <td className="px-5 py-4 font-semibold text-gray-900 dark:text-gray-100">
-                          Total
+                          {t('table.total')}
                         </td>
                         <td className="px-5 py-4 text-right font-bold text-gray-900 dark:text-gray-100">
                           {stats.totalMiles.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
@@ -801,13 +803,13 @@ export default function IFTACalculatorPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Miles</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">{t('stats.miles')}</p>
                           <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                             {j.miles.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Gallons</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">{t('table.gallons')}</p>
                           <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                             {j.gallons.toLocaleString(undefined, { maximumFractionDigits: 3 })}
                           </p>
@@ -818,16 +820,16 @@ export default function IFTACalculatorPage() {
 
                   {/* Mobile Total */}
                   <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">Total</p>
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">{t('table.total')}</p>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">Miles</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">{t('stats.miles')}</p>
                         <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                           {stats.totalMiles.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">Gallons</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1">{t('table.gallons')}</p>
                         <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                           {stats.totalGallons.toLocaleString(undefined, { maximumFractionDigits: 3 })}
                         </p>
@@ -848,9 +850,9 @@ export default function IFTACalculatorPage() {
               >
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                   <Truck size={20} className="mr-2 text-gray-500" />
-                  Trip Records
+                  {t('tripRecords.title')}
                   <span className="ml-2 text-sm font-normal text-gray-500">
-                    ({displayTrips.length} trips)
+                    ({t('tripRecords.tripsCount', { count: displayTrips.length })})
                   </span>
                 </h2>
                 {showTripDetails ? (
@@ -909,7 +911,11 @@ export default function IFTACalculatorPage() {
                   {displayTrips.length > tripsPerPage && (
                     <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-700/30">
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Showing {((currentPage - 1) * tripsPerPage) + 1} - {Math.min(currentPage * tripsPerPage, displayTrips.length)} of {displayTrips.length} trips
+                        {t('tripRecords.showingTrips', {
+                          from: ((currentPage - 1) * tripsPerPage) + 1,
+                          to: Math.min(currentPage * tripsPerPage, displayTrips.length),
+                          total: displayTrips.length
+                        })}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -945,33 +951,33 @@ export default function IFTACalculatorPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                  How to use IFTA Calculator
+                  {t('help.howToUse')}
                 </h3>
                 <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                   <li className="flex items-start gap-2">
                     <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                     <span>
-                      <strong>Track mileage</strong> in the{" "}
+                      <strong>{t('help.trackMileage')}</strong>{" "}
                       <Link href="/dashboard/mileage" className="underline hover:text-blue-600">
-                        State Mileage Tracker
+                        {t('help.stateMileageTracker')}
                       </Link>
-                      {" "}by recording state border crossings
+                      {" "}{t('help.trackMileageDesc')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                     <span>
-                      <strong>Log fuel purchases</strong> in the{" "}
+                      <strong>{t('help.logFuelPurchases')}</strong>{" "}
                       <Link href="/dashboard/fuel" className="underline hover:text-blue-600">
-                        Fuel Tracker
+                        {t('page.fuelTrackerButton')}
                       </Link>
-                      {" "}with the state where fuel was purchased
+                      {" "}{t('help.logFuelPurchasesDesc')}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                     <span>
-                      <strong>Export your report</strong> at the end of each quarter for IFTA filing
+                      <strong>{t('help.exportReport')}</strong> {t('help.exportReportDesc')}
                     </span>
                   </li>
                 </ul>
@@ -988,9 +994,9 @@ export default function IFTACalculatorPage() {
             setTripToDelete(null);
           }}
           onConfirm={confirmDeleteTrip}
-          title="Delete Trip"
-          message="Are you sure you want to delete this trip? This action cannot be undone."
-          itemName={tripToDelete ? `Trip from ${tripToDelete.start_jurisdiction} to ${tripToDelete.end_jurisdiction}` : ""}
+          title={t('deleteModal.title')}
+          message={t('deleteModal.message')}
+          itemName={tripToDelete ? t('tripRecords.tripFrom', { from: tripToDelete.start_jurisdiction, to: tripToDelete.end_jurisdiction }) : ""}
           isDeleting={loading && deleteModalOpen}
         />
 

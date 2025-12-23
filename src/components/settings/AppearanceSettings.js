@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useSidebar } from "@/context/SidebarContext";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   RefreshCw,
   Save,
@@ -44,6 +45,7 @@ const SIDEBAR_ICONS = {
 };
 
 export default function AppearanceSettings() {
+  const { t } = useTranslation('settings');
   const [saving, setSaving] = useState(false);
   const [savingSidebar, setSavingSidebar] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -388,13 +390,13 @@ export default function AppearanceSettings() {
 
       await updateSidebarConfig(localSidebarConfig);
       setSidebarHasChanges(false);
-      setSuccessMessage('Sidebar preferences saved successfully!');
+      setSuccessMessage(t('appearance.messages.sidebarSuccess'));
 
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
     } catch (error) {
-      setErrorMessage(`Failed to save sidebar settings: ${error.message}`);
+      setErrorMessage(`${t('appearance.messages.sidebarFailed')}: ${error.message}`);
     } finally {
       setSavingSidebar(false);
     }
@@ -409,13 +411,13 @@ export default function AppearanceSettings() {
 
       await resetToDefaults();
       setSidebarHasChanges(false);
-      setSuccessMessage('Sidebar reset to default settings!');
+      setSuccessMessage(t('appearance.messages.sidebarResetSuccess'));
 
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
     } catch (error) {
-      setErrorMessage(`Failed to reset sidebar: ${error.message}`);
+      setErrorMessage(`${t('appearance.messages.sidebarResetFailed')}: ${error.message}`);
     } finally {
       setSavingSidebar(false);
     }
@@ -438,7 +440,7 @@ export default function AppearanceSettings() {
       await updateTheme(selectedTheme);
 
       // Show success message
-      setSuccessMessage('Theme preference saved successfully!');
+      setSuccessMessage(t('appearance.messages.themeSuccess'));
 
       // Hide success message after 5 seconds
       setTimeout(() => {
@@ -446,7 +448,7 @@ export default function AppearanceSettings() {
       }, 5000);
 
     } catch (error) {
-      setErrorMessage(`Failed to update appearance settings: ${error.message}`);
+      setErrorMessage(`${t('appearance.messages.themeFailed')}: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -482,7 +484,7 @@ export default function AppearanceSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
-        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading appearance settings...</span>
+        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('appearance.loading')}</span>
       </div>
     );
   }
@@ -512,20 +514,20 @@ export default function AppearanceSettings() {
         {/* Theme Settings */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-6">
-            <h3 className="text-lg font-medium text-white">Theme Preference</h3>
+            <h3 className="text-lg font-medium text-white">{t('appearance.themePreference')}</h3>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Choose between light and dark theme for your dashboard</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('appearance.themeDescription')}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
             <ThemeOption
               value="light"
-              label="Light Mode"
+              label={t('appearance.themes.light')}
               icon={<Sun size={32} />}
             />
 
             <ThemeOption
               value="dark"
-              label="Dark Mode"
+              label={t('appearance.themes.dark')}
               icon={<Moon size={32} />}
             />
           </div>
@@ -542,12 +544,12 @@ export default function AppearanceSettings() {
             {saving ? (
               <>
                 <RefreshCw size={18} className="animate-spin mr-2" />
-                Saving...
+                {t('common:buttons.saving')}
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                Save Theme Preference
+                {t('appearance.saveTheme')}
               </>
             )}
           </button>
@@ -559,14 +561,14 @@ export default function AppearanceSettings() {
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
           <div className="flex items-center">
             <Menu size={20} className="text-white mr-2" />
-            <h3 className="text-lg font-medium text-white">Sidebar Navigation</h3>
+            <h3 className="text-lg font-medium text-white">{t('appearance.sidebarNavigation')}</h3>
           </div>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          Customize which items appear in your sidebar and their display order.
+          {t('appearance.sidebarDescription')}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
-          Drag items to reorder, use arrow buttons, or toggle visibility. On mobile, tap and hold the grip handle.
+          {t('appearance.sidebarTip')}
         </p>
 
         {/* Sidebar Items List */}
@@ -577,9 +579,9 @@ export default function AppearanceSettings() {
           {/* Header Row */}
           <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
             <div className="col-span-1"></div>
-            <div className="col-span-5">Menu Item</div>
-            <div className="col-span-3 text-center">Reorder</div>
-            <div className="col-span-3 text-center">Visible</div>
+            <div className="col-span-5">{t('appearance.menuItem')}</div>
+            <div className="col-span-3 text-center">{t('appearance.reorder')}</div>
+            <div className="col-span-3 text-center">{t('appearance.visible')}</div>
           </div>
 
           {localSidebarConfig.map((item, index) => {
@@ -675,7 +677,7 @@ export default function AppearanceSettings() {
                     {isDashboard && (
                       <span className="inline-flex items-center text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">
                         <Lock size={10} className="mr-1" />
-                        Always visible
+                        {t('appearance.alwaysVisible')}
                       </span>
                     )}
                   </div>
@@ -747,7 +749,7 @@ export default function AppearanceSettings() {
         {/* Info Box */}
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg max-w-2xl">
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            <strong>Tip:</strong> Hidden items are still accessible via direct URL. Changes take effect immediately after saving.
+            <strong>{t('common:tip')}:</strong> {t('appearance.sidebarTipBox')}
           </p>
         </div>
 
@@ -756,7 +758,7 @@ export default function AppearanceSettings() {
           <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg max-w-2xl flex items-center">
             <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 mr-2 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              You have unsaved changes. Don&apos;t forget to save!
+              {t('appearance.unsavedChanges')}
             </p>
           </div>
         )}
@@ -770,7 +772,7 @@ export default function AppearanceSettings() {
             className="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RotateCcw size={16} className="mr-2" />
-            Reset to Default
+            {t('appearance.resetToDefault')}
           </button>
 
           <button
@@ -786,12 +788,12 @@ export default function AppearanceSettings() {
             {savingSidebar ? (
               <>
                 <RefreshCw size={18} className="animate-spin mr-2" />
-                Saving...
+                {t('common:buttons.saving')}
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                Save Sidebar Settings
+                {t('appearance.saveSidebarSettings')}
               </>
             )}
           </button>

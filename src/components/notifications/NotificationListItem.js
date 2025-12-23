@@ -7,9 +7,11 @@ import {
   CalendarClock, TruckIcon, ServerCrash, Bell, Wrench,
   User, CreditCard, Package, Clock, AlertCircle, Fuel
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
   const router = useRouter();
+  const { t } = useTranslation('common');
 
   const getIcon = () => {
     let iconDetails = {
@@ -136,15 +138,15 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
 
     const badges = {
       CRITICAL: {
-        text: 'Critical',
+        text: t('notifications.urgency.critical'),
         className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
       },
       HIGH: {
-        text: 'High Priority',
+        text: t('notifications.urgency.highPriority'),
         className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
       },
       MEDIUM: {
-        text: 'Medium',
+        text: t('notifications.urgency.medium'),
         className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
       }
     };
@@ -189,12 +191,12 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
 
     if (diffInHours < 1) {
       const minutes = Math.floor((now - date) / (1000 * 60));
-      return minutes <= 1 ? 'Just now' : `${minutes} minutes ago`;
+      return minutes <= 1 ? t('notifications.time.justNow') : t('notifications.time.minutesAgo', { count: minutes });
     } else if (diffInHours < 24) {
       const hours = Math.floor(diffInHours);
-      return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+      return hours === 1 ? t('notifications.time.hourAgo') : t('notifications.time.hoursAgo', { count: hours });
     } else if (diffInHours < 48) {
-      return 'Yesterday';
+      return t('notifications.time.yesterday');
     } else {
       return date.toLocaleDateString(undefined, {
         year: 'numeric',
@@ -262,7 +264,7 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
                 <button
                   onClick={handleMarkAsReadClick}
                   className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-                  title="Mark as read"
+                  title={t('notifications.markAsRead')}
                 >
                   <CheckCircle size={16} />
                 </button>
@@ -271,7 +273,7 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
                 <button
                   onClick={handleDeleteClick}
                   className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
-                  title="Delete notification"
+                  title={t('notifications.deleteNotification')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -303,7 +305,7 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
                     : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   <CalendarClock size={10} />
-                  Due: {new Date(notification.due_date).toLocaleDateString(undefined, {
+                  {t('notifications.due')} {new Date(notification.due_date).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric'
                   })}

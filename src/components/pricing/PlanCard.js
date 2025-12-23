@@ -2,30 +2,33 @@
 
 import Link from 'next/link';
 import { Check, X, CheckCircle } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
-export default function PlanCard({ 
-  name, 
-  description = "", 
-  price, 
-  yearlyPrice, 
-  billingCycle, 
-  features = [], 
+export default function PlanCard({
+  name,
+  description = "",
+  price,
+  yearlyPrice,
+  billingCycle,
+  features = [],
   highlighted = false,
   freeTrial = true,
-  ctaText = "Start Free Trial",
+  ctaText,
   ctaLink = "/signup",
   textColor = "text-gray-900" // Add this default parameter
 }) {
+  const { t } = useTranslation('landing');
   const isYearly = billingCycle === 'yearly';
   const displayPrice = isYearly ? yearlyPrice : price;
   const yearlyDiscount = Math.round(((price * 12) - (yearlyPrice * 12)) / (price * 12) * 100);
+  const buttonText = ctaText || t('pricing.startFreeTrial');
   
   return (
     <div className={`bg-white rounded-xl shadow-lg overflow-hidden transition-all text-black duration-300 hover:shadow-xl hover:-translate-y-1 ${highlighted ? 'relative' : ''}`}>
       {highlighted && (
         <div className="absolute top-0 right-0">
           <div className="bg-orange-500 text-white transform rotate-45 text-center text-sm py-1 px-8 translate-x-8 translate-y-4">
-            Popular
+            {t('pricing.popular')}
           </div>
         </div>
       )}
@@ -37,17 +40,17 @@ export default function PlanCard({
           <p className="text-5xl font-bold">
             ${displayPrice}
           </p>
-          <span className="text-black text-xl ml-1">/mo</span>
+          <span className="text-black text-xl ml-1">{t('pricing.perMonth')}</span>
         </div>
         <p className="text-gray-600 mt-2">
-          {isYearly 
-            ? `Billed $${displayPrice * 12} yearly (save $${Math.round((price * 12) - (displayPrice * 12))})`
-            : 'Billed monthly'}
+          {isYearly
+            ? t('pricing.billedYearly', { amount: displayPrice * 12, savings: Math.round((price * 12) - (displayPrice * 12)) })
+            : t('pricing.billedMonthly')}
         </p>
         {freeTrial && (
           <div className="mt-4 bg-green-100 text-green-800 py-2 px-3 rounded-lg inline-flex items-center">
             <CheckCircle size={16} className="mr-1" />
-            <span>7-day free trial</span>
+            <span>{t('pricing.freeTrial')}</span>
           </div>
         )}
       </div>
@@ -70,7 +73,7 @@ export default function PlanCard({
           href={`${ctaLink}?plan=${name.toLowerCase().replace(/\s+/g, '-')}`}
           className="block w-full text-center mt-8 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          {ctaText}
+          {buttonText}
         </Link>
       </div>
     </div>

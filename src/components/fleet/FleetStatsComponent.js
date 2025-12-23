@@ -7,8 +7,11 @@ import {
   AlertTriangle,
   Users
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FleetStatsComponent({ truckStats, driverStats }) {
+  const { t } = useTranslation('fleet');
+
   // Calculate utilization rate
   const utilizationRate = truckStats.total > 0
     ? Math.round((truckStats.active / truckStats.total) * 100)
@@ -16,54 +19,54 @@ export default function FleetStatsComponent({ truckStats, driverStats }) {
 
   const statCards = [
     {
-      label: "Total Vehicles",
+      label: t('stats.totalVehicles'),
       value: truckStats.total,
       icon: Truck,
       iconBg: "bg-blue-100 dark:bg-blue-900/40",
       iconColor: "text-blue-600 dark:text-blue-400",
       borderColor: "border-l-blue-500 dark:border-l-blue-500",
       footerBg: "bg-blue-50 dark:bg-blue-900/20",
-      description: "All vehicles in fleet"
+      description: t('stats.allVehiclesInFleet')
     },
     {
-      label: "Active Vehicles",
+      label: t('stats.activeVehicles'),
       value: truckStats.active,
       icon: Activity,
       iconBg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
       borderColor: "border-l-green-500 dark:border-l-green-500",
       footerBg: "bg-green-50 dark:bg-green-900/20",
-      description: `${utilizationRate}% utilization rate`
+      description: t('stats.utilizationRate', { rate: utilizationRate })
     },
     {
-      label: "In Maintenance",
+      label: t('stats.inMaintenance'),
       value: truckStats.maintenance,
       icon: FileCog,
       iconBg: "bg-orange-100 dark:bg-orange-900/40",
       iconColor: "text-orange-600 dark:text-orange-400",
       borderColor: "border-l-orange-500 dark:border-l-orange-500",
       footerBg: "bg-orange-50 dark:bg-orange-900/20",
-      description: "Being serviced"
+      description: t('stats.beingServiced')
     },
     {
-      label: "Out of Service",
+      label: t('stats.outOfService'),
       value: truckStats.outOfService,
       icon: AlertTriangle,
       iconBg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
       borderColor: "border-l-red-500 dark:border-l-red-500",
       footerBg: "bg-red-50 dark:bg-red-900/20",
-      description: "Needs attention"
+      description: t('stats.needsAttention')
     },
     {
-      label: "Total Drivers",
+      label: t('stats.totalDrivers'),
       value: driverStats.total,
       icon: Users,
       iconBg: "bg-purple-100 dark:bg-purple-900/40",
       iconColor: "text-purple-600 dark:text-purple-400",
       borderColor: "border-l-purple-500 dark:border-l-purple-500",
       footerBg: "bg-purple-50 dark:bg-purple-900/20",
-      description: "All registered drivers"
+      description: t('stats.allRegisteredDrivers')
     }
   ];
 

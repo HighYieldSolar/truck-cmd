@@ -10,6 +10,7 @@ import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import { getInvoiceById, updateInvoiceStatus, recordPayment, deleteInvoice, emailInvoice } from "@/lib/services/invoiceService";
 import InvoicePdfGenerator from "@/components/invoices/InvoicePdfGenerator";
 import PaymentModal from "@/components/invoices/PaymentModal";
+import { useTranslation } from "@/context/LanguageContext";
 
 import {
   ChevronLeft,
@@ -92,7 +93,7 @@ const InvoiceHistoryItem = ({ activity }) => {
 };
 
 // Actions Dropdown Component
-const ActionsDropdown = ({ onAction, isPaid }) => {
+const ActionsDropdown = ({ onAction, isPaid, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -115,13 +116,13 @@ const ActionsDropdown = ({ onAction, isPaid }) => {
 
   // Filter out payment options if invoice is already paid
   const allActions = [
-    { id: 'edit', label: 'Edit Invoice', icon: <Edit size={16} className="mr-2" /> },
-    { id: 'duplicate', label: 'Duplicate', icon: <FileText size={16} className="mr-2" /> },
-    { id: 'send', label: 'Send by Email', icon: <Mail size={16} className="mr-2" /> },
-    { id: 'download', label: 'Download PDF', icon: <Download size={16} className="mr-2" /> },
-    { id: 'print', label: 'Print', icon: <Printer size={16} className="mr-2" /> },
-    { id: 'markPaid', label: 'Mark as Paid', icon: <CheckCircle size={16} className="mr-2" />, hideWhenPaid: true },
-    { id: 'recordPayment', label: 'Record Payment', icon: <DollarSign size={16} className="mr-2" />, hideWhenPaid: true },
+    { id: 'edit', label: t('detail.actions.editInvoice'), icon: <Edit size={16} className="mr-2" /> },
+    { id: 'duplicate', label: t('detail.actions.duplicate'), icon: <FileText size={16} className="mr-2" /> },
+    { id: 'send', label: t('detail.actions.sendByEmail'), icon: <Mail size={16} className="mr-2" /> },
+    { id: 'download', label: t('detail.actions.downloadPdf'), icon: <Download size={16} className="mr-2" /> },
+    { id: 'print', label: t('detail.actions.print'), icon: <Printer size={16} className="mr-2" /> },
+    { id: 'markPaid', label: t('detail.actions.markAsPaid'), icon: <CheckCircle size={16} className="mr-2" />, hideWhenPaid: true },
+    { id: 'recordPayment', label: t('detail.actions.recordPayment'), icon: <DollarSign size={16} className="mr-2" />, hideWhenPaid: true },
   ];
 
   const actions = isPaid
@@ -164,7 +165,7 @@ const ActionsDropdown = ({ onAction, isPaid }) => {
 };
 
 // Email Modal Component
-const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting, companyInfo }) => {
+const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting, companyInfo, t }) => {
   const [emailData, setEmailData] = useState({
     to: '',
     cc: '',
@@ -180,8 +181,8 @@ const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting, com
   // Email templates
   const templates = {
     professional: {
-      name: 'Professional',
-      description: 'Formal business tone',
+      name: t('detail.emailModal.templates.professional.name'),
+      description: t('detail.emailModal.templates.professional.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
         const dueDate = new Date(inv.due_date).toLocaleDateString();
@@ -206,8 +207,8 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
       }
     },
     friendly: {
-      name: 'Friendly',
-      description: 'Casual and warm',
+      name: t('detail.emailModal.templates.friendly.name'),
+      description: t('detail.emailModal.templates.friendly.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
         const dueDate = new Date(inv.due_date).toLocaleDateString();
@@ -223,8 +224,8 @@ ${companyName}`;
       }
     },
     reminder: {
-      name: 'Payment Reminder',
-      description: 'Follow-up for pending payment',
+      name: t('detail.emailModal.templates.reminder.name'),
+      description: t('detail.emailModal.templates.reminder.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
         const dueDate = new Date(inv.due_date).toLocaleDateString();
@@ -294,9 +295,9 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
             <div>
               <h2 className="text-xl font-bold flex items-center">
                 <Mail size={22} className="mr-3" />
-                Send Invoice
+                {t('detail.emailModal.title')}
               </h2>
-              <p className="text-blue-100 text-sm mt-1">Compose and send invoice #{invoice.invoice_number}</p>
+              <p className="text-blue-100 text-sm mt-1">{t('detail.emailModal.compose')} #{invoice.invoice_number}</p>
             </div>
             <button
               onClick={onClose}
@@ -315,17 +316,17 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
                 <FileText size={24} className="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Invoice for</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('detail.emailModal.invoiceFor')}</p>
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{invoice.customer}</p>
               </div>
             </div>
             <div className="flex items-center space-x-6">
               <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('detail.emailModal.amount')}</p>
                 <p className="font-bold text-lg text-gray-900 dark:text-gray-100">${amountDue.toFixed(2)}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Due Date</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('detail.emailModal.dueDate')}</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</p>
               </div>
             </div>
@@ -339,14 +340,14 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label htmlFor="to" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Recipient
+                  {t('detail.emailModal.recipient')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowCcBcc(!showCcBcc)}
                   className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                 >
-                  {showCcBcc ? 'Hide CC/BCC' : 'Add CC/BCC'}
+                  {showCcBcc ? t('detail.emailModal.hideCcBcc') : t('detail.emailModal.addCcBcc')}
                 </button>
               </div>
               <div className="relative">
@@ -396,7 +397,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
             {/* Subject */}
             <div>
               <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Subject Line
+                {t('detail.emailModal.subjectLine')}
               </label>
               <input
                 type="text"
@@ -412,7 +413,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
             {/* Email Templates */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Email Template
+                {t('detail.emailModal.emailTemplate')}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.entries(templates).map(([key, template]) => (
@@ -438,7 +439,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
             {/* Message */}
             <div>
               <label htmlFor="message" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Message
+                {t('detail.emailModal.message')}
               </label>
               <textarea
                 id="message"
@@ -471,9 +472,9 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
                 </div>
                 <div>
                   <p className={`text-sm font-medium ${emailData.includePdf ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    Attach PDF Invoice
+                    {t('detail.emailModal.attachPdf')}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Include invoice as attachment</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('detail.emailModal.attachPdfDesc')}</p>
                 </div>
                 {emailData.includePdf && (
                   <CheckCircle size={20} className="ml-auto text-blue-500" />
@@ -498,9 +499,9 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
                 </div>
                 <div>
                   <p className={`text-sm font-medium ${emailData.includePaymentLink ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    Include Payment Link
+                    {t('detail.emailModal.includePaymentLink')}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Allow online payment</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('detail.emailModal.includePaymentLinkDesc')}</p>
                 </div>
                 {emailData.includePaymentLink && (
                   <CheckCircle size={20} className="ml-auto text-green-500" />
@@ -513,7 +514,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
         {/* Footer Actions */}
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Email will be sent from your account
+            {t('detail.emailModal.emailFromAccount')}
           </p>
           <div className="flex space-x-3">
             <button
@@ -522,7 +523,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
               className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('detail.emailModal.cancel')}
             </button>
             <button
               onClick={handleSubmit}
@@ -532,12 +533,12 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
               {isSubmitting ? (
                 <>
                   <RefreshCw size={16} className="mr-2 animate-spin" />
-                  Sending...
+                  {t('detail.emailModal.sending')}
                 </>
               ) : (
                 <>
                   <Send size={16} className="mr-2" />
-                  Send Invoice
+                  {t('detail.emailModal.sendInvoice')}
                 </>
               )}
             </button>
@@ -551,6 +552,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
 
 // Main Invoice Detail Component
 export default function InvoiceDetail({ invoiceId }) {
+  const { t } = useTranslation('invoices');
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -621,7 +623,7 @@ export default function InvoiceDetail({ invoiceId }) {
         const invoiceData = await getInvoiceById(invoiceId);
         
         if (!invoiceData) {
-          setError("Invoice not found");
+          setError(t('detail.invoiceNotFound'));
           setLoading(false);
           return;
         }
@@ -670,7 +672,7 @@ export default function InvoiceDetail({ invoiceId }) {
         
         setLoading(false);
       } catch (err) {
-        setError("Failed to load invoice data. Please try again or contact support if the issue persists.");
+        setError(t('detail.failedToLoad'));
         setLoading(false);
       }
     }
@@ -794,7 +796,7 @@ export default function InvoiceDetail({ invoiceId }) {
           break;
       }
     } catch (err) {
-      setError(`Failed to ${actionId} invoice. Please try again.`);
+      setError(t('detail.failedToAction', { action: actionId }));
     }
   };
 
@@ -868,7 +870,7 @@ export default function InvoiceDetail({ invoiceId }) {
       }
 
     } catch (err) {
-      setError("Failed to record payment. Please try again.");
+      setError(t('messages.failedToSend'));
     } finally {
       setSubmitting(false);
     }
@@ -910,7 +912,7 @@ export default function InvoiceDetail({ invoiceId }) {
       // Close modal
       setEmailModalOpen(false);
     } catch (err) {
-      setError("Failed to send email. Please try again.");
+      setError(t('email.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -943,7 +945,7 @@ export default function InvoiceDetail({ invoiceId }) {
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             <ChevronLeft size={16} className="mr-2" />
-            Back to Invoices
+            {t('detail.backToInvoices')}
           </Link>
         </div>
       </div>
@@ -953,14 +955,14 @@ export default function InvoiceDetail({ invoiceId }) {
   if (!invoice) {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Invoice Not Found</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">The invoice you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{t('detail.invoiceNotFound')}</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{t('detail.invoiceNotFoundDesc')}</p>
         <Link
           href="/dashboard/invoices"
           className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
           <ChevronLeft size={16} className="mr-2" />
-          Back to Invoices
+          {t('detail.backToInvoices')}
         </Link>
       </div>
     );
@@ -990,10 +992,10 @@ export default function InvoiceDetail({ invoiceId }) {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
-                  Invoice {invoice.invoice_number}
+                  {t('title')} {invoice.invoice_number}
                 </h1>
                 <p className="text-blue-100">
-                  Created on {new Date(invoice.invoice_date).toLocaleDateString()}
+                  {t('detail.createdOn')} {new Date(invoice.invoice_date).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -1012,7 +1014,7 @@ export default function InvoiceDetail({ invoiceId }) {
           className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors min-h-[44px]"
         >
           <Edit size={18} className="mr-1.5 sm:mr-2" />
-          Edit
+          {t('detail.edit')}
         </Link>
         {!isPaid && (
           <button
@@ -1020,7 +1022,7 @@ export default function InvoiceDetail({ invoiceId }) {
             className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors min-h-[44px]"
           >
             <DollarSign size={18} className="mr-1.5 sm:mr-2" />
-            <span className="hidden sm:inline">Record </span>Payment
+            {t('detail.recordPayment')}
           </button>
         )}
         <button
@@ -1028,7 +1030,7 @@ export default function InvoiceDetail({ invoiceId }) {
           className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors min-h-[44px]"
         >
           <Send size={18} className="mr-1.5 sm:mr-2" />
-          Send
+          {t('detail.send')}
         </button>
         {/* Hidden buttons for PDF generator to target */}
         <div className="hidden">
@@ -1050,10 +1052,10 @@ export default function InvoiceDetail({ invoiceId }) {
           className="inline-flex items-center px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors min-h-[44px]"
         >
           <Download size={18} className="mr-1.5 sm:mr-2" />
-          <span className="hidden sm:inline">Download</span>
-          <span className="sm:hidden">PDF</span>
+          <span className="hidden sm:inline">{t('detail.download')}</span>
+          <span className="sm:hidden">{t('detail.pdf')}</span>
         </button>
-        <ActionsDropdown onAction={handleAction} isPaid={isPaid} />
+        <ActionsDropdown onAction={handleAction} isPaid={isPaid} t={t} />
       </div>
 
       {/* Error display */}
@@ -1097,19 +1099,19 @@ export default function InvoiceDetail({ invoiceId }) {
                   )}
                 </div>
                 <div className="text-right">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">INVOICE</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">Invoice #: <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">Date: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.invoice_date).toLocaleDateString()}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">Due Date: <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</span></p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('detail.invoice')}</h2>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{t('detail.invoiceNumber')} <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.date')} <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.invoice_date).toLocaleDateString()}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.dueDate')} <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</span></p>
                   {invoice.po_number && (
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">PO #: <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.po_number}</span></p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.poNumber')} <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.po_number}</span></p>
                   )}
                 </div>
               </div>
 
               <div className="flex justify-between flex-wrap mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">BILL TO:</h3>
+                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">{t('detail.billTo')}</h3>
                   <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.customer}</p>
                   {invoice.customer_address && (
                     <p className="text-gray-600 dark:text-gray-400 text-sm whitespace-pre-line mt-1">{invoice.customer_address}</p>
@@ -1118,10 +1120,10 @@ export default function InvoiceDetail({ invoiceId }) {
 
                 {invoice.loads && invoice.loads.length > 0 && (
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mt-4 md:mt-0">
-                    <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">SHIPMENT INFO:</h3>
+                    <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">{t('detail.shipmentInfo')}</h3>
                     <div className="flex items-center text-gray-900 dark:text-gray-100 text-sm">
                       <Package size={14} className="mr-2 text-blue-500" />
-                      <span className="font-medium">Load #:</span>
+                      <span className="font-medium">{t('detail.loadNumber')}</span>
                       <span className="ml-1">{invoice.loads[0].load_number}</span>
                     </div>
                     <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mt-1">
@@ -1139,16 +1141,16 @@ export default function InvoiceDetail({ invoiceId }) {
                   <thead>
                     <tr className="border-b-2 border-gray-200 dark:border-gray-700">
                       <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Description
+                        {t('fields.description')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Qty
+                        {t('detail.qty')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Unit Price
+                        {t('detail.unitPrice')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Total
+                        {t('detail.total')}
                       </th>
                     </tr>
                   </thead>
@@ -1176,23 +1178,23 @@ export default function InvoiceDetail({ invoiceId }) {
               <div className="mt-8 flex justify-end">
                 <div className="w-72 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('detail.subtotal')}</span>
                     <span className="text-gray-900 dark:text-gray-100">${invoice.subtotal?.toFixed(2) || '0.00'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Tax ({invoice.tax_rate || 0}%):</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('detail.tax', { rate: invoice.tax_rate || 0 })}</span>
                     <span className="text-gray-900 dark:text-gray-100">${invoice.tax_amount?.toFixed(2) || '0.00'}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{t('fields.total')}:</span>
                     <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">${total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('detail.amountPaid')}</span>
                     <span className="text-green-600 dark:text-green-400 font-medium">${amountPaid.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">Balance Due:</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{t('detail.balanceDue')}</span>
                     <span className={`font-bold text-lg ${balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                       ${balance.toFixed(2)}
                     </span>
@@ -1202,13 +1204,13 @@ export default function InvoiceDetail({ invoiceId }) {
 
               {invoice.notes && (
                 <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">NOTES:</h3>
+                  <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">{t('detail.notes')}</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">{invoice.notes}</p>
                 </div>
               )}
 
               <div className="mt-4">
-                <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">TERMS & CONDITIONS:</h3>
+                <h3 className="text-gray-500 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider mb-2">{t('detail.termsConditions')}</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                   {invoice.payment_terms === 'Due on Receipt'
                     ? 'Payment is due upon receipt of this invoice.'
@@ -1234,20 +1236,20 @@ export default function InvoiceDetail({ invoiceId }) {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <CreditCard size={18} className="mr-2 text-blue-500" />
-                Payment Status
+                {t('detail.paymentStatus')}
               </h3>
             </div>
             <div className="p-6">
               <div className="flex justify-between mb-3">
-                <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('detail.totalAmount')}</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">${total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between mb-3">
-                <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('detail.amountPaid')}</span>
                 <span className="font-medium text-green-600 dark:text-green-400">${amountPaid.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                <span className="font-semibold text-gray-900 dark:text-gray-100">Balance Due:</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{t('detail.balanceDue')}</span>
                 <span className={`font-bold text-lg ${balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   ${balance.toFixed(2)}
                 </span>
@@ -1256,11 +1258,11 @@ export default function InvoiceDetail({ invoiceId }) {
               <div className="mt-6 space-y-2">
                 <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <Clock size={16} className="text-orange-500 mr-2" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Due on {new Date(invoice.due_date).toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('detail.dueOn')} {new Date(invoice.due_date).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <CheckCircle size={16} className="text-blue-500 mr-2" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Payment Terms: {invoice.payment_terms || 'Net 15'}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('detail.paymentTermsLabel')} {invoice.payment_terms || 'Net 15'}</span>
                 </div>
               </div>
 
@@ -1270,7 +1272,7 @@ export default function InvoiceDetail({ invoiceId }) {
                   className="w-full mt-6 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
                 >
                   <DollarSign size={16} className="mr-2" />
-                  Record Payment
+                  {t('detail.recordPayment')}
                 </button>
               )}
             </div>
@@ -1281,11 +1283,11 @@ export default function InvoiceDetail({ invoiceId }) {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <DollarSign size={18} className="mr-2 text-green-500" />
-                Payment History
+                {t('detail.paymentHistory')}
               </h3>
               {paymentHistory.length > 5 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {paymentHistory.length} payments
+                  {paymentHistory.length} {t('detail.payments')}
                 </span>
               )}
             </div>
@@ -1301,7 +1303,7 @@ export default function InvoiceDetail({ invoiceId }) {
                   <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full inline-block mb-3">
                     <DollarSign size={24} className="text-gray-400 dark:text-gray-500" />
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('detail.noPaymentsYet')}</p>
                 </div>
               )}
             </div>
@@ -1312,11 +1314,11 @@ export default function InvoiceDetail({ invoiceId }) {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <Clock size={18} className="mr-2 text-purple-500" />
-                Activity History
+                {t('detail.activityHistory')}
               </h3>
               {invoiceHistory.length > 5 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {invoiceHistory.length} activities
+                  {invoiceHistory.length} {t('detail.activities')}
                 </span>
               )}
             </div>
@@ -1348,6 +1350,7 @@ export default function InvoiceDetail({ invoiceId }) {
         invoice={invoice}
         isSubmitting={submitting}
         companyInfo={companyInfo}
+        t={t}
       />
     </div>
   );

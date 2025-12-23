@@ -6,8 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { KeyRound, CheckCircle, AlertCircle, EyeIcon, EyeOffIcon, RefreshCw } from "lucide-react";
 import { updatePassword } from "@/lib/supabaseAuth";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ResetPassword() {
+  const { t } = useTranslation('auth');
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,7 +30,7 @@ export default function ResetPassword() {
     if (!hasRecoveryToken) {
       // If no recovery token is found, we might want to redirect
       // or show a message indicating the link is invalid
-      setError("Invalid or expired password reset link. Please request a new one.");
+      setError(t('resetPassword.invalidLink'));
     }
   }, []);
   
@@ -64,12 +66,12 @@ export default function ResetPassword() {
     e.preventDefault();
     
     if (!password || password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError(t('resetPassword.minLength'));
       return;
     }
-    
+
     if (!passwordsMatch) {
-      setError("Passwords do not match");
+      setError(t('resetPassword.passwordsMatch'));
       return;
     }
     
@@ -84,7 +86,7 @@ export default function ResetPassword() {
       
       setSuccess(true);
     } catch (error) {
-      setError(error.message || "Failed to reset password. Please try again or request a new reset link.");
+      setError(error.message || t('resetPassword.resetFailed'));
     } finally {
       setLoading(false);
     }
@@ -99,20 +101,20 @@ export default function ResetPassword() {
           <div className="mt-6 w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle size={40} className="text-green-600" />
           </div>
-          
+
           <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
-            Password Reset Successful
+            {t('resetPassword.successTitle')}
           </h1>
-          
+
           <p className="text-gray-600 text-center mt-4 mb-6">
-            Your password has been successfully reset. Redirecting to login in {redirectCountdown} seconds...
+            {t('resetPassword.successMessage')} {redirectCountdown} {t('resetPassword.seconds')}
           </p>
-          
+
           <Link
             href="/login"
             className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
-            Go to Login Now
+            {t('resetPassword.goToLogin')}
           </Link>
         </div>
       </div>
@@ -127,14 +129,14 @@ export default function ResetPassword() {
         <div className="mt-6 w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
           <KeyRound size={40} className="text-blue-600" />
         </div>
-        
+
         <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
-          Reset Your Password
+          {t('resetPassword.title')}
         </h1>
-        
+
         <div className="w-full mt-4">
           <p className="text-gray-600 text-center mb-4">
-            Please enter your new password below.
+            {t('resetPassword.description')}
           </p>
           
           {error && (
@@ -147,7 +149,7 @@ export default function ResetPassword() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 text-left mb-1">
-                New Password
+                {t('resetPassword.newPassword')}
               </label>
               <div className="relative">
                 <input
@@ -155,7 +157,7 @@ export default function ResetPassword() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={handlePasswordChange}
-                  placeholder="Enter new password"
+                  placeholder={t('resetPassword.enterNewPassword')}
                   className="w-full p-3 border rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300"
                   required
                 />
@@ -167,12 +169,12 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
+              <p className="text-xs text-gray-500 mt-1">{t('resetPassword.passwordRequirements')}</p>
             </div>
-            
+
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 text-left mb-1">
-                Confirm Password
+                {t('resetPassword.confirmPassword')}
               </label>
               <div className="relative">
                 <input
@@ -180,7 +182,7 @@ export default function ResetPassword() {
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={handleConfirmPasswordChange}
-                  placeholder="Confirm new password"
+                  placeholder={t('resetPassword.confirmNewPassword')}
                   className={`w-full p-3 border rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300 ${
                     confirmPassword && !passwordsMatch ? 'border-red-300' : ''
                   }`}
@@ -195,10 +197,10 @@ export default function ResetPassword() {
                 </button>
               </div>
               {confirmPassword && !passwordsMatch && (
-                <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
+                <p className="text-red-500 text-sm mt-1">{t('resetPassword.passwordsMatch')}</p>
               )}
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
@@ -207,16 +209,16 @@ export default function ResetPassword() {
               {loading ? (
                 <span className="flex items-center justify-center">
                   <RefreshCw size={18} className="animate-spin mr-2" />
-                  Resetting Password...
+                  {t('resetPassword.resettingPassword')}
                 </span>
               ) : (
-                "Reset Password"
+                t('resetPassword.resetButton')
               )}
             </button>
-            
+
             <div className="text-center">
               <Link href="/login" className="text-blue-500 hover:underline text-sm">
-                Return to Login
+                {t('resetPassword.returnToLogin')}
               </Link>
             </div>
           </form>

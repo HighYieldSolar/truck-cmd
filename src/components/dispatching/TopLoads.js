@@ -3,8 +3,10 @@
 
 import { DollarSign, MapPin, ArrowRight, TrendingUp } from "lucide-react";
 import StatusBadge from "./StatusBadge";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function TopLoads({ loads = [], isLoading = false, onSelectLoad, className = "" }) {
+  const { t } = useTranslation('dispatching');
   // Get top 5 loads by rate
   const topLoads = [...loads]
     .sort((a, b) => (b.rate || 0) - (a.rate || 0))
@@ -45,7 +47,7 @@ export default function TopLoads({ loads = [], isLoading = false, onSelectLoad, 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 ${className}`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top Loads</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('topLoads.title')}</h3>
         <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
           <TrendingUp size={16} className="text-emerald-600 dark:text-emerald-400" />
         </div>
@@ -54,7 +56,7 @@ export default function TopLoads({ loads = [], isLoading = false, onSelectLoad, 
       {topLoads.length === 0 ? (
         <div className="text-center py-6">
           <DollarSign size={24} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">No loads yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('emptyState.title')}</p>
         </div>
       ) : (
         <div className="space-y-2">

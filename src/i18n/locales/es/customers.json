@@ -1,0 +1,302 @@
+{
+  "title": "Clientes",
+  "subtitle": "Administre las relaciones con sus clientes",
+  "addCustomer": "Agregar Cliente",
+  "editCustomer": "Editar Cliente",
+  "deleteCustomer": "Eliminar Cliente",
+  "newCustomer": "Nuevo Cliente",
+  "viewCustomer": "Ver Cliente",
+  "export": "Exportar",
+  "loading": "Cargando clientes...",
+  "header": {
+    "title": "Gestión de Clientes",
+    "subtitle": "Administre las relaciones y contactos de sus clientes"
+  },
+  "limits": {
+    "limitReached": "Límite Alcanzado",
+    "approaching": "Acercándose al límite:",
+    "youHave": "Tiene {{current}} de {{limit}} clientes.",
+    "upgradeUnlimited": "Actualice para clientes ilimitados",
+    "upgradeToAdd": "Actualice su plan para agregar clientes.",
+    "upgradePlan": "Actualizar Plan"
+  },
+  "tutorial": {
+    "title": "Guía de Gestión de Clientes",
+    "description": "Organice y mantenga todas las relaciones con sus clientes",
+    "features": {
+      "addCustomers": {
+        "title": "Agregar Clientes",
+        "description": "Cree perfiles con detalles de empresa, contacto y ubicación"
+      },
+      "customerTypes": {
+        "title": "Tipos de Cliente",
+        "description": "Categorice como Broker, Embarcador, Directo, 3PL o Freight Forwarder"
+      },
+      "contactManagement": {
+        "title": "Gestión de Contactos",
+        "description": "Almacene correo, teléfono y dirección para comunicación fácil"
+      },
+      "locationTracking": {
+        "title": "Seguimiento de Ubicación",
+        "description": "Vea la distribución de clientes por estado para análisis de negocio"
+      }
+    },
+    "tips": [
+      "Categorice los tipos de cliente con precisión - afecta reportes y flujos de trabajo",
+      "Mantenga la información de contacto actualizada para entrega de facturas sin problemas",
+      "Use el campo de Notas para rastrear requisitos especiales o términos de pago",
+      "Filtre por estado para gestionar relaciones de clientes regionales"
+    ]
+  },
+  "customers": {
+    "all": "Todos los Clientes",
+    "active": "Clientes Activos",
+    "inactive": "Clientes Inactivos"
+  },
+  "fields": {
+    "name": "Nombre",
+    "companyName": "Nombre de la Empresa",
+    "contactName": "Nombre de Contacto",
+    "email": "Correo Electrónico",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "city": "Ciudad",
+    "state": "Estado",
+    "zip": "Código Postal",
+    "country": "País",
+    "notes": "Notas",
+    "status": "Estado",
+    "paymentTerms": "Términos de Pago",
+    "creditLimit": "Límite de Crédito",
+    "taxId": "RFC",
+    "website": "Sitio Web"
+  },
+  "placeholders": {
+    "enterName": "Ingrese nombre del cliente",
+    "enterCompany": "Ingrese nombre de la empresa",
+    "enterContact": "Ingrese nombre de contacto",
+    "enterEmail": "Ingrese correo electrónico",
+    "enterPhone": "Ingrese número de teléfono",
+    "enterAddress": "Ingrese dirección",
+    "enterCity": "Ingrese ciudad",
+    "selectState": "Seleccione estado",
+    "enterZip": "Ingrese código postal",
+    "addNotes": "Agregue notas sobre este cliente..."
+  },
+  "filters": {
+    "title": "Filtros",
+    "byStatus": "Filtrar por Estado",
+    "searchName": "Buscar por nombre",
+    "clearFilters": "Limpiar Filtros",
+    "allStatuses": "Todos los Estados",
+    "searchPlaceholder": "Buscar por empresa, contacto o correo...",
+    "allStatus": "Todo Estado",
+    "allTypes": "Todos los Tipos",
+    "allStates": "Todos los Estados",
+    "directCustomer": "Cliente Directo",
+    "freightForwarder": "Freight Forwarder",
+    "sortName": "Ordenar: Nombre",
+    "sortNewest": "Ordenar: Más Reciente",
+    "sortOldest": "Ordenar: Más Antiguo",
+    "sortType": "Ordenar: Tipo",
+    "clear": "Limpiar"
+  },
+  "stats": {
+    "title": "Estadísticas de Clientes",
+    "totalCustomers": "Total de Clientes",
+    "activeCustomers": "Clientes Activos",
+    "totalRevenue": "Ingresos Totales",
+    "avgRevenue": "Ingreso Prom. por Cliente",
+    "topCustomer": "Mejor Cliente"
+  },
+  "details": {
+    "title": "Detalles del Cliente",
+    "contactInfo": "Información de Contacto",
+    "billingInfo": "Información de Facturación",
+    "loadHistory": "Historial de Cargas",
+    "invoiceHistory": "Historial de Facturas",
+    "totalLoads": "Total de Cargas",
+    "totalInvoiced": "Total Facturado",
+    "outstandingBalance": "Saldo Pendiente"
+  },
+  "emptyState": {
+    "title": "Aún no hay clientes",
+    "description": "Agregue su primer cliente para comenzar a administrar las relaciones de su negocio",
+    "noCustomers": "No se encontraron clientes"
+  },
+  "messages": {
+    "customerCreated": "Cliente agregado exitosamente",
+    "customerUpdated": "Cliente actualizado exitosamente",
+    "customerDeleted": "Cliente eliminado exitosamente",
+    "confirmDelete": "¿Está seguro que desea eliminar este cliente?",
+    "failedToCreate": "Error al agregar cliente",
+    "failedToUpdate": "Error al actualizar cliente",
+    "failedToDelete": "Error al eliminar cliente"
+  },
+  "topCustomers": {
+    "title": "Mejores Clientes",
+    "byRevenue": "Por Ingresos",
+    "byLoads": "Por Cargas",
+    "recentCustomers": "Clientes Recientes",
+    "noCustomersYet": "Aún no hay clientes",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "daysAgo": "Hace {{days}} días",
+    "weeksAgo": "Hace {{weeks}} semanas"
+  },
+  "categories": {
+    "title": "Tipos de Cliente",
+    "broker": "Broker",
+    "shipper": "Embarcador",
+    "consignee": "Consignatario",
+    "factoring": "Empresa de Factoraje",
+    "other": "Otro"
+  },
+  "table": {
+    "name": "Nombre",
+    "contact": "Contacto",
+    "phone": "Teléfono",
+    "email": "Correo",
+    "loads": "Cargas",
+    "revenue": "Ingresos",
+    "actions": "Acciones",
+    "company": "Empresa",
+    "location": "Ubicación",
+    "type": "Tipo",
+    "status": "Estado",
+    "noCustomersFound": "No se encontraron clientes",
+    "noMatchFilters": "Ningún cliente coincide con sus filtros actuales. Intente ajustar sus criterios de búsqueda.",
+    "view": "Ver",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "statsLabels": {
+    "totalCustomers": "Total de Clientes",
+    "active": "Activos",
+    "newThisMonth": "Nuevos Este Mes",
+    "brokers": "Brokers",
+    "allTime": "Todo el tiempo"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente"
+  },
+  "types": {
+    "business": "Negocio",
+    "shipper": "Embarcador",
+    "broker": "Broker",
+    "consignee": "Consignatario",
+    "direct": "Directo",
+    "thirdPartyLogistics": "3PL",
+    "freightForwarder": "Freight Forwarder",
+    "other": "Otro"
+  },
+  "exportModal": {
+    "title": "Exportar Reporte de Clientes",
+    "description": "Exporte sus registros de clientes en múltiples formatos. Elija PDF para reportes profesionales, CSV para hojas de cálculo, o TXT para registros de texto simple.",
+    "pdfTitle": "Reporte de Clientes",
+    "pdfSubtitle": "Gestión de Relaciones con Clientes",
+    "noCustomersToExport": "No hay clientes para exportar.",
+    "exportSuccess": "¡{{count}} clientes exportados exitosamente!",
+    "columns": {
+      "companyName": "Nombre de Empresa",
+      "contactName": "Nombre de Contacto",
+      "email": "Correo Electrónico",
+      "phone": "Teléfono",
+      "city": "Ciudad",
+      "state": "Estado",
+      "type": "Tipo",
+      "status": "Estado"
+    },
+    "summary": {
+      "totalCustomers": "Total de Clientes",
+      "active": "Activos",
+      "brokers": "Brokers",
+      "shippers": "Embarcadores",
+      "states": "Estados"
+    }
+  },
+  "deleteModal": {
+    "title": "Eliminar Cliente",
+    "confirmText": "¿Está seguro que desea eliminar {{companyName}}?",
+    "warning": "Esta acción no se puede deshacer. Todos los datos asociados serán eliminados permanentemente.",
+    "deleting": "Eliminando...",
+    "cannotBeUndone": "Esta acción no se puede deshacer"
+  },
+  "categoryWidget": {
+    "title": "Tipos de Cliente",
+    "allTypes": "Todos los Tipos"
+  },
+  "viewModal": {
+    "customerSince": "Cliente desde",
+    "contactInformation": "Información de Contacto",
+    "contactName": "Nombre de Contacto",
+    "location": "Ubicación",
+    "close": "Cerrar",
+    "editCustomer": "Editar Cliente",
+    "notes": "Notas"
+  },
+  "form": {
+    "addTitle": "Agregar Nuevo Cliente",
+    "editTitle": "Editar Cliente",
+    "addSubtitle": "Ingrese los detalles del cliente a continuación",
+    "editSubtitle": "Actualizar información del cliente",
+    "draftRestored": "Borrador restaurado de su sesión anterior",
+    "clearDraft": "Limpiar",
+    "companyName": "Nombre de Empresa",
+    "customerType": "Tipo de Cliente",
+    "contactName": "Nombre de Contacto",
+    "status": "Estado",
+    "email": "Correo Electrónico",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "city": "Ciudad",
+    "state": "Estado",
+    "zipCode": "Código Postal",
+    "notes": "Notas",
+    "select": "Seleccionar",
+    "creating": "Creando...",
+    "updating": "Actualizando...",
+    "createCustomer": "Crear Cliente",
+    "updateCustomer": "Actualizar Cliente",
+    "validation": {
+      "companyNameRequired": "El nombre de la empresa es requerido",
+      "validEmail": "Por favor ingrese un correo electrónico válido",
+      "contactNameRequired": "El nombre de contacto es requerido",
+      "phoneRequired": "El número de teléfono es requerido",
+      "validPhone": "Por favor ingrese un número de teléfono válido",
+      "phoneMinDigits": "El número de teléfono debe tener al menos 10 dígitos",
+      "emailRequired": "El correo electrónico es requerido"
+    },
+    "placeholders": {
+      "companyName": "Ingrese nombre de empresa",
+      "contactName": "Nombre del contacto principal",
+      "email": "correo@empresa.com",
+      "phone": "(555) 123-4567",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "notes": "Notas adicionales sobre este cliente..."
+    }
+  },
+  "newCustomerModal": {
+    "createTitle": "Crear Nuevo Cliente",
+    "editTitle": "Editar Cliente",
+    "basicInfo": "Info Básica",
+    "details": "Detalles",
+    "customerInformation": "Información del Cliente",
+    "additionalDetails": "Detalles Adicionales",
+    "reviewInfo": "Revisar Información del Cliente",
+    "restoredProgress": "Hemos restaurado su progreso anterior. Puede continuar donde lo dejó.",
+    "company": "Empresa:",
+    "type": "Tipo:",
+    "contact": "Contacto:",
+    "email": "Correo:",
+    "phone": "Teléfono:",
+    "status": "Estado:",
+    "cancel": "Cancelar",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "pendingApproval": "Pendiente de Aprobación"
+  }
+}

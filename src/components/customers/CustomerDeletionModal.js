@@ -2,6 +2,7 @@
 
 import { X, AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function CustomerDeletionModal({
   isOpen,
@@ -10,6 +11,8 @@ export default function CustomerDeletionModal({
   customer,
   isDeleting = false
 }) {
+  const { t } = useTranslation('customers');
+
   if (!isOpen || !customer) return null;
 
   return (
@@ -42,10 +45,10 @@ export default function CustomerDeletionModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Delete Customer
+                    {t('deleteModal.title')}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    This action cannot be undone
+                    {t('deleteModal.cannotBeUndone')}
                   </p>
                 </div>
                 <button
@@ -62,11 +65,8 @@ export default function CustomerDeletionModal({
             <div className="px-6 pb-4">
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-4">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Are you sure you want to delete{' '}
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {customer.company_name}
-                  </span>
-                  ? This will permanently remove all associated customer data.
+                  {t('deleteModal.confirmText', { companyName: customer.company_name })}{' '}
+                  {t('deleteModal.warning')}
                 </p>
               </div>
             </div>
@@ -78,7 +78,7 @@ export default function CustomerDeletionModal({
                 disabled={isDeleting}
                 className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('common:buttons.cancel')}
               </button>
               <button
                 onClick={onConfirm}
@@ -88,12 +88,12 @@ export default function CustomerDeletionModal({
                 {isDeleting ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Deleting...
+                    {t('deleteModal.deleting')}
                   </>
                 ) : (
                   <>
                     <Trash2 size={16} />
-                    Delete Customer
+                    {t('deleteModal.title')}
                   </>
                 )}
               </button>

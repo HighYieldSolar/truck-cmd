@@ -5,20 +5,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Truck, 
-  FileText, 
-  Wallet, 
-  Users, 
-  Package, 
-  CheckCircle, 
-  Calculator, 
-  Fuel, 
+import {
+  LayoutDashboard,
+  Truck,
+  FileText,
+  Wallet,
+  Users,
+  Package,
+  CheckCircle,
+  Calculator,
+  Fuel,
   Settings,
   LogOut,
-  Bell, 
-  Search, 
+  Bell,
+  Search,
   Menu,
   X,
   ChevronDown,
@@ -26,8 +26,10 @@ import {
   Home,
   MapPin
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function Navigation({ activePage = "dashboard" }) {
+  const { t } = useTranslation('common');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -39,63 +41,63 @@ export default function Navigation({ activePage = "dashboard" }) {
 
   // Menu items definition
   const menuItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/dashboard', 
+    {
+      name: t('navigation.dashboard'),
+      href: '/dashboard',
       icon: <LayoutDashboard size={20} />,
       active: activePage === 'dashboard'
     },
-    { 
-      name: 'Load Management', 
-      href: '/dashboard/dispatching', 
+    {
+      name: t('navigation.loadManagement'),
+      href: '/dashboard/dispatching',
       icon: <Truck size={20} />,
       active: activePage === 'dispatching'
     },
     {
-      name: 'State Mileage', 
-      href: '/dashboard/mileage', 
+      name: t('navigation.stateMileage'),
+      href: '/dashboard/mileage',
       icon: <MapPin size={20} />,
       active: activePage === 'mileage'
     },
-    { 
-      name: 'Invoices', 
-      href: '/dashboard/invoices', 
+    {
+      name: t('navigation.invoices'),
+      href: '/dashboard/invoices',
       icon: <FileText size={20} />,
       active: activePage === 'invoices'
     },
-    { 
-      name: 'Expenses', 
-      href: '/dashboard/expenses', 
+    {
+      name: t('navigation.expenses'),
+      href: '/dashboard/expenses',
       icon: <Wallet size={20} />,
       active: activePage === 'expenses'
     },
-    { 
-      name: 'Customers', 
-      href: '/dashboard/customers', 
+    {
+      name: t('navigation.customers'),
+      href: '/dashboard/customers',
       icon: <Users size={20} />,
       active: activePage === 'customers'
     },
-    { 
-      name: 'Fleet', 
-      href: '/dashboard/fleet', 
+    {
+      name: t('navigation.fleet'),
+      href: '/dashboard/fleet',
       icon: <Package size={20} />,
       active: activePage === 'fleet'
     },
-    { 
-      name: 'Compliance', 
-      href: '/dashboard/compliance', 
+    {
+      name: t('navigation.compliance'),
+      href: '/dashboard/compliance',
       icon: <CheckCircle size={20} />,
       active: activePage === 'compliance'
     },
-    { 
-      name: 'IFTA Calculator', 
-      href: '/dashboard/ifta', 
+    {
+      name: t('navigation.iftaCalculator'),
+      href: '/dashboard/ifta',
       icon: <Calculator size={20} />,
       active: activePage === 'ifta'
     },
-    { 
-      name: 'Fuel Tracker', 
-      href: '/dashboard/fuel', 
+    {
+      name: t('navigation.fuelTracker'),
+      href: '/dashboard/fuel',
       icon: <Fuel size={20} />,
       active: activePage === 'fuel'
     },
@@ -241,19 +243,19 @@ export default function Navigation({ activePage = "dashboard" }) {
                   : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
               }`}
             >
-              <Settings 
-                size={20} 
-                className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`} 
+              <Settings
+                size={20}
+                className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'}`}
               />
-              Settings
+              {t('navigation.settings')}
             </Link>
-            
+
             <button
               onClick={handleLogout}
               className="w-full flex items-center px-3 py-3 mt-1 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
             >
               <LogOut size={20} className="mr-3 text-gray-500" />
-              Logout
+              {t('navigation.logout')}
             </button>
           </div>
         </div>
@@ -327,19 +329,19 @@ export default function Navigation({ activePage = "dashboard" }) {
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Settings 
-                  size={20} 
-                  className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500'}`} 
+                <Settings
+                  size={20}
+                  className={`mr-3 ${activePage === 'settings' ? 'text-blue-600' : 'text-gray-500'}`}
                 />
-                Settings
+                {t('navigation.settings')}
               </Link>
-              
+
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center px-3 py-2.5 text-base font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-red-600 transition-all"
               >
                 <LogOut size={20} className="mr-3 text-gray-500" />
-                Logout
+                {t('navigation.logout')}
               </button>
             </div>
           </nav>
@@ -374,11 +376,11 @@ export default function Navigation({ activePage = "dashboard" }) {
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search..."
+                placeholder={t('search.placeholder')}
               />
             </div>
           </div>
-          
+
           {/* Right side: Notifications and User Dropdown */}
           <div className="flex items-center space-x-4">
             <Link
@@ -418,21 +420,21 @@ export default function Navigation({ activePage = "dashboard" }) {
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setUserDropdownOpen(false)}
                   >
-                    Your Profile
+                    {t('userDropdown.yourProfile', 'Your Profile')}
                   </Link>
                   <Link
                     href="/dashboard/settings"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setUserDropdownOpen(false)}
                   >
-                    Settings
+                    {t('navigation.settings')}
                   </Link>
                   <hr className="my-1 border-gray-200" />
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                   >
-                    Logout
+                    {t('navigation.logout')}
                   </button>
                 </div>
               )}
@@ -449,7 +451,7 @@ export default function Navigation({ activePage = "dashboard" }) {
             <input
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Search..."
+              placeholder={t('search.placeholder')}
             />
           </div>
         </div>

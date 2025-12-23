@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   FileText,
   Plus,
@@ -41,7 +42,7 @@ import InvoiceReportsComponent from "@/components/invoices/InvoiceReportsCompone
 import TutorialCard from "@/components/shared/TutorialCard";
 
 // Invoice Stats Card Component
-const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) => {
+const StatCard = ({ title, value, icon, bgColor, textColor, change, positive, changeLabel }) => {
   return (
     <div className={`${bgColor} rounded-lg shadow p-5`}>
       <div className="flex items-center justify-between">
@@ -61,7 +62,7 @@ const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) 
             ) : (
               <ArrowDown size={16} className="mr-1" />
             )}
-            <span>{change} from last month</span>
+            <span>{change} {changeLabel}</span>
           </p>
         </div>
       )}
@@ -71,6 +72,7 @@ const StatCard = ({ title, value, icon, bgColor, textColor, change, positive }) 
 
 // Invoice Filters Component
 const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
+  const { t } = useTranslation('invoices');
   const [localFilters, setLocalFilters] = useState({ ...filters });
 
   const handleFilterChange = (key, value) => {
@@ -96,29 +98,29 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
   };
 
   const statusOptions = [
-    { value: 'all', label: 'All Invoices' },
-    { value: 'paid', label: 'Paid' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'draft', label: 'Draft' },
-    { value: 'sent', label: 'Sent' }
+    { value: 'all', label: t('filters.allInvoices') },
+    { value: 'paid', label: t('status.paid') },
+    { value: 'pending', label: t('common:status.pending') },
+    { value: 'overdue', label: t('status.overdue') },
+    { value: 'draft', label: t('status.draft') },
+    { value: 'sent', label: t('status.sent') }
   ];
 
   const dateRangeOptions = [
-    { value: 'all', label: 'All Time' },
-    { value: 'last30', label: 'Last 30 Days' },
-    { value: 'last90', label: 'Last 90 Days' },
-    { value: 'thisMonth', label: 'This Month' },
-    { value: 'lastMonth', label: 'Last Month' },
-    { value: 'thisYear', label: 'This Year' },
+    { value: 'all', label: t('filters.allTime') },
+    { value: 'last30', label: t('filters.last30') },
+    { value: 'last90', label: t('filters.last90') },
+    { value: 'thisMonth', label: t('filters.thisMonth') },
+    { value: 'lastMonth', label: t('filters.lastMonth') },
+    { value: 'thisYear', label: t('filters.thisYear') },
   ];
 
   const sortOptions = [
-    { value: 'invoice_date', label: 'Invoice Date' },
-    { value: 'due_date', label: 'Due Date' },
-    { value: 'total', label: 'Amount' },
-    { value: 'status', label: 'Status' },
-    { value: 'customer', label: 'Customer' }
+    { value: 'invoice_date', label: t('filters.invoiceDate') },
+    { value: 'due_date', label: t('filters.dueDate') },
+    { value: 'total', label: t('filters.amount') },
+    { value: 'status', label: t('filters.status') },
+    { value: 'customer', label: t('filters.customer') }
   ];
 
   return (
@@ -160,7 +162,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                Sort by: {option.label}
+                {t('filters.sortBy')}: {option.label}
               </option>
             ))}
           </select>
@@ -172,8 +174,8 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             onChange={(e) => handleFilterChange('sortDirection', e.target.value)}
             className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           >
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
+            <option value="desc">{t('filters.descending')}</option>
+            <option value="asc">{t('filters.ascending')}</option>
           </select>
         </div>
 
@@ -186,7 +188,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             value={localFilters.search}
             onChange={(e) => handleFilterChange('search', e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="Search invoices..."
+            placeholder={t('filters.searchPlaceholder')}
           />
         </div>
 
@@ -195,13 +197,13 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             onClick={handleApplyFilters}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
           >
-            Apply
+            {t('common:buttons.apply')}
           </button>
           <button
             onClick={handleResetFilters}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
           >
-            Reset
+            {t('common:buttons.reset')}
           </button>
         </div>
       </div>
@@ -211,6 +213,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
 
 // Recent Invoices Table Component
 const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoice }) => {
+  const { t } = useTranslation('invoices');
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -267,7 +270,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
     <div className="bg-white rounded-lg shadow">
       {invoices.length === 0 ? (
         <div className="p-6 text-center text-gray-500">
-          No invoices found.
+          {t('dashboard.noInvoicesFound')}
         </div>
       ) : (
         <div className="flow-root">
@@ -284,24 +287,24 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <p className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer" onClick={() => onViewInvoice(invoice.id)}>
-                              Invoice #{invoice.invoice_number}
+                              {t('fields.invoiceNumber')}{invoice.invoice_number}
                             </p>
                             <span className="text-xs text-gray-500">
-                              Amount: ${invoice.total?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {t('fields.amount')}: ${invoice.total?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="text-sm text-gray-700">
-                            <p>Customer: {invoice.customer}</p>
-                            <p>Date: {formatDate(invoice.invoice_date)}</p>
-                            <p>Due Date: {formatDate(invoice.due_date)}</p>
-                            <p>Status: <InvoiceStatusBadge status={invoice.status} /></p>
+                            <p>{t('fields.customer')}: {invoice.customer}</p>
+                            <p>{t('fields.date')}: {formatDate(invoice.invoice_date)}</p>
+                            <p>{t('fields.dueDate')}: {formatDate(invoice.due_date)}</p>
+                            <p>{t('status.label')}: <InvoiceStatusBadge status={invoice.status} /></p>
                           </div>
                         </div>
                         <div className="mt-2 sm:mt-0 flex items-center space-x-2">
                           <button
                             onClick={() => onViewInvoice(invoice.id)}
                             className="text-blue-600 hover:text-blue-900"
-                            title="View Details"
+                            title={t('viewInvoice')}
                           >
                             <FileText size={18} />
                           </button>
@@ -309,7 +312,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                             <button
                               onClick={() => handleMarkAsPaid(invoice.id)}
                               className="text-green-600 hover:text-green-900"
-                              title="Mark as Paid"
+                              title={t('actions.markAsPaid')}
                             >
                               <DollarSign size={18} />
                             </button>
@@ -317,7 +320,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
                           <button
                             onClick={() => onDelete(invoice)}
                             className="text-red-600 hover:text-red-900"
-                            title="Delete"
+                            title={t('common:buttons.delete')}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
                           </button>
@@ -337,6 +340,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
 
 // Delete Invoice Modal Component
 const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting }) => {
+  const { t } = useTranslation('invoices');
   const [deleteAssociatedLoad, setDeleteAssociatedLoad] = useState(false);
 
   if (!isOpen || !invoice) return null;
@@ -350,9 +354,9 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
         <div className="flex items-center justify-center mb-4 text-red-600">
           <AlertCircle size={40} />
         </div>
-        <h3 className="text-lg font-medium text-center mb-2">Delete Invoice</h3>
+        <h3 className="text-lg font-medium text-center mb-2">{t('deleteModal.title')}</h3>
         <p className="text-center text-gray-500 mb-6">
-          Are you sure you want to delete invoice {invoice.invoice_number}? This action cannot be undone.
+          {t('deleteModal.confirmText', { invoiceNumber: invoice.invoice_number })}
         </p>
 
         {/* Show option to delete load if there's an associated load */}
@@ -367,11 +371,11 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="delete-load-checkbox" className="ml-2 block text-sm text-gray-700">
-                Also delete associated load
+                {t('deleteModal.alsoDeleteLoad')}
               </label>
             </div>
             <p className="text-xs text-gray-500 mt-1 ml-6">
-              If checked, the load linked to this invoice will also be deleted.
+              {t('deleteModal.deleteLoadHint')}
             </p>
           </div>
         )}
@@ -382,7 +386,7 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             disabled={isDeleting}
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
           <button
             onClick={() => onConfirm(deleteAssociatedLoad)}
@@ -392,9 +396,9 @@ const DeleteInvoiceModal = ({ isOpen, onClose, onConfirm, invoice, isDeleting })
             {isDeleting ? (
               <>
                 <RefreshCw size={16} className="mr-2 animate-spin" />
-                Deleting...
+                {t('deleteModal.deleting')}
               </>
-            ) : "Delete"}
+            ) : t('common:buttons.delete')}
           </button>
         </div>
       </div>
@@ -419,6 +423,7 @@ const QuickActionCard = ({ title, icon, onClick, bgColor = 'bg-blue-50' }) => {
 
 // Due Soon Widget Component
 const DueSoonWidget = ({ invoices, onViewInvoice }) => {
+  const { t } = useTranslation('invoices');
   const today = new Date();
   const dueSoon = invoices
     .filter(invoice => {
@@ -433,16 +438,16 @@ const DueSoonWidget = ({ invoices, onViewInvoice }) => {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Due Soon</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('paymentDueSoon.title')}</h3>
         <Link href="/dashboard/invoices?filter=pending" className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-          View All <ChevronRight size={16} className="ml-1" />
+          {t('dashboard.viewAll')} <ChevronRight size={16} className="ml-1" />
         </Link>
       </div>
       <div className="p-4">
         {dueSoon.length === 0 ? (
           <div className="text-center py-4">
             <CheckCircle size={32} className="mx-auto text-green-500 mb-2" />
-            <p className="text-gray-500">No invoices due soon!</p>
+            <p className="text-gray-500">{t('paymentDueSoon.noDue')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -465,7 +470,7 @@ const DueSoonWidget = ({ invoices, onViewInvoice }) => {
                   <div className="text-right">
                     <p className="font-medium">${invoice.total.toLocaleString()}</p>
                     <span className={`text-xs px-2 py-1 rounded-full ${badgeColor}`}>
-                      {daysUntilDue === 0 ? 'Due today' : `Due in ${daysUntilDue} days`}
+                      {daysUntilDue === 0 ? t('paymentDueSoon.dueToday') : t('paymentDueSoon.dueIn', { days: daysUntilDue })}
                     </span>
                   </div>
                 </div>
@@ -480,6 +485,7 @@ const DueSoonWidget = ({ invoices, onViewInvoice }) => {
 
 // Overdue Widget Component
 const OverdueWidget = ({ invoices, onViewInvoice }) => {
+  const { t } = useTranslation('invoices');
   const overdue = invoices
     .filter(invoice => invoice.status.toLowerCase() === 'overdue')
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
@@ -493,16 +499,16 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Overdue Invoices</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('overdueInvoices.title')}</h3>
         <Link href="/dashboard/invoices?filter=overdue" className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-          View All <ChevronRight size={16} className="ml-1" />
+          {t('dashboard.viewAll')} <ChevronRight size={16} className="ml-1" />
         </Link>
       </div>
       <div className="p-4">
         {overdue.length === 0 ? (
           <div className="text-center py-4">
             <CheckCircle size={32} className="mx-auto text-green-500 mb-2" />
-            <p className="text-gray-500">No overdue invoices!</p>
+            <p className="text-gray-500">{t('overdueInvoices.noOverdue')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -519,12 +525,12 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
                 >
                   <div>
                     <p className="font-medium text-gray-900">{invoice.customer}</p>
-                    <p className="text-sm text-gray-500">Due: {formatDate(invoice.due_date)}</p>
+                    <p className="text-sm text-gray-500">{t('fields.dueDate')}: {formatDate(invoice.due_date)}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">${invoice.total.toLocaleString()}</p>
                     <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-                      {daysOverdue} days overdue
+                      {t('overdueInvoices.daysOverdue', { days: daysOverdue })}
                     </span>
                   </div>
                 </div>
@@ -539,6 +545,7 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
 
 // Main InvoiceDashboard Component
 export default function InvoiceDashboard() {
+  const { t } = useTranslation('invoices');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
@@ -740,35 +747,35 @@ export default function InvoiceDashboard() {
         {/* Tutorial Card */}
         <TutorialCard
           pageId="invoices"
-          title="Invoice Management"
-          description="Create, track, and manage all your customer invoices"
+          title={t('tutorial.title')}
+          description={t('tutorial.description')}
           features={[
             {
               icon: FileText,
-              title: "Create Invoices",
-              description: "Generate professional invoices from completed loads or create custom invoices"
+              title: t('tutorial.features.createInvoices.title'),
+              description: t('tutorial.features.createInvoices.description')
             },
             {
               icon: DollarSign,
-              title: "Track Payments",
-              description: "Monitor payment status and record payments when received"
+              title: t('tutorial.features.trackPayments.title'),
+              description: t('tutorial.features.trackPayments.description')
             },
             {
               icon: Clock,
-              title: "Due Date Alerts",
-              description: "See upcoming and overdue invoices at a glance"
+              title: t('tutorial.features.dueDateAlerts.title'),
+              description: t('tutorial.features.dueDateAlerts.description')
             },
             {
               icon: Mail,
-              title: "Email Invoices",
-              description: "Send invoices directly to customers via email"
+              title: t('tutorial.features.emailInvoices.title'),
+              description: t('tutorial.features.emailInvoices.description')
             }
           ]}
           tips={[
-            "Mark invoices as paid when payment is received to keep your records accurate",
-            "Use the status filters to quickly find pending or overdue invoices",
-            "Export invoice reports for your accounting records",
-            "Check the 'Payment Due Soon' section to follow up on unpaid invoices"
+            t('tutorial.tips.0'),
+            t('tutorial.tips.1'),
+            t('tutorial.tips.2'),
+            t('tutorial.tips.3')
           ]}
           accentColor="green"
           userId={user?.id}

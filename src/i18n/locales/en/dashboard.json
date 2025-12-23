@@ -1,0 +1,158 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome to Your Dashboard",
+  "subtitle": "Your business command center - track everything at a glance",
+  "header": {
+    "greeting": "Welcome",
+    "todayOverview": "Here's what's happening with your trucking business today",
+    "newLoad": "New Load"
+  },
+  "dateRange": {
+    "label": "Date Range",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisQuarter": "This Quarter",
+    "thisYear": "This Year",
+    "allTime": "All Time"
+  },
+  "stats": {
+    "totalEarnings": "Total Earnings (MTD)",
+    "totalExpenses": "Total Expenses (MTD)",
+    "netProfit": "Net Profit",
+    "earnings": "Earnings",
+    "expenses": "Expenses",
+    "profit": "Profit",
+    "activeLoads": "Active Loads",
+    "pendingInvoices": "Pending Invoices",
+    "upcomingDeliveries": "Upcoming Deliveries",
+    "paidInvoices": "Paid Invoices",
+    "factoredEarnings": "Factored Earnings",
+    "vsLastMonth": "vs last month",
+    "vsPriorMonth": "vs prior month",
+    "vsLastQuarter": "vs last quarter",
+    "vsLastYear": "vs last year",
+    "vsPrior30Days": "vs prior 30 days",
+    "noChange": "No change",
+    "increase": "increase",
+    "decrease": "decrease"
+  },
+  "earningsBreakdown": {
+    "title": "Earnings Breakdown",
+    "directPayments": "Direct Payments",
+    "factoredPayments": "Factored Payments",
+    "totalEarnings": "Total Earnings",
+    "factoredLoads": "Factored Loads",
+    "invoicedLoads": "Invoiced Loads",
+    "otherInvoicePayments": "Other Invoice Payments",
+    "earningsDistribution": "Earnings Distribution",
+    "factored": "Factored",
+    "invoiced": "Invoiced",
+    "other": "Other"
+  },
+  "businessOverview": {
+    "title": "Business Overview",
+    "quickStats": "Quick Stats",
+    "performance": "Performance",
+    "trends": "Trends"
+  },
+  "activity": {
+    "title": "Recent Activity",
+    "recentInvoices": "Recent Invoices",
+    "noActivity": "No recent activity",
+    "noRecentActivity": "No recent activity found. Start creating loads or invoices to see your activity here.",
+    "noRecentInvoices": "No recent invoices found.",
+    "noDataToDisplay": "No data to display",
+    "viewAll": "View All",
+    "viewAllActivity": "View All Activity",
+    "last7Days": "Last 7 days",
+    "loadCreated": "Load created",
+    "loadCompleted": "Load completed",
+    "invoiceSent": "Invoice sent",
+    "invoicePaid": "Invoice paid",
+    "expenseAdded": "Expense added",
+    "fuelPurchase": "Fuel purchase",
+    "client": "Client",
+    "location": "Location",
+    "invoiceNumber": "Invoice #{{number}}"
+  },
+  "deliveries": {
+    "title": "Upcoming Deliveries",
+    "noDeliveries": "No deliveries scheduled",
+    "scheduleFirst": "Schedule your first delivery to see it here",
+    "scheduleDelivery": "Schedule Delivery",
+    "destination": "Destination",
+    "viewAll": "View All"
+  },
+  "fuel": {
+    "title": "Fuel Tracker",
+    "totalGallons": "Total Gallons",
+    "totalAmount": "Total Amount",
+    "totalSpent": "Total Spent",
+    "avgPrice": "Avg. Price",
+    "avgPricePerGallon": "Avg Price/Gal",
+    "uniqueStates": "States",
+    "statesPurchased": "States with fuel purchases",
+    "addFuelPurchase": "Add Fuel Purchase"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "createLoad": "Create Load",
+    "addLoad": "Add Load",
+    "createInvoice": "Create Invoice",
+    "addExpense": "Add Expense",
+    "recordExpense": "Record Expense",
+    "addFuel": "Add Fuel",
+    "addFuelEntry": "Add Fuel Entry",
+    "addCustomer": "Add Customer",
+    "viewReports": "View Reports",
+    "iftaCalculator": "IFTA Calculator"
+  },
+  "tutorial": {
+    "title": "Welcome to Your Dashboard",
+    "description": "Your business command center - track everything at a glance",
+    "features": {
+      "trackEarnings": {
+        "title": "Track Earnings & Profit",
+        "description": "See revenue, expenses, and profit with month-over-month trends"
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "description": "Monitor loads, invoices, and business events in real-time"
+      },
+      "dateRangeFiltering": {
+        "title": "Date Range Filtering",
+        "description": "View stats for this month, quarter, year, or all time"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "description": "Fast shortcuts to create loads, invoices, and more"
+      }
+    },
+    "tips": {
+      "dateRange": "Use the date range selector to compare performance across periods",
+      "autoRefresh": "The dashboard auto-refreshes every 5 minutes to show latest data",
+      "statCards": "Click any stat card to navigate to its detailed page",
+      "deliveries": "Check 'Upcoming Deliveries' daily to stay on top of your schedule"
+    }
+  },
+  "adminTools": {
+    "fixEarningsRecords": "Fix Earnings Records",
+    "fixEarningsDescription": "Use this utility to fix any issues with earnings records from factored loads"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load dashboard data. Please try again later.",
+    "authError": "Authentication error. Please try logging in again.",
+    "connectionLost": "Database connection lost. Some data may not be up to date."
+  },
+  "loading": {
+    "dashboard": "Loading dashboard...",
+    "stats": "Loading statistics...",
+    "activity": "Loading activity..."
+  },
+  "featureUnavailable": {
+    "title": "Feature Unavailable",
+    "trialEnded": "Your free trial has ended. Please subscribe to access this feature.",
+    "subscriptionRequired": "This feature requires an active subscription.",
+    "viewPlans": "View Subscription Plans"
+  }
+}

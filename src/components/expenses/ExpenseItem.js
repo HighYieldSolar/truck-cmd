@@ -20,6 +20,7 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import TableActions from '@/components/shared/TableActions';
 import { formatDateForDisplayMMDDYYYY } from '@/lib/utils/dateUtils';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Table Row Item (Desktop View)
@@ -28,6 +29,7 @@ import { formatDateForDisplayMMDDYYYY } from '@/lib/utils/dateUtils';
  * Follows the design spec table pattern with dark mode support.
  */
 export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }) {
+  const { t } = useTranslation('expenses');
   const [vehicleInfo, setVehicleInfo] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -110,7 +112,7 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
     if (loading) {
       return (
         <span className="text-xs text-gray-400 dark:text-gray-500">
-          Loading...
+          {t('item.loading')}
         </span>
       );
     }
@@ -153,7 +155,7 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {expense.description || 'No description'}
+              {expense.description || t('item.noDescription')}
             </p>
             {getVehicleDisplay()}
           </div>

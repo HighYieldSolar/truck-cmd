@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Download, Printer, RefreshCw } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Component that generates and downloads or prints a PDF invoice
@@ -11,6 +12,7 @@ import { Download, Printer, RefreshCw } from 'lucide-react';
  * @param {string} mode - "download" (default) or "print"
  */
 export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "download" }) {
+  const { t } = useTranslation('invoices');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -274,14 +276,14 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
         doc.save(filename);
       }
     } catch (error) {
-      setError('Failed to generate PDF. Please try again.');
+      setError(t('pdfGenerator.failedToGenerate'));
     } finally {
       setLoading(false);
     }
   };
 
   const Icon = mode === "print" ? Printer : Download;
-  const buttonText = mode === "print" ? "Print Invoice" : "Download PDF";
+  const buttonText = mode === "print" ? t('pdfGenerator.printInvoice') : t('pdfGenerator.downloadPdf');
 
   return (
     <button
@@ -293,7 +295,7 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
       {loading ? (
         <>
           <RefreshCw size={16} className="mr-2 animate-spin" />
-          {mode === "print" ? "Preparing..." : "Generating..."}
+          {mode === "print" ? t('pdfGenerator.preparing') : t('pdfGenerator.generating')}
         </>
       ) : (
         <>

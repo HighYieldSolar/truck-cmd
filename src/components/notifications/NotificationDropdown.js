@@ -6,6 +6,7 @@ import {
   Bell, FileText, TruckIcon, User, Calendar, Wrench,
   CreditCard, AlertTriangle, Info, CheckCircle, Package
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Get icon and colors based on notification type
 function getNotificationIcon(notification) {
@@ -41,19 +42,19 @@ function getNotificationIcon(notification) {
 }
 
 // Format relative time
-function formatRelativeTime(dateString) {
+function formatRelativeTime(dateString, t) {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
-  if (diffInMinutes < 1) return 'Just now';
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  if (diffInMinutes < 1) return t('notifications.time.justNow');
+  if (diffInMinutes < 60) return t('notifications.time.mAgo', { count: diffInMinutes });
 
   const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
+  if (diffInHours < 24) return t('notifications.time.hAgo', { count: diffInHours });
 
   const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays}d ago`;
+  if (diffInDays < 7) return t('notifications.time.dAgo', { count: diffInDays });
 
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
@@ -66,6 +67,7 @@ export default function NotificationDropdown({
   unreadCount = 0,
   isLoading = false,
 }) {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const hasUnread = notifications.some(n => !n.is_read) || unreadCount > 0;
 
@@ -75,7 +77,7 @@ export default function NotificationDropdown({
       <div className="px-3 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
         <div className="flex items-center gap-2">
           <Bell size={18} className="text-white" />
-          <h3 className="text-sm font-semibold text-white">Notifications</h3>
+          <h3 className="text-sm font-semibold text-white">{t('notifications.title')}</h3>
           {unreadCount > 0 && (
             <span className="px-2 py-0.5 text-xs font-medium bg-white/20 text-white rounded-full">
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -88,8 +90,8 @@ export default function NotificationDropdown({
             className="text-xs text-white/90 hover:text-white flex items-center gap-1 transition-colors p-2 -mr-2 rounded-lg hover:bg-white/10 min-h-[36px]"
           >
             <CheckCircle size={14} />
-            <span className="hidden sm:inline">Mark all read</span>
-            <span className="sm:hidden">Read all</span>
+            <span className="hidden sm:inline">{t('notifications.markAllRead')}</span>
+            <span className="sm:hidden">{t('notifications.readAll')}</span>
           </button>
         )}
       </div>
@@ -116,8 +118,8 @@ export default function NotificationDropdown({
             <div className="mx-auto w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
               <Bell size={28} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">All caught up!</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">No new notifications</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('notifications.emptyState.title')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('notifications.emptyState.description')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -149,7 +151,7 @@ export default function NotificationDropdown({
                           {notification.title}
                         </p>
                         <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap">
-                          {formatRelativeTime(notification.created_at)}
+                          {formatRelativeTime(notification.created_at, t)}
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2">
@@ -163,7 +165,7 @@ export default function NotificationDropdown({
                             ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                             : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                         }`}>
-                          {notification.urgency === 'CRITICAL' ? 'Critical' : 'High Priority'}
+                          {notification.urgency === 'CRITICAL' ? t('notifications.urgency.critical') : t('notifications.urgency.highPriority')}
                         </span>
                       )}
                     </div>
@@ -186,7 +188,7 @@ export default function NotificationDropdown({
           onClick={onViewAllClick}
           className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors py-2 min-h-[44px] flex items-center justify-center"
         >
-          View all notifications
+          {t('notifications.viewAll')}
         </button>
       </div>
     </div>

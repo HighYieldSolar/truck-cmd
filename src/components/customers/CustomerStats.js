@@ -1,12 +1,14 @@
 "use client";
 
 import { Users, UserCheck, UserPlus, Briefcase, Package, TrendingUp } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Customer Statistics Cards
  * Follows the FuelStats design pattern with border-left accent
  */
 export default function CustomerStats({ stats, isLoading = false, className = "" }) {
+  const { t } = useTranslation('customers');
   const formatNumber = (value) => {
     if (value === undefined || value === null || isNaN(value)) return '0';
     return parseInt(value).toLocaleString();
@@ -14,25 +16,25 @@ export default function CustomerStats({ stats, isLoading = false, className = ""
 
   const statsItems = [
     {
-      title: "Total Customers",
+      title: t('statsLabels.totalCustomers'),
       value: formatNumber(stats?.total || 0),
       icon: <Users size={20} className="text-blue-600 dark:text-blue-400" />,
       color: "blue"
     },
     {
-      title: "Active",
+      title: t('statsLabels.active'),
       value: formatNumber(stats?.active || 0),
       icon: <UserCheck size={20} className="text-emerald-600 dark:text-emerald-400" />,
       color: "emerald"
     },
     {
-      title: "New This Month",
+      title: t('statsLabels.newThisMonth'),
       value: formatNumber(stats?.newThisMonth || 0),
       icon: <UserPlus size={20} className="text-purple-600 dark:text-purple-400" />,
       color: "purple"
     },
     {
-      title: "Brokers",
+      title: t('statsLabels.brokers'),
       value: formatNumber(stats?.brokers || 0),
       icon: <Briefcase size={20} className="text-amber-600 dark:text-amber-400" />,
       color: "amber"
@@ -94,7 +96,7 @@ export default function CustomerStats({ stats, isLoading = false, className = ""
             <div className="flex items-baseline mb-1">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{item.value}</h2>
             </div>
-            <div className="text-xs text-gray-400 dark:text-gray-500 font-medium">All time</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 font-medium">{t('statsLabels.allTime')}</div>
           </div>
         );
       })}

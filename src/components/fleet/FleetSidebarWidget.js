@@ -21,6 +21,7 @@ import {
   User
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
 const formatDate = (dateString) => {
@@ -41,6 +42,7 @@ export default function FleetSidebarWidget({
   handleDriverSelect,
   handleVehicleSelect
 }) {
+  const { t } = useTranslation('fleet');
   const [activeTab, setActiveTab] = useState("actions");
   const [healthData, setHealthData] = useState({
     score: 100,
@@ -196,22 +198,22 @@ export default function FleetSidebarWidget({
 
   // Tab configuration
   const tabs = [
-    { id: "actions", label: "Actions", icon: Zap },
-    { id: "health", label: "Health", icon: ShieldCheck },
-    { id: "assignments", label: "Assign", icon: Link2 },
-    { id: "alerts", label: "Alerts", icon: AlertTriangle, badge: alertCount > 0 ? alertCount : null }
+    { id: "actions", label: t('sidebar.tabs.actions'), icon: Zap },
+    { id: "health", label: t('sidebar.tabs.health'), icon: ShieldCheck },
+    { id: "assignments", label: t('sidebar.tabs.assign'), icon: Link2 },
+    { id: "alerts", label: t('sidebar.tabs.alerts'), icon: AlertTriangle, badge: alertCount > 0 ? alertCount : null }
   ];
 
   const getHealthConfig = () => {
     switch (healthData.status) {
       case 'critical':
-        return { color: 'text-red-600 dark:text-red-400', ringColor: 'stroke-red-500', label: 'Critical' };
+        return { color: 'text-red-600 dark:text-red-400', ringColor: 'stroke-red-500', label: t('healthScore.critical') };
       case 'warning':
-        return { color: 'text-amber-600 dark:text-amber-400', ringColor: 'stroke-amber-500', label: 'Needs Attention' };
+        return { color: 'text-amber-600 dark:text-amber-400', ringColor: 'stroke-amber-500', label: t('healthScore.needsAttention') };
       case 'good':
-        return { color: 'text-blue-600 dark:text-blue-400', ringColor: 'stroke-blue-500', label: 'Good' };
+        return { color: 'text-blue-600 dark:text-blue-400', ringColor: 'stroke-blue-500', label: t('healthScore.good') };
       default:
-        return { color: 'text-green-600 dark:text-green-400', ringColor: 'stroke-green-500', label: 'Excellent' };
+        return { color: 'text-green-600 dark:text-green-400', ringColor: 'stroke-green-500', label: t('healthScore.excellent') };
     }
   };
 
@@ -269,15 +271,15 @@ export default function FleetSidebarWidget({
               <div className="flex-1 grid grid-cols-3 gap-1 text-center">
                 <div className="bg-green-50 dark:bg-green-900/20 rounded p-1.5">
                   <p className="text-sm font-semibold text-green-600 dark:text-green-400">{healthData.compliantItems}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Valid</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('healthScore.valid')}</p>
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded p-1.5">
                   <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{healthData.expiringItems}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Expiring</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('healthScore.expiring')}</p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 rounded p-1.5">
                   <p className="text-sm font-semibold text-red-600 dark:text-red-400">{healthData.expiredItems}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Expired</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('healthScore.expired')}</p>
                 </div>
               </div>
             </div>
@@ -292,7 +294,7 @@ export default function FleetSidebarWidget({
                       : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
                   }`}>
                     <span className="truncate">{issue.entity} - {issue.doc}</span>
-                    <span className="font-medium ml-2 whitespace-nowrap">{issue.type === 'expired' ? 'Expired' : 'Soon'}</span>
+                    <span className="font-medium ml-2 whitespace-nowrap">{issue.type === 'expired' ? t('healthScore.expired') : t('healthScore.soon')}</span>
                   </div>
                 ))}
               </div>
@@ -301,12 +303,12 @@ export default function FleetSidebarWidget({
             {healthData.issues.length === 0 && healthData.totalItems > 0 && (
               <div className="text-center py-2 text-sm text-green-600 dark:text-green-400">
                 <CheckCircle size={16} className="inline mr-1" />
-                All documents up to date!
+                {t('healthScore.allDocumentsUpToDate')}
               </div>
             )}
 
             <Link href="/dashboard/compliance" className="flex items-center justify-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2">
-              View Compliance <ChevronRight size={14} className="ml-1" />
+              {t('healthScore.viewComplianceDetails')} <ChevronRight size={14} className="ml-1" />
             </Link>
           </div>
         )}
@@ -317,7 +319,7 @@ export default function FleetSidebarWidget({
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{assignedCount}/{totalVehicles}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Vehicles Assigned</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('sidebar.vehiclesAssigned')}</p>
               </div>
               <div className="w-14 h-14 relative">
                 <svg className="w-full h-full transform -rotate-90">
@@ -333,7 +335,7 @@ export default function FleetSidebarWidget({
             {/* Active Pairings */}
             {assignments.length > 0 && (
               <div className="space-y-1.5 mb-3">
-                <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase">Active Pairings</p>
+                <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase">{t('sidebar.activePairings')}</p>
                 {assignments.slice(0, 3).map(({ vehicle, driver }) => (
                   <div key={vehicle.id} className="flex items-center justify-between p-1.5 bg-gray-50 dark:bg-gray-700/50 rounded text-xs">
                     <div className="flex items-center min-w-0 flex-1">
@@ -342,13 +344,13 @@ export default function FleetSidebarWidget({
                     </div>
                     <Link2 size={10} className="text-purple-400 mx-1.5" />
                     <div className="flex items-center min-w-0 flex-1 justify-end">
-                      <span className="truncate text-gray-700 dark:text-gray-300">{driver?.name || 'Unknown'}</span>
+                      <span className="truncate text-gray-700 dark:text-gray-300">{driver?.name || t('sidebar.unknown')}</span>
                       <UserCircle size={12} className="text-blue-500 ml-1.5 flex-shrink-0" />
                     </div>
                   </div>
                 ))}
                 {assignments.length > 3 && (
-                  <p className="text-[10px] text-gray-400 text-center">+{assignments.length - 3} more</p>
+                  <p className="text-[10px] text-gray-400 text-center">+{assignments.length - 3} {t('sidebar.more')}</p>
                 )}
               </div>
             )}
@@ -358,17 +360,17 @@ export default function FleetSidebarWidget({
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
                 <div className="text-center p-2 bg-amber-50 dark:bg-amber-900/20 rounded">
                   <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{unassignedVehicles.length}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Unassigned Vehicles</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.unassignedVehicles')}</p>
                 </div>
                 <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
                   <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{unassignedDrivers.length}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">Available Drivers</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.availableDrivers')}</p>
                 </div>
               </div>
             )}
 
             <Link href="/dashboard/fleet/trucks" className="flex items-center justify-center text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 mt-3">
-              Manage Assignments <ChevronRight size={14} className="ml-1" />
+              {t('sidebar.manageAssignments')} <ChevronRight size={14} className="ml-1" />
             </Link>
           </div>
         )}
@@ -379,7 +381,7 @@ export default function FleetSidebarWidget({
             {allAlerts.length === 0 && upcomingMaintenance.length === 0 ? (
               <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                 <CheckCircle size={28} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-                <p className="text-sm">No alerts at this time</p>
+                <p className="text-sm">{t('sidebar.noAlertsNow')}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -412,7 +414,7 @@ export default function FleetSidebarWidget({
                               ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                               : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
                         }`}>
-                          {item.daysRemaining <= 0 ? 'Expired' : `${item.daysRemaining}d`}
+                          {item.daysRemaining <= 0 ? t('healthScore.expired') : `${item.daysRemaining}d`}
                         </span>
                       </div>
                     </div>
@@ -426,7 +428,7 @@ export default function FleetSidebarWidget({
                       <div className="flex items-center min-w-0 flex-1">
                         <Wrench size={12} className="text-amber-500 mr-1.5" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{item.vehicles?.name || 'Vehicle'}</p>
+                          <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{item.vehicles?.name || t('sidebar.vehicle')}</p>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{item.title}</p>
                         </div>
                       </div>
@@ -437,12 +439,12 @@ export default function FleetSidebarWidget({
 
                 {(allAlerts.length > 3 || upcomingMaintenance.length > 2) && (
                   <p className="text-[10px] text-gray-400 text-center pt-1">
-                    +{Math.max(0, allAlerts.length - 3) + Math.max(0, upcomingMaintenance.length - 2)} more alerts
+                    +{Math.max(0, allAlerts.length - 3) + Math.max(0, upcomingMaintenance.length - 2)} {t('sidebar.moreAlerts')}
                   </p>
                 )}
 
                 <Link href="/dashboard/compliance" className="flex items-center justify-center text-xs text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 mt-2">
-                  View All Alerts <ChevronRight size={14} className="ml-1" />
+                  {t('sidebar.viewAllAlerts')} <ChevronRight size={14} className="ml-1" />
                 </Link>
               </div>
             )}
@@ -460,8 +462,8 @@ export default function FleetSidebarWidget({
                 <Truck size={16} className="text-blue-600 dark:text-blue-300" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Manage Vehicles</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">View and add trucks</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('sidebar.manageVehicles')}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.viewAddTrucks')}</p>
               </div>
             </Link>
 
@@ -473,8 +475,8 @@ export default function FleetSidebarWidget({
                 <Users size={16} className="text-purple-600 dark:text-purple-300" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Manage Drivers</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">View and add drivers</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('sidebar.manageDrivers')}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.viewAddDrivers')}</p>
               </div>
             </Link>
 
@@ -486,8 +488,8 @@ export default function FleetSidebarWidget({
                 <Wrench size={16} className="text-amber-600 dark:text-amber-300" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Maintenance</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">Schedule & track repairs</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('maintenance.title')}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.scheduleTrackRepairs')}</p>
               </div>
             </Link>
 
@@ -499,8 +501,8 @@ export default function FleetSidebarWidget({
                 <FileText size={16} className="text-orange-600 dark:text-orange-300" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Compliance Center</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">Manage documents</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('sidebar.complianceCenter')}</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('sidebar.manageDocuments')}</p>
               </div>
             </Link>
           </div>

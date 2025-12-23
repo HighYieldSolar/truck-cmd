@@ -1,0 +1,43 @@
+{
+  "setupChecklist": {
+    "title": "Get Started with Truck Command",
+    "subtitle": "Complete these steps to set up your business",
+    "yourProgress": "Your progress",
+    "percentComplete": "{{percent}}% complete",
+    "next": "Next",
+    "celebration": {
+      "title": "Setup Complete!",
+      "message": "You're all set to run your trucking business with Truck Command"
+    },
+    "items": {
+      "truck": {
+        "title": "Add your first truck",
+        "description": "Track mileage and manage your fleet"
+      },
+      "customer": {
+        "title": "Add a customer",
+        "description": "Get ready to invoice clients"
+      },
+      "load": {
+        "title": "Create your first load",
+        "description": "Start tracking your hauls"
+      },
+      "expense": {
+        "title": "Log an expense",
+        "description": "Track your business costs"
+      },
+      "profile": {
+        "title": "Complete your profile",
+        "description": "Add phone & company name for invoices"
+      }
+    }
+  },
+  "tutorialCard": {
+    "quickGuide": "Quick Guide",
+    "keyFeatures": "Key Features",
+    "proTips": "Pro Tips",
+    "back": "Back",
+    "next": "Next",
+    "gotIt": "Got it!"
+  }
+}

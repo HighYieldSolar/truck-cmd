@@ -1,25 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  DollarSign, 
-  CheckCircle, 
-  Clock, 
+import {
+  DollarSign,
+  CheckCircle,
+  Clock,
   AlertCircle,
-  TrendingUp, 
+  TrendingUp,
   TrendingDown,
-  BarChart2, 
+  BarChart2,
   PieChart,
   Calendar
 } from "lucide-react";
 import { getInvoiceStats } from "@/lib/services/invoiceService";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Invoice Statistics Dashboard Component
  * Displays summary metrics and charts for invoice data
  */
 export default function InvoiceStatsDashboard({ period = "month" }) {
+  const { t } = useTranslation('invoices');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -55,7 +57,7 @@ export default function InvoiceStatsDashboard({ period = "month" }) {
         const invoiceStats = await getInvoiceStats(user.id);
         setStats(invoiceStats);
       } catch (err) {
-        setError('Failed to load invoice statistics. Please try again.');
+        setError(t('statsDashboard.failedToLoad'));
       } finally {
         setLoading(false);
       }
@@ -128,30 +130,30 @@ export default function InvoiceStatsDashboard({ period = "month" }) {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Invoices" 
-          value={formatCurrency(stats.total)} 
+        <StatCard
+          title={t('statsDashboard.totalInvoices')}
+          value={formatCurrency(stats.total)}
           icon={<DollarSign size={22} className="text-gray-600" />}
           bgColor="bg-white"
           textColor="text-gray-900"
         />
-        <StatCard 
-          title="Paid" 
-          value={formatCurrency(stats.paid)} 
+        <StatCard
+          title={t('statsDashboard.paid')}
+          value={formatCurrency(stats.paid)}
           icon={<CheckCircle size={22} className="text-green-600" />}
           bgColor="bg-green-50"
           textColor="text-green-700"
         />
-        <StatCard 
-          title="Pending" 
-          value={formatCurrency(stats.pending)} 
+        <StatCard
+          title={t('statsDashboard.pending')}
+          value={formatCurrency(stats.pending)}
           icon={<Clock size={22} className="text-yellow-600" />}
           bgColor="bg-yellow-50"
           textColor="text-yellow-700"
         />
-        <StatCard 
-          title="Overdue" 
-          value={formatCurrency(stats.overdue)} 
+        <StatCard
+          title={t('statsDashboard.overdue')}
+          value={formatCurrency(stats.overdue)}
           icon={<AlertCircle size={22} className="text-red-600" />}
           bgColor="bg-red-50"
           textColor="text-red-700"
@@ -161,26 +163,26 @@ export default function InvoiceStatsDashboard({ period = "month" }) {
       {/* Invoice Status Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('statsDashboard.invoiceStatus')}</h3>
           <div className="flex justify-between items-center">
             {/* Simplified visual representation of invoice distribution */}
             <div className="w-full h-8 rounded-full bg-gray-100 flex overflow-hidden">
               {stats.total > 0 && (
                 <>
-                  <div 
-                    className="h-full bg-green-500" 
+                  <div
+                    className="h-full bg-green-500"
                     style={{ width: `${(stats.paid / stats.total) * 100}%` }}
-                    title={`Paid: ${formatCurrency(stats.paid)}`}
+                    title={`${t('statsDashboard.paid')}: ${formatCurrency(stats.paid)}`}
                   ></div>
-                  <div 
-                    className="h-full bg-yellow-500" 
+                  <div
+                    className="h-full bg-yellow-500"
                     style={{ width: `${(stats.pending / stats.total) * 100}%` }}
-                    title={`Pending: ${formatCurrency(stats.pending)}`}
+                    title={`${t('statsDashboard.pending')}: ${formatCurrency(stats.pending)}`}
                   ></div>
-                  <div 
-                    className="h-full bg-red-500" 
+                  <div
+                    className="h-full bg-red-500"
                     style={{ width: `${(stats.overdue / stats.total) * 100}%` }}
-                    title={`Overdue: ${formatCurrency(stats.overdue)}`}
+                    title={`${t('statsDashboard.overdue')}: ${formatCurrency(stats.overdue)}`}
                   ></div>
                 </>
               )}
@@ -189,56 +191,56 @@ export default function InvoiceStatsDashboard({ period = "month" }) {
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
             <div>
               <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
-              <span className="text-sm text-gray-600">Paid ({stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}%)</span>
+              <span className="text-sm text-gray-600">{t('statsDashboard.paid')} ({stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}%)</span>
             </div>
             <div>
               <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span>
-              <span className="text-sm text-gray-600">Pending ({stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0}%)</span>
+              <span className="text-sm text-gray-600">{t('statsDashboard.pending')} ({stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0}%)</span>
             </div>
             <div>
               <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
-              <span className="text-sm text-gray-600">Overdue ({stats.total > 0 ? Math.round((stats.overdue / stats.total) * 100) : 0}%)</span>
+              <span className="text-sm text-gray-600">{t('statsDashboard.overdue')} ({stats.total > 0 ? Math.round((stats.overdue / stats.total) * 100) : 0}%)</span>
             </div>
           </div>
         </div>
 
         {/* Invoice Aging Summary */}
         <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('statsDashboard.invoiceSummary')}</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <Calendar size={18} className="text-blue-600 mr-2" />
-                <span className="text-gray-600">Total Invoices:</span>
+                <span className="text-gray-600">{t('statsDashboard.totalInvoicesLabel')}</span>
               </div>
               <span className="font-semibold">{stats.count}</span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <DollarSign size={18} className="text-green-600 mr-2" />
-                <span className="text-gray-600">Average Invoice Value:</span>
+                <span className="text-gray-600">{t('statsDashboard.averageInvoiceValue')}</span>
               </div>
               <span className="font-semibold">
-                {stats.count > 0 
-                  ? formatCurrency(stats.total / stats.count) 
+                {stats.count > 0
+                  ? formatCurrency(stats.total / stats.count)
                   : formatCurrency(0)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <CheckCircle size={18} className="text-green-600 mr-2" />
-                <span className="text-gray-600">Collection Rate:</span>
+                <span className="text-gray-600">{t('statsDashboard.collectionRate')}</span>
               </div>
               <span className="font-semibold">
-                {stats.total > 0 
-                  ? `${Math.round((stats.paid / stats.total) * 100)}%` 
+                {stats.total > 0
+                  ? `${Math.round((stats.paid / stats.total) * 100)}%`
                   : '0%'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <AlertCircle size={18} className="text-red-600 mr-2" />
-                <span className="text-gray-600">Outstanding Balance:</span>
+                <span className="text-gray-600">{t('statsDashboard.outstandingBalance')}</span>
               </div>
               <span className="font-semibold text-red-600">
                 {formatCurrency(stats.pending + stats.overdue)}

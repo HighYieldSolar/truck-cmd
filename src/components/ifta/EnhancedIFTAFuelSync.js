@@ -15,6 +15,7 @@ import {
   ChevronRight,
   AlertCircle
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function EnhancedIFTAFuelSync({
   userId,
@@ -25,6 +26,8 @@ export default function EnhancedIFTAFuelSync({
   onSyncComplete,
   onError
 }) {
+  const { t } = useTranslation('ifta');
+
   // Component state
   const [syncStatus, setSyncStatus] = useState('idle');
   const [fuelByState, setFuelByState] = useState({});
@@ -156,7 +159,7 @@ export default function EnhancedIFTAFuelSync({
         <div className="bg-red-500 px-5 py-4 text-white">
           <h3 className="font-semibold flex items-center">
             <AlertCircle size={18} className="mr-2" />
-            Fuel Data Sync Error
+            {t('fuelSync.errorTitle')}
           </h3>
         </div>
         <div className="p-6">
@@ -167,14 +170,14 @@ export default function EnhancedIFTAFuelSync({
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-700">
-                  {errorDetails || "Failed to analyze fuel purchase data. Please try again."}
+                  {errorDetails || t('fuelSync.errorMessage')}
                 </p>
                 <button
                   onClick={handleManualSync}
                   className="mt-3 inline-flex items-center px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50"
                 >
                   <RefreshCw size={14} className="mr-2" />
-                  Retry Analysis
+                  {t('fuelSync.retryAnalysis')}
                 </button>
               </div>
             </div>
@@ -190,7 +193,7 @@ export default function EnhancedIFTAFuelSync({
         <div className="bg-yellow-500 px-5 py-4 text-white">
           <h3 className="font-semibold flex items-center">
             <AlertTriangle size={18} className="mr-2" />
-            No Fuel Purchase Data
+            {t('fuelSync.noFuelData')}
           </h3>
         </div>
         <div className="p-6">
@@ -202,15 +205,15 @@ export default function EnhancedIFTAFuelSync({
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
                   {selectedVehicle === "all"
-                    ? "No fuel purchase data was found for this quarter. IFTA requires fuel purchase records by state."
-                    : `No fuel purchase records found for vehicle ${selectedVehicle} in this quarter.`}
+                    ? t('fuelSync.noFuelDataMessage')
+                    : t('fuelSync.noFuelDataVehicle', { vehicle: selectedVehicle })}
                 </p>
                 <a
                   href="/dashboard/fuel"
                   className="mt-3 inline-flex items-center px-3 py-2 border border-yellow-300 rounded-md text-sm font-medium text-yellow-700 bg-white hover:bg-yellow-50"
                 >
                   <Fuel size={14} className="mr-2" />
-                  Add Fuel Purchases
+                  {t('fuelSync.addFuelPurchases')}
                 </a>
               </div>
             </div>
@@ -227,7 +230,7 @@ export default function EnhancedIFTAFuelSync({
           <div className="flex justify-between items-center">
             <h3 className="font-semibold flex items-center">
               <Fuel size={18} className="mr-2" />
-              Fuel Purchase Data by State
+              {t('fuelSync.fuelByState')}
             </h3>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
@@ -236,12 +239,12 @@ export default function EnhancedIFTAFuelSync({
               {isExpanded ? (
                 <>
                   <ChevronDown size={16} className="mr-1" />
-                  Hide
+                  {t('tripsList.hide')}
                 </>
               ) : (
                 <>
                   <ChevronRight size={16} className="mr-1" />
-                  Show
+                  {t('tripsList.show')}
                 </>
               )}
             </button>
@@ -258,12 +261,12 @@ export default function EnhancedIFTAFuelSync({
                 <div className="ml-3">
                   <p className="text-sm text-orange-700">
                     {selectedVehicle === "all"
-                      ? `You have recorded ${totalFuelGallons.toFixed(3)} gallons of fuel in ${uniqueStates.length} states for this quarter.`
-                      : `Vehicle ${selectedVehicle} has ${totalFuelGallons.toFixed(3)} gallons of fuel recorded in ${uniqueStates.length} states.`}
+                      ? t('fuelSync.fuelRecorded', { gallons: totalFuelGallons.toFixed(3), states: uniqueStates.length })
+                      : t('fuelSync.fuelRecordedVehicle', { vehicle: selectedVehicle, gallons: totalFuelGallons.toFixed(3), states: uniqueStates.length })}
                   </p>
                   {lastSyncTime && (
                     <p className="text-xs text-orange-600 mt-1">
-                      Last updated: {lastSyncTime.toLocaleTimeString()}
+                      {t('fuelSync.lastUpdated', { time: lastSyncTime.toLocaleTimeString() })}
                     </p>
                   )}
                 </div>
@@ -275,13 +278,13 @@ export default function EnhancedIFTAFuelSync({
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      State
+                      {t('fuelSync.state')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fuel Gallons
+                      {t('fuelSync.fuelGallons')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Purchases
+                      {t('fuelSync.purchases')}
                     </th>
                   </tr>
                 </thead>
@@ -303,7 +306,9 @@ export default function EnhancedIFTAFuelSync({
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <span className="text-sm text-gray-500">
-                            {state.entries.length} {state.entries.length === 1 ? 'purchase' : 'purchases'}
+                            {state.entries.length === 1
+                              ? t('fuelSync.purchaseCount', { count: state.entries.length })
+                              : t('fuelSync.purchaseCount_plural', { count: state.entries.length })}
                           </span>
                         </td>
                       </tr>
@@ -312,13 +317,13 @@ export default function EnhancedIFTAFuelSync({
                 <tfoot>
                   <tr className="bg-gray-100">
                     <td className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                      TOTAL
+                      {t('fuelSync.total')}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       {totalFuelGallons.toFixed(3)}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-500">
-                      {filteredFuelData.length} entries
+                      {t('fuelSync.entries', { count: filteredFuelData.length })}
                     </td>
                   </tr>
                 </tfoot>
@@ -329,12 +334,12 @@ export default function EnhancedIFTAFuelSync({
               <div className="flex items-start">
                 <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
                 <div>
-                  <h5 className="text-sm font-medium text-blue-800">About Fuel Data for IFTA</h5>
+                  <h5 className="text-sm font-medium text-blue-800">{t('fuelSync.aboutFuelData')}</h5>
                   <p className="text-sm text-blue-700 mt-1">
-                    Fuel purchase records are essential for IFTA reporting. You should have fuel receipts for each state where you purchase fuel.
+                    {t('fuelSync.fuelDataInfo')}
                   </p>
                   <p className="text-sm text-blue-700 mt-1">
-                    Use the <a href="/dashboard/fuel" className="underline">Fuel Tracker</a> to enter all your fuel purchases properly categorized by state.
+                    {t('fuelSync.useFuelTracker')}
                   </p>
                 </div>
               </div>
@@ -346,7 +351,7 @@ export default function EnhancedIFTAFuelSync({
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
               >
                 <RefreshCw size={16} className="mr-2" />
-                Refresh Fuel Data
+                {t('fuelSync.refreshFuelData')}
               </button>
             </div>
           </div>
@@ -361,7 +366,7 @@ export default function EnhancedIFTAFuelSync({
       <div className="bg-gradient-to-r from-orange-600 to-orange-500 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <Fuel size={18} className="mr-2" />
-          Fuel Data Analysis
+          {t('fuelSync.fuelDataAnalysis')}
         </h3>
       </div>
       <div className="p-6">
@@ -370,11 +375,11 @@ export default function EnhancedIFTAFuelSync({
           <div>
             <p className="text-lg font-medium text-gray-900">
               {!userId || !quarter
-                ? "Waiting for quarter selection..."
-                : "Initializing fuel data analysis..."}
+                ? t('fuelSync.waitingForQuarter')
+                : t('fuelSync.initializingAnalysis')}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              This may take a few moments
+              {t('fuelSync.mayTakeMoments')}
             </p>
           </div>
         </div>

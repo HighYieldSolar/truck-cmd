@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { EyeIcon, EyeOffIcon, Mail, Lock } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoginForm() {
+  const { t } = useTranslation('auth');
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +30,7 @@ export default function LoginForm() {
 
     if (error) {
       // Supabase auth errors are user-friendly, but provide fallback for edge cases
-      setError(error.message || 'Login failed. Please check your credentials and try again.');
+      setError(error.message || t('login.loginFailed'));
     } else {
       router.push("/dashboard");
     }
@@ -37,7 +39,7 @@ export default function LoginForm() {
   const handleMagicLinkLogin = async (e) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
-      setError("Please enter a valid email address");
+      setError(t('login.validEmail'));
       return;
     }
 
@@ -59,7 +61,7 @@ export default function LoginForm() {
       setMagicLinkSent(true);
     } catch (error) {
       // Supabase auth errors are user-friendly, but provide fallback for edge cases
-      setError(error.message || 'Failed to send magic link. Please try again.');
+      setError(error.message || t('login.magicLinkFailed'));
     } finally {
       setMagicLinkLoading(false);
     }
@@ -74,16 +76,16 @@ export default function LoginForm() {
     return (
       <div className="text-center p-4 bg-blue-50 rounded-lg">
         <Mail className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Check your email</h3>
+        <h3 className="text-xl font-semibold mb-2">{t('login.checkEmail')}</h3>
         <p className="text-gray-600 mb-6">
-          We&apos;ve sent a magic link to <strong>{email}</strong>. 
-          Click the link in the email to sign in.
+          {t('login.magicLinkSent')} <strong>{email}</strong>.
+          {t('login.clickLinkToSignIn')}
         </p>
         <button
           onClick={() => setMagicLinkSent(false)}
           className="text-blue-600 hover:underline font-medium"
         >
-          Back to login
+          {t('login.backToLogin')}
         </button>
       </div>
     );
@@ -104,7 +106,7 @@ export default function LoginForm() {
           }`}
         >
           <Lock size={16} className="inline mr-2" />
-          Password
+          {t('login.passwordMethod')}
         </button>
         <button
           type="button"
@@ -116,7 +118,7 @@ export default function LoginForm() {
           }`}
         >
           <Mail size={16} className="inline mr-2" />
-          Email-Login
+          {t('login.emailLogin')}
         </button>
       </div>
 
@@ -125,27 +127,27 @@ export default function LoginForm() {
         <form onSubmit={handleLogin} className="space-y-4">
           {/* Email Input */}
           <div>
-            <label className="block text-gray-800 font-medium mb-1">Email</label>
+            <label className="block text-gray-800 font-medium mb-1">{t('login.email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:ring focus:ring-blue-300 focus:border-blue-300"
-              placeholder="Enter your email"
+              placeholder={t('login.enterEmail')}
               required
             />
           </div>
 
           {/* Password Input with Show/Hide */}
           <div>
-            <label className="block text-gray-800 font-medium mb-1">Password</label>
+            <label className="block text-gray-800 font-medium mb-1">{t('login.password')}</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 pr-10 focus:ring focus:ring-blue-300 focus:border-blue-300"
-                placeholder="Enter your password"
+                placeholder={t('login.enterPassword')}
                 required
               />
               {/* Show/Hide Password Button with Icons - fixed z-index */}
@@ -162,7 +164,7 @@ export default function LoginForm() {
           {/* Forgot Password */}
           <div className="text-center">
             <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">
-              Forgot password?
+              {t('login.forgotPassword')}
             </Link>
           </div>
 
@@ -178,10 +180,10 @@ export default function LoginForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Logging in...
+                {t('login.loggingIn')}
               </div>
             ) : (
-              "Login"
+              t('login.loginButton')
             )}
           </button>
         </form>
@@ -191,20 +193,20 @@ export default function LoginForm() {
       {loginMethod === "magic" && (
         <form onSubmit={handleMagicLinkLogin} className="space-y-4">
           <div>
-            <label className="block text-gray-800 font-medium mb-1">Email</label>
+            <label className="block text-gray-800 font-medium mb-1">{t('login.email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:ring focus:ring-blue-300 focus:border-blue-300"
-              placeholder="Enter your email"
+              placeholder={t('login.enterEmail')}
               required
             />
           </div>
 
           <div className="p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-gray-700">
-              We&apos;ll send a magic link to your email that will let you sign in without a password.
+              {t('login.magicLinkInfo')}
             </p>
           </div>
 
@@ -219,10 +221,10 @@ export default function LoginForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Sending magic link...
+                {t('login.sendingMagicLink')}
               </div>
             ) : (
-              "Send Magic Link"
+              t('login.sendMagicLink')
             )}
           </button>
         </form>
@@ -230,9 +232,9 @@ export default function LoginForm() {
 
       {/* Signup Link */}
       <p className="text-sm text-center mt-6 text-gray-700">
-        Don&apos;t have an account?{" "}
+        {t('login.noAccount')}{" "}
         <Link href="/signup" className="text-blue-500 hover:underline">
-          Sign Up
+          {t('login.signUp')}
         </Link>
       </p>
     </>

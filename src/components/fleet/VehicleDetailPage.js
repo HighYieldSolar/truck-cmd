@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { getTruckById, deleteTruck } from "@/lib/services/truckService";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
@@ -35,6 +36,7 @@ import {
 
 export default function VehicleDetailPage({ vehicleId }) {
   const router = useRouter();
+  const { t } = useTranslation('fleet');
   const [user, setUser] = useState(null);
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function VehicleDetailPage({ vehicleId }) {
       const data = await getTruckById(vehicleId);
 
       if (!data) {
-        setError("Vehicle not found");
+        setError(t('vehicleDetailPage.vehicleNotFound'));
         return;
       }
 
@@ -100,7 +102,7 @@ export default function VehicleDetailPage({ vehicleId }) {
       setLoadHistory(loads || []);
 
     } catch (err) {
-      setError("Failed to load vehicle data");
+      setError(t('vehicleDetailPage.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -120,7 +122,7 @@ export default function VehicleDetailPage({ vehicleId }) {
         setUser(user);
         await loadVehicleData();
       } catch (err) {
-        setError("Failed to initialize");
+        setError(t('vehicleDetailPage.failedToInit'));
       }
     }
 
@@ -137,7 +139,7 @@ export default function VehicleDetailPage({ vehicleId }) {
     await loadVehicleData();
     setOperationMessage({
       type: 'success',
-      text: 'Vehicle updated successfully!'
+      text: t('vehicleDetailPage.vehicleUpdated')
     });
     return true;
   };
@@ -148,7 +150,7 @@ export default function VehicleDetailPage({ vehicleId }) {
     setMaintenanceModalOpen(false);
     setOperationMessage({
       type: 'success',
-      text: 'Maintenance record added successfully!'
+      text: t('vehicleDetailPage.maintenanceAdded')
     });
     return true;
   };
@@ -161,7 +163,7 @@ export default function VehicleDetailPage({ vehicleId }) {
 
       setOperationMessage({
         type: 'success',
-        text: 'Vehicle deleted successfully!'
+        text: t('vehicleDetailPage.vehicleDeleted')
       });
 
       setTimeout(() => {
@@ -170,7 +172,7 @@ export default function VehicleDetailPage({ vehicleId }) {
     } catch (err) {
       setOperationMessage({
         type: 'error',
-        text: 'Failed to delete vehicle'
+        text: t('vehicleDetailPage.failedToDelete')
       });
     } finally {
       setIsDeleting(false);
@@ -259,17 +261,17 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <AlertTriangle size={32} className="text-red-600 dark:text-red-400" />
               </div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                {error || "Vehicle not found"}
+                {error || t('vehicleDetailPage.vehicleNotFound')}
               </h2>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
-                The vehicle you're looking for doesn't exist or has been deleted.
+                {t('vehicleDetailPage.vehicleNotFoundDesc')}
               </p>
               <Link
                 href="/dashboard/fleet/trucks"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 <ChevronLeft size={18} className="mr-2" />
-                Back to Vehicles
+                {t('vehicleDetailPage.backToVehicles')}
               </Link>
             </div>
           </div>
@@ -323,14 +325,14 @@ export default function VehicleDetailPage({ vehicleId }) {
                   className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center font-medium"
                 >
                   <Edit size={18} className="mr-2" />
-                  Edit
+                  {t('vehicleDetailPage.edit')}
                 </button>
                 <button
                   onClick={() => setDeleteModalOpen(true)}
                   className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center font-medium"
                 >
                   <Trash2 size={18} className="mr-2" />
-                  Delete
+                  {t('vehicleDetailPage.delete')}
                 </button>
               </div>
             </div>
@@ -345,7 +347,7 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                     <FileText size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-                    Vehicle Information
+                    {t('vehicleDetailPage.vehicleInfo')}
                   </h3>
                 </div>
                 <div className="p-6">
@@ -356,9 +358,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Hash size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">VIN</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.vin')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100 font-mono">
-                          {vehicle.vin || "Not specified"}
+                          {vehicle.vin || t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -369,9 +371,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <FileText size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">License Plate</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.licensePlate')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.license_plate || "Not specified"}
+                          {vehicle.license_plate || t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -382,9 +384,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Truck size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Vehicle Type</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.vehicleType')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.type || "Not specified"}
+                          {vehicle.type || t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -395,9 +397,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Palette size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Color</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.color')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.color || "Not specified"}
+                          {vehicle.color || t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -408,9 +410,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Fuel size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Fuel Type</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.fuelType')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.fuel_type || "Not specified"}
+                          {vehicle.fuel_type || t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -421,9 +423,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Gauge size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Tank Capacity</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.tankCapacity')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.tank_capacity ? `${vehicle.tank_capacity} gal` : "Not specified"}
+                          {vehicle.tank_capacity ? `${vehicle.tank_capacity} ${t('vehicleDetailPage.gal')}` : t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -434,9 +436,9 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <BarChart3 size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Fuel Efficiency</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.fuelEfficiency')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {vehicle.mpg ? `${vehicle.mpg} MPG` : "Not specified"}
+                          {vehicle.mpg ? `${vehicle.mpg} ${t('vehicleDetailPage.mpg')}` : t('vehicleDetailPage.notSpecified')}
                         </p>
                       </div>
                     </div>
@@ -447,7 +449,7 @@ export default function VehicleDetailPage({ vehicleId }) {
                         <Calendar size={18} className="text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Added On</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.addedOn')}</p>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
                           {formatDate(vehicle.created_at)}
                         </p>
@@ -458,7 +460,7 @@ export default function VehicleDetailPage({ vehicleId }) {
                   {/* Notes */}
                   {vehicle.notes && (
                     <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Notes</h4>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t('vehicleDetailPage.notes')}</h4>
                       <p className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                         {vehicle.notes}
                       </p>
@@ -472,20 +474,20 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                     <Package size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-                    Recent Loads
+                    {t('vehicleDetailPage.recentLoads')}
                   </h3>
                   <Link
                     href="/dashboard/dispatching"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
-                    View All
+                    {t('vehicleDetailPage.viewAll')}
                   </Link>
                 </div>
                 <div className="p-6">
                   {loadHistory.length === 0 ? (
                     <div className="text-center py-8">
                       <Package size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-                      <p className="text-gray-500 dark:text-gray-400">No loads assigned to this vehicle yet</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.noLoadsAssigned')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -526,20 +528,20 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                     <Activity size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
-                    Quick Stats
+                    {t('vehicleDetailPage.quickStats')}
                   </h3>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Total Loads</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.totalLoads')}</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{loadHistory.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Fuel Entries</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.fuelEntries')}</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{fuelEntries.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Maintenance Records</span>
+                    <span className="text-gray-500 dark:text-gray-400">{t('vehicleDetailPage.maintenanceRecords')}</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{maintenanceRecords.length}</span>
                   </div>
                 </div>
@@ -550,21 +552,21 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                     <Wrench size={18} className="mr-2 text-amber-600 dark:text-amber-400" />
-                    Maintenance
+                    {t('vehicleDetailPage.maintenance')}
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setMaintenanceModalOpen(true)}
                       className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium"
                     >
-                      + Add
+                      {t('vehicleDetailPage.add')}
                     </button>
                     <span className="text-gray-300 dark:text-gray-600">|</span>
                     <Link
                       href="/dashboard/fleet/maintenance"
                       className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     >
-                      View All
+                      {t('vehicleDetailPage.viewAll')}
                     </Link>
                   </div>
                 </div>
@@ -575,8 +577,8 @@ export default function VehicleDetailPage({ vehicleId }) {
                       className="w-full text-center py-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-colors cursor-pointer"
                     >
                       <Wrench size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">No maintenance records</p>
-                      <p className="text-blue-600 dark:text-blue-400 text-sm mt-1 font-medium">+ Add maintenance record</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('vehicleDetailPage.noMaintenanceRecords')}</p>
+                      <p className="text-blue-600 dark:text-blue-400 text-sm mt-1 font-medium">{t('vehicleDetailPage.addMaintenanceRecord')}</p>
                     </button>
                   ) : (
                     <div className="space-y-3">
@@ -587,7 +589,7 @@ export default function VehicleDetailPage({ vehicleId }) {
                           className="block p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                           <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                            {record.maintenance_type || record.service_type || record.description || 'Maintenance'}
+                            {record.maintenance_type || record.service_type || record.description || t('vehicleDetailPage.maintenanceFallback')}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {formatDate(record.due_date || record.scheduled_date || record.date)}
@@ -615,20 +617,20 @@ export default function VehicleDetailPage({ vehicleId }) {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                     <Fuel size={18} className="mr-2 text-green-600 dark:text-green-400" />
-                    Recent Fuel
+                    {t('vehicleDetailPage.recentFuel')}
                   </h3>
                   <Link
                     href="/dashboard/fuel"
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
-                    View All
+                    {t('vehicleDetailPage.viewAll')}
                   </Link>
                 </div>
                 <div className="p-6">
                   {fuelEntries.length === 0 ? (
                     <div className="text-center py-6">
                       <Fuel size={28} className="mx-auto text-gray-400 dark:text-gray-500 mb-2" />
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">No fuel entries</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">{t('vehicleDetailPage.noFuelEntries')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -639,7 +641,7 @@ export default function VehicleDetailPage({ vehicleId }) {
                         >
                           <div>
                             <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                              {entry.gallons?.toFixed(2)} gal
+                              {entry.gallons?.toFixed(2)} {t('vehicleDetailPage.gal')}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {formatDate(entry.date)}
@@ -673,8 +675,8 @@ export default function VehicleDetailPage({ vehicleId }) {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Vehicle"
-        message={`Are you sure you want to delete "${vehicle.name}"? This action cannot be undone and will remove all associated records.`}
+        title={t('vehicleDetailPage.deleteVehicle')}
+        message={t('vehicleDetailPage.confirmDelete', { name: vehicle.name })}
         isDeleting={isDeleting}
       />
 

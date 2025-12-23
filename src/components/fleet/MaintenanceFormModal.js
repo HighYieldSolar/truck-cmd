@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { createMaintenanceRecord, updateMaintenanceRecord, MAINTENANCE_TYPES, MAINTENANCE_STATUSES } from "@/lib/services/maintenanceService";
 import { fetchTrucks } from "@/lib/services/truckService";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function MaintenanceFormModal({ isOpen, onClose, record, userId, trucks = [], onSubmit }) {
+  const { t } = useTranslation('fleet');
   const initialFormData = {
     truck_id: "",
     maintenance_type: "Oil Change",
@@ -172,10 +174,10 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
 
       if (record) {
         await updateMaintenanceRecord(record.id, recordData);
-        setSubmitMessage({ type: "success", text: "Maintenance record updated successfully!" });
+        setSubmitMessage({ type: "success", text: t('maintenanceForm.recordUpdatedSuccess') });
       } else {
         await createMaintenanceRecord(recordData);
-        setSubmitMessage({ type: "success", text: "Maintenance record created successfully!" });
+        setSubmitMessage({ type: "success", text: t('maintenanceForm.recordCreatedSuccess') });
       }
 
       if (onSubmit) await onSubmit();
@@ -184,7 +186,7 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
         onClose();
       }, 1500);
     } catch (error) {
-      setSubmitMessage({ type: "error", text: error.message || "Failed to save maintenance record" });
+      setSubmitMessage({ type: "error", text: error.message || t('maintenanceForm.failedToSaveRecord') });
     } finally {
       setIsSubmitting(false);
     }
@@ -204,10 +206,10 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {record?._completing ? "Complete Maintenance" : record ? "Edit Maintenance Record" : "Schedule Maintenance"}
+                  {record?._completing ? t('maintenanceForm.completeMaintenance') : record ? t('maintenanceForm.editMaintenanceRecord') : t('maintenanceForm.scheduleMaintenance')}
                 </h2>
                 <p className="text-blue-100 text-sm">
-                  {record?._completing ? "Add completion details and save" : record ? "Update the maintenance details" : "Add a new maintenance task"}
+                  {record?._completing ? t('maintenanceForm.addCompletionDetails') : record ? t('maintenanceForm.updateMaintenanceDetails') : t('maintenanceForm.addNewMaintenanceTask')}
                 </p>
               </div>
             </div>
@@ -498,7 +500,7 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
             disabled={isSubmitting}
             className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
           <button
             type="submit"
@@ -513,12 +515,12 @@ export default function MaintenanceFormModal({ isOpen, onClose, record, userId, 
             {isSubmitting ? (
               <>
                 <Loader2 size={18} className="animate-spin mr-2" />
-                Saving...
+                {t('maintenanceForm.saving')}
               </>
             ) : (
               <>
                 {record?._completing && <CheckCircle size={18} className="mr-2" />}
-                {record?._completing ? "Mark Complete" : record ? "Update Record" : "Create Record"}
+                {record?._completing ? t('maintenanceForm.markComplete') : record ? t('maintenanceForm.updateRecord') : t('maintenanceForm.createRecord')}
               </>
             )}
           </button>

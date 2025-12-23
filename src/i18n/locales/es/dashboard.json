@@ -1,0 +1,158 @@
+{
+  "title": "Panel de Control",
+  "welcome": "Bienvenido a Su Panel de Control",
+  "subtitle": "Su centro de comando empresarial - vea todo de un vistazo",
+  "header": {
+    "greeting": "Bienvenido",
+    "todayOverview": "Esto es lo que está pasando con su negocio de camiones hoy",
+    "newLoad": "Nueva Carga"
+  },
+  "dateRange": {
+    "label": "Rango de Fechas",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "thisQuarter": "Este Trimestre",
+    "thisYear": "Este Año",
+    "allTime": "Todo el Tiempo"
+  },
+  "stats": {
+    "totalEarnings": "Ganancias Totales (MTD)",
+    "totalExpenses": "Gastos Totales (MTD)",
+    "netProfit": "Ganancia Neta",
+    "earnings": "Ganancias",
+    "expenses": "Gastos",
+    "profit": "Ganancia",
+    "activeLoads": "Cargas Activas",
+    "pendingInvoices": "Facturas Pendientes",
+    "upcomingDeliveries": "Próximas Entregas",
+    "paidInvoices": "Facturas Pagadas",
+    "factoredEarnings": "Ganancias Factoradas",
+    "vsLastMonth": "vs mes pasado",
+    "vsPriorMonth": "vs mes anterior",
+    "vsLastQuarter": "vs trimestre pasado",
+    "vsLastYear": "vs año pasado",
+    "vsPrior30Days": "vs últimos 30 días",
+    "noChange": "Sin cambios",
+    "increase": "aumento",
+    "decrease": "disminución"
+  },
+  "earningsBreakdown": {
+    "title": "Desglose de Ganancias",
+    "directPayments": "Pagos Directos",
+    "factoredPayments": "Pagos Factorados",
+    "totalEarnings": "Ganancias Totales",
+    "factoredLoads": "Cargas Factoradas",
+    "invoicedLoads": "Cargas Facturadas",
+    "otherInvoicePayments": "Otros Pagos de Facturas",
+    "earningsDistribution": "Distribución de Ganancias",
+    "factored": "Factorado",
+    "invoiced": "Facturado",
+    "other": "Otros"
+  },
+  "businessOverview": {
+    "title": "Resumen del Negocio",
+    "quickStats": "Estadísticas Rápidas",
+    "performance": "Rendimiento",
+    "trends": "Tendencias"
+  },
+  "activity": {
+    "title": "Actividad Reciente",
+    "recentInvoices": "Facturas Recientes",
+    "noActivity": "Sin actividad reciente",
+    "noRecentActivity": "No se encontró actividad reciente. Comience a crear cargas o facturas para ver su actividad aquí.",
+    "noRecentInvoices": "No se encontraron facturas recientes.",
+    "noDataToDisplay": "No hay datos para mostrar",
+    "viewAll": "Ver Todo",
+    "viewAllActivity": "Ver Toda la Actividad",
+    "last7Days": "Últimos 7 días",
+    "loadCreated": "Carga creada",
+    "loadCompleted": "Carga completada",
+    "invoiceSent": "Factura enviada",
+    "invoicePaid": "Factura pagada",
+    "expenseAdded": "Gasto agregado",
+    "fuelPurchase": "Compra de combustible",
+    "client": "Cliente",
+    "location": "Ubicación",
+    "invoiceNumber": "Factura #{{number}}"
+  },
+  "deliveries": {
+    "title": "Próximas Entregas",
+    "noDeliveries": "No hay entregas programadas",
+    "scheduleFirst": "Programe su primera entrega para verla aquí",
+    "scheduleDelivery": "Programar Entrega",
+    "destination": "Destino",
+    "viewAll": "Ver Todas"
+  },
+  "fuel": {
+    "title": "Rastreador de Combustible",
+    "totalGallons": "Galones Totales",
+    "totalAmount": "Monto Total",
+    "totalSpent": "Total Gastado",
+    "avgPrice": "Precio Prom.",
+    "avgPricePerGallon": "Precio Prom/Gal",
+    "uniqueStates": "Estados",
+    "statesPurchased": "Estados con compras de combustible",
+    "addFuelPurchase": "Agregar Compra de Combustible"
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "createLoad": "Crear Carga",
+    "addLoad": "Agregar Carga",
+    "createInvoice": "Crear Factura",
+    "addExpense": "Agregar Gasto",
+    "recordExpense": "Registrar Gasto",
+    "addFuel": "Agregar Combustible",
+    "addFuelEntry": "Agregar Entrada de Combustible",
+    "addCustomer": "Agregar Cliente",
+    "viewReports": "Ver Reportes",
+    "iftaCalculator": "Calculadora IFTA"
+  },
+  "tutorial": {
+    "title": "Bienvenido a Su Panel de Control",
+    "description": "Su centro de comando empresarial - vea todo de un vistazo",
+    "features": {
+      "trackEarnings": {
+        "title": "Rastree Ganancias y Ganancia",
+        "description": "Vea ingresos, gastos y ganancia con tendencias mes a mes"
+      },
+      "recentActivity": {
+        "title": "Actividad Reciente",
+        "description": "Monitoree cargas, facturas y eventos de negocio en tiempo real"
+      },
+      "dateRangeFiltering": {
+        "title": "Filtrado por Rango de Fechas",
+        "description": "Vea estadísticas de este mes, trimestre, año o todo el tiempo"
+      },
+      "quickActions": {
+        "title": "Acciones Rápidas",
+        "description": "Atajos rápidos para crear cargas, facturas y más"
+      }
+    },
+    "tips": {
+      "dateRange": "Use el selector de rango de fechas para comparar rendimiento entre períodos",
+      "autoRefresh": "El panel se actualiza automáticamente cada 5 minutos para mostrar los datos más recientes",
+      "statCards": "Haga clic en cualquier tarjeta de estadísticas para navegar a su página detallada",
+      "deliveries": "Revise 'Próximas Entregas' diariamente para mantenerse al día con su agenda"
+    }
+  },
+  "adminTools": {
+    "fixEarningsRecords": "Corregir Registros de Ganancias",
+    "fixEarningsDescription": "Use esta utilidad para corregir cualquier problema con registros de ganancias de cargas factoradas"
+  },
+  "errors": {
+    "failedToLoad": "Error al cargar datos del panel. Por favor intente de nuevo más tarde.",
+    "authError": "Error de autenticación. Por favor inicie sesión de nuevo.",
+    "connectionLost": "Conexión a la base de datos perdida. Algunos datos pueden no estar actualizados."
+  },
+  "loading": {
+    "dashboard": "Cargando panel...",
+    "stats": "Cargando estadísticas...",
+    "activity": "Cargando actividad..."
+  },
+  "featureUnavailable": {
+    "title": "Función No Disponible",
+    "trialEnded": "Su prueba gratuita ha terminado. Por favor suscríbase para acceder a esta función.",
+    "subscriptionRequired": "Esta función requiere una suscripción activa.",
+    "viewPlans": "Ver Planes de Suscripción"
+  }
+}

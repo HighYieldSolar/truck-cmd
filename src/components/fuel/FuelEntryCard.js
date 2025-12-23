@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
+  const { t } = useTranslation('fuel');
   const [vehicleInfo, setVehicleInfo] = useState(null);
   const [showActions, setShowActions] = useState(false);
 
@@ -64,7 +66,7 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
   const getVehicleName = () => {
     if (vehicleInfo?.name) return vehicleInfo.name;
     if (vehicleInfo?.license_plate) return vehicleInfo.license_plate;
-    return 'Unknown Vehicle';
+    return t('fuelCard.unknownVehicle');
   };
 
   const handleViewReceipt = () => {
@@ -108,7 +110,7 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           <div className="flex items-center">
             <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Date</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('fuelCard.date')}</div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(fuelEntry.date)}</div>
             </div>
           </div>
@@ -117,7 +119,7 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           <div className="flex items-center">
             <DollarSign size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Price/Gal</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('fuelCard.pricePerGal')}</div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">${formatPrice(fuelEntry.price_per_gallon)}</div>
             </div>
           </div>
@@ -126,7 +128,7 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           <div className="flex items-center">
             <Truck size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Vehicle</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('fuelCard.vehicle')}</div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[120px]">{getVehicleName()}</div>
             </div>
           </div>
@@ -135,8 +137,8 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           <div className="flex items-center">
             <Fuel size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Type</div>
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{fuelEntry.fuel_type || 'Diesel'}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('fuelCard.type')}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{fuelEntry.fuel_type || t('fuelTypesOptions.diesel')}</div>
             </div>
           </div>
         </div>
@@ -148,11 +150,11 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
           {fuelEntry.expense_id ? (
             <span className="inline-flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-1 rounded-full">
               <CheckCircle size={12} className="mr-1" />
-              Synced to Expenses
+              {t('fuelCard.syncedToExpenses')}
             </span>
           ) : (
             <span className="inline-flex items-center text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/40 px-2 py-1 rounded-full">
-              Pending
+              {t('fuelCard.pending')}
             </span>
           )}
         </div>

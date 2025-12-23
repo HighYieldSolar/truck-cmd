@@ -1,0 +1,601 @@
+{
+  "title": "Facturas",
+  "subtitle": "Administre su facturación y pagos",
+  "createInvoice": "Crear Factura",
+  "editInvoice": "Editar Factura",
+  "deleteInvoice": "Eliminar Factura",
+  "newInvoice": "Nueva Factura",
+  "viewInvoice": "Ver Factura",
+  "sendInvoice": "Enviar Factura",
+  "printInvoice": "Imprimir Factura",
+  "downloadPdf": "Descargar PDF",
+  "invoices": {
+    "all": "Todas las Facturas",
+    "draft": "Borradores",
+    "sent": "Enviadas",
+    "paid": "Pagadas",
+    "overdue": "Vencidas"
+  },
+  "status": {
+    "label": "Estado",
+    "draft": "Borrador",
+    "sent": "Enviada",
+    "viewed": "Vista",
+    "paid": "Pagada",
+    "partiallyPaid": "Parcialmente Pagada",
+    "overdue": "Vencida",
+    "overdueUppercase": "VENCIDA",
+    "cancelled": "Cancelada",
+    "void": "Anulada",
+    "voided": "Anulada",
+    "pending": "Pendiente"
+  },
+  "fields": {
+    "invoiceNumber": "Factura #",
+    "customer": "Cliente",
+    "amount": "Monto",
+    "date": "Fecha",
+    "invoiceDate": "Fecha de Factura",
+    "dueDate": "Fecha de Vencimiento",
+    "paidDate": "Fecha de Pago",
+    "paymentTerms": "Términos de Pago",
+    "subtotal": "Subtotal",
+    "tax": "Impuesto",
+    "total": "Total",
+    "amountDue": "Monto Adeudado",
+    "amountPaid": "Monto Pagado",
+    "balance": "Saldo",
+    "description": "Descripción",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio Unitario",
+    "lineTotal": "Total de Línea",
+    "notes": "Notas",
+    "loadReference": "Referencia de Carga",
+    "poNumber": "Número de PO"
+  },
+  "placeholders": {
+    "selectCustomer": "Seleccione un cliente",
+    "enterDescription": "Ingrese descripción del artículo",
+    "addNotes": "Agregue notas para esta factura..."
+  },
+  "paymentTerms": {
+    "label": "Términos de Pago",
+    "dueOnReceipt": "Pago al Recibir",
+    "net15": "Neto 15",
+    "net30": "Neto 30",
+    "net45": "Neto 45",
+    "net60": "Neto 60"
+  },
+  "actions": {
+    "markAsSent": "Marcar como Enviada",
+    "markAsPaid": "Marcar como Pagada",
+    "recordPayment": "Registrar Pago",
+    "sendReminder": "Enviar Recordatorio",
+    "duplicate": "Duplicar Factura",
+    "void": "Anular Factura"
+  },
+  "email": {
+    "title": "Enviar Factura por Correo",
+    "to": "Para",
+    "subject": "Asunto",
+    "message": "Mensaje",
+    "send": "Enviar Correo",
+    "sendCopy": "Enviarme una copia",
+    "defaultSubject": "Factura {{number}} de {{company}}",
+    "sent": "Factura enviada exitosamente",
+    "failed": "Error al enviar factura"
+  },
+  "payment": {
+    "title": "Registrar Pago",
+    "amount": "Monto del Pago",
+    "date": "Fecha de Pago",
+    "method": "Método de Pago",
+    "reference": "Número de Referencia",
+    "notes": "Notas del Pago",
+    "methods": {
+      "cash": "Efectivo",
+      "check": "Cheque",
+      "bankTransfer": "Transferencia Bancaria",
+      "creditCard": "Tarjeta de Crédito",
+      "ach": "ACH",
+      "other": "Otro"
+    }
+  },
+  "stats": {
+    "title": "Estadísticas de Facturas",
+    "totalInvoiced": "Total Facturado",
+    "totalPaid": "Total Pagado",
+    "totalOutstanding": "Total Pendiente",
+    "overdueAmount": "Monto Vencido",
+    "averageInvoice": "Factura Promedio",
+    "invoiceCount": "Número de Facturas"
+  },
+  "reports": {
+    "title": "Reportes de Facturas",
+    "pageTitle": "Reportes y Análisis de Facturas",
+    "pageSubtitle": "Obtenga información valiosa de sus datos de facturación",
+    "aging": "Reporte de Antigüedad",
+    "summary": "Resumen de Facturas",
+    "byCustomer": "Por Cliente",
+    "byMonth": "Por Mes",
+    "viewReport": "Ver Reporte",
+    "monthlyRevenue": {
+      "title": "Ingresos Mensuales",
+      "description": "Rastree sus ingresos mensuales por facturas"
+    },
+    "customerInsights": {
+      "title": "Análisis de Clientes",
+      "description": "Analice sus mejores clientes por volumen de facturas"
+    },
+    "paymentAnalytics": {
+      "title": "Análisis de Pagos",
+      "description": "Revise tendencias de pagos y estadísticas de vencimientos"
+    }
+  },
+  "list": {
+    "filterInvoices": "Filtrar Facturas",
+    "invoiceRecords": "Registros de Facturas",
+    "allStatuses": "Todos los Estados",
+    "status": "Estado",
+    "dateRange": "Rango de Fechas",
+    "sortBy": "Ordenar Por",
+    "search": "Buscar",
+    "applyFilters": "Aplicar Filtros",
+    "resetFilters": "Restablecer filtros",
+    "loadingInvoices": "Cargando facturas...",
+    "noInvoicesFound": "No se encontraron facturas",
+    "createFirstInvoice": "Cree su primera factura para comenzar",
+    "createInvoice": "Crear Factura",
+    "invoice": "Factura",
+    "customer": "Cliente",
+    "invoiceDate": "Fecha de Factura",
+    "dueDate": "Fecha de Vencimiento",
+    "amount": "Monto",
+    "actions": "Acciones",
+    "showingInvoices": "Mostrando {{count}} factura",
+    "showingInvoicesPlural": "Mostrando {{count}} facturas"
+  },
+  "emptyState": {
+    "title": "Aún no hay facturas",
+    "description": "Cree su primera factura para comenzar a rastrear pagos",
+    "noDrafts": "No hay borradores de facturas",
+    "noOverdue": "No hay facturas vencidas"
+  },
+  "messages": {
+    "invoiceCreated": "Factura creada exitosamente",
+    "invoiceUpdated": "Factura actualizada exitosamente",
+    "invoiceDeleted": "Factura eliminada exitosamente",
+    "invoiceSent": "Factura enviada exitosamente",
+    "paymentRecorded": "Pago registrado exitosamente",
+    "confirmDelete": "¿Está seguro que desea eliminar esta factura?",
+    "failedToCreate": "Error al crear factura",
+    "failedToUpdate": "Error al actualizar factura",
+    "failedToDelete": "Error al eliminar factura",
+    "failedToSend": "Error al enviar factura"
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "newInvoice": "Nueva Factura",
+    "createInvoice": "Crear Factura",
+    "createNewInvoice": "Crear nueva factura",
+    "recordPayment": "Registrar Pago",
+    "draftInvoices": "Facturas Borrador",
+    "sendReminders": "Enviar Recordatorios",
+    "invoiceReports": "Reportes de Facturas",
+    "exportInvoices": "Exportar Facturas",
+    "viewOverdue": "Ver Vencidas",
+    "exportReport": "Exportar Reporte"
+  },
+  "sidebar": {
+    "paymentsDueSoon": "Pagos Próximos",
+    "noPaymentsDueSoon": "No hay pagos próximos",
+    "viewAllPending": "Ver todas las facturas pendientes",
+    "viewAllOverdue": "Ver todas las facturas vencidas",
+    "dueToday": "Vence hoy",
+    "dueInDays": "Vence en {{days}} días",
+    "dayOverdue": "{{days}} día vencida",
+    "daysOverdue": "{{days}} días vencida"
+  },
+  "overdueInvoices": {
+    "title": "Facturas Vencidas",
+    "noOverdue": "No hay facturas vencidas",
+    "daysOverdue": "{{days}} días vencida"
+  },
+  "paymentDueSoon": {
+    "title": "Pagos Próximos",
+    "noDue": "No hay pagos próximos",
+    "dueIn": "Vence en {{days}} días",
+    "dueToday": "Vence hoy"
+  },
+  "dashboard": {
+    "fromLastMonth": "del mes pasado",
+    "noInvoicesFound": "No se encontraron facturas.",
+    "viewAll": "Ver Todo"
+  },
+  "filters": {
+    "allInvoices": "Todas las Facturas",
+    "allTime": "Todo el Tiempo",
+    "last30": "Últimos 30 Días",
+    "last90": "Últimos 90 Días",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "thisYear": "Este Año",
+    "sortBy": "Ordenar por",
+    "invoiceDate": "Fecha de Factura",
+    "dueDate": "Fecha de Vencimiento",
+    "amount": "Monto",
+    "status": "Estado",
+    "customer": "Cliente",
+    "descending": "Descendente",
+    "ascending": "Ascendente",
+    "searchPlaceholder": "Buscar facturas..."
+  },
+  "deleteModal": {
+    "title": "Confirmar Eliminación",
+    "deleteInvoice": "Eliminar Factura",
+    "confirmText": "¿Está seguro que desea eliminar la factura #{{invoiceNumber}}? Esta acción no se puede deshacer.",
+    "alsoDeleteLoad": "También eliminar la carga asociada",
+    "deleteLoadHint": "Si está marcado, la carga vinculada a esta factura también será eliminada.",
+    "deleting": "Eliminando..."
+  },
+  "paymentModal": {
+    "title": "Registrar Pago",
+    "paymentAmount": "Monto del Pago",
+    "invoiceBalance": "Saldo de la factura",
+    "paymentMethod": "Método de Pago",
+    "paymentDate": "Fecha de Pago",
+    "reference": "Referencia / ID de Transacción",
+    "notes": "Notas",
+    "optional": "Opcional",
+    "optionalNotes": "Notas de pago opcionales",
+    "processing": "Procesando...",
+    "recordPayment": "Registrar Pago",
+    "methods": {
+      "creditCard": "Tarjeta de Crédito",
+      "bankTransfer": "Transferencia Bancaria",
+      "check": "Cheque",
+      "cash": "Efectivo",
+      "other": "Otro"
+    }
+  },
+  "header": {
+    "title": "Gestión de Facturas",
+    "subtitle": "Cree, rastree y administre sus facturas de transporte",
+    "breadcrumb": {
+      "dashboard": "Panel de Control",
+      "invoices": "Facturas"
+    },
+    "createInvoice": "Crear Factura",
+    "export": "Exportar",
+    "description": "Genere, administre y rastree sus facturas para todas sus operaciones de transporte en un solo lugar."
+  },
+  "statsLabels": {
+    "totalValue": "Valor Total",
+    "paid": "Pagadas",
+    "pending": "Pendientes",
+    "overdue": "Vencidas",
+    "draft": "Borrador",
+    "allInvoices": "Todas las facturas ({{count}})",
+    "completedInvoices": "Facturas completadas",
+    "awaitingPayment": "Esperando pago",
+    "pastDueDate": "Fecha vencida",
+    "notYetSent": "Aún no enviadas"
+  },
+  "statsDashboard": {
+    "totalInvoices": "Total de Facturas",
+    "paid": "Pagadas",
+    "pending": "Pendientes",
+    "overdue": "Vencidas",
+    "invoiceStatus": "Estado de Facturas",
+    "invoiceSummary": "Resumen de Facturas",
+    "totalInvoicesLabel": "Total de Facturas:",
+    "averageInvoiceValue": "Valor Promedio de Factura:",
+    "collectionRate": "Tasa de Cobro:",
+    "outstandingBalance": "Saldo Pendiente:",
+    "failedToLoad": "Error al cargar estadísticas de facturas. Por favor intente de nuevo."
+  },
+  "form": {
+    "steps": {
+      "customer": "Cliente",
+      "details": "Detalles",
+      "items": "Artículos"
+    },
+    "customerInfo": "Información del Cliente",
+    "customerRequired": "Cliente",
+    "selectCustomer": "Seleccione un cliente",
+    "customerEmail": "Correo del Cliente",
+    "customerAddress": "Dirección del Cliente",
+    "poNumber": "Número de PO",
+    "poNumberPlaceholder": "Número de Orden de Compra (Opcional)",
+    "relatedLoad": "Carga Relacionada (Opcional)",
+    "selectLoadToFill": "Seleccione una carga para auto-completar",
+    "selectingLoadHint": "Al seleccionar una carga se agregará automáticamente como artículo",
+    "invoiceDetails": "Detalles de la Factura",
+    "invoiceNumber": "Número de Factura",
+    "status": "Estado",
+    "statusDraft": "Borrador",
+    "statusPending": "Pendiente",
+    "statusSent": "Enviada",
+    "statusPaid": "Pagada",
+    "invoiceDate": "Fecha de Factura",
+    "dueDate": "Fecha de Vencimiento",
+    "paymentTerms": "Términos de Pago",
+    "dueOnReceipt": "Pago al Recibir",
+    "net7": "Neto 7",
+    "net15": "Neto 15",
+    "net30": "Neto 30",
+    "net60": "Neto 60",
+    "taxRate": "Tasa de Impuesto (%)",
+    "notesOptional": "Notas (Opcional)",
+    "notesPlaceholder": "Notas adicionales para el cliente...",
+    "lineItems": "Artículos",
+    "addItem": "Agregar Artículo",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Descripción del servicio o artículo",
+    "quantity": "Cantidad",
+    "unitPrice": "Precio Unitario",
+    "total": "Total",
+    "subtotal": "Subtotal:",
+    "tax": "Impuesto ({{rate}}%):",
+    "termsConditions": "Términos y Condiciones",
+    "reviewSummary": "Revisar Resumen de Factura",
+    "invoiceHash": "Factura #:",
+    "customerLabel": "Cliente:",
+    "invoiceDateLabel": "Fecha de Factura:",
+    "dueDateLabel": "Fecha de Vencimiento:",
+    "statusLabel": "Estado:",
+    "totalLabel": "Total:",
+    "cancel": "Cancelar",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "updating": "Actualizando...",
+    "creating": "Creando...",
+    "updateInvoice": "Actualizar Factura",
+    "createInvoice": "Crear Factura",
+    "restoredProgress": "Hemos restaurado su progreso anterior. Puede continuar donde lo dejó.",
+    "clear": "Limpiar",
+    "invoiceSavedSuccess": "¡Factura guardada exitosamente! Redirigiendo...",
+    "failedToInit": "Error al inicializar formulario. Por favor intente de nuevo.",
+    "failedToSave": "Error al guardar factura. Por favor intente de nuevo.",
+    "validation": {
+      "customerRequired": "El cliente es requerido",
+      "validEmail": "Por favor ingrese un correo electrónico válido",
+      "invoiceDateRequired": "La fecha de factura es requerida",
+      "dueDateRequired": "La fecha de vencimiento es requerida",
+      "itemsRequired": "Todos los artículos deben tener descripción y cantidad mayor a 0",
+      "invoiceValueRequired": "La factura debe tener al menos un artículo con valor"
+    }
+  },
+  "emailModal": {
+    "title": "Enviar Factura por Correo",
+    "invoicePreview": "Vista Previa de Factura",
+    "invoiceNumber": "Factura #{{number}}",
+    "customer": "Cliente",
+    "date": "Fecha",
+    "total": "Total",
+    "due": "Vence",
+    "to": "Para",
+    "cc": "CC",
+    "bcc": "CCO",
+    "subject": "Asunto",
+    "message": "Mensaje",
+    "attachPdf": "Adjuntar factura PDF",
+    "includePaymentLink": "Incluir enlace de pago",
+    "cancel": "Cancelar",
+    "sending": "Enviando...",
+    "sendInvoice": "Enviar Factura",
+    "recipientRequired": "El correo del destinatario es requerido",
+    "validEmail": "Por favor ingrese un correo electrónico válido",
+    "pleaseLogin": "Por favor inicie sesión para enviar facturas",
+    "sentSuccess": "¡Factura enviada exitosamente!",
+    "sendFailed": "Error al enviar factura. Por favor intente de nuevo.",
+    "invoiceFor": "Factura para",
+    "amount": "Monto"
+  },
+  "pdfGenerator": {
+    "downloadPdf": "Descargar PDF",
+    "printInvoice": "Imprimir Factura",
+    "preparing": "Preparando...",
+    "generating": "Generando...",
+    "failedToGenerate": "Error al generar PDF. Por favor intente de nuevo."
+  },
+  "detail": {
+    "createdOn": "Creada el",
+    "edit": "Editar",
+    "recordPayment": "Registrar Pago",
+    "send": "Enviar",
+    "download": "Descargar",
+    "pdf": "PDF",
+    "invoiceNotFound": "Factura No Encontrada",
+    "invoiceNotFoundDesc": "La factura que busca no existe o no tiene acceso a ella.",
+    "backToInvoices": "Volver a Facturas",
+    "invoice": "FACTURA",
+    "invoiceNumber": "Factura #:",
+    "date": "Fecha:",
+    "dueDate": "Fecha de Vencimiento:",
+    "poNumber": "PO #:",
+    "billTo": "FACTURAR A:",
+    "shipmentInfo": "INFO DE ENVÍO:",
+    "loadNumber": "Carga #:",
+    "qty": "Cant",
+    "unitPrice": "Precio Unit.",
+    "total": "Total",
+    "subtotal": "Subtotal:",
+    "tax": "Impuesto ({{rate}}%):",
+    "amountPaid": "Monto Pagado:",
+    "balanceDue": "Saldo Pendiente:",
+    "notes": "NOTAS:",
+    "termsConditions": "TÉRMINOS Y CONDICIONES:",
+    "paymentStatus": "Estado de Pago",
+    "totalAmount": "Monto Total:",
+    "dueOn": "Vence el",
+    "paymentTermsLabel": "Términos de Pago:",
+    "paymentHistory": "Historial de Pagos",
+    "payments": "pagos",
+    "noPaymentsYet": "Aún no hay pagos registrados.",
+    "activityHistory": "Historial de Actividad",
+    "activities": "actividades",
+    "failedToLoad": "Error al cargar datos de factura. Por favor intente de nuevo o contacte soporte si el problema persiste.",
+    "failedToAction": "Error al {{action}} factura. Por favor intente de nuevo.",
+    "actions": {
+      "editInvoice": "Editar Factura",
+      "duplicate": "Duplicar",
+      "sendByEmail": "Enviar por Correo",
+      "downloadPdf": "Descargar PDF",
+      "print": "Imprimir",
+      "markAsPaid": "Marcar como Pagada",
+      "recordPayment": "Registrar Pago"
+    },
+    "emailModal": {
+      "title": "Enviar Factura",
+      "compose": "Redactar y enviar factura",
+      "invoiceFor": "Factura para",
+      "amount": "Monto",
+      "dueDate": "Fecha de Vencimiento",
+      "recipient": "Destinatario",
+      "addCcBcc": "Agregar CC/CCO",
+      "hideCcBcc": "Ocultar CC/CCO",
+      "subjectLine": "Línea de Asunto",
+      "emailTemplate": "Plantilla de Correo",
+      "templates": {
+        "professional": {
+          "name": "Profesional",
+          "description": "Tono formal de negocios"
+        },
+        "friendly": {
+          "name": "Amigable",
+          "description": "Casual y cálido"
+        },
+        "reminder": {
+          "name": "Recordatorio de Pago",
+          "description": "Seguimiento de pago pendiente"
+        }
+      },
+      "message": "Mensaje",
+      "attachPdf": "Adjuntar Factura PDF",
+      "attachPdfDesc": "Incluir factura como adjunto",
+      "includePaymentLink": "Incluir Enlace de Pago",
+      "includePaymentLinkDesc": "Permitir pago en línea",
+      "emailFromAccount": "El correo se enviará desde su cuenta",
+      "cancel": "Cancelar",
+      "sending": "Enviando...",
+      "sendInvoice": "Enviar Factura"
+    }
+  },
+  "tutorial": {
+    "title": "Gestión de Facturas",
+    "description": "Cree, rastree y administre todas las facturas de sus clientes",
+    "fullDescription": "Cree, rastree y administre facturas profesionales para sus servicios de transporte. Cobre más rápido con una facturación organizada.",
+    "features": {
+      "createInvoices": {
+        "title": "Crear Facturas",
+        "description": "Genere facturas profesionales desde cargas completadas o cree facturas personalizadas"
+      },
+      "createProfessional": {
+        "title": "Crear Facturas Profesionales",
+        "description": "Genere facturas detalladas con partidas, cálculos de impuestos y términos de pago"
+      },
+      "trackPayments": {
+        "title": "Rastrear Pagos",
+        "description": "Monitoree el estado de pagos y registre pagos cuando sean recibidos"
+      },
+      "trackPaymentsFull": {
+        "title": "Rastrear Pagos",
+        "description": "Monitoree el estado de pagos, marque facturas como pagadas y rastree saldos pendientes"
+      },
+      "dueDateAlerts": {
+        "title": "Alertas de Vencimiento",
+        "description": "Vea facturas próximas a vencer y vencidas de un vistazo"
+      },
+      "dueDateAlertsFull": {
+        "title": "Alertas de Vencimiento",
+        "description": "Manténgase al tanto de las cuentas por cobrar con alertas de pagos próximos y vencidos"
+      },
+      "emailInvoices": {
+        "title": "Enviar por Correo",
+        "description": "Envíe facturas directamente a los clientes por correo electrónico"
+      },
+      "exportReports": {
+        "title": "Exportar Reportes",
+        "description": "Descargue reportes de facturas en formato PDF, CSV o TXT para sus registros"
+      }
+    },
+    "tips": [
+      "Marque las facturas como pagadas cuando reciba el pago para mantener sus registros precisos",
+      "Use los filtros de estado para encontrar rápidamente facturas pendientes o vencidas",
+      "Exporte reportes de facturas para sus registros contables",
+      "Revise la sección 'Pagos Próximos' para dar seguimiento a facturas sin pagar"
+    ],
+    "tipsList": [
+      "Las cargas completadas se pueden convertir automáticamente en facturas",
+      "Establezca términos de pago apropiados (Neto 15, Neto 30) según los acuerdos con clientes",
+      "Revise las facturas vencidas regularmente y dé seguimiento a los clientes",
+      "Use la función de exportación para generar reportes de facturación para contabilidad"
+    ]
+  },
+  "page": {
+    "title": "Gestión de Facturas",
+    "subtitle": "Rastree y administre todas las facturas y pagos de sus clientes",
+    "newInvoice": "Nueva Factura",
+    "exportData": "Exportar Datos",
+    "limitReached": "Límite Alcanzado",
+    "addNew": "Agregar Nueva",
+    "view": "Ver",
+    "delete": "Eliminar",
+    "markAsPaid": "Marcar como Pagada",
+    "searchPlaceholder": "Buscar por # de factura, cliente o descripción...",
+    "noMatchingFilters": "No hay facturas que coincidan con sus filtros actuales"
+  },
+  "limits": {
+    "approaching": "Acercándose al Límite de Facturas",
+    "usedOfTotal": "Ha usado {{current}} de {{limit}} facturas este mes.",
+    "upgradeLink": "Actualice para facturas ilimitadas",
+    "upgradeToCreate": "Actualice para crear más facturas",
+    "reachedTitle": "Límite de Facturas Alcanzado",
+    "reachedDescription": "Ha usado {{current}}/{{limit}} facturas este mes. Actualice su plan para facturas ilimitadas.",
+    "upgradePlan": "Actualizar Plan",
+    "limitReachedCount": "Límite Alcanzado ({{current}}/{{limit}})"
+  },
+  "export": {
+    "title": "Exportar Reporte de Facturas",
+    "description": "Exporte sus registros de facturas en múltiples formatos. Elija PDF para reportes profesionales, CSV para hojas de cálculo o TXT para registros de texto simple.",
+    "success": "¡Reporte exportado exitosamente!",
+    "pdf": {
+      "title": "Reporte de Facturas",
+      "subtitle": "Facturación y Cuentas por Cobrar"
+    },
+    "summary": {
+      "totalInvoices": "Total de Facturas",
+      "totalAmount": "Monto Total",
+      "paid": "Pagadas",
+      "pending": "Pendientes",
+      "overdue": "Vencidas",
+      "outstanding": "Pendiente de Cobro"
+    },
+    "columns": {
+      "invoiceNumber": "Factura #",
+      "customer": "Cliente",
+      "invoiceDate": "Fecha de Factura",
+      "dueDate": "Fecha de Vencimiento",
+      "amount": "Monto",
+      "status": "Estado"
+    }
+  },
+  "newPage": {
+    "duplicateInvoice": "Duplicar Factura",
+    "createNewInvoice": "Crear Nueva Factura",
+    "duplicateDescription": "Crear una copia de una factura existente",
+    "createDescription": "Complete el formulario para crear una nueva factura"
+  },
+  "editPage": {
+    "loading": "Cargando factura...",
+    "unableToLoad": "No se Puede Cargar la Factura",
+    "backToInvoices": "Volver a Facturas",
+    "tryAgain": "Intentar de Nuevo",
+    "editInvoice": "Editar Factura",
+    "editingInvoice": "Editando Factura",
+    "editingDescription": "Está editando una factura existente. Los cambios actualizarán la factura y todos los artículos. El número de factura no se puede cambiar.",
+    "cannotFindInvoice": "No pudimos encontrar la factura que está buscando. Puede haber sido eliminada o no tiene permiso para verla.",
+    "loadError": "Error al cargar la factura. Por favor intente de nuevo."
+  }
+}

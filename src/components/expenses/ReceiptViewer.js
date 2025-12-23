@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from "@/context/LanguageContext";
 import {
   X,
   Download,
@@ -23,6 +24,7 @@ import {
  * Supports dark mode.
  */
 export default function ReceiptViewer({ isOpen, onClose, receipt }) {
+  const { t } = useTranslation('expenses');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState(false);
@@ -164,7 +166,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
           <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Receipt Details
+              {t('receiptViewer.title')}
             </h2>
             <button
               onClick={onClose}
@@ -182,26 +184,26 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                   <div>
                     {/* Image Controls */}
                     <div className="bg-gray-800 dark:bg-gray-900 px-4 py-3 flex justify-between items-center">
-                      <span className="text-white text-sm font-medium">Receipt Image</span>
+                      <span className="text-white text-sm font-medium">{t('receiptViewer.receiptImage')}</span>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={handleZoomIn}
                           className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"
-                          title="Zoom In"
+                          title={t('receiptViewer.zoomIn')}
                         >
                           <ZoomIn className="h-4 w-4" />
                         </button>
                         <button
                           onClick={handleZoomOut}
                           className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"
-                          title="Zoom Out"
+                          title={t('receiptViewer.zoomOut')}
                         >
                           <ZoomOut className="h-4 w-4" />
                         </button>
                         <button
                           onClick={handleRotate}
                           className="p-1.5 text-white hover:bg-white/10 rounded transition-colors"
-                          title="Rotate"
+                          title={t('receiptViewer.rotate')}
                         >
                           <RotateCw className="h-4 w-4" />
                         </button>
@@ -209,7 +211,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                           onClick={handleDownload}
                           disabled={isDownloading}
                           className="p-1.5 text-white hover:bg-white/10 rounded transition-colors disabled:opacity-50"
-                          title={isDownloading ? "Downloading..." : "Download"}
+                          title={isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}
                         >
                           {isDownloading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -236,10 +238,10 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                   <div className="p-6 bg-blue-50 dark:bg-blue-900/20 text-center">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-blue-500 dark:text-blue-400" />
                     <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200 mb-2">
-                      PDF Receipt
+                      {t('receiptViewer.pdfReceipt')}
                     </h3>
                     <p className="text-sm text-blue-600 dark:text-blue-300 mb-4">
-                      This receipt is stored as a PDF document.
+                      {t('receiptViewer.pdfStored')}
                     </p>
                     <div className="flex justify-center gap-4">
                       <a
@@ -249,7 +251,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                         className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        View PDF
+                        {t('receiptViewer.viewPdf')}
                       </a>
                       <button
                         onClick={handleDownload}
@@ -261,7 +263,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                         ) : (
                           <Download className="h-4 w-4 mr-2" />
                         )}
-                        {isDownloading ? 'Downloading...' : 'Download'}
+                        {isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}
                       </button>
                     </div>
                   </div>
@@ -269,10 +271,10 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                   <div className="p-6 bg-red-50 dark:bg-red-900/20 text-center">
                     <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500 dark:text-red-400" />
                     <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-                      Unable to display receipt
+                      {t('receiptViewer.unableToDisplay')}
                     </h3>
                     <p className="text-sm text-red-600 dark:text-red-300 mb-4">
-                      The image might be unavailable or in an unsupported format.
+                      {t('receiptViewer.imageUnavailable')}
                     </p>
                     <a
                       href={receipt.receipt_image}
@@ -281,7 +283,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                       className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Open in New Tab
+                      {t('receiptViewer.openInNewTab')}
                     </a>
                   </div>
                 )}
@@ -292,10 +294,10 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                   <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
-                  No Receipt Available
+                  {t('receiptViewer.noReceiptAvailable')}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  This expense doesn&apos;t have an attached receipt.
+                  {t('receiptViewer.noReceiptAttached')}
                 </p>
               </div>
             )}
@@ -306,23 +308,23 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-500" />
-                  Expense Information
+                  {t('receiptViewer.expenseInformation')}
                 </h3>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Description</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.description')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {receipt.description || 'N/A'}
+                      {receipt.description || t('common.na')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Amount</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.amount')}</p>
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {formatCurrency(receipt.amount)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Category</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.category')}</p>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryStyle()}`}
                     >
@@ -336,25 +338,25 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-blue-500" />
-                  Payment Information
+                  {t('receiptViewer.paymentInformation')}
                 </h3>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Payment Method</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.paymentMethod')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {receipt.payment_method || 'N/A'}
+                      {receipt.payment_method || t('common.na')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Date</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.date')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {formatDate(receipt.date)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tax Deductible</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.taxDeductible')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {receipt.deductible !== false ? 'Yes' : 'No'}
+                      {receipt.deductible !== false ? t('common.yes') : t('common.no')}
                     </p>
                   </div>
                 </div>
@@ -365,10 +367,10 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Truck className="h-4 w-4 text-blue-500" />
-                    Vehicle Information
+                    {t('receiptViewer.vehicleInformation')}
                   </h3>
                   <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Vehicle ID</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('receiptViewer.vehicleId')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {receipt.vehicle_id}
                     </p>
@@ -380,11 +382,11 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
               <div className={receipt.vehicle_id ? '' : 'md:col-span-2'}>
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-500" />
-                  Notes
+                  {t('receiptViewer.notes')}
                 </h3>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {receipt.notes || 'No notes available.'}
+                    {receipt.notes || t('receiptViewer.noNotesAvailable')}
                   </p>
                 </div>
               </div>
@@ -404,14 +406,14 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                 ) : (
                   <Download className="h-4 w-4 mr-2" />
                 )}
-                {isDownloading ? 'Downloading...' : 'Download Receipt'}
+                {isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.downloadReceipt')}
               </button>
             )}
             <button
               onClick={onClose}
               className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
             >
-              Close
+              {t('receiptViewer.close')}
             </button>
           </div>
         </div>

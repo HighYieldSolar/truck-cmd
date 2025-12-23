@@ -18,6 +18,7 @@ import {
   Truck,
   Calendar
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function StateMileageImporter({
   userId,
@@ -25,6 +26,7 @@ export default function StateMileageImporter({
   onImportComplete,
   showImportedTrips = false
 }) {
+  const { t } = useTranslation('ifta');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -163,7 +165,7 @@ export default function StateMileageImporter({
       setLoadData(validTrips);
       setSuccess(false);
     } catch (err) {
-      setError('Failed to fetch available trips');
+      setError(t('importer.failedToFetch'));
     } finally {
       setLoading(false);
     }
@@ -219,7 +221,7 @@ export default function StateMileageImporter({
   // IMPROVED: Uses crossing dates to determine quarters, properly handles cross-quarter trips
   const importLoads = async () => {
     if (selectedLoads.length === 0) {
-      setError('Please select at least one trip to import');
+      setError(t('importer.selectAtLeastOne'));
       return;
     }
 
@@ -303,7 +305,7 @@ export default function StateMileageImporter({
       }
 
       if (tripsToInsert.length === 0) {
-        setError('No valid trips to import from selected trips');
+        setError(t('importer.noValidTrips'));
         return;
       }
 
@@ -358,7 +360,7 @@ export default function StateMileageImporter({
         onImportComplete();
       }
     } catch (err) {
-      setError(`Failed to import trips to IFTA: ${err.message || 'Unknown error'}`);
+      setError(t('importer.failedToImport'));
     } finally {
       setLoading(false);
     }
@@ -391,7 +393,7 @@ export default function StateMileageImporter({
         <div className="flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <RouteOff size={18} className="mr-2" />
-            Import from State Mileage Tracker
+            {t('importer.title')}
           </h3>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -400,12 +402,12 @@ export default function StateMileageImporter({
             {isExpanded ? (
               <>
                 <ChevronDown size={16} className="mr-1" />
-                Hide
+                {t('importer.hide')}
               </>
             ) : (
               <>
                 <ChevronRight size={16} className="mr-1" />
-                Show
+                {t('importer.show')}
               </>
             )}
           </button>
@@ -418,9 +420,9 @@ export default function StateMileageImporter({
             <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-md flex items-start">
               <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 mr-2 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-green-800">Import Successful!</p>
+                <p className="text-sm font-medium text-green-800">{t('importer.importSuccessful')}</p>
                 <p className="text-sm text-green-700">
-                  Successfully imported {importCount} records from selected trips.
+                  {t('importer.successMessage', { count: importCount })}
                   {typeof success === 'string' && ` ${success}`}
                 </p>
               </div>
@@ -431,7 +433,7 @@ export default function StateMileageImporter({
             <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-md flex items-start">
               <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-red-700">Error importing trips</p>
+                <p className="text-sm font-medium text-red-700">{t('importer.errorImporting')}</p>
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             </div>
@@ -439,8 +441,7 @@ export default function StateMileageImporter({
 
           <div className="mb-6">
             <p className="text-sm text-gray-600 mb-4">
-              Import completed trips from your State Mileage Tracker to automatically create IFTA trip records
-              based on the mileage by state data.
+              {t('importer.description')}
             </p>
 
             <button
@@ -451,12 +452,12 @@ export default function StateMileageImporter({
               {loading ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
-                  Loading...
+                  {t('importer.loading')}
                 </>
               ) : (
                 <>
                   <Upload size={16} className="mr-2" />
-                  Check for Available Trips
+                  {t('importer.checkAvailableTrips')}
                 </>
               )}
             </button>
@@ -467,13 +468,13 @@ export default function StateMileageImporter({
               <div className="bg-gradient-to-r from-blue-50 to-white px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                 <h4 className="text-sm font-medium text-gray-700 flex items-center">
                   <FileText size={16} className="mr-2 text-blue-500" />
-                  Available Trips to Import
+                  {t('importer.availableTripsToImport')}
                 </h4>
                 <button
                   onClick={handleSelectAll}
                   className="text-sm text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors duration-150"
                 >
-                  {selectedLoads.length === loadData.length ? 'Deselect All' : 'Select All'}
+                  {selectedLoads.length === loadData.length ? t('importer.deselectAll') : t('importer.selectAll')}
                 </button>
               </div>
 
@@ -482,16 +483,16 @@ export default function StateMileageImporter({
                   <thead className="bg-gray-50">
                     <tr>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Select
+                        {t('importer.select')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Vehicle
+                        {t('importer.vehicle')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
+                        {t('importer.date')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        States
+                        {t('importer.states')}
                       </th>
                     </tr>
                   </thead>
@@ -548,7 +549,7 @@ export default function StateMileageImporter({
                               ))}
                             </div>
                             <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                              {trip.mileageByState.reduce((sum, state) => sum + state.miles, 0).toFixed(0)} miles total
+                              {t('importer.milesTotal', { miles: trip.mileageByState.reduce((sum, state) => sum + state.miles, 0).toFixed(0) })}
                             </span>
                           </div>
                         </td>
@@ -560,7 +561,7 @@ export default function StateMileageImporter({
 
               <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-t border-gray-200 flex justify-between items-center">
                 <span className="text-sm text-gray-700 font-medium">
-                  {selectedLoads.length} of {loadData.length} trips selected
+                  {t('importer.tripsSelected', { selected: selectedLoads.length, total: loadData.length })}
                 </span>
                 <button
                   onClick={importLoads}
@@ -568,7 +569,7 @@ export default function StateMileageImporter({
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
                 >
                   <Plus size={16} className="mr-2" />
-                  Import Selected Trips
+                  {t('importer.importSelectedTrips')}
                 </button>
               </div>
             </div>
@@ -577,9 +578,9 @@ export default function StateMileageImporter({
           {loadData.length === 0 && !loading && (
             <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
               <RouteOff size={36} className="mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600 font-medium">No trips available for import in this quarter.</p>
+              <p className="text-gray-600 font-medium">{t('importer.noTripsAvailable')}</p>
               <p className="text-sm text-gray-500 mt-1">
-                Completed trips with state mileage data will appear here.
+                {t('importer.completedTripsWillAppear')}
               </p>
             </div>
           )}
@@ -588,23 +589,23 @@ export default function StateMileageImporter({
             <div className="mt-6">
               <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                 <CheckCircle size={16} className="mr-2 text-green-500" />
-                Recently Imported Trips
+                {t('importer.recentlyImportedTrips')}
               </h4>
               <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow transition-shadow duration-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gradient-to-r from-green-50 to-white">
                     <tr>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
+                        {t('importer.date')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Route
+                        {t('importer.route')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Miles
+                        {t('tripsList.miles')}
                       </th>
                       <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        {t('importer.status')}
                       </th>
                     </tr>
                   </thead>
@@ -654,7 +655,7 @@ export default function StateMileageImporter({
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             <CheckCircle size={12} className="mr-1" />
-                            Imported
+                            {t('importer.imported')}
                           </span>
                         </td>
                       </tr>

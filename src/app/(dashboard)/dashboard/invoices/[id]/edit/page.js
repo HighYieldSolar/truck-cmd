@@ -8,8 +8,10 @@ import InvoiceForm from "@/components/invoices/InvoiceForm";
 import { getInvoiceById } from "@/lib/services/invoiceService";
 import { ChevronLeft, FileText, RefreshCw, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function EditInvoicePage({ params }) {
+  const { t } = useTranslation('invoices');
   const { id: invoiceId } = use(params);
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -102,7 +104,7 @@ export default function EditInvoicePage({ params }) {
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
               <RefreshCw size={32} className="animate-spin text-blue-500 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Loading invoice...</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('editPage.loading')}</p>
             </div>
           </div>
         </main>
@@ -121,7 +123,7 @@ export default function EditInvoicePage({ params }) {
                   <AlertCircle size={32} className="text-red-500" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  Unable to Load Invoice
+                  {t('editPage.unableToLoad')}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
                 <div className="flex gap-3">
@@ -130,14 +132,14 @@ export default function EditInvoicePage({ params }) {
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors inline-flex items-center"
                   >
                     <ChevronLeft size={16} className="mr-2" />
-                    Back to Invoices
+                    {t('editPage.backToInvoices')}
                   </Link>
                   <button
                     onClick={() => window.location.reload()}
                     className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors inline-flex items-center"
                   >
                     <RefreshCw size={16} className="mr-2" />
-                    Try Again
+                    {t('editPage.tryAgain')}
                   </button>
                 </div>
               </div>
@@ -167,7 +169,7 @@ export default function EditInvoicePage({ params }) {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">
-                    Edit Invoice
+                    {t('editPage.editInvoice')}
                   </h1>
                   <p className="text-amber-100">
                     {invoiceData?.invoice_number} - {invoiceData?.customer}
@@ -182,10 +184,9 @@ export default function EditInvoicePage({ params }) {
             <div className="flex items-start">
               <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 mr-3 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-amber-800 dark:text-amber-200">Editing Invoice</h4>
+                <h4 className="font-medium text-amber-800 dark:text-amber-200">{t('editPage.editingInvoice')}</h4>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                  You&apos;re editing an existing invoice. Changes will update the invoice and any line items.
-                  The invoice number cannot be changed.
+                  {t('editPage.editingDescription')}
                 </p>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Settings, RefreshCw } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * A button that redirects to the Stripe Customer Portal for subscription management
@@ -9,11 +10,15 @@ import { Settings, RefreshCw } from 'lucide-react';
 export default function StripePortalButton({
   userId,
   disabled = false,
-  buttonText = "Manage Subscription",
+  buttonText,
   className = ""
 }) {
+  const { t } = useTranslation('billing');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Use translated default if no buttonText provided
+  const displayButtonText = buttonText || t('checkout.manageSubscription');
 
   const handlePortalRedirect = async () => {
     if (disabled || loading || !userId) return;
@@ -44,7 +49,7 @@ export default function StripePortalButton({
       window.location.href = url;
 
     } catch (err) {
-      setError('Unable to access billing portal. Please try again or contact support.');
+      setError(t('checkout.unableToAccessPortal'));
     } finally {
       setLoading(false);
     }
@@ -62,12 +67,12 @@ export default function StripePortalButton({
         {loading ? (
           <>
             <RefreshCw size={16} className="animate-spin mr-2" />
-            Loading...
+            {t('checkout.loading')}
           </>
         ) : (
           <>
             <Settings size={16} className="mr-2" />
-            {buttonText}
+            {displayButtonText}
           </>
         )}
       </button>

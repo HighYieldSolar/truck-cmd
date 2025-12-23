@@ -16,8 +16,10 @@ import {
   PauseCircle,
   Clock
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function CancellationModal({ isOpen, onClose, onConfirm, endDate }) {
+  const { t } = useTranslation('billing');
   const { subscription } = useSubscription();
   const [step, setStep] = useState(1); // 1: reason, 2: offer, 3: confirm
   const [reason, setReason] = useState("");
@@ -32,13 +34,13 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
   const [pauseError, setPauseError] = useState(null);
 
   const cancellationReasons = [
-    { value: "too_expensive", label: "Too expensive", offer: "none" },
-    { value: "not_using", label: "Not using it enough", offer: "pause" },
-    { value: "missing_features", label: "Missing features I need", offer: "feedback" },
-    { value: "found_alternative", label: "Found a better alternative", offer: "feedback" },
-    { value: "technical_issues", label: "Technical issues", offer: "support" },
-    { value: "temporary", label: "Temporary - will be back", offer: "pause" },
-    { value: "other", label: "Other", offer: "none" }
+    { value: "too_expensive", label: t('cancellation.tooExpensive'), offer: "none" },
+    { value: "not_using", label: t('cancellation.notUsing'), offer: "pause" },
+    { value: "missing_features", label: t('cancellation.missingFeatures'), offer: "feedback" },
+    { value: "found_alternative", label: t('cancellation.foundAlternative'), offer: "feedback" },
+    { value: "technical_issues", label: t('cancellation.technicalIssues'), offer: "support" },
+    { value: "temporary", label: t('cancellation.temporary'), offer: "pause" },
+    { value: "other", label: t('cancellation.other'), offer: "none" }
   ];
 
   const currentPlan = subscription?.plan || 'basic';
@@ -77,10 +79,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
           resetAndClose();
         }, 2000);
       } else {
-        setCouponError(result.error || 'Failed to apply discount. Please try again.');
+        setCouponError(result.error || t('messages.failedToUpdate'));
       }
     } catch (error) {
-      setCouponError('Failed to apply discount. Please try again.');
+      setCouponError(t('messages.failedToUpdate'));
     } finally {
       setApplyingCoupon(false);
     }
@@ -111,10 +113,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
           window.location.reload();
         }, 2500);
       } else {
-        setPauseError(result.error || 'Failed to pause subscription. Please try again.');
+        setPauseError(result.error || t('messages.failedToUpdate'));
       }
     } catch (error) {
-      setPauseError('Failed to pause subscription. Please try again.');
+      setPauseError(t('messages.failedToUpdate'));
     } finally {
       setPausing(false);
     }
@@ -158,11 +160,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 </div>
                 <div className="ml-3">
                   <h4 className="text-sm font-semibold text-green-800 dark:text-green-200">
-                    We&apos;d hate to see you go!
+                    {t('cancellation.hateToSeeYouGo')}
                   </h4>
                   <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                    How about <span className="font-bold">$5 off your next 2 months</span>?
-                    That&apos;s a $10 savings to help you get more value from Truck Command.
+                    {t('cancellation.discountOffer')}
                   </p>
                 </div>
               </div>
@@ -172,7 +173,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
               <div className="flex items-center justify-center p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
                 <span className="text-green-800 dark:text-green-200 font-medium">
-                  Discount applied! Enjoy your savings.
+                  {t('cancellation.discountApplied')}
                 </span>
               </div>
             ) : (
@@ -189,12 +190,12 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     {applyingCoupon ? (
                       <>
                         <RefreshCw size={16} className="mr-2 animate-spin" />
-                        Applying...
+                        {t('cancellation.applying')}
                       </>
                     ) : (
                       <>
                         <DollarSign size={16} className="mr-2" />
-                        Apply $5 Off &amp; Stay
+                        {t('cancellation.applyDiscount')}
                       </>
                     )}
                   </button>
@@ -202,7 +203,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     onClick={() => setStep(3)}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    No thanks, continue
+                    {t('cancellation.noThanks')}
                   </button>
                 </div>
               </>
@@ -222,10 +223,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     </div>
                     <div className="ml-3">
                       <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                        Consider downgrading instead
+                        {t('cancellation.considerDowngrade')}
                       </h4>
                       <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
-                        Keep access to essential features at a lower price. You can always upgrade again when you need more.
+                        {t('cancellation.keepEssentialFeatures')}
                       </p>
                     </div>
                   </div>
@@ -238,13 +239,13 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
                   >
                     <Zap size={16} className="mr-2" />
-                    View Lower Plans
+                    {t('cancellation.viewLowerPlans')}
                   </Link>
                   <button
                     onClick={() => setStep(3)}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    No thanks, continue
+                    {t('cancellation.noThanks')}
                   </button>
                 </div>
               </>
@@ -252,13 +253,13 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
               // Already on Basic - skip to confirmation
               <div className="text-center">
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  You&apos;re already on our most affordable plan.
+                  {t('cancellation.alreadyLowestPlan')}
                 </p>
                 <button
                   onClick={() => setStep(3)}
                   className="inline-flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                 >
-                  Continue to cancellation
+                  {t('cancellation.continueToCancellation')}
                   <ChevronRight size={16} className="ml-1" />
                 </button>
               </div>
@@ -276,10 +277,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 </div>
                 <div className="ml-3">
                   <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200">
-                    We&apos;re here to help
+                    {t('cancellation.hereToHelp')}
                   </h4>
                   <p className="mt-1 text-sm text-purple-700 dark:text-purple-300">
-                    Sorry to hear you&apos;ve had technical issues. Our team would love to help resolve them before you go.
+                    {t('cancellation.technicalIssuesHelp')}
                   </p>
                 </div>
               </div>
@@ -291,13 +292,13 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 onClick={resetAndClose}
                 className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white font-medium rounded-lg transition-colors"
               >
-                Contact Support
+                {t('cancellation.contactSupport')}
               </Link>
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                No thanks, continue
+                {t('cancellation.noThanks')}
               </button>
             </div>
           </div>
@@ -308,18 +309,18 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
           <div className="space-y-4">
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                We&apos;re constantly improving Truck Command. Your feedback helps us build features you need.
+                {t('cancellation.constantlyImproving')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                What features would make you stay?
+                {t('cancellation.whatFeaturesWouldMakeYouStay')}
               </label>
               <textarea
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value.slice(0, 500))}
-                placeholder="Tell us what you need..."
+                placeholder={t('cancellation.tellUsWhatYouNeed')}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors"
               />
@@ -329,7 +330,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
               onClick={() => setStep(3)}
               className="w-full inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Continue
+              {t('cancellation.continue')}
               <ChevronRight size={16} className="ml-1" />
             </button>
           </div>
@@ -345,10 +346,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 </div>
                 <div className="ml-3">
                   <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
-                    Need a break? Pause instead!
+                    {t('cancellation.needBreak')}
                   </h4>
                   <p className="mt-1 text-sm text-indigo-700 dark:text-indigo-300">
-                    Pause your subscription for up to 3 months. Your data stays safe, and billing resumes automatically when you&apos;re ready.
+                    {t('cancellation.pauseDescription')}
                   </p>
                 </div>
               </div>
@@ -358,7 +359,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
               <div className="flex items-center justify-center p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                 <CheckCircle className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2" />
                 <span className="text-indigo-800 dark:text-indigo-200 font-medium">
-                  Subscription paused! See you soon.
+                  {t('cancellation.subscriptionPaused')}
                 </span>
               </div>
             ) : (
@@ -366,7 +367,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 {/* Pause duration selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    How long do you need?
+                    {t('cancellation.howLongNeed')}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[1, 2, 3].map((months) => (
@@ -379,7 +380,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                             : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-300 dark:hover:border-indigo-600'
                         }`}
                       >
-                        {months} {months === 1 ? 'month' : 'months'}
+                        {months} {months === 1 ? t('cancellation.month') : t('cancellation.months')}
                       </button>
                     ))}
                   </div>
@@ -388,7 +389,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 {/* Resume date preview */}
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                   <Clock size={14} className="mr-2" />
-                  Billing resumes: {new Date(Date.now() + pauseMonths * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {t('cancellation.billingResumes')} {new Date(Date.now() + pauseMonths * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                 </div>
 
                 {pauseError && (
@@ -404,12 +405,12 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     {pausing ? (
                       <>
                         <RefreshCw size={16} className="mr-2 animate-spin" />
-                        Pausing...
+                        {t('cancellation.pausing')}
                       </>
                     ) : (
                       <>
                         <PauseCircle size={16} className="mr-2" />
-                        Pause for {pauseMonths} {pauseMonths === 1 ? 'Month' : 'Months'}
+                        {t('cancellation.pauseFor', { count: pauseMonths, unit: pauseMonths === 1 ? t('cancellation.month') : t('cancellation.months') })}
                       </>
                     )}
                   </button>
@@ -417,7 +418,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                     onClick={() => setStep(3)}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    No thanks, cancel
+                    {t('cancellation.noThanksCancel')}
                   </button>
                 </div>
               </>
@@ -439,9 +440,9 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl p-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-white">
-              {step === 1 && "Why are you leaving?"}
-              {step === 2 && "Before you go..."}
-              {step === 3 && "Confirm Cancellation"}
+              {step === 1 && t('cancellation.whyLeaving')}
+              {step === 2 && t('cancellation.beforeYouGo')}
+              {step === 3 && t('cancellation.confirmCancellation')}
             </h3>
             <button
               onClick={resetAndClose}
@@ -471,7 +472,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
           {step === 1 && (
             <div className="space-y-3">
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Help us understand why you&apos;re canceling so we can improve.
+                {t('cancellation.helpUsUnderstand')}
               </p>
               {cancellationReasons.map((reasonOption) => (
                 <button
@@ -498,10 +499,9 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
                   <div>
-                    <p className="text-red-800 dark:text-red-200 font-medium">Are you sure?</p>
+                    <p className="text-red-800 dark:text-red-200 font-medium">{t('cancellation.areYouSure')}</p>
                     <p className="text-red-700 dark:text-red-300 text-sm mt-1">
-                      Your subscription will remain active until <span className="font-semibold">{endDate}</span>.
-                      After that, you&apos;ll lose access to all premium features.
+                      {t('cancellation.subscriptionActiveUntil', { date: endDate })}
                     </p>
                   </div>
                 </div>
@@ -511,12 +511,12 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
               {!feedback && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Any final feedback? (optional)
+                    {t('cancellation.anyFinalFeedback')}
                   </label>
                   <textarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value.slice(0, 500))}
-                    placeholder="Tell us more..."
+                    placeholder={t('cancellation.tellUsMore')}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 resize-none transition-colors"
                   />
@@ -533,10 +533,10 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                   {loading ? (
                     <>
                       <RefreshCw size={16} className="mr-2 animate-spin" />
-                      Canceling...
+                      {t('cancellation.canceling')}
                     </>
                   ) : (
-                    'Yes, Cancel Subscription'
+                    t('cancellation.yesCancelSubscription')
                   )}
                 </button>
                 <button
@@ -544,7 +544,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                   disabled={loading}
                   className="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Keep My Subscription
+                  {t('cancellation.keepMySubscription')}
                 </button>
               </div>
 
@@ -553,7 +553,7 @@ export default function CancellationModal({ isOpen, onClose, onConfirm, endDate 
                 onClick={() => setStep(step - 1)}
                 className="w-full text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
               >
-                Go back
+                {t('cancellation.goBack')}
               </button>
             </div>
           )}

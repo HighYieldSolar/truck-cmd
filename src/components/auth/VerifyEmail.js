@@ -6,8 +6,10 @@ import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle, AlertCircle, Mail, RefreshCw, ArrowRight } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function VerifyEmail() {
+  const { t } = useTranslation('auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -101,7 +103,7 @@ export default function VerifyEmail() {
   const verifyCode = async () => {
     // Check if code is complete
     if (verificationCode.some(digit => digit === '')) {
-      setError('Please enter all 6 digits of the verification code');
+      setError(t('verifyEmail.enterAllDigits'));
       return;
     }
     
@@ -128,7 +130,7 @@ export default function VerifyEmail() {
       
       // After successful verification, redirect countdown starts
     } catch (error) {
-      setError(error.message || 'Invalid verification code. Please try again.');
+      setError(error.message || t('verifyEmail.invalidCode'));
       setIsVerified(false);
     } finally {
       setLoading(false);
@@ -137,7 +139,7 @@ export default function VerifyEmail() {
 
   const handleResendCode = async () => {
     if (!email) {
-      setError('Email address is missing. Please go back to the signup page.');
+      setError(t('verifyEmail.emailMissing'));
       return;
     }
     
@@ -164,7 +166,7 @@ export default function VerifyEmail() {
         inputRefs.current[0].focus();
       }
     } catch (error) {
-      setError(error.message || 'There was an error sending the verification code. Please try again.');
+      setError(error.message || t('verifyEmail.resendError'));
     } finally {
       setResendLoading(false);
     }
@@ -185,15 +187,15 @@ export default function VerifyEmail() {
         </div>
         
         <h1 className="text-2xl font-bold text-gray-900 mt-6 text-center">
-          {isVerified 
-            ? "Email Verified!"
-            : "Verify Your Email"}
+          {isVerified
+            ? t('verifyEmail.verifiedTitle')
+            : t('verifyEmail.title')}
         </h1>
-        
+
         {!isVerified && (
           <p className="text-gray-600 mt-2 text-center">
-            We&apos;ve sent a verification code to<br/>
-            <strong className="text-gray-800">{email || 'your email'}</strong>
+            {t('verifyEmail.description')}<br/>
+            <strong className="text-gray-800">{email || t('verifyEmail.yourEmail')}</strong>
           </p>
         )}
         
@@ -207,27 +209,27 @@ export default function VerifyEmail() {
         {resendSuccess && (
           <div className="mt-4 bg-green-50 border border-green-200 text-green-600 p-3 rounded-md flex items-start w-full">
             <CheckCircle size={20} className="mr-2 flex-shrink-0 mt-0.5" />
-            <p>A new verification code has been sent to your email.</p>
+            <p>{t('verifyEmail.codeSent')}</p>
           </div>
         )}
         
         {isVerified ? (
           <div className="flex flex-col items-center mt-6 w-full">
             <CheckCircle size={48} className="text-green-500 mb-4" />
-            <p className="text-gray-700 mb-4">Your email has been successfully verified!</p>
-            <p className="text-gray-600 mb-6">Redirecting to dashboard in {redirectCountdown} seconds...</p>
-            <button 
+            <p className="text-gray-700 mb-4">{t('verifyEmail.successMessage')}</p>
+            <p className="text-gray-600 mb-6">{t('verifyEmail.redirecting')} {redirectCountdown} {t('verifyEmail.seconds')}</p>
+            <button
               onClick={goToDashboard}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
             >
-              Go to Dashboard Now <ArrowRight size={18} className="ml-2" />
+              {t('verifyEmail.goToDashboard')} <ArrowRight size={18} className="ml-2" />
             </button>
           </div>
         ) : (
           <>
             <div className="mt-6 w-full">
               <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                Enter 6-digit verification code
+                {t('verifyEmail.enterCode')}
               </label>
               <div className="flex justify-between gap-2 mb-4">
                 {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -260,22 +262,22 @@ export default function VerifyEmail() {
                 {loading ? (
                   <span className="flex items-center justify-center">
                     <RefreshCw size={18} className="animate-spin mr-2" />
-                    Verifying...
+                    {t('verifyEmail.verifying')}
                   </span>
                 ) : (
-                  "Verify Email"
+                  t('verifyEmail.verifyButton')
                 )}
               </button>
               
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-start">
                 <AlertCircle size={20} className="text-yellow-600 mr-2 flex-shrink-0 mt-1" />
                 <p className="text-yellow-700 text-sm">
-                  If you don&apos;t see the email in your inbox, please check your spam folder.
+                  {t('verifyEmail.checkSpam')}
                 </p>
               </div>
-              
+
               <div className="text-center mt-6">
-                <p className="text-gray-600 text-sm mb-2">Didn&apos;t receive the code?</p>
+                <p className="text-gray-600 text-sm mb-2">{t('verifyEmail.didntReceive')}</p>
                 <button
                   onClick={handleResendCode}
                   disabled={resendLoading}
@@ -284,20 +286,20 @@ export default function VerifyEmail() {
                   {resendLoading ? (
                     <span className="flex items-center justify-center">
                       <RefreshCw size={16} className="animate-spin mr-2" />
-                      Sending...
+                      {t('verifyEmail.sending')}
                     </span>
                   ) : (
-                    "Resend Code"
+                    t('verifyEmail.resendCode')
                   )}
                 </button>
               </div>
-              
+
               <div className="mt-6 border-t border-gray-200 pt-4">
                 <Link
                   href="/login"
                   className="text-sm text-gray-600 hover:text-gray-800 flex justify-center"
                 >
-                  Back to Login
+                  {t('verifyEmail.backToLogin')}
                 </Link>
               </div>
             </div>

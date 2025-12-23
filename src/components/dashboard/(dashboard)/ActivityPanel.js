@@ -1,4 +1,6 @@
 // src/components/dashboard/ActivityPanel.js
+"use client";
+
 import Link from "next/link";
 import {
   Clock,
@@ -8,6 +10,7 @@ import {
   Fuel,
   RefreshCw
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Activity Panel Component
@@ -19,6 +22,8 @@ import {
  * @param {boolean} props.isLoading Whether data is loading
  */
 export default function ActivityPanel({ recentActivity = [], recentInvoices = [], isLoading = false }) {
+  const { t } = useTranslation('dashboard');
+
   return (
     <div className="lg:col-span-2 space-y-6">
       {/* Recent Activity */}
@@ -26,9 +31,9 @@ export default function ActivityPanel({ recentActivity = [], recentInvoices = []
         <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <Clock size={18} className="mr-2" />
-            Recent Activity
+            {t('activity.title')}
           </h3>
-          <div className="text-sm text-white/90">Last 7 days</div>
+          <div className="text-sm text-white/90">{t('activity.last7Days')}</div>
         </div>
         <div className="p-6">
           {isLoading ? (
@@ -47,8 +52,9 @@ export default function ActivityPanel({ recentActivity = [], recentInvoices = []
             ))
           ) : recentActivity.length === 0 ? (
             <EmptyState
-              message="No recent activity found. Start creating loads or invoices to see your activity here."
+              message={t('activity.noRecentActivity')}
               icon={<Clock size={24} className="text-gray-400 dark:text-gray-500" />}
+              noDataText={t('activity.noDataToDisplay')}
             />
           ) : (
             recentActivity.slice(0, 5).map((activity, index) => (
@@ -63,10 +69,10 @@ export default function ActivityPanel({ recentActivity = [], recentInvoices = []
         <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <FileText size={18} className="mr-2" />
-            Recent Invoices
+            {t('activity.recentInvoices')}
           </h3>
           <Link href="/dashboard/invoices" className="text-sm text-white hover:text-blue-100">
-            View All
+            {t('activity.viewAll')}
           </Link>
         </div>
         <div className="p-5">
@@ -75,14 +81,14 @@ export default function ActivityPanel({ recentActivity = [], recentInvoices = []
               <RefreshCw size={24} className="animate-spin text-blue-500 dark:text-blue-400" />
             </div>
           ) : recentInvoices.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 py-6 text-center">No recent invoices found.</p>
+            <p className="text-gray-500 dark:text-gray-400 py-6 text-center">{t('activity.noRecentInvoices')}</p>
           ) : (
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {recentInvoices.map((invoice) => (
                 <li key={invoice.id} className="py-3 flex justify-between">
                   <div>
                     <Link href={`/dashboard/invoices/${invoice.id}`} className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                      Invoice #{invoice.number}
+                      {t('activity.invoiceNumber', { number: invoice.number })}
                     </Link>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{invoice.customer}</p>
                   </div>
@@ -140,13 +146,13 @@ function ActivityItem({ activity }) {
  * Empty State Component
  * Shows when there is no data to display
  */
-function EmptyState({ message, icon }) {
+function EmptyState({ message, icon, noDataText }) {
   return (
     <div className="text-center py-8">
       <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
         {icon}
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No data to display</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{noDataText}</h3>
       <p className="mt-2 text-gray-500 dark:text-gray-400">{message}</p>
     </div>
   );

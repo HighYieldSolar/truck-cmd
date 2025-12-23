@@ -25,6 +25,7 @@ import ExportMileageButton from "./ExportMileageButton";
 import { deleteTrip, checkTripIftaStatus } from "@/lib/services/mileageService";
 import { importMileageTripToIFTA } from "@/lib/services/iftaMileageService";
 import { getCurrentDateLocal, formatDateForDisplayMMDDYYYY, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Helper function to get US states
 const getUSStates = () => {
@@ -99,7 +100,8 @@ function DeleteTripModal({
   onConfirm,
   isDeleting = false,
   tripDetails = {},
-  iftaStatus = null
+  iftaStatus = null,
+  t
 }) {
   if (!isOpen) return null;
 
@@ -115,7 +117,7 @@ function DeleteTripModal({
         {/* Header */}
         <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Delete Trip
+            {t('deleteModal.title')}
           </h2>
           <button
             onClick={onClose}
@@ -136,10 +138,10 @@ function DeleteTripModal({
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                Delete this trip?
+                {t('deleteModal.confirmTitle')}
               </h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Are you sure you want to delete the trip with {vehicleName} from {tripDate}? This will permanently remove all state crossings and mileage data associated with this trip.
+                {t('deleteModal.confirmMessage', { vehicleName, tripDate })}
               </p>
 
               {/* IFTA Warning */}
@@ -149,10 +151,15 @@ function DeleteTripModal({
                     <Fuel className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 mr-2 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                        This trip has IFTA data
+                        {t('deleteModal.iftaWarningTitle')}
                       </p>
                       <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                        {iftaStatus.recordCount} IFTA record{iftaStatus.recordCount > 1 ? 's' : ''} ({iftaStatus.totalMiles.toFixed(0)} miles) in {iftaStatus.quarters.join(', ')} will also be removed from your IFTA calculator.
+                        {t('deleteModal.iftaWarningMessage', {
+                          count: iftaStatus.recordCount,
+                          plural: iftaStatus.recordCount > 1 ? 's' : '',
+                          miles: iftaStatus.totalMiles.toFixed(0),
+                          quarters: iftaStatus.quarters.join(', ')
+                        })}
                       </p>
                     </div>
                   </div>
@@ -160,7 +167,7 @@ function DeleteTripModal({
               )}
 
               <p className="mt-3 text-sm font-medium text-red-500 dark:text-red-400">
-                This action cannot be undone.
+                {t('deleteModal.cannotUndo')}
               </p>
             </div>
           </div>
@@ -174,7 +181,7 @@ function DeleteTripModal({
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             disabled={isDeleting}
           >
-            Cancel
+            {t('deleteModal.cancel')}
           </button>
           <button
             type="button"
@@ -185,10 +192,10 @@ function DeleteTripModal({
             {isDeleting ? (
               <>
                 <RefreshCw size={16} className="animate-spin mr-2" />
-                Deleting...
+                {t('deleteModal.deleting')}
               </>
             ) : (
-              <>Delete Trip{hasIftaRecords ? ' & IFTA Data' : ''}</>
+              <>{hasIftaRecords ? t('deleteModal.deleteTripAndIfta') : t('deleteModal.deleteTrip')}</>
             )}
           </button>
         </div>
@@ -198,11 +205,11 @@ function DeleteTripModal({
 }
 
 // StateCrossing component for rendering individual state crossings
-const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst }) => {
+const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst, t }) => {
   // Format the crossing date for display
   const crossingDate = crossing.crossing_date
     ? formatDateForDisplayMMDDYYYY(crossing.crossing_date)
-    : 'No date';
+    : t('stateCrossings.noDate');
 
   return (
     <div className="flex items-center mb-2">
@@ -308,6 +315,8 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
 
 // Main component for state mileage logging
 export default function StateMileageLogger() {
+  const { t } = useTranslation('mileage');
+
   // States
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -428,13 +437,13 @@ export default function StateMileageLogger() {
 
     } catch (error) {
       // console.error('Error loading trip details:', error);
-      setError('Failed to load trip details. Please try again.');
+      setError(t('errors.loadTripDetails'));
       setSelectedTripData({
         crossings: [],
         loading: false
       });
     }
-  }, []);
+  }, [t]);
 
   // Handle delete button click - check IFTA status first
   const handleDeleteClick = async (trip, vehicleName) => {
@@ -495,9 +504,9 @@ export default function StateMileageLogger() {
 
       // Show success message with IFTA info if applicable
       const iftaInfo = result.deletedIftaRecords > 0
-        ? ` (${result.deletedIftaRecords} IFTA record${result.deletedIftaRecords > 1 ? 's' : ''} also removed)`
+        ? ' ' + t('messages.iftaRecordsRemoved', { count: result.deletedIftaRecords, plural: result.deletedIftaRecords > 1 ? 's' : '' })
         : '';
-      setSuccess(`Trip deleted successfully${iftaInfo}`);
+      setSuccess(t('messages.tripDeleted') + iftaInfo);
       setTimeout(() => setSuccess(null), 4000);
 
       // Close modal and reset state
@@ -507,7 +516,7 @@ export default function StateMileageLogger() {
 
     } catch (error) {
       // console.error('Error deleting trip:', error);
-      setError('Failed to delete trip. Please try again.');
+      setError(t('errors.deleteTrip'));
     } finally {
       setIsDeleting(false);
     }
@@ -563,9 +572,9 @@ export default function StateMileageLogger() {
 
     } catch (error) {
       // console.error('Error loading active trips:', error);
-      setError('Failed to load active trips. Please refresh the page.');
+      setError(t('errors.loadActiveTrips'));
     }
-  }, []);
+  }, [t]);
 
   // Load completed trips
   const loadCompletedTrips = useCallback(async (userId) => {
@@ -621,9 +630,9 @@ export default function StateMileageLogger() {
       }
     } catch (error) {
       // console.error('Error loading completed trips:', error);
-      setError('Failed to load trip history. Please refresh the page.');
+      setError(t('errors.loadTripHistory'));
     }
-  }, []);
+  }, [t]);
 
   // Select a past trip
   const handleSelectPastTrip = useCallback(async (trip) => {
@@ -687,14 +696,14 @@ export default function StateMileageLogger() {
 
     } catch (error) {
       // console.error('Error loading past trip details:', error);
-      setError('Failed to load trip details. Please try again.');
+      setError(t('errors.loadTripDetails'));
       setSelectedPastTripData({
         crossings: [],
         loading: false,
         mileageByState: []
       });
     }
-  }, [selectedPastTrip, completedTripCrossings, calculateStateMileageFromCrossings]);
+  }, [selectedPastTrip, completedTripCrossings, calculateStateMileageFromCrossings, t]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -720,14 +729,14 @@ export default function StateMileageLogger() {
 
       } catch (error) {
         // console.error('Error checking authentication:', error);
-        setError('Authentication error. Please try logging in again.');
+        setError(t('errors.authError'));
       } finally {
         setLoading(false);
       }
     }
 
     checkAuth();
-  }, [loadActiveTrips, loadCompletedTrips, loadVehicles]);
+  }, [loadActiveTrips, loadCompletedTrips, loadVehicles, t]);
 
   // Handle form input changes
   const handleNewTripChange = (e) => {
@@ -756,7 +765,7 @@ export default function StateMileageLogger() {
 
       // Validate form
       if (!newTripForm.vehicle_id || !newTripForm.start_state || !newTripForm.start_odometer) {
-        throw new Error('Please fill in all required fields.');
+        throw new Error(t('errors.fillRequired'));
       }
 
       // Create new trip in the database
@@ -813,12 +822,12 @@ export default function StateMileageLogger() {
       // Switch to active tab
       setActiveTab('active');
 
-      setSuccess('Trip started successfully!');
+      setSuccess(t('messages.tripStarted'));
       setTimeout(() => setSuccess(null), 3000);
 
     } catch (error) {
       // console.error('Error starting trip:', error);
-      setError(error.message || 'Failed to start trip. Please try again.');
+      setError(error.message || t('errors.startTrip'));
     } finally {
       setLoading(false);
     }
@@ -836,14 +845,14 @@ export default function StateMileageLogger() {
 
       // Validate form
       if (!crossingForm.state || !crossingForm.odometer || !crossingForm.date) {
-        throw new Error('Please fill in all required fields.');
+        throw new Error(t('errors.fillRequired'));
       }
 
       // Check if odometer reading is valid (greater than last reading)
       if (selectedTripData.crossings.length > 0) {
         const lastOdometer = selectedTripData.crossings[selectedTripData.crossings.length - 1].odometer;
         if (parseInt(crossingForm.odometer) <= lastOdometer) {
-          throw new Error(`Odometer reading must be greater than the last reading (${lastOdometer}).`);
+          throw new Error(t('errors.odometerTooLow', { odometer: lastOdometer }));
         }
       }
 
@@ -883,12 +892,12 @@ export default function StateMileageLogger() {
         await handleSelectTrip(selectedTrip);
       }
 
-      setSuccess('State crossing added successfully!');
+      setSuccess(t('messages.crossingAdded'));
       setTimeout(() => setSuccess(null), 3000);
 
     } catch (error) {
       // console.error('Error adding crossing:', error);
-      setError(error.message || 'Failed to add state crossing. Please try again.');
+      setError(error.message || t('errors.addCrossing'));
     } finally {
       setLoading(false);
     }
@@ -918,7 +927,7 @@ export default function StateMileageLogger() {
 
     } catch (error) {
       // console.error('Error deleting crossing:', error);
-      setError('Failed to delete crossing. Please try again.');
+      setError(t('errors.deleteCrossing'));
     } finally {
       setLoading(false);
     }
@@ -964,12 +973,12 @@ export default function StateMileageLogger() {
         loading: false
       });
 
-      setSuccess('Trip completed successfully! You can now manually import it to your IFTA calculator.');
+      setSuccess(t('messages.tripCompleted'));
       setTimeout(() => setSuccess(null), 5000);
 
     } catch (error) {
       // console.error('Error ending trip:', error);
-      setError('Failed to end trip. Please try again.');
+      setError(t('errors.endTrip'));
     } finally {
       setLoading(false);
     }
@@ -1027,7 +1036,7 @@ export default function StateMileageLogger() {
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-xl p-4 mb-6 flex items-start">
           <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
           <div>
-            <h3 className="font-medium">Error</h3>
+            <h3 className="font-medium">{t('messages.error')}</h3>
             <p className="text-sm">{error}</p>
           </div>
         </div>
@@ -1037,7 +1046,7 @@ export default function StateMileageLogger() {
         <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded-xl p-4 mb-6 flex items-start">
           <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mt-0.5 mr-3 flex-shrink-0" />
           <div>
-            <h3 className="font-medium">Success</h3>
+            <h3 className="font-medium">{t('messages.success')}</h3>
             <p className="text-sm">{success}</p>
           </div>
         </div>
@@ -1052,7 +1061,7 @@ export default function StateMileageLogger() {
             }`}
         >
           <Truck className="h-4 w-4 mr-2" />
-          Active Trips
+          {t('tabs.activeTrips')}
         </button>
         <button
           onClick={() => setActiveTab('past')}
@@ -1062,7 +1071,7 @@ export default function StateMileageLogger() {
             }`}
         >
           <History className="h-4 w-4 mr-2" />
-          Past Trips
+          {t('tabs.pastTrips')}
         </button>
         <button
           onClick={() => setActiveTab('summary')}
@@ -1072,7 +1081,7 @@ export default function StateMileageLogger() {
             }`}
         >
           <BarChart2 className="h-4 w-4 mr-2" />
-          Summary
+          {t('tabs.summary')}
         </button>
       </div>
 
@@ -1083,7 +1092,7 @@ export default function StateMileageLogger() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Active Trips
+                  {t('activeTrips.title')}
                 </h2>
                 <button
                   onClick={() => {
@@ -1098,7 +1107,7 @@ export default function StateMileageLogger() {
                   className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-medium rounded-md shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center"
                 >
                   <Plus size={18} className="mr-1.5" />
-                  New Trip
+                  {t('activeTrips.newTrip')}
                 </button>
               </div>
 
@@ -1106,8 +1115,8 @@ export default function StateMileageLogger() {
                 {activeTrips.length === 0 ? (
                   <div className="text-center py-6">
                     <Truck className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No active trips</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">Start a new trip to track state mileage</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('activeTrips.noTrips')}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">{t('activeTrips.noTripsDescription')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1138,13 +1147,13 @@ export default function StateMileageLogger() {
             {!selectedTrip && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm mt-6 border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Start New Trip</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('newTrip.title')}</h2>
                 </div>
                 <div className="p-4">
                   <form onSubmit={handleStartTrip}>
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Select Vehicle
+                        {t('newTrip.selectVehicle')}
                       </label>
                       <select
                         name="vehicle_id"
@@ -1153,7 +1162,7 @@ export default function StateMileageLogger() {
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
-                        <option value="">Select Vehicle</option>
+                        <option value="">{t('newTrip.selectVehiclePlaceholder')}</option>
                         {vehicles.map(vehicle => (
                           <option key={vehicle.id} value={vehicle.id}>
                             {vehicle.name}{vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}
@@ -1164,7 +1173,7 @@ export default function StateMileageLogger() {
 
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Starting State
+                        {t('newTrip.startingState')}
                       </label>
                       <select
                         name="start_state"
@@ -1173,7 +1182,7 @@ export default function StateMileageLogger() {
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
-                        <option value="">Select State</option>
+                        <option value="">{t('newTrip.selectState')}</option>
                         {states.map(state => (
                           <option key={state.code} value={state.code}>{state.name}</option>
                         ))}
@@ -1182,7 +1191,7 @@ export default function StateMileageLogger() {
 
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Starting Odometer
+                        {t('newTrip.startingOdometer')}
                       </label>
                       <input
                         type="number"
@@ -1190,14 +1199,14 @@ export default function StateMileageLogger() {
                         value={newTripForm.start_odometer}
                         onChange={handleNewTripChange}
                         className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Odometer reading"
+                        placeholder={t('newTrip.odometerPlaceholder')}
                         required
                       />
                     </div>
 
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Date
+                        {t('newTrip.date')}
                       </label>
                       <input
                         type="date"
@@ -1214,7 +1223,7 @@ export default function StateMileageLogger() {
                       className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm flex items-center justify-center"
                     >
                       <Plus size={16} className="mr-2" />
-                      Start Trip
+                      {t('newTrip.startTrip')}
                     </button>
                   </form>
                 </div>
@@ -1236,7 +1245,7 @@ export default function StateMileageLogger() {
                         </h2>
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
                           <Calendar className="h-4 w-4 mr-1.5" />
-                          Started on {formatDateForDisplayMMDDYYYY(selectedTrip.start_date)}
+                          {t('tripDetails.startedOn', { date: formatDateForDisplayMMDDYYYY(selectedTrip.start_date) })}
                         </div>
                       </div>
                       <button
@@ -1247,12 +1256,12 @@ export default function StateMileageLogger() {
                         {loading ? (
                           <>
                             <RefreshCw size={16} className="animate-spin mr-2" />
-                            Ending...
+                            {t('tripDetails.ending')}
                           </>
                         ) : (
                           <>
                             <CheckCircle size={16} className="mr-2" />
-                            End Trip
+                            {t('tripDetails.endTrip')}
                           </>
                         )}
                       </button>
@@ -1263,13 +1272,13 @@ export default function StateMileageLogger() {
                 {/* State crossings */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">State Crossings</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('stateCrossings.title')}</h3>
                   </div>
                   <div className="p-4">
                     {selectedTripData.crossings.length === 0 ? (
                       <div className="text-center py-6">
                         <MapPin className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-700 dark:text-gray-400">No state crossings recorded yet</p>
+                        <p className="text-gray-700 dark:text-gray-400">{t('stateCrossings.noData')}</p>
                       </div>
                     ) : (
                       <div className="space-y-2 mb-6">
@@ -1281,6 +1290,7 @@ export default function StateMileageLogger() {
                             onDelete={index > 0 && index === selectedTripData.crossings.length - 1 ? handleDeleteCrossing : null}
                             isFirst={index === 0}
                             isLast={index === selectedTripData.crossings.length - 1}
+                            t={t}
                           />
                         ))}
                       </div>
@@ -1288,11 +1298,11 @@ export default function StateMileageLogger() {
 
                     {/* Add crossing form */}
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100">Add State Crossing</h4>
+                      <h4 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100">{t('stateCrossings.addTitle')}</h4>
                       <form onSubmit={handleAddCrossing} className="flex flex-wrap items-end gap-3">
                         <div className="flex-grow min-w-[200px]">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Entering State
+                            {t('stateCrossings.enteringState')}
                           </label>
                           <select
                             name="state"
@@ -1301,7 +1311,7 @@ export default function StateMileageLogger() {
                             className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                             required
                           >
-                            <option value="">Select State</option>
+                            <option value="">{t('newTrip.selectState')}</option>
                             {states.map(state => (
                               <option key={state.code} value={state.code}>{state.name}</option>
                             ))}
@@ -1310,7 +1320,7 @@ export default function StateMileageLogger() {
 
                         <div className="flex-grow min-w-[180px]">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Odometer Reading
+                            {t('stateCrossings.odometerReading')}
                           </label>
                           <input
                             type="number"
@@ -1318,7 +1328,7 @@ export default function StateMileageLogger() {
                             value={crossingForm.odometer}
                             onChange={handleCrossingChange}
                             className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Current reading"
+                            placeholder={t('stateCrossings.currentReading')}
                             required
                           />
                         </div>
@@ -1326,7 +1336,7 @@ export default function StateMileageLogger() {
                         <div className="flex-grow min-w-[160px]">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                             <Calendar size={14} className="mr-1 text-gray-400" />
-                            Crossing Date
+                            {t('stateCrossings.crossingDate')}
                           </label>
                           <input
                             type="date"
@@ -1347,12 +1357,12 @@ export default function StateMileageLogger() {
                             {loading ? (
                               <>
                                 <RefreshCw size={16} className="animate-spin mr-2" />
-                                Adding...
+                                {t('stateCrossings.adding')}
                               </>
                             ) : (
                               <>
                                 <Plus size={16} className="mr-2" />
-                                Add
+                                {t('stateCrossings.add')}
                               </>
                             )}
                           </button>
@@ -1368,7 +1378,7 @@ export default function StateMileageLogger() {
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
                       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                         <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
-                        Miles by State
+                        {t('milesByState.title')}
                       </h2>
                     </div>
                     <div className="p-4">
@@ -1377,7 +1387,7 @@ export default function StateMileageLogger() {
                           <div key={entry.state} className="p-2">
                             <div className="flex justify-between items-center mb-1">
                               <div className="font-medium text-gray-900 dark:text-gray-100">{entry.state_name}</div>
-                              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} mi</div>
+                              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} {t('milesByState.milesUnit')}</div>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
                               <div
@@ -1392,9 +1402,9 @@ export default function StateMileageLogger() {
                       {/* Total miles */}
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex justify-between items-center">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">Total</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{t('milesByState.total')}</div>
                           <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                            {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} mi
+                            {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} {t('milesByState.milesUnit')}
                           </div>
                         </div>
                       </div>
@@ -1406,10 +1416,10 @@ export default function StateMileageLogger() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
                   <Truck className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-3">Select an Active Trip</h3>
+                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-3">{t('selectPrompts.selectActiveTrip')}</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-5">
-                    You have {activeTrips.length} active trip{activeTrips.length !== 1 ? 's' : ''}.
-                    Please select one from the list on the left to view details or add state crossings.
+                    {t('selectPrompts.activeTripsCount', { count: activeTrips.length, plural: activeTrips.length !== 1 ? 's' : '' })}
+                    {' '}{t('selectPrompts.selectFromList')}
                   </p>
                   <div className="flex flex-wrap justify-center gap-3 mt-4">
                     {activeTrips.slice(0, 3).map(trip => (
@@ -1423,7 +1433,7 @@ export default function StateMileageLogger() {
                     ))}
                     {activeTrips.length > 3 && (
                       <span className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-gray-500 dark:text-gray-400">
-                        +{activeTrips.length - 3} more
+                        {t('selectPrompts.moreTrips', { count: activeTrips.length - 3 })}
                       </span>
                     )}
                   </div>
@@ -1433,9 +1443,9 @@ export default function StateMileageLogger() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
                   <MapPin className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">Select or Create a Trip</h3>
+                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">{t('selectPrompts.selectOrCreate')}</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                    To start tracking your state mileage, select an existing trip from the list or create a new one.
+                    {t('selectPrompts.selectOrCreateDescription')}
                   </p>
                 </div>
               </div>
@@ -1451,7 +1461,7 @@ export default function StateMileageLogger() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Completed Trips
+                  {t('pastTrips.title')}
                 </h2>
               </div>
 
@@ -1459,13 +1469,13 @@ export default function StateMileageLogger() {
                 {loading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                    <p className="text-gray-500 dark:text-gray-400">Loading completed trips...</p>
+                    <p className="text-gray-500 dark:text-gray-400">{t('pastTrips.loading')}</p>
                   </div>
                 ) : completedTrips.length === 0 ? (
                   <div className="text-center py-8">
                     <History className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No completed trips</h3>
-                    <p className="text-gray-500 dark:text-gray-400">Complete active trips to see history</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('pastTrips.noTrips')}</h3>
+                    <p className="text-gray-500 dark:text-gray-400">{t('pastTrips.noTripsDescription')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1491,7 +1501,7 @@ export default function StateMileageLogger() {
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      Trip Details - {vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id}
+                      {t('pastTrips.tripDetailsTitle', { vehicleName: vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id })}
                     </h2>
                     <div className="flex gap-2">
                       <button
@@ -1503,21 +1513,22 @@ export default function StateMileageLogger() {
                             const quarter = `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
                             const result = await importMileageTripToIFTA(user.id, quarter, selectedPastTrip.id);
                             if (result.alreadyImported) {
-                              setSuccess("This trip has already been imported to the IFTA calculator");
+                              setSuccess(t('messages.alreadyImported'));
                             } else if (result.importedCount === 0) {
-                              setSuccess(result.message || "No mileage data to import");
+                              setSuccess(result.message || t('messages.noDataToImport'));
                             } else {
                               // Show quarters info if trip spans multiple quarters
-                              const quartersInfo = result.quarters && result.quarters.length > 1
-                                ? ` (split across ${result.quarters.join(' and ')})`
-                                : result.quarters && result.quarters.length === 1
-                                  ? ` for ${result.quarters[0]}`
-                                  : '';
-                              setSuccess(`Successfully imported ${result.importedCount} state records to IFTA calculator${quartersInfo}`);
+                              if (result.quarters && result.quarters.length > 1) {
+                                setSuccess(t('messages.importSuccessMultiQuarters', { count: result.importedCount, quarters: result.quarters.join(' & ') }));
+                              } else if (result.quarters && result.quarters.length === 1) {
+                                setSuccess(t('messages.importSuccessQuarters', { count: result.importedCount, quarter: result.quarters[0] }));
+                              } else {
+                                setSuccess(t('messages.importSuccess', { count: result.importedCount }));
+                              }
                             }
                             setTimeout(() => setSuccess(null), 5000);
                           } catch (error) {
-                            setError("Failed to import to IFTA calculator. Please try again.");
+                            setError(t('errors.importIfta'));
                           } finally {
                             setLoading(false);
                           }
@@ -1530,7 +1541,7 @@ export default function StateMileageLogger() {
                         ) : (
                           <Fuel className="h-4 w-4 mr-1.5" />
                         )}
-                        Import to IFTA
+                        {t('pastTrips.importToIfta')}
                       </button>
                       <ExportMileageButton
                         tripId={selectedPastTrip.id}
@@ -1546,7 +1557,7 @@ export default function StateMileageLogger() {
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Trip Duration</div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pastTrips.tripDuration')}</div>
                       <div className="text-lg font-medium flex items-center text-gray-900 dark:text-gray-100">
                         <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                         {formatDateForDisplayMMDDYYYY(selectedPastTrip.start_date)}
@@ -1556,18 +1567,18 @@ export default function StateMileageLogger() {
                     </div>
 
                     <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Miles</div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pastTrips.totalMiles')}</div>
                       <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {selectedPastTripData.loading ? (
                           <div className="flex items-center">
                             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
-                            <span>Calculating...</span>
+                            <span>{t('pastTrips.calculating')}</span>
                           </div>
                         ) : selectedPastTripData.crossings.length > 1 ? (
                           (selectedPastTripData.crossings[selectedPastTripData.crossings.length - 1].odometer -
                             selectedPastTripData.crossings[0].odometer).toLocaleString()
                         ) : (
-                          'No mileage data available'
+                          t('pastTrips.noMileageData')
                         )}
                       </div>
                     </div>
@@ -1577,16 +1588,16 @@ export default function StateMileageLogger() {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                     <h3 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100 flex items-center">
                       <MapPin className="h-4 w-4 text-blue-600 mr-2" />
-                      State Crossings
+                      {t('stateCrossings.title')}
                     </h3>
                     {selectedPastTripData.loading ? (
                       <div className="text-center py-6">
                         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                        <p className="text-gray-600 dark:text-gray-400">Loading trip data...</p>
+                        <p className="text-gray-600 dark:text-gray-400">{t('pastTrips.loadingTripData')}</p>
                       </div>
                     ) : selectedPastTripData.crossings.length === 0 ? (
                       <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                        <p>No state crossings found for this trip</p>
+                        <p>{t('pastTrips.noStateCrossings')}</p>
                       </div>
                     ) : (
                       <div className="space-y-2 mb-6">
@@ -1597,6 +1608,7 @@ export default function StateMileageLogger() {
                             index={index}
                             isFirst={index === 0}
                             isLast={index === selectedPastTripData.crossings.length - 1}
+                            t={t}
                           />
                         ))}
                       </div>
@@ -1608,7 +1620,7 @@ export default function StateMileageLogger() {
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                       <h3 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100 flex items-center">
                         <BarChart2 className="h-4 w-4 text-blue-600 mr-2" />
-                        Miles by State
+                        {t('milesByState.title')}
                       </h3>
                       <div className="space-y-3">
                         {selectedPastTripData.mileageByState.map(entry => (
@@ -1634,9 +1646,9 @@ export default function StateMileageLogger() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
                   <History className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">Select a Past Trip</h3>
+                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">{t('pastTrips.selectPastTrip')}</h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                    Select a completed trip from the list to view details and mileage breakdown.
+                    {t('pastTrips.selectPastTripDescription')}
                   </p>
                 </div>
               </div>
@@ -1651,15 +1663,15 @@ export default function StateMileageLogger() {
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                 <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
-                Mileage Summary by State (All Time)
+                {t('summaryTab.title')}
               </h2>
             </div>
             <div className="p-4">
               {totalHistoricalMileage.length === 0 ? (
                 <div className="text-center py-10">
                   <MapPin className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-700 dark:text-gray-300">No historical mileage data available</p>
-                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Complete trips to see your mileage summary</p>
+                  <p className="text-gray-700 dark:text-gray-300">{t('summaryTab.noData')}</p>
+                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">{t('summaryTab.noDataDescription')}</p>
                 </div>
               ) : (
                 <>
@@ -1668,7 +1680,7 @@ export default function StateMileageLogger() {
                       <div key={entry.state} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                         <div className="flex justify-between items-center mb-1">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{entry.state_name}</div>
-                          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} mi</div>
+                          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} {t('milesByState.milesUnit')}</div>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mt-2">
                           <div
@@ -1683,21 +1695,21 @@ export default function StateMileageLogger() {
                   <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <h3 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100 flex items-center">
                       <Truck className="h-4 w-4 text-blue-600 mr-2" />
-                      Total Mileage Stats
+                      {t('summaryTab.totalMileageStats')}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Total States Driven</div>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('summaryTab.totalStatesDriven')}</div>
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalHistoricalMileage.length}</div>
                       </div>
                       <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Miles</div>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('summaryTab.totalMiles')}</div>
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                           {totalHistoricalMileage.reduce((sum, item) => sum + item.miles, 0).toLocaleString()}
                         </div>
                       </div>
                       <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Completed Trips</div>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('summaryTab.completedTrips')}</div>
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{completedTrips.length}</div>
                       </div>
                     </div>
@@ -1721,6 +1733,7 @@ export default function StateMileageLogger() {
         isDeleting={isDeleting}
         tripDetails={tripToDelete}
         iftaStatus={tripIftaStatus}
+        t={t}
       />
     </div>
   );

@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTranslation } from "@/context/LanguageContext";
 import { RefreshCw, Save, User, Camera, CheckCircle, AlertCircle, Info, Sparkles } from "lucide-react";
 
 export default function ProfileSettings() {
   const { updateUserProfile } = useSubscription();
+  const { t } = useTranslation('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -176,10 +178,10 @@ export default function ProfileSettings() {
       setProfileImage(publicUrl);
       // Update the global context so navbar updates immediately
       updateUserProfile({ avatarUrl: publicUrl });
-      setSuccessMessage('Profile picture updated successfully!');
+      setSuccessMessage(t('profile.messages.profilePictureUpdated'));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
-      setErrorMessage('Failed to upload profile image. Please try again.');
+      setErrorMessage(t('profile.messages.failedToUpload'));
     } finally {
       setUploadingImage(false);
     }
@@ -202,10 +204,10 @@ export default function ProfileSettings() {
       setProfileImage(null);
       // Update the global context so navbar updates immediately
       updateUserProfile({ avatarUrl: null });
-      setSuccessMessage('Profile picture removed successfully!');
+      setSuccessMessage(t('profile.messages.profilePictureRemoved'));
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
-      setErrorMessage('Failed to remove profile image. Please try again.');
+      setErrorMessage(t('profile.messages.failedToRemove'));
     } finally {
       setUploadingImage(false);
     }
@@ -256,7 +258,7 @@ export default function ProfileSettings() {
       if (dbError) throw dbError;
 
       // Show success message
-      setSuccessMessage('Profile updated successfully!');
+      setSuccessMessage(t('profile.messages.profileUpdated'));
 
       // Hide success message after 5 seconds
       setTimeout(() => {
@@ -264,7 +266,7 @@ export default function ProfileSettings() {
       }, 5000);
 
     } catch (error) {
-      setErrorMessage(`Failed to update profile: ${error.message}`);
+      setErrorMessage(`${t('profile.messages.failedToUpdate')}: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -274,7 +276,7 @@ export default function ProfileSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw size={32} className="animate-spin text-blue-600 dark:text-blue-400" />
-        <span className="ml-2 text-gray-700 dark:text-gray-300">Loading your profile...</span>
+        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('profile.messages.loading')}</span>
       </div>
     );
   }
@@ -310,10 +312,10 @@ export default function ProfileSettings() {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                Complete Your Business Profile
+                {t('profile.completeProfile.title')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Add your <span className="font-medium text-blue-600 dark:text-blue-400">phone number</span> and <span className="font-medium text-blue-600 dark:text-blue-400">company name</span> to unlock professional invoicing. Your business address will appear on invoices you send to customers.
+                {t('profile.completeProfile.description')}
               </p>
               <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1.5">
@@ -322,7 +324,7 @@ export default function ProfileSettings() {
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                   )}
-                  Phone number
+                  {t('profile.completeProfile.phoneNumber')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   {profile.companyName ? (
@@ -330,7 +332,7 @@ export default function ProfileSettings() {
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                   )}
-                  Company name
+                  {t('profile.completeProfile.companyName')}
                 </span>
               </div>
             </div>
@@ -372,8 +374,8 @@ export default function ProfileSettings() {
             />
           </div>
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Profile Picture</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Upload a clear photo to help your team recognize you</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('profile.profilePicture')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('profile.photoHelp')}</p>
             {profileImage && (
               <button
                 type="button"
@@ -381,7 +383,7 @@ export default function ProfileSettings() {
                 disabled={uploadingImage}
                 className="mt-1 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
               >
-                Remove photo
+                {t('profile.removePhoto')}
               </button>
             )}
           </div>
@@ -390,13 +392,13 @@ export default function ProfileSettings() {
         {/* Personal Information */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Personal Information</h3>
+            <h3 className="text-lg font-medium text-white">{t('profile.personalInfo')}</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="fullName">
-                Full name
+                {t('profile.fields.fullName')}
               </label>
               <input
                 type="text"
@@ -405,13 +407,13 @@ export default function ProfileSettings() {
                 value={profile.fullName}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="Your full name"
+                placeholder={t('profile.placeholders.fullName')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="preferredName">
-                What should we call you?
+                {t('profile.fields.preferredName')}
               </label>
               <input
                 type="text"
@@ -420,7 +422,7 @@ export default function ProfileSettings() {
                 value={profile.preferredName}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="Your preferred name"
+                placeholder={t('profile.placeholders.preferredName')}
               />
             </div>
           </div>
@@ -428,7 +430,7 @@ export default function ProfileSettings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="phone">
-                Phone Number <span className="text-red-500">*</span>
+                {t('profile.fields.phone')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -442,16 +444,16 @@ export default function ProfileSettings() {
                     ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-200 dark:ring-blue-800'
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
-                placeholder="(555) 555-5555"
+                placeholder={t('profile.placeholders.phone')}
               />
               {!profile.phone && isNewUser && (
-                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">Required for invoices</p>
+                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">{t('profile.requiredForInvoices')}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="companyName">
-                Company Name <span className="text-red-500">*</span>
+                {t('profile.fields.companyName')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -464,17 +466,17 @@ export default function ProfileSettings() {
                     ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-200 dark:ring-blue-800'
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
-                placeholder="Your company name"
+                placeholder={t('profile.placeholders.companyName')}
               />
               {!profile.companyName && isNewUser && (
-                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">Required for invoices</p>
+                <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">{t('profile.requiredForInvoices')}</p>
               )}
             </div>
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="jobFunction">
-              What best describes your work?
+              {t('profile.fields.jobFunction')}
             </label>
             <select
               id="jobFunction"
@@ -483,21 +485,21 @@ export default function ProfileSettings() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="">Select your work function</option>
-              <option value="owner_operator">Owner Operator</option>
-              <option value="dispatcher">Dispatcher</option>
-              <option value="fleet_manager">Fleet Manager</option>
-              <option value="administrative">Administrative Staff</option>
-              <option value="driver">Driver</option>
-              <option value="other">Other</option>
+              <option value="">{t('profile.jobFunctions.select')}</option>
+              <option value="owner_operator">{t('profile.jobFunctions.ownerOperator')}</option>
+              <option value="dispatcher">{t('profile.jobFunctions.dispatcher')}</option>
+              <option value="fleet_manager">{t('profile.jobFunctions.fleetManager')}</option>
+              <option value="administrative">{t('profile.jobFunctions.administrative')}</option>
+              <option value="driver">{t('profile.jobFunctions.driver')}</option>
+              <option value="other">{t('profile.jobFunctions.other')}</option>
             </select>
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="personalPreferences">
-              Any additional notes or preferences?
+              {t('profile.fields.personalPreferences')}
             </label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Share anything that helps us serve you better.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('profile.fields.preferencesHelp')}</p>
             <textarea
               id="personalPreferences"
               name="personalPreferences"
@@ -505,7 +507,7 @@ export default function ProfileSettings() {
               onChange={handleChange}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-              placeholder="e.g. preferred communication times, special requirements, etc."
+              placeholder={t('profile.placeholders.preferences')}
             ></textarea>
           </div>
         </div>
@@ -513,13 +515,13 @@ export default function ProfileSettings() {
         {/* Business Address */}
         <div className="mb-8">
           <div className="bg-gradient-to-r from-green-600 to-green-500 dark:from-green-700 dark:to-green-600 rounded-lg shadow-sm p-4 mb-4">
-            <h3 className="text-lg font-medium text-white">Business Address</h3>
-            <p className="text-green-100 text-sm">This address will appear on your invoices</p>
+            <h3 className="text-lg font-medium text-white">{t('profile.businessAddress')}</h3>
+            <p className="text-green-100 text-sm">{t('profile.addressNote')}</p>
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="address">
-              Street Address
+              {t('profile.fields.address')}
             </label>
             <input
               type="text"
@@ -528,14 +530,14 @@ export default function ProfileSettings() {
               value={profile.address}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-              placeholder="123 Main Street"
+              placeholder={t('profile.placeholders.address')}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="city">
-                City
+                {t('profile.fields.city')}
               </label>
               <input
                 type="text"
@@ -544,13 +546,13 @@ export default function ProfileSettings() {
                 value={profile.city}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="City"
+                placeholder={t('profile.placeholders.city')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="state">
-                State
+                {t('profile.fields.state')}
               </label>
               <select
                 id="state"
@@ -559,7 +561,7 @@ export default function ProfileSettings() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
-                <option value="">Select State</option>
+                <option value="">{t('profile.selectState')}</option>
                 <option value="AL">Alabama</option>
                 <option value="AK">Alaska</option>
                 <option value="AZ">Arizona</option>
@@ -616,7 +618,7 @@ export default function ProfileSettings() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="zip">
-                ZIP Code
+                {t('profile.fields.zip')}
               </label>
               <input
                 type="text"
@@ -626,7 +628,7 @@ export default function ProfileSettings() {
                 onChange={handleChange}
                 maxLength={10}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="12345"
+                placeholder={t('profile.placeholders.zip')}
               />
             </div>
           </div>
@@ -642,12 +644,12 @@ export default function ProfileSettings() {
             {saving ? (
               <>
                 <RefreshCw size={18} className="animate-spin mr-2" />
-                Saving...
+                {t('profile.messages.saving')}
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                Save Changes
+                {t('common:buttons.saveChanges')}
               </>
             )}
           </button>

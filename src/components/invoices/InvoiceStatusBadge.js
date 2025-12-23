@@ -2,10 +2,11 @@
 
 import React from "react";
 import { CheckCircle, Clock, AlertCircle, Mail, FileText, Send } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * A reusable status badge component for invoices with consistent styling.
- * 
+ *
  * @param {Object} props - Component props
  * @param {string} props.status - The invoice status ('paid', 'pending', 'overdue', 'draft', 'sent', 'partially paid')
  * @param {string} props.size - The size of the badge ('sm', 'md', 'lg')
@@ -14,16 +15,18 @@ import { CheckCircle, Clock, AlertCircle, Mail, FileText, Send } from "lucide-re
  * @param {string} props.className - Additional CSS classes
  * @returns {JSX.Element} The status badge component
  */
-export default function InvoiceStatusBadge({ 
-  status, 
-  size = "md", 
+export default function InvoiceStatusBadge({
+  status,
+  size = "md",
   showIcon = true,
   animate = false,
   className = ""
 }) {
+  const { t } = useTranslation('invoices');
+
   // Default to 'pending' if no status is provided
   const statusLower = (status || 'pending').toLowerCase();
-  
+
   // Configure styles based on status
   let bgColor = 'bg-gray-100';
   let textColor = 'text-gray-800';
@@ -79,23 +82,30 @@ export default function InvoiceStatusBadge({
     md: 'px-2.5 py-0.5 text-sm',
     lg: 'px-3 py-1 text-base',
   };
-  
-  // Format the display text with proper capitalization
-  const formatStatusText = (status) => {
+
+  // Get translated status text
+  const getStatusText = (status) => {
     if (status === 'overdue' && animate) {
-      return 'OVERDUE';
+      return t('status.overdueUppercase');
     }
-    
-    return status
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+
+    const statusKeyMap = {
+      'paid': 'status.paid',
+      'pending': 'status.pending',
+      'overdue': 'status.overdue',
+      'draft': 'status.draft',
+      'sent': 'status.sent',
+      'partially paid': 'status.partiallyPaid',
+      'voided': 'status.voided'
+    };
+
+    return t(statusKeyMap[status] || 'status.draft');
   };
 
   return (
     <span className={`inline-flex items-center rounded-full font-medium ${sizeClasses[size] || sizeClasses.md} ${bgColor} ${textColor} ${pulseAnimation} ${className}`}>
       {showIcon && icon}
-      {formatStatusText(statusLower)}
+      {getStatusText(statusLower)}
     </span>
   );
 }

@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { XCircle, Mail, RefreshCw, Send, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Modal component for emailing invoices to customers
  */
 export default function EmailInvoiceModal({ isOpen, onClose, invoice, onSuccess }) {
+  const { t } = useTranslation('invoices');
   const [formData, setFormData] = useState({
     to: '',
     cc: '',
@@ -104,14 +106,14 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
 
     // Basic validation
     if (!formData.to) {
-      setError('Recipient email is required');
+      setError(t('emailModal.recipientRequired'));
       return;
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.to)) {
-      setError('Please enter a valid email address');
+      setError(t('emailModal.validEmail'));
       return;
     }
 
@@ -121,7 +123,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
       // Get the current session for auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setError('Please log in to send invoices');
+        setError(t('emailModal.pleaseLogin'));
         return;
       }
 
@@ -151,7 +153,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
       }
 
       // Show success message
-      setSuccessMessage('Invoice has been sent successfully!');
+      setSuccessMessage(t('emailModal.sentSuccess'));
 
       // Notify parent component
       if (onSuccess) {
@@ -163,7 +165,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
         onClose();
       }, 2000);
     } catch (err) {
-      setError(err.message || 'Failed to send invoice. Please try again.');
+      setError(err.message || t('emailModal.sendFailed'));
     } finally {
       setLoading(false);
     }
@@ -175,7 +177,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
           <h2 className="text-lg font-medium text-gray-900 flex items-center">
             <Mail size={20} className="mr-2 text-blue-600" />
-            Email Invoice
+            {t('emailModal.title')}
           </h2>
           <button 
             onClick={onClose} 
@@ -215,16 +217,16 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
           <div className="mb-6 border border-gray-200 rounded-md p-4 bg-gray-50">
             <div className="flex items-center text-gray-700 text-sm mb-2">
               <FileText size={16} className="mr-2 text-blue-600" />
-              <span className="font-medium">Invoice #{invoice.invoice_number}</span>
+              <span className="font-medium">{t('emailModal.invoiceNumber', { number: invoice.invoice_number })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <div>
-                <p className="text-gray-600">Customer: {invoice.customer}</p>
-                <p className="text-gray-600">Date: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                <p className="text-gray-600">{t('emailModal.customer')}: {invoice.customer}</p>
+                <p className="text-gray-600">{t('emailModal.date')}: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
-                <p className="text-gray-900 font-medium">Total: ${invoice.total?.toFixed(2) || "0.00"}</p>
-                <p className="text-gray-600">Due: {new Date(invoice.due_date).toLocaleDateString()}</p>
+                <p className="text-gray-900 font-medium">{t('emailModal.total')}: ${invoice.total?.toFixed(2) || "0.00"}</p>
+                <p className="text-gray-600">{t('emailModal.due')}: {new Date(invoice.due_date).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -233,7 +235,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
           <div className="space-y-4">
             <div>
               <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
-                To <span className="text-red-500">*</span>
+                {t('emailModal.to')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -250,7 +252,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="cc" className="block text-sm font-medium text-gray-700 mb-1">
-                  CC
+                  {t('emailModal.cc')}
                 </label>
                 <input
                   type="text"
@@ -265,7 +267,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
               
               <div>
                 <label htmlFor="bcc" className="block text-sm font-medium text-gray-700 mb-1">
-                  BCC
+                  {t('emailModal.bcc')}
                 </label>
                 <input
                   type="text"
@@ -281,7 +283,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
             
             <div>
               <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                Subject <span className="text-red-500">*</span>
+                {t('emailModal.subject')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -296,7 +298,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
             
             <div>
               <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                Message <span className="text-red-500">*</span>
+                {t('emailModal.message')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="message"
@@ -320,7 +322,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
                   className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
                 <label htmlFor="includePdf" className="ml-2 block text-sm text-gray-700">
-                  Attach PDF invoice
+                  {t('emailModal.attachPdf')}
                 </label>
               </div>
               
@@ -334,7 +336,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
                   className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
                 <label htmlFor="includePaymentLink" className="ml-2 block text-sm text-gray-700">
-                  Include payment link
+                  {t('emailModal.includePaymentLink')}
                 </label>
               </div>
             </div>
@@ -348,7 +350,7 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
               className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
               disabled={loading}
             >
-              Cancel
+              {t('emailModal.cancel')}
             </button>
             <button
               type="submit"
@@ -358,12 +360,12 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
               {loading ? (
                 <>
                   <RefreshCw size={16} className="mr-2 animate-spin" />
-                  Sending...
+                  {t('emailModal.sending')}
                 </>
               ) : (
                 <>
                   <Send size={16} className="mr-2" />
-                  Send Invoice
+                  {t('emailModal.sendInvoice')}
                 </>
               )}
             </button>

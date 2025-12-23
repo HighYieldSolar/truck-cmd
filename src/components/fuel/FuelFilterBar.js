@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Search, Filter, Calendar, Truck, MapPin, X, RefreshCw } from "lucide-react";
 import { getUSStates } from "@/lib/services/fuelService";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelFilterBar({
   filters,
@@ -12,6 +13,7 @@ export default function FuelFilterBar({
   onReset,
   className = ""
 }) {
+  const { t } = useTranslation('fuel');
   const [expanded, setExpanded] = useState(false);
   const states = getUSStates();
 
@@ -43,7 +45,7 @@ export default function FuelFilterBar({
             </div>
             <input
               type="text"
-              placeholder="Search by location, vehicle..."
+              placeholder={t('filterBar.searchPlaceholder')}
               value={filters.search || ''}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50 dark:!bg-gray-600 text-gray-900 dark:!text-white placeholder-gray-400 dark:placeholder-gray-300"
@@ -68,11 +70,11 @@ export default function FuelFilterBar({
             } rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600`}
           >
             <Filter size={16} className={`mr-2 ${hasActiveFilters() ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
-            {hasActiveFilters() ? `Filters (${
+            {hasActiveFilters() ? t('filterBar.filtersCount', { count:
               (filters.state ? 1 : 0) +
               (filters.vehicleId ? 1 : 0) +
               (filters.dateRange !== 'This Quarter' ? 1 : 0)
-            })` : 'Filters'}
+            }) : t('filterBar.filters')}
           </button>
 
           {/* Reset Button (Only shown when filters are active) */}
@@ -82,7 +84,7 @@ export default function FuelFilterBar({
               className="flex-shrink-0 inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               <RefreshCw size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-              Reset
+              {t('filterBar.reset')}
             </button>
           )}
         </div>
@@ -95,7 +97,7 @@ export default function FuelFilterBar({
             {/* State Filter */}
             <div>
               <label htmlFor="state" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <MapPin size={12} className="mr-1" /> State
+                <MapPin size={12} className="mr-1" /> {t('filterBar.state')}
               </label>
               <select
                 id="state"
@@ -103,7 +105,7 @@ export default function FuelFilterBar({
                 value={filters.state || ''}
                 onChange={(e) => setFilters({ ...filters, state: e.target.value })}
               >
-                <option value="">All States</option>
+                <option value="">{t('filterBar.allStates')}</option>
                 {states.map(state => (
                   <option key={state.code} value={state.code}>{state.code} - {state.name}</option>
                 ))}
@@ -113,7 +115,7 @@ export default function FuelFilterBar({
             {/* Date Range Filter */}
             <div>
               <label htmlFor="dateRange" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <Calendar size={12} className="mr-1" /> Date Range
+                <Calendar size={12} className="mr-1" /> {t('filterBar.dateRange')}
               </label>
               <select
                 id="dateRange"
@@ -121,10 +123,10 @@ export default function FuelFilterBar({
                 value={filters.dateRange || 'This Quarter'}
                 onChange={(e) => handleDateFilterChange(e.target.value)}
               >
-                <option value="All">All Time</option>
-                <option value="This Quarter">This Quarter</option>
-                <option value="Last Quarter">Last Quarter</option>
-                <option value="Custom">Custom Range</option>
+                <option value="All">{t('filterBar.allTime')}</option>
+                <option value="This Quarter">{t('filterBar.thisQuarter')}</option>
+                <option value="Last Quarter">{t('filterBar.lastQuarter')}</option>
+                <option value="Custom">{t('filterBar.customRange')}</option>
               </select>
             </div>
 
@@ -132,7 +134,7 @@ export default function FuelFilterBar({
             {vehicles.length > 0 && (
               <div>
                 <label htmlFor="vehicleId" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <Truck size={12} className="mr-1" /> Vehicle
+                  <Truck size={12} className="mr-1" /> {t('filterBar.vehicle')}
                 </label>
                 <select
                   id="vehicleId"
@@ -140,7 +142,7 @@ export default function FuelFilterBar({
                   value={filters.vehicleId || ''}
                   onChange={(e) => setFilters({ ...filters, vehicleId: e.target.value })}
                 >
-                  <option value="">All Vehicles</option>
+                  <option value="">{t('filterBar.allVehicles')}</option>
                   {vehicles.map((vehicle) => (
                     <option key={vehicle.id} value={vehicle.id}>
                       {vehicle.name}{vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}
@@ -156,7 +158,7 @@ export default function FuelFilterBar({
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startDate" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Start Date
+                  {t('filterBar.startDate')}
                 </label>
                 <input
                   type="date"
@@ -168,7 +170,7 @@ export default function FuelFilterBar({
               </div>
               <div>
                 <label htmlFor="endDate" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  End Date
+                  {t('filterBar.endDate')}
                 </label>
                 <input
                   type="date"
@@ -184,10 +186,10 @@ export default function FuelFilterBar({
           {/* Active Filters Summary */}
           {hasActiveFilters() && (
             <div className="mt-3 flex flex-wrap items-center">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2">Active filters:</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2">{t('filterBar.activeFilters')}</span>
               {filters.state && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  State: {states.find(s => s.code === filters.state)?.name || filters.state}
+                  {t('filterBar.stateFilter')} {states.find(s => s.code === filters.state)?.name || filters.state}
                   <button
                     onClick={() => setFilters({ ...filters, state: '' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -198,7 +200,7 @@ export default function FuelFilterBar({
               )}
               {filters.vehicleId && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Vehicle: {(() => {
+                  {t('filterBar.vehicleFilter')} {(() => {
                     const vehicle = vehicles.find(v => v.id === filters.vehicleId);
                     return vehicle ? `${vehicle.name}${vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}` : filters.vehicleId;
                   })()}
@@ -212,7 +214,7 @@ export default function FuelFilterBar({
               )}
               {filters.dateRange !== 'This Quarter' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Date: {filters.dateRange === 'Custom' ? 'Custom Range' : filters.dateRange}
+                  {t('filterBar.dateFilter')} {filters.dateRange === 'Custom' ? t('filterBar.customRange') : filters.dateRange}
                   <button
                     onClick={() => setFilters({ ...filters, dateRange: 'This Quarter', startDate: '', endDate: '' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"

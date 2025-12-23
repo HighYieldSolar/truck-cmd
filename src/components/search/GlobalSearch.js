@@ -31,6 +31,7 @@ import {
   getEntityDisplayName,
   SEARCH_ENTITY_TYPES
 } from "@/lib/services/searchService";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Icon mapping for entity types
 const ENTITY_ICONS = {
@@ -63,37 +64,38 @@ const STATUS_COLORS = {
   'Expired': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
 };
 
-// Quick links configuration
+// Quick links configuration with translation keys
 const QUICK_LINKS = [
   {
-    category: 'Create',
+    categoryKey: 'create',
     items: [
-      { name: 'New Load', href: '/dashboard/dispatching', icon: Truck, description: 'Add a new load' },
-      { name: 'New Invoice', href: '/dashboard/invoices/new', icon: FileText, description: 'Create an invoice' },
-      { name: 'Add Expense', href: '/dashboard/expenses', icon: Wallet, description: 'Record an expense' },
-      { name: 'Add Customer', href: '/dashboard/customers', icon: Users, description: 'Add a new customer' },
+      { nameKey: 'newLoad', descKey: 'newLoadDesc', href: '/dashboard/dispatching', icon: Truck },
+      { nameKey: 'newInvoice', descKey: 'newInvoiceDesc', href: '/dashboard/invoices/new', icon: FileText },
+      { nameKey: 'addExpense', descKey: 'addExpenseDesc', href: '/dashboard/expenses', icon: Wallet },
+      { nameKey: 'addCustomer', descKey: 'addCustomerDesc', href: '/dashboard/customers', icon: Users },
     ]
   },
   {
-    category: 'Navigate',
+    categoryKey: 'navigate',
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: BarChart3, description: 'Overview & stats' },
-      { name: 'IFTA Calculator', href: '/dashboard/ifta', icon: Calculator, description: 'Calculate IFTA taxes' },
-      { name: 'State Mileage', href: '/dashboard/mileage', icon: MapPin, description: 'Track miles by state' },
-      { name: 'Fuel Tracker', href: '/dashboard/fuel', icon: Fuel, description: 'Log fuel purchases' },
+      { nameKey: 'dashboard', descKey: 'dashboardDesc', href: '/dashboard', icon: BarChart3 },
+      { nameKey: 'iftaCalculator', descKey: 'iftaCalculatorDesc', href: '/dashboard/ifta', icon: Calculator },
+      { nameKey: 'stateMileage', descKey: 'stateMileageDesc', href: '/dashboard/mileage', icon: MapPin },
+      { nameKey: 'fuelTracker', descKey: 'fuelTrackerDesc', href: '/dashboard/fuel', icon: Fuel },
     ]
   },
   {
-    category: 'Manage',
+    categoryKey: 'manage',
     items: [
-      { name: 'Fleet', href: '/dashboard/fleet', icon: Package, description: 'Trucks & drivers' },
-      { name: 'Compliance', href: '/dashboard/compliance', icon: CheckCircle, description: 'Documents & expiry' },
-      { name: 'Settings', href: '/dashboard/settings', icon: Settings, description: 'Account settings' },
+      { nameKey: 'fleet', descKey: 'fleetDesc', href: '/dashboard/fleet', icon: Package },
+      { nameKey: 'compliance', descKey: 'complianceDesc', href: '/dashboard/compliance', icon: CheckCircle },
+      { nameKey: 'settings', descKey: 'settingsDesc', href: '/dashboard/settings', icon: Settings },
     ]
   }
 ];
 
 export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
+  const { t } = useTranslation('common');
   const [query, setQuery] = useState("");
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(false);
@@ -197,7 +199,7 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setError("Please log in to search");
+        setError(t('globalSearch.pleaseLogIn'));
         setLoading(false);
         return;
       }
@@ -223,7 +225,7 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
       setResults(data.results || {});
 
       if (data.totalCount === 0) {
-        setError("No results found");
+        setError(t('globalSearch.noResults'));
       }
     } catch (err) {
       setError(err.message || "Search failed");
@@ -310,7 +312,7 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search loads, invoices, customers..."
+              placeholder={t('globalSearch.placeholder')}
               className="flex-1 ml-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none text-base"
               autoComplete="off"
             />
@@ -349,13 +351,13 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
                         <Clock size={14} className="mr-1.5" />
-                        Recent Searches
+                        {t('globalSearch.recentSearches')}
                       </h3>
                       <button
                         onClick={handleClearRecent}
                         className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       >
-                        Clear
+                        {t('globalSearch.clear')}
                       </button>
                     </div>
                     <div className="space-y-1">
@@ -376,19 +378,19 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
                 {/* Quick Links */}
                 <div className="space-y-4">
                   {QUICK_LINKS.map((section) => (
-                    <div key={section.category}>
+                    <div key={section.categoryKey}>
                       <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center">
-                        {section.category === 'Create' && <Plus size={14} className="mr-1.5" />}
-                        {section.category === 'Navigate' && <ArrowRight size={14} className="mr-1.5" />}
-                        {section.category === 'Manage' && <Settings size={14} className="mr-1.5" />}
-                        {section.category}
+                        {section.categoryKey === 'create' && <Plus size={14} className="mr-1.5" />}
+                        {section.categoryKey === 'navigate' && <ArrowRight size={14} className="mr-1.5" />}
+                        {section.categoryKey === 'manage' && <Settings size={14} className="mr-1.5" />}
+                        {t(`globalSearch.categories.${section.categoryKey}`)}
                       </h3>
                       <div className="grid grid-cols-2 gap-2">
                         {section.items.map((item) => {
                           const Icon = item.icon;
                           return (
                             <button
-                              key={item.name}
+                              key={item.nameKey}
                               onClick={() => handleQuickLinkClick(item.href)}
                               className="flex items-center px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-left group transition-colors"
                             >
@@ -396,8 +398,8 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
                                 <Icon size={16} className="text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
                               </div>
                               <div className="min-w-0">
-                                <div className="font-medium truncate">{item.name}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{item.description}</div>
+                                <div className="font-medium truncate">{t(`globalSearch.quickLinks.${item.nameKey}`)}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{t(`globalSearch.quickLinks.${item.descKey}`)}</div>
                               </div>
                             </button>
                           );
@@ -413,7 +415,7 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
             {query && query.trim().length < 2 && (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                 <Search size={24} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Type at least 2 characters to search</p>
+                <p className="text-sm">{t('globalSearch.typeAtLeast')}</p>
               </div>
             )}
 
@@ -497,20 +499,20 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
                 <span className="flex items-center">
                   <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[10px] mr-1">↑</kbd>
                   <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[10px] mr-1">↓</kbd>
-                  Navigate
+                  {t('globalSearch.keyboard.navigate')}
                 </span>
                 <span className="flex items-center">
                   <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[10px] mr-1">Enter</kbd>
-                  Select
+                  {t('globalSearch.keyboard.select')}
                 </span>
                 <span className="flex items-center">
                   <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[10px] mr-1">Esc</kbd>
-                  Close
+                  {t('globalSearch.keyboard.close')}
                 </span>
               </div>
               {totalResults > 0 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {totalResults} result{totalResults !== 1 ? 's' : ''}
+                  {totalResults} {totalResults !== 1 ? t('globalSearch.results') : t('globalSearch.result')}
                 </span>
               )}
             </div>
@@ -521,18 +523,3 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
   );
 }
 
-// Keyboard shortcut hook for opening search
-export function useGlobalSearchShortcut(callback) {
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Cmd+K (Mac) or Ctrl+K (Windows)
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        callback();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [callback]);
-}

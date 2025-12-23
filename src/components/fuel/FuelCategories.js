@@ -1,16 +1,19 @@
 // src/components/fuel/FuelCategories.js
 "use client";
 
-import { 
+import {
   MapPin,
   Tag
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
-export default function FuelCategories({ 
-  categories, 
+export default function FuelCategories({
+  categories,
   onCategorySelect,
   selectedCategory
 }) {
+  const { t } = useTranslation('fuel');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -35,7 +38,7 @@ export default function FuelCategories({
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <Tag size={36} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-        <p>No states found</p>
+        <p>{t('categoriesList.noStates')}</p>
       </div>
     );
   }
@@ -73,7 +76,7 @@ export default function FuelCategories({
         >
           <div className="flex items-center">
             <Tag size={16} className="text-blue-600 dark:text-blue-400" />
-            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">All States</span>
+            <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">{t('categoriesList.allStates')}</span>
           </div>
           <span className="text-xs font-medium px-2 py-1 bg-white dark:bg-gray-600 rounded-full text-gray-600 dark:text-gray-200 shadow-sm">
             {formatCurrency(Object.values(categories).reduce((sum, amount) => sum + amount, 0))}

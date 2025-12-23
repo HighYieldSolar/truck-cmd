@@ -1,0 +1,510 @@
+{
+  "title": "Configuración",
+  "subtitle": "Administre las preferencias de su cuenta",
+  "menu": {
+    "profile": "Perfil",
+    "appearance": "Apariencia",
+    "account": "Cuenta",
+    "privacy": "Privacidad",
+    "billing": "Facturación",
+    "notifications": "Notificaciones"
+  },
+  "descriptions": {
+    "profile": "Administre la configuración de su perfil",
+    "appearance": "Administre la configuración de apariencia",
+    "account": "Administre la configuración de su cuenta",
+    "privacy": "Administre la configuración de privacidad",
+    "billing": "Administre la configuración de facturación",
+    "notifications": "Administre la configuración de notificaciones"
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Administre la configuración de su perfil",
+    "profilePicture": "Foto de Perfil",
+    "uploadPhoto": "Subir Foto",
+    "removePhoto": "Quitar foto",
+    "photoHelp": "Suba una foto clara para que su equipo lo reconozca",
+    "personalInfo": "Información Personal",
+    "businessAddress": "Dirección Comercial",
+    "addressNote": "Esta dirección aparecerá en sus facturas",
+    "fields": {
+      "fullName": "Nombre completo",
+      "preferredName": "¿Cómo debemos llamarle?",
+      "phone": "Número de Teléfono",
+      "companyName": "Nombre de la Empresa",
+      "jobFunction": "¿Qué describe mejor su trabajo?",
+      "personalPreferences": "¿Alguna nota o preferencia adicional?",
+      "preferencesHelp": "Comparta cualquier cosa que nos ayude a servirle mejor.",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "state": "Estado",
+      "zip": "Código Postal"
+    },
+    "placeholders": {
+      "fullName": "Su nombre completo",
+      "preferredName": "Su nombre preferido",
+      "phone": "(555) 555-5555",
+      "companyName": "Nombre de su empresa",
+      "address": "123 Calle Principal",
+      "city": "Ciudad",
+      "zip": "12345",
+      "preferences": "ej. horarios preferidos de comunicación, requisitos especiales, etc."
+    },
+    "jobFunctions": {
+      "select": "Seleccione su función de trabajo",
+      "ownerOperator": "Propietario Operador",
+      "dispatcher": "Despachador",
+      "fleetManager": "Gerente de Flota",
+      "administrative": "Personal Administrativo",
+      "driver": "Conductor",
+      "other": "Otro"
+    },
+    "selectState": "Seleccionar Estado",
+    "required": "Obligatorio",
+    "requiredForInvoices": "Requerido para facturas",
+    "completeProfile": {
+      "title": "Complete Su Perfil Comercial",
+      "description": "Agregue su número de teléfono y nombre de empresa para desbloquear la facturación profesional. Su dirección comercial aparecerá en las facturas que envíe a los clientes.",
+      "phoneNumber": "Número de teléfono",
+      "companyName": "Nombre de empresa"
+    },
+    "messages": {
+      "loading": "Cargando su perfil...",
+      "saving": "Guardando...",
+      "profileUpdated": "¡Perfil actualizado exitosamente!",
+      "profilePictureUpdated": "¡Foto de perfil actualizada exitosamente!",
+      "profilePictureRemoved": "¡Foto de perfil eliminada exitosamente!",
+      "failedToLoad": "Error al cargar su información de perfil. Por favor intente de nuevo más tarde.",
+      "failedToUpdate": "Error al actualizar perfil",
+      "failedToUpload": "Error al subir imagen de perfil. Por favor intente de nuevo.",
+      "failedToRemove": "Error al eliminar imagen de perfil. Por favor intente de nuevo.",
+      "invalidImage": "Por favor suba un archivo de imagen válido (JPEG, PNG, GIF o WebP)",
+      "imageTooLarge": "El archivo de imagen debe ser menor a 5MB"
+    }
+  },
+  "appearance": {
+    "title": "Apariencia",
+    "subtitle": "Personalice cómo se ve la aplicación",
+    "loading": "Cargando configuración de apariencia...",
+    "theme": "Tema",
+    "themePreference": "Preferencia de Tema",
+    "themeDescription": "Elija entre tema claro y oscuro para su panel",
+    "themes": {
+      "light": "Modo Claro",
+      "dark": "Modo Oscuro",
+      "system": "Sistema"
+    },
+    "colorScheme": "Esquema de Color",
+    "colorSchemeDescription": "Elija su color de acento",
+    "fontSize": "Tamaño de Fuente",
+    "fontSizeDescription": "Ajuste el tamaño del texto",
+    "fontSizes": {
+      "small": "Pequeño",
+      "medium": "Mediano",
+      "large": "Grande"
+    },
+    "compactMode": "Modo Compacto",
+    "compactModeDescription": "Reducir espaciado para un diseño más denso",
+    "saveTheme": "Guardar Preferencia de Tema",
+    "sidebarNavigation": "Navegación de Barra Lateral",
+    "sidebarDescription": "Personalice qué elementos aparecen en su barra lateral y su orden de visualización.",
+    "sidebarTip": "Arrastre elementos para reordenar, use botones de flecha o alterne la visibilidad. En móvil, mantenga presionado el ícono de agarre.",
+    "menuItem": "Elemento del Menú",
+    "reorder": "Reordenar",
+    "visible": "Visible",
+    "alwaysVisible": "Siempre visible",
+    "moveUp": "Mover arriba",
+    "moveDown": "Mover abajo",
+    "clickToHide": "Clic para ocultar de la barra lateral",
+    "clickToShow": "Clic para mostrar en la barra lateral",
+    "sidebarTipBox": "Los elementos ocultos aún son accesibles mediante URL directa. Los cambios surten efecto inmediatamente después de guardar.",
+    "unsavedChanges": "Tiene cambios sin guardar. ¡No olvide guardar!",
+    "resetToDefault": "Restablecer a Predeterminado",
+    "saveSidebarSettings": "Guardar Configuración de Barra Lateral",
+    "messages": {
+      "themeSuccess": "¡Preferencia de tema guardada exitosamente!",
+      "sidebarSuccess": "¡Preferencias de barra lateral guardadas exitosamente!",
+      "sidebarResetSuccess": "¡Barra lateral restablecida a configuración predeterminada!",
+      "themeFailed": "Error al actualizar configuración de apariencia",
+      "sidebarFailed": "Error al guardar configuración de barra lateral",
+      "sidebarResetFailed": "Error al restablecer barra lateral"
+    }
+  },
+  "account": {
+    "title": "Cuenta",
+    "subtitle": "Administre la configuración de su cuenta",
+    "loading": "Cargando configuración de cuenta...",
+    "accountInfo": "Información de la Cuenta",
+    "email": "Correo Electrónico",
+    "emailDescription": "La dirección de correo de su cuenta",
+    "changeEmail": "Cambiar Correo",
+    "currentEmail": "Su dirección de correo actual es",
+    "clickToChangeEmail": "Haga clic en el botón para cambiar su dirección de correo.",
+    "newEmailAddress": "Nueva Dirección de Correo",
+    "enterNewEmail": "Ingrese su nueva dirección de correo",
+    "verifyNewEmail": "Deberá verificar su nueva dirección de correo antes de que el cambio surta efecto.",
+    "sendConfirmation": "Enviar Correo de Confirmación",
+    "sendingConfirmation": "Enviando Confirmación...",
+    "confirmationSent": "Correo de Confirmación Enviado",
+    "checkInbox": "Hemos enviado un enlace de confirmación a",
+    "checkInboxInstructions": "Por favor revise su bandeja de entrada y haga clic en el enlace para completar el cambio de correo.",
+    "accountStatus": "Estado de la Cuenta",
+    "verifiedAccount": "Cuenta Verificada",
+    "unverifiedAccount": "Cuenta No Verificada",
+    "password": "Contraseña",
+    "passwordDescription": "Actualice su contraseña",
+    "changePassword": "Cambiar Contraseña",
+    "currentPassword": "Contraseña Actual",
+    "newPassword": "Nueva Contraseña",
+    "confirmPassword": "Confirmar Nueva Contraseña",
+    "passwordMinLength": "La contraseña debe tener al menos 8 caracteres.",
+    "updatePassword": "Actualizar Contraseña",
+    "updatingPassword": "Actualizando...",
+    "twoFactor": "Autenticación de Dos Factores",
+    "twoFactorDescription": "Agregue una capa extra de seguridad a su cuenta",
+    "enable2FA": "Habilitar 2FA",
+    "disable2FA": "Deshabilitar 2FA",
+    "sessions": "Sesiones Activas",
+    "sessionsDescription": "Administre sus sesiones activas",
+    "signOut": "Cerrar Sesión",
+    "signOutDescription": "Cerrar sesión de su sesión actual en este dispositivo.",
+    "signOutAll": "Cerrar sesión en todos los dispositivos",
+    "deleteAccount": "Eliminar Cuenta",
+    "deleteYourAccount": "Eliminar Su Cuenta",
+    "deleteAccountDescription": "Eliminar permanentemente su cuenta y todos los datos asociados. Esta acción no se puede deshacer.",
+    "reviewPolicies": "Revise nuestros",
+    "termsOfService": "Términos de Servicio",
+    "and": "y",
+    "privacyPolicy": "Política de Privacidad",
+    "policyInfo": "para información sobre retención de datos y sus derechos.",
+    "deleteWarning": "Esta acción no se puede deshacer. Todos sus datos serán eliminados permanentemente. Por favor escriba",
+    "typeToConfirm": "eliminar mi cuenta",
+    "toConfirm": "para confirmar.",
+    "confirmDeletePlaceholder": "Escriba 'eliminar mi cuenta' para confirmar",
+    "deleting": "Eliminando...",
+    "permanentlyDelete": "Eliminar Cuenta Permanentemente",
+    "messages": {
+      "loadFailed": "Error al cargar su información de cuenta. Por favor intente de nuevo más tarde.",
+      "enterCurrentPassword": "Por favor ingrese su contraseña actual.",
+      "passwordsMismatch": "Las nuevas contraseñas no coinciden.",
+      "passwordTooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+      "incorrectPassword": "La contraseña actual es incorrecta.",
+      "passwordUpdated": "¡Contraseña actualizada exitosamente!",
+      "passwordUpdateFailed": "Error al actualizar contraseña",
+      "emailConfirmationSent": "Se ha enviado un correo de confirmación a su nueva dirección de correo. Por favor haga clic en el enlace en ese correo para completar el cambio. También puede necesitar confirmar en su correo anterior.",
+      "invalidEmail": "Por favor ingrese una dirección de correo válida.",
+      "sameEmail": "El nuevo correo debe ser diferente a su correo actual.",
+      "emailChangeFailed": "Error al cambiar correo",
+      "emailRateLimit": "Demasiadas solicitudes. Por favor espere unos minutos e intente de nuevo.",
+      "emailInUse": "Esta dirección de correo ya está en uso por otra cuenta.",
+      "deleteConfirmRequired": "Por favor escriba 'eliminar mi cuenta' para confirmar.",
+      "sessionExpired": "Sesión expirada. Por favor inicie sesión de nuevo.",
+      "deleteAccountFailed": "Error al eliminar cuenta",
+      "logoutFailed": "Error al cerrar sesión"
+    }
+  },
+  "privacy": {
+    "title": "Privacidad",
+    "subtitle": "Administre la configuración de privacidad",
+    "loading": "Cargando configuración de privacidad...",
+    "yourPrivacy": "Su Privacidad",
+    "howWeProtect": "Cómo protegemos sus datos",
+    "protectionList": {
+      "encrypted": "Sus datos comerciales están encriptados y almacenados de forma segura",
+      "noSell": "Nunca vendemos su información personal a terceros",
+      "essentialCookies": "Solo usamos cookies esenciales necesarias para que la aplicación funcione",
+      "stripePayments": "El procesamiento de pagos es manejado de forma segura por Stripe"
+    },
+    "emailPreferences": "Preferencias de Correo",
+    "emailPreferencesDescription": "Elija qué correos desea recibir de Truck Command. Los correos transaccionales (facturas, restablecimiento de contraseña, alertas de seguridad) siempre serán enviados.",
+    "productUpdates": "Actualizaciones y noticias del producto",
+    "productUpdatesDescription": "Reciba correos sobre nuevas funciones, mejoras y consejos para usar Truck Command",
+    "promotionalEmails": "Correos promocionales",
+    "promotionalEmailsDescription": "Reciba correos ocasionales sobre ofertas especiales y promociones",
+    "saving": "Guardando...",
+    "savePreferences": "Guardar Preferencias",
+    "dataRights": "Sus Derechos de Datos",
+    "dataRightsDescription": "Bajo la Ley de Privacidad del Consumidor de California (CCPA), tiene derecho a acceder, descargar y eliminar sus datos personales.",
+    "downloadData": "Descargar sus datos",
+    "downloadDataDescription": "Obtenga una copia de todos sus datos incluyendo cargas, facturas, clientes, gastos y más.",
+    "exportData": "Exportar Datos",
+    "deleteAccount": "Eliminar su cuenta",
+    "deleteAccountDescription": "Eliminar permanentemente su cuenta y todos los datos asociados de nuestros sistemas.",
+    "goToAccountSettings": "Ir a Configuración de Cuenta",
+    "legalDocuments": "Documentos Legales",
+    "legalDocumentsDescription": "Revise nuestros documentos legales para entender cómo recopilamos, usamos y protegemos sus datos.",
+    "privacyPolicy": "Política de Privacidad",
+    "cookiePolicy": "Política de Cookies",
+    "termsOfService": "Términos de Servicio",
+    "acceptableUsePolicy": "Política de Uso Aceptable",
+    "privacyQuestions": "¿Preguntas sobre Privacidad?",
+    "privacyQuestionsDescription": "Si tiene alguna pregunta sobre su privacidad o cómo manejamos sus datos, por favor contáctenos.",
+    "exportModal": {
+      "title": "Exportar Sus Datos",
+      "exportFormat": "Formato de Exportación",
+      "encrypted": "Encriptado (Recomendado)",
+      "encryptedDescription": "Protegido con contraseña con encriptación AES-256",
+      "plainJson": "JSON Simple",
+      "plainJsonDescription": "Sin encriptar, legible por cualquiera con el archivo",
+      "createPassword": "Crear una Contraseña",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "confirmPassword": "Confirmar Contraseña",
+      "confirmPlaceholder": "Reingrese la contraseña",
+      "passwordWarning": "Guarde esta contraseña de forma segura. La necesitará para descifrar sus datos. No podemos recuperar contraseñas perdidas.",
+      "plainWarning": "Advertencia: Los archivos JSON simples contienen datos comerciales sensibles que cualquiera puede leer. Solo use esto si comprende los riesgos.",
+      "exporting": "Exportando...",
+      "export": "Exportar"
+    },
+    "messages": {
+      "loadFailed": "Error al cargar su configuración de privacidad. Por favor intente de nuevo más tarde.",
+      "updateSuccess": "¡Configuración de privacidad actualizada exitosamente!",
+      "updateFailed": "Error al actualizar configuración de privacidad",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+      "passwordsMismatch": "Las contraseñas no coinciden.",
+      "exportEncryptedSuccess": "Sus datos encriptados han sido exportados. Guarde su contraseña de forma segura - la necesitará para descifrar el archivo.",
+      "exportPlainSuccess": "¡Sus datos han sido exportados exitosamente!",
+      "exportFailed": "Error al exportar datos. Por favor intente de nuevo o contacte soporte."
+    }
+  },
+  "notifications": {
+    "title": "Preferencias de Notificación",
+    "subtitle": "Administre cómo y cuándo recibe notificaciones",
+    "saveChanges": "Guardar Cambios",
+    "deliveryChannels": {
+      "title": "Canales de Entrega",
+      "description": "Habilite o deshabilite los canales de notificación globalmente"
+    },
+    "channels": {
+      "email": "Notificaciones por Correo",
+      "emailDescription": "Reciba notificaciones por correo electrónico",
+      "inApp": "Notificaciones en la Aplicación",
+      "inAppDescription": "Mostrar notificaciones en el panel de control",
+      "sms": "Notificaciones por SMS",
+      "smsDescription": "Reciba alertas críticas por mensaje de texto"
+    },
+    "categories": {
+      "title": "Categorías de Notificación",
+      "description": "Personalice las notificaciones para cada categoría",
+      "compliance": {
+        "name": "Cumplimiento y Documentos",
+        "description": "Alertas de vencimiento de documentos, fechas límite de cumplimiento y recordatorios de certificación"
+      },
+      "drivers": {
+        "name": "Alertas de Conductores",
+        "description": "Vencimientos de licencias de conducir, renovaciones de tarjetas médicas y actualizaciones relacionadas con conductores"
+      },
+      "loads": {
+        "name": "Actualizaciones de Cargas",
+        "description": "Asignaciones de cargas, cambios de estado y notificaciones de entrega"
+      },
+      "ifta": {
+        "name": "IFTA y Fechas de Impuestos",
+        "description": "Fechas límite de presentación IFTA, recordatorios trimestrales y alertas relacionadas con impuestos"
+      },
+      "maintenance": {
+        "name": "Recordatorios de Mantenimiento",
+        "description": "Programas de mantenimiento de vehículos, recordatorios de servicio y alertas de equipos"
+      },
+      "fuel": {
+        "name": "Alertas de Combustible",
+        "description": "Recordatorios de compra de combustible y notificaciones relacionadas con combustible"
+      },
+      "billing": {
+        "name": "Facturación y Pagos",
+        "description": "Recordatorios de facturas, pagos recibidos y actualizaciones de facturación"
+      },
+      "system": {
+        "name": "Alertas del Sistema",
+        "description": "Errores del sistema, actualizaciones importantes y recordatorios generales"
+      }
+    },
+    "channelLabels": {
+      "email": "Correo",
+      "app": "App",
+      "sms": "SMS"
+    },
+    "quietHours": {
+      "title": "Horas Silenciosas",
+      "description": "Pausar notificaciones no críticas durante horas específicas",
+      "enable": "Habilitar Horas Silenciosas",
+      "enableDescription": "Solo se entregarán notificaciones críticas durante las horas silenciosas",
+      "startTime": "Hora de Inicio",
+      "endTime": "Hora de Fin"
+    },
+    "digest": {
+      "title": "Resumen por Correo",
+      "description": "Elija con qué frecuencia recibe resúmenes de notificaciones por correo",
+      "instant": "Instantáneo",
+      "instantDescription": "Reciba correos al momento",
+      "daily": "Resumen Diario",
+      "dailyDescription": "Un correo por día",
+      "weekly": "Resumen Semanal",
+      "weeklyDescription": "Un correo por semana"
+    },
+    "test": {
+      "title": "Probar Notificaciones",
+      "description": "Envíe una notificación de prueba para verificar que su configuración funciona correctamente",
+      "testEmail": "Probar Correo",
+      "testSMS": "Probar SMS",
+      "sendTest": "Enviar Prueba",
+      "noEmailFound": "No se encontró correo",
+      "noPhoneFound": "No se encontró teléfono",
+      "tip": "Si no recibe notificaciones de prueba, revise su carpeta de spam o verifique su información de contacto en",
+      "profileSettings": "Configuración de Perfil"
+    },
+    "upgrade": {
+      "premium": "Premium",
+      "fleet": "Flota",
+      "upgrade": "Mejorar",
+      "upgradeToPremium": "Mejorar a Premium",
+      "upgradeToFleet": "Mejorar a Flota",
+      "quietHoursFleet": "Configure horas silenciosas para pausar notificaciones fuera del horario",
+      "digestPremium": "Controle la frecuencia de correos con resúmenes diarios o semanales"
+    },
+    "messages": {
+      "loginRequired": "Por favor inicie sesión para guardar las preferencias.",
+      "savedSuccess": "Preferencias de notificación guardadas exitosamente.",
+      "tableSetup": "La función de preferencias de notificación se está configurando. Por favor intente más tarde.",
+      "noEmail": "No se encontró dirección de correo electrónico para su cuenta.",
+      "noPhone": "No se encontró número de teléfono. Por favor agregue su número de teléfono en Configuración de Perfil primero.",
+      "testEmailSuccess": "¡Correo de prueba enviado exitosamente! Revise su bandeja de entrada.",
+      "testEmailFailed": "Error al enviar correo de prueba. El servicio de correo puede no estar configurado.",
+      "testEmailError": "Error al enviar correo de prueba. Por favor intente de nuevo.",
+      "testSMSSuccess": "¡SMS de prueba enviado exitosamente! Revise su teléfono.",
+      "testSMSFailed": "Error al enviar SMS de prueba. El servicio de SMS puede no estar configurado.",
+      "testSMSError": "Error al enviar SMS de prueba. Por favor intente de nuevo."
+    }
+  },
+  "viewAllPlans": "Ver Todos los Planes",
+  "sidebar": {
+    "title": "Personalización de Barra Lateral",
+    "subtitle": "Personalice la barra lateral de su panel",
+    "description": "Arrastre y suelte para reordenar. Alterne la visibilidad para cada elemento del menú.",
+    "visible": "Visible",
+    "hidden": "Oculto",
+    "reset": "Restablecer a Predeterminado"
+  },
+  "billing": {
+    "title": "Facturación",
+    "subtitle": "Administre su facturación y suscripción",
+    "loading": "Cargando información de facturación...",
+    "subscription": {
+      "title": "Suscripción Actual",
+      "freeTrial": "Prueba Gratuita",
+      "fullAccess": "Acceso completo a funciones Básicas",
+      "daysLeft": "días restantes",
+      "upgradePrompt": "Mejore para conservar sus datos y desbloquear más funciones",
+      "noActivePlan": "Sin Plan Activo",
+      "subscribePrompt": "Suscríbase para acceder a todas las funciones"
+    },
+    "status": {
+      "active": "Activo",
+      "trial": "Prueba",
+      "canceled": "Cancelado",
+      "inactive": "Inactivo",
+      "freeTrial": "Prueba Gratuita"
+    },
+    "plans": {
+      "basic": {
+        "name": "Básico",
+        "description": "Para propietarios-operadores que están comenzando",
+        "limits": "1 Camión • 1 Conductor • 50 Cargas/mes"
+      },
+      "premium": {
+        "name": "Premium",
+        "description": "Para propietarios-operadores en crecimiento",
+        "limits": "3 Camiones • 3 Conductores • Cargas Ilimitadas",
+        "popular": "Popular"
+      },
+      "fleet": {
+        "name": "Flota",
+        "description": "Para flotas pequeñas y medianas",
+        "limits": "12 Camiones • 12 Conductores • 6 Usuarios de Equipo"
+      }
+    },
+    "pricing": {
+      "perMonth": "/mes",
+      "save": "Ahorre",
+      "perYear": "/año",
+      "billedAnnually": "Facturado anualmente a"
+    },
+    "actions": {
+      "upgrade": "Mejorar",
+      "changePlan": "Cambiar Plan",
+      "cancelSubscription": "Cancelar Suscripción",
+      "keepMyPlan": "Mantener Mi Plan",
+      "reactivating": "Reactivando...",
+      "viewPlans": "Ver Planes"
+    },
+    "scheduledChanges": {
+      "planChange": "Cambio de plan programado",
+      "billingChange": "Cambio de facturación programado",
+      "planWillChange": "Su plan cambiará a",
+      "billingWillSwitch": "Su facturación cambiará a",
+      "on": "el",
+      "changePlanLink": "Cambiar plan"
+    },
+    "nextBilling": "Próxima facturación",
+    "endDate": "Su suscripción terminará el",
+    "keepPlanPrompt": "Haga clic en \"Mantener Mi Plan\" arriba para continuar su suscripción",
+    "includedFeatures": "Funciones incluidas",
+    "compareAllPlans": "Comparar todos los planes",
+    "nextPeriod": "próximo período",
+    "paymentMethod": {
+      "title": "Método de Pago",
+      "stripeLink": "Stripe Link",
+      "expressCheckout": "Pago Rápido",
+      "connected": "Conectado",
+      "creditCard": "Tarjeta de Crédito",
+      "expires": "Vence",
+      "verified": "Verificado",
+      "card": "tarjeta",
+      "paymentOnFile": "Método de pago archivado",
+      "update": "Actualizar",
+      "noPaymentRequired": "No se requiere método de pago aún",
+      "noPaymentOnFile": "No hay método de pago archivado",
+      "trialPaymentPrompt": "Se le pedirá proporcionar detalles de pago cuando su prueba termine en",
+      "days": "días",
+      "subscribePaymentPrompt": "Necesitará agregar un método de pago cuando se suscriba a un plan.",
+      "viewPlansAndPricing": "Ver Planes y Precios"
+    },
+    "history": {
+      "title": "Historial de Facturación",
+      "date": "Fecha",
+      "description": "Descripción",
+      "amount": "Monto",
+      "status": "Estado",
+      "invoice": "Factura",
+      "servicePeriod": "Período de servicio",
+      "showLess": "Mostrar menos",
+      "showAll": "Mostrar todas",
+      "invoices": "facturas",
+      "viewCompleteHistory": "Ver Historial Completo de Facturación",
+      "noHistoryYet": "Sin historial de facturación aún",
+      "historyPrompt": "Su historial de facturas aparecerá aquí una vez que se haya suscrito a un plan y realizado pagos.",
+      "upgradeYourPlan": "Mejore Su Plan",
+      "viewSubscriptionPlans": "Ver Planes de Suscripción"
+    },
+    "support": {
+      "title": "¿Necesita ayuda con facturación?",
+      "description": "Nuestro equipo de soporte está disponible para ayudarle con cualquier pregunta o inquietud de facturación.",
+      "contactSupport": "Contactar Soporte",
+      "billingFAQ": "Preguntas Frecuentes de Facturación",
+      "termsOfService": "Términos de Servicio",
+      "billingPortal": "Portal de Facturación"
+    },
+    "messages": {
+      "loadFailed": "Error al cargar su información de facturación. Por favor intente más tarde.",
+      "refreshSuccess": "Información de suscripción actualizada exitosamente",
+      "portalSignIn": "Por favor inicie sesión nuevamente para acceder al portal de facturación.",
+      "portalError": "No se puede abrir el portal de facturación. Por favor intente de nuevo.",
+      "cancelSignIn": "Por favor inicie sesión nuevamente para cancelar su suscripción.",
+      "cancelSuccess": "Su suscripción ha sido cancelada. Conservará acceso hasta el final de su período de facturación actual.",
+      "cancelFailed": "Error al cancelar suscripción. Por favor intente de nuevo.",
+      "reactivateSignIn": "Por favor inicie sesión nuevamente para reactivar su suscripción.",
+      "reactivateSuccess": "¡Su suscripción ha sido reactivada! Continuará siendo facturado normalmente.",
+      "reactivateFailed": "Error al reactivar suscripción. Por favor intente de nuevo.",
+      "paymentUpdated": "¡Método de pago actualizado exitosamente!"
+    }
+  }
+}

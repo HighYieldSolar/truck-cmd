@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { motion } from "framer-motion";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   generateInvoiceNumber,
   createInvoice,
@@ -34,7 +35,7 @@ const STORAGE_KEY = 'invoiceFormData';
 const STORAGE_STEP_KEY = 'invoiceFormStep';
 
 // Invoice Item Row Component
-const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove }) => {
+const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove, t }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     onChange(index, name, value);
@@ -45,21 +46,21 @@ const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove }) => {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
         <div className="md:col-span-5">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description
+            {t('form.description')}
           </label>
           <input
             type="text"
             name="description"
             value={item.description}
             onChange={handleInputChange}
-            placeholder="Service or item description"
+            placeholder={t('form.descriptionPlaceholder')}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             required
           />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Quantity
+            {t('form.quantity')}
           </label>
           <input
             type="number"
@@ -75,7 +76,7 @@ const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove }) => {
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Unit Price
+            {t('form.unitPrice')}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -96,7 +97,7 @@ const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove }) => {
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Total
+            {t('form.total')}
           </label>
           <div className="px-4 py-3 bg-gray-100 dark:bg-gray-600 rounded-lg text-base font-semibold text-gray-900 dark:text-gray-100">
             ${(item.quantity * item.unit_price).toFixed(2)}
@@ -120,6 +121,7 @@ const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove }) => {
 
 // Main Invoice Form Component
 export default function InvoiceForm({ userId, initialData = null, isDuplicating = false }) {
+  const { t } = useTranslation('invoices');
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -208,7 +210,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
           }));
         }
       } catch (err) {
-        setErrors({ submit: "Failed to initialize form. Please try again." });
+        setErrors({ submit: t('form.failedToInit') });
       }
     }
 
@@ -388,27 +390,27 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
     switch (step) {
       case 1:
         if (!invoice.customer.trim()) {
-          newErrors.customer = 'Customer is required';
+          newErrors.customer = t('form.validation.customerRequired');
         }
         // Validate email format if provided
         if (invoice.customer_email && invoice.customer_email.trim() && !emailRegex.test(invoice.customer_email.trim())) {
-          newErrors.customer_email = 'Please enter a valid email address';
+          newErrors.customer_email = t('form.validation.validEmail');
         }
         break;
       case 2:
         if (!invoice.invoice_date) {
-          newErrors.invoice_date = 'Invoice date is required';
+          newErrors.invoice_date = t('form.validation.invoiceDateRequired');
         }
         if (!invoice.due_date) {
-          newErrors.due_date = 'Due date is required';
+          newErrors.due_date = t('form.validation.dueDateRequired');
         }
         break;
       case 3:
         if (invoice.items.some(item => !item.description || item.quantity <= 0)) {
-          newErrors.items = 'All items must have a description and quantity greater than 0';
+          newErrors.items = t('form.validation.itemsRequired');
         }
         if (invoice.total <= 0) {
-          newErrors.items = 'Invoice must have at least one item with a value';
+          newErrors.items = t('form.validation.invoiceValueRequired');
         }
         break;
     }
@@ -461,16 +463,16 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
         router.push(`/dashboard/invoices/${result.id}`);
       }, 1000);
     } catch (err) {
-      setErrors({ submit: err.message || "Failed to save invoice. Please try again." });
+      setErrors({ submit: err.message || t('form.failedToSave') });
     } finally {
       setLoading(false);
     }
   };
 
   const steps = [
-    { number: 1, title: 'Customer', icon: User },
-    { number: 2, title: 'Details', icon: Calendar },
-    { number: 3, title: 'Items', icon: ClipboardList }
+    { number: 1, title: t('form.steps.customer'), icon: User },
+    { number: 2, title: t('form.steps.details'), icon: Calendar },
+    { number: 3, title: t('form.steps.items'), icon: ClipboardList }
   ];
 
   const renderStepContent = () => {
@@ -478,11 +480,11 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Customer Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('form.customerInfo')}</h3>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Customer <span className="text-red-500">*</span>
+                {t('form.customerRequired')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -495,7 +497,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   className={`block w-full pl-10 pr-4 py-3 border ${errors.customer ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                   required
                 >
-                  <option value="">Select a customer</option>
+                  <option value="">{t('form.selectCustomer')}</option>
                   {customers.map(customer => (
                     <option key={customer.id} value={customer.company_name}>
                       {customer.company_name}
@@ -511,7 +513,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Customer Email
+                  {t('form.customerEmail')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -533,7 +535,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  PO Number
+                  {t('form.poNumber')}
                 </label>
                 <input
                   type="text"
@@ -541,14 +543,14 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   value={invoice.po_number}
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Purchase Order Number (Optional)"
+                  placeholder={t('form.poNumberPlaceholder')}
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Customer Address
+                {t('form.customerAddress')}
               </label>
               <div className="relative">
                 <div className="absolute top-3 left-3 flex items-start pointer-events-none">
@@ -567,7 +569,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Related Load (Optional)
+                {t('form.relatedLoad')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -579,7 +581,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   onChange={handleLoadChange}
                   className="block w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="">Select a load to auto-fill</option>
+                  <option value="">{t('form.selectLoadToFill')}</option>
                   {loads.map(load => (
                     <option key={load.id} value={load.id}>
                       Load #{load.loadNumber} - {load.origin} to {load.destination}
@@ -588,7 +590,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                 </select>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Selecting a load will automatically add it as a line item
+                {t('form.selectingLoadHint')}
               </p>
             </div>
           </div>
@@ -597,12 +599,12 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
       case 2:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Invoice Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('form.invoiceDetails')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Invoice Number
+                  {t('form.invoiceNumber')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -621,7 +623,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
+                  {t('form.status')}
                 </label>
                 <select
                   name="status"
@@ -629,10 +631,10 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Draft">Draft</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Sent">Sent</option>
-                  <option value="Paid">Paid</option>
+                  <option value="Draft">{t('form.statusDraft')}</option>
+                  <option value="Pending">{t('form.statusPending')}</option>
+                  <option value="Sent">{t('form.statusSent')}</option>
+                  <option value="Paid">{t('form.statusPaid')}</option>
                 </select>
               </div>
             </div>
@@ -640,7 +642,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Invoice Date <span className="text-red-500">*</span>
+                  {t('form.invoiceDate')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -662,7 +664,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Due Date <span className="text-red-500">*</span>
+                  {t('form.dueDate')} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -686,7 +688,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Payment Terms
+                  {t('form.paymentTerms')}
                 </label>
                 <select
                   name="payment_terms"
@@ -694,17 +696,17 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   onChange={handleInputChange}
                   className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="Due on Receipt">Due on Receipt</option>
-                  <option value="Net 7">Net 7</option>
-                  <option value="Net 15">Net 15</option>
-                  <option value="Net 30">Net 30</option>
-                  <option value="Net 60">Net 60</option>
+                  <option value="Due on Receipt">{t('form.dueOnReceipt')}</option>
+                  <option value="Net 7">{t('form.net7')}</option>
+                  <option value="Net 15">{t('form.net15')}</option>
+                  <option value="Net 30">{t('form.net30')}</option>
+                  <option value="Net 60">{t('form.net60')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tax Rate (%)
+                  {t('form.taxRate')}
                 </label>
                 <input
                   type="number"
@@ -720,7 +722,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Notes (Optional)
+                {t('form.notesOptional')}
               </label>
               <textarea
                 name="notes"
@@ -728,7 +730,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                 onChange={handleInputChange}
                 rows="3"
                 className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="Additional notes for the customer..."
+                placeholder={t('form.notesPlaceholder')}
               />
             </div>
           </div>
@@ -738,14 +740,14 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Line Items</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('form.lineItems')}</h3>
               <button
                 type="button"
                 onClick={handleAddItem}
                 className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
               >
                 <Plus size={18} className="mr-1" />
-                Add Item
+                {t('form.addItem')}
               </button>
             </div>
 
@@ -767,6 +769,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   onChange={handleItemChange}
                   onRemove={handleRemoveItem}
                   canRemove={invoice.items.length > 1}
+                  t={t}
                 />
               ))}
             </div>
@@ -775,15 +778,15 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.subtotal')}</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">${invoice.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Tax ({invoice.tax_rate}%):</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('form.tax', { rate: invoice.tax_rate })}</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">${invoice.tax_amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg pt-2 border-t border-gray-200 dark:border-gray-600">
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{t('form.total')}:</span>
                   <span className="font-bold text-blue-600 dark:text-blue-400">${invoice.total.toFixed(2)}</span>
                 </div>
               </div>
@@ -792,7 +795,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             {/* Terms */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Terms & Conditions
+                {t('form.termsConditions')}
               </label>
               <textarea
                 name="terms"
@@ -807,31 +810,31 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-3 flex items-center">
                 <CheckCircle size={18} className="mr-2" />
-                Review Invoice Summary
+                {t('form.reviewSummary')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Invoice #:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.invoiceHash')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">{invoice.invoice_number}</span>
                 </div>
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Customer:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.customerLabel')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">{invoice.customer}</span>
                 </div>
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Invoice Date:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.invoiceDateLabel')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">{invoice.invoice_date}</span>
                 </div>
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Due Date:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.dueDateLabel')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">{invoice.due_date}</span>
                 </div>
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Status:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.statusLabel')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">{invoice.status}</span>
                 </div>
                 <div>
-                  <span className="text-blue-700 dark:text-blue-300">Total:</span>
+                  <span className="text-blue-700 dark:text-blue-300">{t('form.totalLabel')}</span>
                   <span className="ml-2 font-medium text-blue-900 dark:text-blue-100">${invoice.total.toFixed(2)}</span>
                 </div>
               </div>
@@ -892,7 +895,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             <div className="flex items-center">
               <AlertCircle className="text-blue-500 dark:text-blue-400 mr-2" size={20} />
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                We&apos;ve restored your previous progress. You can continue where you left off.
+                {t('form.restoredProgress')}
               </p>
             </div>
             <button
@@ -900,7 +903,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
               className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 flex items-center gap-1 text-sm"
             >
               <Trash2 size={16} />
-              Clear
+              {t('form.clear')}
             </button>
           </div>
         </div>
@@ -922,7 +925,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
           <div className="flex">
             <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
             <p className="text-sm text-green-700 dark:text-green-300">
-              Invoice saved successfully! Redirecting...
+              {t('form.invoiceSavedSuccess')}
             </p>
           </div>
         </div>
@@ -943,7 +946,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
             disabled={loading}
           >
             <ChevronLeft size={16} className="mr-2" />
-            {currentStep === 1 ? 'Cancel' : 'Previous'}
+            {currentStep === 1 ? t('form.cancel') : t('form.previous')}
           </button>
 
           {currentStep < 3 ? (
@@ -953,7 +956,7 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
               className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 inline-flex items-center transition-colors"
               disabled={loading}
             >
-              Next
+              {t('form.next')}
               <ChevronRight size={16} className="ml-2" />
             </button>
           ) : (
@@ -966,12 +969,12 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
               {loading ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
-                  {initialData && !isDuplicating ? 'Updating...' : 'Creating...'}
+                  {initialData && !isDuplicating ? t('form.updating') : t('form.creating')}
                 </>
               ) : (
                 <>
                   <Save size={16} className="mr-2" />
-                  {initialData && !isDuplicating ? 'Update Invoice' : 'Create Invoice'}
+                  {initialData && !isDuplicating ? t('form.updateInvoice') : t('form.createInvoice')}
                 </>
               )}
             </button>

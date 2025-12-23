@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Trash2, X, RefreshCw } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Deletion Modal
@@ -14,6 +15,8 @@ export default function ExpenseDeletionModal({
   expense,
   isDeleting
 }) {
+  const { t } = useTranslation('expenses');
+
   if (!isOpen || !expense) return null;
 
   // Format currency
@@ -58,38 +61,38 @@ export default function ExpenseDeletionModal({
               <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Delete Expense?
+              {t('deleteModal.title')}
             </h3>
           </div>
 
           {/* Content */}
           <div className="px-6 py-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-              This action cannot be undone. The following expense will be permanently deleted:
+              {t('deleteModal.description')}
             </p>
 
             {/* Entry Details Card */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Description:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('deleteModal.descriptionLabel')}</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100 text-right truncate ml-2 max-w-[180px]">
-                  {expense.description || 'No description'}
+                  {expense.description || t('deleteModal.noDescription')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('deleteModal.dateLabel')}</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
                   {formatDate(expense.date)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Category:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('deleteModal.categoryLabel')}</span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {expense.category || 'Other'}
+                  {expense.category || t('categories.other')}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Amount:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('deleteModal.amountLabel')}</span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {formatCurrency(expense.amount)}
                 </span>
@@ -100,7 +103,7 @@ export default function ExpenseDeletionModal({
             {expense.receipt_image && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <strong>Note:</strong> The attached receipt image will also be deleted.
+                  <strong>{t('deleteModal.note')}</strong> {t('deleteModal.receiptWarning')}
                 </p>
               </div>
             )}
@@ -113,7 +116,7 @@ export default function ExpenseDeletionModal({
               disabled={isDeleting}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t('deleteModal.cancel')}
             </button>
             <button
               onClick={onConfirm}
@@ -123,12 +126,12 @@ export default function ExpenseDeletionModal({
               {isDeleting ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  Deleting...
+                  {t('deleteModal.deleting')}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {t('deleteModal.delete')}
                 </>
               )}
             </button>

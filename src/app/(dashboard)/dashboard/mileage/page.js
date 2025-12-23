@@ -8,6 +8,7 @@ import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/billing/UpgradePrompt';
 import { supabase } from '@/lib/supabaseClient';
 import TutorialCard from '@/components/shared/TutorialCard';
+import { useTranslation } from '@/context/LanguageContext';
 
 // Dynamically import the StateMileageLogger component
 const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMileageLogger'), {
@@ -21,6 +22,8 @@ const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMilea
 
 // Note: DashboardLayout is provided by mileage/layout.js - do not duplicate here
 export default function DriverMileagePage() {
+  const { t } = useTranslation('mileage');
+
   // User state for tutorial
   const [user, setUser] = useState(null);
 
@@ -60,9 +63,9 @@ export default function DriverMileagePage() {
                 <Route size={28} />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">State Mileage Tracker</h1>
+                <h1 className="text-2xl md:text-3xl font-bold">{t('pageTitle')}</h1>
                 <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                  Upgrade to Premium to access state mileage tracking
+                  {t('upgradeMessage')}
                 </p>
               </div>
             </div>
@@ -74,38 +77,38 @@ export default function DriverMileagePage() {
           {/* Feature Preview */}
           <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              What you'll get with State Mileage Tracker:
+              {t('featurePreview.title')}
             </h3>
             <ul className="space-y-3 text-gray-600 dark:text-gray-300">
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                   <Truck size={16} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <span>Active trip recording with state border crossings</span>
+                <span>{t('featurePreview.activeTripRecording')}</span>
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
                   <MapPin size={16} className="text-green-600 dark:text-green-400" />
                 </div>
-                <span>Automatic state-by-state mileage calculations</span>
+                <span>{t('featurePreview.autoCalculations')}</span>
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
                   <BarChart2 size={16} className="text-purple-600 dark:text-purple-400" />
                 </div>
-                <span>IFTA-compliant mileage reports</span>
+                <span>{t('featurePreview.iftaReports')}</span>
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
                   <FileDown size={16} className="text-orange-600 dark:text-orange-400" />
                 </div>
-                <span>Export trip data for quarterly IFTA filings</span>
+                <span>{t('featurePreview.exportData')}</span>
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                   <Clock size={16} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span>Trip history with date and odometer tracking</span>
+                <span>{t('featurePreview.tripHistory')}</span>
               </li>
             </ul>
           </div>
@@ -132,9 +135,9 @@ export default function DriverMileagePage() {
                     <Route size={28} />
                   </div>
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">State Mileage Tracker</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold">{t('pageTitle')}</h1>
                     <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                      Record and export your state mileage for IFTA reporting
+                      {t('pageSubtitle')}
                     </p>
                   </div>
                 </div>
@@ -145,11 +148,11 @@ export default function DriverMileagePage() {
                   className="px-4 py-2.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-all duration-200 flex items-center font-medium"
                 >
                   <Calculator size={18} className="mr-2" />
-                  IFTA Calculator
+                  {t('iftaCalculator')}
                 </Link>
                 <div className="px-4 py-2.5 bg-white text-blue-600 rounded-xl shadow-md flex items-center font-semibold">
                   <Truck size={18} className="mr-2" />
-                  IFTA Compliant
+                  {t('iftaCompliant')}
                 </div>
               </div>
             </div>
@@ -158,36 +161,31 @@ export default function DriverMileagePage() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="mileage"
-            title="State Mileage Tracker"
-            description="Record and export your state mileage for IFTA reporting"
+            title={t('pageTitle')}
+            description={t('pageSubtitle')}
             features={[
               {
                 icon: Play,
-                title: "Trip Recording",
-                description: "Start active trips and record state crossings with odometer readings"
+                title: t('tutorial.features.tripRecording.title'),
+                description: t('tutorial.features.tripRecording.description')
               },
               {
                 icon: MapPin,
-                title: "State Crossings",
-                description: "Log when you cross state lines to track miles per jurisdiction"
+                title: t('tutorial.features.stateCrossings.title'),
+                description: t('tutorial.features.stateCrossings.description')
               },
               {
                 icon: History,
-                title: "Trip History",
-                description: "View past trips and edit mileage entries as needed"
+                title: t('tutorial.features.tripHistory.title'),
+                description: t('tutorial.features.tripHistory.description')
               },
               {
                 icon: FileDown,
-                title: "IFTA Export",
-                description: "Export mileage data in IFTA-ready format for quarterly filings"
+                title: t('tutorial.features.iftaExport.title'),
+                description: t('tutorial.features.iftaExport.description')
               }
             ]}
-            tips={[
-              "Start a trip before leaving and add state entries as you cross borders",
-              "Record odometer readings at each state line for accurate calculations",
-              "Use the IFTA Calculator to combine mileage with fuel data",
-              "Export your trip data before quarterly IFTA filing deadlines"
-            ]}
+            tips={t('tutorial.tips', { returnObjects: true }) || []}
             accentColor="teal"
             userId={user?.id}
           />
@@ -199,10 +197,10 @@ export default function DriverMileagePage() {
                 <div className="bg-blue-100 dark:bg-blue-900/40 p-2.5 rounded-lg mr-3">
                   <Truck size={22} className="text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Active Trip Recording</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('featureCards.activeTripRecording.title')}</h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Add state crossings as you drive to automatically calculate miles by state.
+                {t('featureCards.activeTripRecording.description')}
               </p>
             </div>
 
@@ -211,10 +209,10 @@ export default function DriverMileagePage() {
                 <div className="bg-green-100 dark:bg-green-900/40 p-2.5 rounded-lg mr-3">
                   <MapPin size={22} className="text-green-600 dark:text-green-400" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">State-by-State Tracking</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('featureCards.stateByStateTracking.title')}</h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Automatically calculate miles driven in each state based on your odometer readings.
+                {t('featureCards.stateByStateTracking.description')}
               </p>
             </div>
 
@@ -223,10 +221,10 @@ export default function DriverMileagePage() {
                 <div className="bg-purple-100 dark:bg-purple-900/40 p-2.5 rounded-lg mr-3">
                   <BarChart2 size={22} className="text-purple-600 dark:text-purple-400" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">IFTA Mileage Reports</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('featureCards.iftaMileageReports.title')}</h3>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Export your trip data in IFTA-compatible format for easy quarterly filings.
+                {t('featureCards.iftaMileageReports.description')}
               </p>
             </div>
           </div>

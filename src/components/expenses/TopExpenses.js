@@ -12,6 +12,7 @@ import {
   Eye,
   Pencil
 } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Top Expenses Sidebar Widget
@@ -24,6 +25,8 @@ export default function TopExpenses({
   onViewReceipt,
   onEditExpense
 }) {
+  const { t } = useTranslation('expenses');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -68,7 +71,7 @@ export default function TopExpenses({
           <Tag className="h-6 w-6 text-gray-400 dark:text-gray-500" />
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          No expenses yet
+          {t('topExpensesWidget.noExpensesYet')}
         </p>
       </div>
     );
@@ -88,7 +91,7 @@ export default function TopExpenses({
                 {getCategoryIcon(expense.category)}
               </div>
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                {expense.description || 'No description'}
+                {expense.description || t('item.noDescription')}
               </span>
             </div>
             <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-shrink-0">
@@ -114,7 +117,7 @@ export default function TopExpenses({
                 <button
                   onClick={() => onViewReceipt(expense)}
                   className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                  title="View Receipt"
+                  title={t('topExpensesWidget.viewReceipt')}
                 >
                   <Eye className="h-3.5 w-3.5" />
                 </button>
@@ -122,7 +125,7 @@ export default function TopExpenses({
               <button
                 onClick={() => onEditExpense(expense)}
                 className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                title="Edit"
+                title={t('topExpensesWidget.edit')}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>

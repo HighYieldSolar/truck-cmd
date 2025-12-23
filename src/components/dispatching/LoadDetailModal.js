@@ -35,17 +35,19 @@ import StatusBadge from "./StatusBadge";
 import DocumentViewerModal from './DocumentViewerModal';
 import PODUploadModal from './PODUploadModal';
 import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
-export default function LoadDetailModal({ 
-  load, 
-  onClose, 
-  onStatusChange, 
-  drivers = [], 
-  trucks = [], 
-  onAssignDriver, 
+export default function LoadDetailModal({
+  load,
+  onClose,
+  onStatusChange,
+  drivers = [],
+  trucks = [],
+  onAssignDriver,
   onAssignTruck,
-  onUpdate 
+  onUpdate
 }) {
+  const { t } = useTranslation('dispatching');
   const [selectedDriver, setSelectedDriver] = useState(load.driver_id || load.driverId || "");
   const [selectedTruck, setSelectedTruck] = useState(load.vehicle_id || load.vehicleId || load.truckId || "");
   const [editMode, setEditMode] = useState(false);
@@ -180,27 +182,27 @@ export default function LoadDetailModal({
 
     // Customer validation
     if (!updatedLoad.customer || !updatedLoad.customer.trim()) {
-      errors.push("Customer is required");
+      errors.push(t('loadDetailModal.validation.customerRequired'));
     }
 
     // Origin validation
     if (!updatedLoad.origin || !updatedLoad.origin.trim()) {
-      errors.push("Origin is required");
+      errors.push(t('loadDetailModal.validation.originRequired'));
     }
 
     // Destination validation
     if (!updatedLoad.destination || !updatedLoad.destination.trim()) {
-      errors.push("Destination is required");
+      errors.push(t('loadDetailModal.validation.destinationRequired'));
     }
 
     // Rate validation
     const rate = parseFloat(updatedLoad.rate);
     if (isNaN(rate)) {
-      errors.push("Rate must be a valid number");
+      errors.push(t('loadDetailModal.validation.rateMustBeValid'));
     } else if (rate < 0) {
-      errors.push("Rate cannot be negative");
+      errors.push(t('loadDetailModal.validation.rateCannotBeNegative'));
     } else if (rate > 1000000) {
-      errors.push("Rate value seems too high");
+      errors.push(t('loadDetailModal.validation.rateTooHigh'));
     }
 
     // Date validation
@@ -208,7 +210,7 @@ export default function LoadDetailModal({
       const pickup = new Date(updatedLoad.pickup_date);
       const delivery = new Date(updatedLoad.delivery_date);
       if (delivery < pickup) {
-        errors.push("Delivery date cannot be before pickup date");
+        errors.push(t('loadDetailModal.validation.deliveryBeforePickup'));
       }
     }
 
@@ -278,30 +280,30 @@ export default function LoadDetailModal({
           const earningsRemoved = await removeCompletedLoadEarnings(load.id);
 
           if (!earningsRemoved) {
-            setError("Load updated but earnings removal failed. Please check earnings manually.");
+            setError(t('loadDetailModal.messages.loadUpdatedEarningsRemovalFailed'));
           } else {
-            setSuccess("Load status updated and earnings removed successfully");
+            setSuccess(t('loadDetailModal.messages.loadStatusUpdatedEarningsRemoved'));
             await new Promise(resolve => setTimeout(resolve, 500));
           }
         } else if (!wasCompleted && isNowCompleted) {
           // Status changed to Completed - this would typically be handled by the complete load flow
           // but we'll show a message
-          setSuccess("Load marked as completed. Use the complete load form to record earnings.");
+          setSuccess(t('loadDetailModal.messages.loadCompletedUseForm'));
         } else {
-          setSuccess("Load status updated successfully");
+          setSuccess(t('loadDetailModal.messages.loadStatusUpdated'));
         }
       } else if (wasCompleted && isNowCompleted && rateChanged) {
         // Status is still Completed but rate changed - update earnings
         const earningsUpdated = await updateCompletedLoadEarnings(load.id, oldRate, newRate);
 
         if (!earningsUpdated) {
-          setError("Load updated but earnings update failed. Please check earnings manually.");
+          setError(t('loadDetailModal.messages.loadEarningsUpdateFailed'));
         } else {
-          setSuccess("Load details and earnings updated successfully");
+          setSuccess(t('loadDetailModal.messages.loadEarningsUpdated'));
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       } else {
-        setSuccess("Load details updated successfully");
+        setSuccess(t('loadDetailModal.messages.loadDetailsUpdated'));
       }
 
       setEditMode(false);
@@ -394,7 +396,7 @@ export default function LoadDetailModal({
         .eq("id", load.id)
         .single();
 
-      setSuccess("Assignment updated successfully");
+      setSuccess(t('loadDetailModal.messages.assignmentUpdated'));
       setShowAssignmentForm(false);
 
       // Update local state
@@ -448,14 +450,14 @@ export default function LoadDetailModal({
           {/* Load Information Card */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Load Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('loadDetailModal.loadInformation')}</h3>
               {!editMode && (
                 <button
                   onClick={() => setEditMode(true)}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   <Edit size={16} className="inline mr-1" />
-                  Edit
+                  {t('loadDetailModal.edit')}
                 </button>
               )}
             </div>
@@ -468,8 +470,8 @@ export default function LoadDetailModal({
                       <div className="flex">
                         <AlertCircle className="h-5 w-5 text-yellow-400 dark:text-yellow-500 mr-2 flex-shrink-0" />
                         <div className="text-sm text-yellow-700 dark:text-yellow-300">
-                          <p className="font-medium">Editing Completed Load</p>
-                          <p>Changes to the rate will automatically update earnings records.</p>
+                          <p className="font-medium">{t('loadDetailModal.editingCompletedLoad')}</p>
+                          <p>{t('loadDetailModal.rateWillUpdateEarnings')}</p>
                         </div>
                       </div>
                     </div>
@@ -478,8 +480,8 @@ export default function LoadDetailModal({
                         <div className="flex">
                           <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-500 mr-2 flex-shrink-0" />
                           <div className="text-sm text-red-700 dark:text-red-300">
-                            <p className="font-medium">Warning: Status Change</p>
-                            <p>Changing status from "Completed" to "{updatedLoad.status}" will remove the earnings record for this load.</p>
+                            <p className="font-medium">{t('loadDetailModal.warningStatusChange')}</p>
+                            <p>{t('loadDetailModal.statusChangeRemoveEarnings', { newStatus: updatedLoad.status })}</p>
                           </div>
                         </div>
                       </div>
@@ -487,26 +489,26 @@ export default function LoadDetailModal({
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('status.label')}</label>
                   <select
                     value={updatedLoad.status}
                     onChange={(e) => setUpdatedLoad({...updatedLoad, status: e.target.value})}
                     className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
-                    <option value="Pending">Pending</option>
-                    <option value="Assigned">Assigned</option>
-                    <option value="In Transit">In Transit</option>
-                    <option value="Loading">Loading</option>
-                    <option value="Unloading">Unloading</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                    <option value="Delayed">Delayed</option>
+                    <option value="Pending">{t('statusLabels.pending')}</option>
+                    <option value="Assigned">{t('statusLabels.assigned')}</option>
+                    <option value="In Transit">{t('statusLabels.inTransit')}</option>
+                    <option value="Loading">{t('statusLabels.loading')}</option>
+                    <option value="Unloading">{t('statusLabels.unloading')}</option>
+                    <option value="Delivered">{t('statusLabels.delivered')}</option>
+                    <option value="Completed">{t('statusLabels.completed')}</option>
+                    <option value="Cancelled">{t('statusLabels.cancelled')}</option>
+                    <option value="Delayed">{t('statusLabels.delayed')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.customer')}</label>
                   <input
                     type="text"
                     value={updatedLoad.customer}
@@ -517,7 +519,7 @@ export default function LoadDetailModal({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pickup Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.pickupDate')}</label>
                     <input
                       type="date"
                       value={updatedLoad.pickup_date}
@@ -526,7 +528,7 @@ export default function LoadDetailModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Date</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.deliveryDate')}</label>
                     <input
                       type="date"
                       value={updatedLoad.delivery_date}
@@ -537,7 +539,7 @@ export default function LoadDetailModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Origin</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.origin')}</label>
                   <input
                     type="text"
                     value={updatedLoad.origin}
@@ -547,7 +549,7 @@ export default function LoadDetailModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destination</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.destination')}</label>
                   <input
                     type="text"
                     value={updatedLoad.destination}
@@ -557,7 +559,7 @@ export default function LoadDetailModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rate ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadDetailModal.rate')}</label>
                   <input
                     type="number"
                     value={updatedLoad.rate}
@@ -575,7 +577,7 @@ export default function LoadDetailModal({
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    {t('common:buttons.cancel')}
                   </button>
                   <button
                     onClick={handleSave}
@@ -585,12 +587,12 @@ export default function LoadDetailModal({
                     {isSubmitting ? (
                       <>
                         <RefreshCw size={16} className="inline mr-2 animate-spin" />
-                        Saving...
+                        {t('loadDetailModal.saving')}
                       </>
                     ) : (
                       <>
                         <Save size={16} className="inline mr-2" />
-                        Save Changes
+                        {t('loadDetailModal.saveChanges')}
                       </>
                     )}
                   </button>
@@ -599,19 +601,19 @@ export default function LoadDetailModal({
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Load Number</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('loadDetailModal.loadNumber')}</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{load.load_number || load.loadNumber}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Customer</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('loadDetailModal.customer')}</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{load.customer}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Rate</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('loadCard.rate')}</span>
                   <span className="text-sm font-medium text-green-600 dark:text-green-400">${load.rate?.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('status.label')}</span>
                   <StatusBadge status={load.status} />
                 </div>
               </div>
@@ -621,14 +623,14 @@ export default function LoadDetailModal({
           {/* Assignment Card */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Assignment</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('loadDetailModal.assignment')}</h3>
               {!showAssignmentForm && (
                 <button
                   onClick={() => setShowAssignmentForm(true)}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   <UserPlus size={16} className="inline mr-1" />
-                  {(load.driver_id || load.driverId) ? 'Change' : 'Assign'}
+                  {(load.driver_id || load.driverId) ? t('loadDetailModal.change') : t('loadDetailModal.assign')}
                 </button>
               )}
             </div>
@@ -636,14 +638,14 @@ export default function LoadDetailModal({
             {showAssignmentForm ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Driver</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('loadCard.driver')}</label>
                   <select
                     value={selectedDriver}
                     onChange={(e) => setSelectedDriver(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     disabled={loadingFleet}
                   >
-                    <option value="">No driver assigned</option>
+                    <option value="">{t('loadDetailModal.noDriverAssigned')}</option>
                     {availableDrivers.map((driver) => (
                       <option key={driver.id} value={driver.id}>
                         {driver.name}
@@ -653,14 +655,14 @@ export default function LoadDetailModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Truck</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('fields.truck')}</label>
                   <select
                     value={selectedTruck}
                     onChange={(e) => setSelectedTruck(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     disabled={loadingFleet}
                   >
-                    <option value="">No truck assigned</option>
+                    <option value="">{t('loadDetailModal.noTruckAssigned')}</option>
                     {availableTrucks.map((truck) => (
                       <option key={truck.id} value={truck.id}>
                         {truck.name} ({truck.license_plate})
@@ -679,7 +681,7 @@ export default function LoadDetailModal({
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    {t('common:buttons.cancel')}
                   </button>
                   <button
                     onClick={handleAssignment}
@@ -689,12 +691,12 @@ export default function LoadDetailModal({
                     {isSubmitting ? (
                       <>
                         <RefreshCw size={16} className="inline mr-2 animate-spin" />
-                        Updating...
+                        {t('loadDetailModal.updating')}
                       </>
                     ) : (
                       <>
                         <Check size={16} className="inline mr-2" />
-                        Update Assignment
+                        {t('loadDetailModal.updateAssignment')}
                       </>
                     )}
                   </button>
@@ -705,15 +707,15 @@ export default function LoadDetailModal({
                 <div className="flex items-center">
                   <Users size={16} className="text-gray-400 dark:text-gray-500 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Driver</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.driver || "Not assigned"}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('loadCard.driver')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.driver || t('loadDetailModal.notAssigned')}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <TruckIcon size={16} className="text-gray-400 dark:text-gray-500 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Truck</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.truck_info || load.truckInfo || "Not assigned"}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('fields.truck')}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{load.truck_info || load.truckInfo || t('loadDetailModal.notAssigned')}</p>
                   </div>
                 </div>
               </div>
@@ -725,13 +727,13 @@ export default function LoadDetailModal({
         <div className="space-y-6">
           {/* Route Information Card */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Route Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('loadDetailModal.routeDetails')}</h3>
 
             <div className="space-y-4">
               <div className="flex items-start">
                 <MapPin size={20} className="text-green-500 dark:text-green-400 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Pickup</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('loadCard.pickup')}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{load.origin}</p>
                   <div className="flex items-center mt-1">
                     <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-1" />
@@ -747,7 +749,7 @@ export default function LoadDetailModal({
               <div className="flex items-start">
                 <MapPin size={20} className="text-red-500 dark:text-red-400 mr-3 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Delivery</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('loadCard.delivery')}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{load.destination}</p>
                   <div className="flex items-center mt-1">
                     <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-1" />
@@ -761,8 +763,8 @@ export default function LoadDetailModal({
             <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 h-48 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
               <div className="text-center">
                 <Map size={40} className="text-blue-500 dark:text-blue-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Route Map</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Interactive map coming soon</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{t('loadDetailModal.routeMap')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('loadDetailModal.mapComingSoon')}</p>
               </div>
             </div>
           </div>
@@ -770,7 +772,7 @@ export default function LoadDetailModal({
           {/* Notes Section */}
           {load.description && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Notes</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('loadDetailModal.notes')}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">{load.description}</p>
             </div>
           )}
@@ -781,7 +783,7 @@ export default function LoadDetailModal({
 
   const renderActionsView = () => (
     <div className="p-6 bg-gray-50 dark:bg-gray-900">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">Quick Actions</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">{t('loadDetailModal.quickActions')}</h3>
 
       {/* Primary Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
@@ -795,7 +797,7 @@ export default function LoadDetailModal({
             className="flex items-center justify-center px-6 py-4 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             <UserPlus size={20} className="mr-2" />
-            Assign Driver & Truck
+            {t('loadDetailModal.assignDriverTruck')}
           </button>
         )}
 
@@ -808,7 +810,7 @@ export default function LoadDetailModal({
           className="flex items-center justify-center px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           <RefreshCw size={20} className="mr-2" />
-          {load.status === "Completed" ? "Edit Details" : "Update Status"}
+          {load.status === "Completed" ? t('loadDetailModal.editDetails') : t('loadDetailModal.updateStatus')}
         </button>
 
         {/* Complete Load */}
@@ -829,37 +831,37 @@ export default function LoadDetailModal({
         >
           <CheckCircle size={20} className="mr-2" />
           {load.status === "Completed"
-            ? "Already Completed"
+            ? t('loadDetailModal.alreadyCompleted')
             : load.status === "Cancelled"
-              ? "Load Cancelled"
-              : "Mark as Complete"
+              ? t('loadDetailModal.loadCancelled')
+              : t('loadDetailModal.markAsComplete')
           }
         </Link>
       </div>
 
       {/* Communication Actions */}
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Communication</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('loadDetailModal.communication')}</h4>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         <ActionButton
           icon={<MessageSquare size={20} />}
-          title="Message Driver"
-          description={assignedDriverDetails?.phone ? "Send SMS" : "No phone number"}
+          title={t('loadDetailModal.messageDriver')}
+          description={assignedDriverDetails?.phone ? t('loadDetailModal.sendSms') : t('loadDetailModal.noPhoneNumber')}
           color="blue"
           disabled={!assignedDriverDetails?.phone}
           onClick={handleMessageDriver}
         />
         <ActionButton
           icon={<PhoneCall size={20} />}
-          title="Call Driver"
-          description={assignedDriverDetails?.phone ? assignedDriverDetails.phone : "No phone number"}
+          title={t('loadDetailModal.callDriver')}
+          description={assignedDriverDetails?.phone ? assignedDriverDetails.phone : t('loadDetailModal.noPhoneNumber')}
           color="blue"
           disabled={!assignedDriverDetails?.phone}
           onClick={handleCallDriver}
         />
         <ActionButton
           icon={<Navigation size={20} />}
-          title="Get Directions"
-          description="Open in Maps"
+          title={t('loadDetailModal.getDirections')}
+          description={t('loadDetailModal.openInMaps')}
           color="blue"
           disabled={!load.destination && !load.origin}
           onClick={handleGetDirections}
@@ -867,19 +869,19 @@ export default function LoadDetailModal({
       </div>
 
       {/* Document Actions */}
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Documents</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('loadDetailModal.documents')}</h4>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ActionButton
           icon={<Upload size={20} />}
-          title="Upload POD"
-          description="Add proof of delivery"
+          title={t('loadDetailModal.uploadPod')}
+          description={t('loadDetailModal.addProofOfDelivery')}
           color="blue"
           onClick={() => setShowPodUpload(true)}
         />
         <ActionButton
           icon={<FileText size={20} />}
-          title="View Documents"
-          description="See all files"
+          title={t('loadDetailModal.viewDocuments')}
+          description={t('loadDetailModal.seeAllFiles')}
           color="blue"
           onClick={() => setShowDocumentViewer(true)}
         />
@@ -890,7 +892,7 @@ export default function LoadDetailModal({
         <div className="mt-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             <AlertCircle size={16} className="inline mr-2" />
-            Some actions are unavailable for {load.status.toLowerCase()} loads.
+            {t('loadDetailModal.actionsUnavailable', { status: load.status.toLowerCase() })}
           </p>
         </div>
       )}
@@ -921,12 +923,12 @@ export default function LoadDetailModal({
         <div className="px-6 pt-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex space-x-8">
             <TabButton
-              label="Details"
+              label={t('loadDetailModal.details')}
               isActive={loadView === 'details'}
               onClick={() => setLoadView('details')}
             />
             <TabButton
-              label="Quick Actions"
+              label={t('loadDetailModal.quickActions')}
               isActive={loadView === 'actions'}
               onClick={() => setLoadView('actions')}
             />
@@ -948,7 +950,7 @@ export default function LoadDetailModal({
           loadNumber={load.load_number || load.loadNumber}
           onClose={() => setShowPodUpload(false)}
           onSuccess={async () => {
-            setSuccess("Documents uploaded successfully");
+            setSuccess(t('loadDetailModal.messages.documentsUploaded'));
             setShowPodUpload(false);
             // Refetch load data to show new documents
             if (onUpdate) {

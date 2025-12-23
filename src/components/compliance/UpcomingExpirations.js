@@ -1,18 +1,22 @@
 "use client";
 
-import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants"; 
+import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import StatusBadge from "./StatusBadge";
 import { FileText } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
+
 export default function UpcomingExpirations({ expirations, onViewItem }) {
+  const { t } = useTranslation('compliance');
+
   return (
     <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
       <h2 className="text-lg font-medium text-gray-900 mb-4">
-        Upcoming Expirations
+        {t('expiration.title')}
       </h2>
       <div>
         {expirations.length === 0 ? (
           <div className="text-gray-500 text-center">
-            No upcoming expirations
+            {t('expiration.noUpcoming')}
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">

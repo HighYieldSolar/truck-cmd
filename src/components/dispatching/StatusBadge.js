@@ -2,6 +2,7 @@
 "use client";
 
 import { Clock, Truck, CheckCircle, XCircle, AlertTriangle, Package, Loader } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Status badge component for displaying the status of a load.
@@ -14,6 +15,21 @@ import { Clock, Truck, CheckCircle, XCircle, AlertTriangle, Package, Loader } fr
  * @param {string} [props.size] - Size variant: 'xs' | 'sm' | 'md' | 'lg'
  */
 export default function StatusBadge({ status, className = "", showIcon = false, size = "md" }) {
+  const { t } = useTranslation('dispatching');
+
+  // Map status to translation key
+  const statusToKey = {
+    "Pending": "pending",
+    "Assigned": "assigned",
+    "In Transit": "inTransit",
+    "Loading": "loading",
+    "Unloading": "unloading",
+    "Delivered": "delivered",
+    "Completed": "completed",
+    "Cancelled": "cancelled",
+    "Delayed": "delayed"
+  };
+
   const statusStyles = {
     "Pending": {
       bg: "bg-amber-100 dark:bg-amber-900/40",
@@ -95,12 +111,17 @@ export default function StatusBadge({ status, className = "", showIcon = false, 
     lg: 14
   };
 
+  // Get translated status label
+  const translatedStatus = statusToKey[status]
+    ? t(`statusLabels.${statusToKey[status]}`)
+    : status;
+
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium border ${style.bg} ${style.text} ${style.border} ${sizeClasses[size]} ${className}`}
     >
       {showIcon && <Icon size={iconSizes[size]} className="mr-1" />}
-      {status}
+      {translatedStatus}
     </span>
   );
 }

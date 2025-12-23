@@ -23,8 +23,10 @@ import {
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { createTruck, updateTruck, uploadTruckImage } from "@/lib/services/truckService";
 import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmit, drivers = [] }) {
+  const { t } = useTranslation('fleet');
   const initialFormData = {
     name: '',
     make: '',
@@ -70,10 +72,10 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
 
   // Field labels for error messages
   const fieldLabels = {
-    name: 'Vehicle Name',
-    make: 'Make',
-    model: 'Model',
-    year: 'Year'
+    name: t('vehicleForm.fields.vehicleName'),
+    make: t('vehicleForm.fields.make'),
+    model: t('vehicleForm.fields.model'),
+    year: t('vehicleForm.fields.year')
   };
 
   // Load initial data
@@ -372,14 +374,14 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
         result = await createTruck(truckData);
       }
 
-      setSubmitMessage({ type: 'success', text: truck ? 'Vehicle updated successfully!' : 'Vehicle added successfully!' });
+      setSubmitMessage({ type: 'success', text: truck ? t('vehicleForm.vehicleUpdatedSuccess') : t('vehicleForm.vehicleAddedSuccess') });
       localStorage.removeItem(formKey);
 
       if (onSubmit) await onSubmit(result);
 
       setTimeout(() => onClose(), 1500);
     } catch (error) {
-      setSubmitMessage({ type: 'error', text: error.message || 'Failed to save vehicle. Please try again.' });
+      setSubmitMessage({ type: 'error', text: error.message || t('vehicleForm.failedToSaveVehicle') });
     } finally {
       setIsSubmitting(false);
     }
@@ -388,9 +390,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'basic', label: 'Basic Info', icon: <Truck size={16} /> },
-    { id: 'details', label: 'Details & Notes', icon: <Settings size={16} /> },
-    { id: 'compliance', label: 'Compliance & Driver', icon: <ShieldCheck size={16} /> }
+    { id: 'basic', label: t('vehicleForm.tabs.basicInfo'), icon: <Truck size={16} /> },
+    { id: 'details', label: t('vehicleForm.tabs.detailsNotes'), icon: <Settings size={16} /> },
+    { id: 'compliance', label: t('vehicleForm.tabs.complianceDriver'), icon: <ShieldCheck size={16} /> }
   ];
 
   return (
@@ -405,10 +407,10 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {truck ? `Edit Vehicle: ${truck.name}` : 'Add New Vehicle'}
+                  {truck ? t('vehicleForm.editVehicle', { name: truck.name }) : t('vehicleForm.addNewVehicle')}
                 </h2>
                 <p className="text-blue-100 text-sm">
-                  {truck ? 'Update vehicle information' : 'Enter vehicle details to add to your fleet'}
+                  {truck ? t('vehicleForm.updateVehicleInfo') : t('vehicleForm.enterVehicleDetails')}
                 </p>
               </div>
             </div>
@@ -899,7 +901,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
             disabled={isSubmitting}
             className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
 
           <div className="flex items-center space-x-3">
@@ -910,7 +912,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
                 className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                 disabled={isSubmitting}
               >
-                Previous
+                {t('vehicleForm.previous')}
               </button>
             )}
 
@@ -921,7 +923,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
                 className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                 disabled={isSubmitting}
               >
-                Next
+                {t('vehicleForm.next')}
               </button>
             ) : (
               <button
@@ -933,10 +935,10 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
                 {isSubmitting ? (
                   <>
                     <Loader2 size={18} className="animate-spin mr-2" />
-                    Saving...
+                    {t('vehicleForm.saving')}
                   </>
                 ) : (
-                  <>{truck ? 'Update Vehicle' : 'Add Vehicle'}</>
+                  <>{truck ? t('vehicleForm.updateVehicle') : t('vehicleForm.addVehicle')}</>
                 )}
               </button>
             )}

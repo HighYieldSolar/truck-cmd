@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useTranslation } from "@/context/LanguageContext";
 import {
   User,
   PaintBucket,
@@ -14,41 +15,48 @@ import {
 
 export default function SettingsLayout({ children }) {
   const pathname = usePathname();
+  const { t } = useTranslation('settings');
 
   // Define the settings menu items
   const settingsMenu = [
     {
-      name: "Profile",
+      name: t('menu.profile'),
+      key: 'profile',
       href: "/dashboard/settings/profile",
       icon: <User size={20} />,
       active: pathname === "/dashboard/settings/profile" || pathname === "/dashboard/settings"
     },
     {
-      name: "Appearance",
+      name: t('menu.appearance'),
+      key: 'appearance',
       href: "/dashboard/settings/appearance",
       icon: <PaintBucket size={20} />,
       active: pathname === "/dashboard/settings/appearance"
     },
     {
-      name: "Account",
+      name: t('menu.account'),
+      key: 'account',
       href: "/dashboard/settings/account",
       icon: <Settings size={20} />,
       active: pathname === "/dashboard/settings/account"
     },
     {
-      name: "Privacy",
+      name: t('menu.privacy'),
+      key: 'privacy',
       href: "/dashboard/settings/privacy",
       icon: <Shield size={20} />,
       active: pathname === "/dashboard/settings/privacy"
     },
     {
-      name: "Billing",
+      name: t('menu.billing'),
+      key: 'billing',
       href: "/dashboard/settings/billing",
       icon: <CreditCard size={20} />,
       active: pathname === "/dashboard/settings/billing"
     },
     {
-      name: "Notifications",
+      name: t('menu.notifications'),
+      key: 'notifications',
       href: "/dashboard/settings/notifications",
       icon: <Bell size={20} />,
       active: pathname === "/dashboard/settings/notifications"
@@ -67,8 +75,8 @@ export default function SettingsLayout({ children }) {
             <div className="w-full md:w-64 flex-shrink-0">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
                 <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 p-4">
-                  <h2 className="text-lg font-semibold text-white">Settings</h2>
-                  <p className="text-sm text-blue-100 dark:text-blue-200">Manage your account preferences</p>
+                  <h2 className="text-lg font-semibold text-white">{t('title')}</h2>
+                  <p className="text-sm text-blue-100 dark:text-blue-200">{t('subtitle')}</p>
                 </div>
 
                 <nav className="p-2">
@@ -99,7 +107,7 @@ export default function SettingsLayout({ children }) {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                       <h1 className="text-2xl font-semibold text-white">{activeMenuItem.name}</h1>
-                      <p className="text-blue-100 dark:text-blue-200">Manage your {activeMenuItem.name.toLowerCase()} settings</p>
+                      <p className="text-blue-100 dark:text-blue-200">{t(`descriptions.${activeMenuItem.key}`)}</p>
                     </div>
                     {pathname === "/dashboard/settings/billing" && (
                       <div className="mt-3 md:mt-0">
@@ -108,7 +116,7 @@ export default function SettingsLayout({ children }) {
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 transition-colors shadow-sm"
                         >
                           <CreditCard size={16} className="mr-2" />
-                          View All Plans
+                          {t('viewAllPlans')}
                         </Link>
                       </div>
                     )}

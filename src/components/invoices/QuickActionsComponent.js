@@ -2,43 +2,46 @@
 
 import Link from "next/link";
 import { Plus, DollarSign, FileText, BarChart2, Mail, Printer, Download } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function QuickActionsComponent({ onCreateInvoice, onExportData }) {
+  const { t } = useTranslation('invoices');
+
   const actions = [
     {
       id: 'create',
-      name: 'Create Invoice',
+      name: t('quickActions.createInvoice'),
       icon: <Plus className="h-5 w-5 text-blue-600" />,
       onClick: onCreateInvoice,
       href: '/dashboard/invoices/new'
     },
     {
       id: 'payment',
-      name: 'Record Payment',
+      name: t('quickActions.recordPayment'),
       icon: <DollarSign className="h-5 w-5 text-green-600" />,
       href: '/dashboard/invoices?filter=pending'
     },
     {
       id: 'draft',
-      name: 'Draft Invoices',
+      name: t('quickActions.draftInvoices'),
       icon: <FileText className="h-5 w-5 text-purple-600" />,
       href: '/dashboard/invoices?filter=draft'
     },
     {
       id: 'remind',
-      name: 'Send Reminders',
+      name: t('quickActions.sendReminders'),
       icon: <Mail className="h-5 w-5 text-orange-600" />,
       href: '/dashboard/invoices?filter=overdue'
     },
     {
       id: 'reports',
-      name: 'Invoice Reports',
+      name: t('quickActions.invoiceReports'),
       icon: <BarChart2 className="h-5 w-5 text-indigo-600" />,
       href: '#'
     },
     {
       id: 'export',
-      name: 'Export Invoices',
+      name: t('quickActions.exportInvoices'),
       icon: <Download className="h-5 w-5 text-cyan-600" />,
       onClick: onExportData
     }
@@ -49,7 +52,7 @@ export default function QuickActionsComponent({ onCreateInvoice, onExportData })
       <div className="bg-blue-500 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <FileText size={18} className="mr-2" />
-          Quick Actions
+          {t('quickActions.title')}
         </h3>
       </div>
       <div className="p-4">
@@ -87,7 +90,7 @@ export default function QuickActionsComponent({ onCreateInvoice, onExportData })
             href="/dashboard/invoices/new"
             className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
           >
-            Create new invoice
+            {t('quickActions.createNewInvoice')}
             <Plus size={14} className="ml-1" />
           </Link>
         </div>

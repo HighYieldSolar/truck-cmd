@@ -15,6 +15,7 @@ import {
   Calendar,
   Filter
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Reusable Export Report Modal Component
@@ -35,8 +36,8 @@ import {
 export default function ExportReportModal({
   isOpen,
   onClose,
-  title = "Export Report",
-  description = "Choose your export format",
+  title,
+  description,
   data = [],
   columns = [],
   filename = "report",
@@ -45,10 +46,15 @@ export default function ExportReportModal({
   dateRange = null,
   onExportComplete
 }) {
+  const { t } = useTranslation('common');
   const [exportFormat, setExportFormat] = useState('pdf');
   const [exportState, setExportState] = useState('idle');
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
+
+  // Default title and description with translations
+  const modalTitle = title || t('export.exportReport');
+  const modalDescription = description || t('export.selectFormat');
 
   useEffect(() => {
     setMounted(true);
@@ -153,7 +159,7 @@ export default function ExportReportModal({
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       setExportState('error');
-      setError('Failed to export CSV. Please try again.');
+      setError(t('export.errors.csvFailed'));
     }
   };
 
@@ -208,7 +214,7 @@ export default function ExportReportModal({
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       setExportState('error');
-      setError('Failed to export text file. Please try again.');
+      setError(t('export.errors.txtFailed'));
     }
   };
 
@@ -407,7 +413,7 @@ export default function ExportReportModal({
       setTimeout(() => onClose(), 1500);
     } catch (err) {
       setExportState('error');
-      setError('Failed to generate PDF. Please try again.');
+      setError(t('export.errors.pdfFailed'));
     }
   };
 
@@ -438,10 +444,10 @@ export default function ExportReportModal({
   };
 
   const formatOptions = [
-    { value: 'pdf', icon: FileText, label: 'PDF Report', description: 'Professional format with branding' },
-    { value: 'csv', icon: FileSpreadsheet, label: 'Spreadsheet (CSV)', description: 'For Excel or Google Sheets' },
-    { value: 'txt', icon: File, label: 'Plain Text', description: 'Simple format for email' },
-    { value: 'print', icon: Printer, label: 'Print', description: 'Send to printer' }
+    { value: 'pdf', icon: FileText, labelKey: 'export.formats.pdf.label', descKey: 'export.formats.pdf.description' },
+    { value: 'csv', icon: FileSpreadsheet, labelKey: 'export.formats.csv.label', descKey: 'export.formats.csv.description' },
+    { value: 'txt', icon: File, labelKey: 'export.formats.txt.label', descKey: 'export.formats.txt.description' },
+    { value: 'print', icon: Printer, labelKey: 'export.formats.print.label', descKey: 'export.formats.print.description' }
   ];
 
   const modalContent = (
@@ -464,7 +470,7 @@ export default function ExportReportModal({
               <FileDown size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {title}
+              {modalTitle}
             </h2>
           </div>
           <button
@@ -479,7 +485,7 @@ export default function ExportReportModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
-            {description}
+            {modalDescription}
           </p>
 
           {/* Summary Info */}
@@ -500,14 +506,14 @@ export default function ExportReportModal({
           {dateRange?.start && dateRange?.end && (
             <div className="flex items-center gap-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
               <Calendar size={16} />
-              <span>Date range: {dateRange.start} to {dateRange.end}</span>
+              <span>{t('export.dateRange')} {dateRange.start} to {dateRange.end}</span>
             </div>
           )}
 
           {/* Format Selection */}
           <div className="space-y-4">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">
-              Select Export Format
+              {t('export.selectFormat')}
             </label>
 
             <div className="space-y-3">
@@ -542,8 +548,8 @@ export default function ExportReportModal({
                       } />
                     </div>
                     <div className="ml-4 flex-1">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{option.label}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{option.description}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{t(option.labelKey)}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{t(option.descKey)}</div>
                     </div>
                     {exportFormat === option.value && (
                       <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
@@ -562,7 +568,7 @@ export default function ExportReportModal({
             {exportState === 'success' && (
               <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md flex items-center border border-green-200 dark:border-green-800">
                 <Check size={16} className="text-green-500 dark:text-green-400 mr-2" />
-                <p className="text-sm text-green-700 dark:text-green-300">Export successful!</p>
+                <p className="text-sm text-green-700 dark:text-green-300">{t('export.success')}</p>
               </div>
             )}
           </div>
@@ -576,7 +582,7 @@ export default function ExportReportModal({
             className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             disabled={exportState === 'loading'}
           >
-            Cancel
+            {t('buttons.cancel')}
           </button>
           <button
             type="button"
@@ -587,17 +593,17 @@ export default function ExportReportModal({
             {exportState === 'loading' ? (
               <>
                 <Download size={18} className="animate-bounce mr-2" />
-                Exporting...
+                {t('export.exporting')}
               </>
             ) : exportState === 'success' ? (
               <>
                 <Check size={18} className="mr-2" />
-                Exported
+                {t('export.exported')}
               </>
             ) : (
               <>
                 <FileDown size={18} className="mr-2" />
-                Export Report
+                {t('export.exportReport')}
               </>
             )}
           </button>

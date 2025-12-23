@@ -1,0 +1,193 @@
+{
+  "pageTitle": "Rastreador de Millaje por Estado",
+  "pageSubtitle": "Registre y exporte su millaje por estado para reportes IFTA",
+  "upgradeMessage": "Mejore a Premium para acceder al seguimiento de millaje por estado",
+  "iftaCalculator": "Calculadora IFTA",
+  "iftaCompliant": "Compatible con IFTA",
+
+  "featurePreview": {
+    "title": "Lo que obtendrá con el Rastreador de Millaje por Estado:",
+    "activeTripRecording": "Grabación de viajes activos con cruces de fronteras estatales",
+    "autoCalculations": "Cálculos automáticos de millaje estado por estado",
+    "iftaReports": "Reportes de millaje compatibles con IFTA",
+    "exportData": "Exportar datos de viaje para declaraciones trimestrales IFTA",
+    "tripHistory": "Historial de viajes con seguimiento de fecha y odómetro"
+  },
+
+  "tutorial": {
+    "features": {
+      "tripRecording": {
+        "title": "Registro de Viajes",
+        "description": "Inicie viajes activos y registre cruces de estado con lecturas de odómetro"
+      },
+      "stateCrossings": {
+        "title": "Cruces de Estado",
+        "description": "Registre cuando cruce líneas estatales para rastrear millas por jurisdicción"
+      },
+      "tripHistory": {
+        "title": "Historial de Viajes",
+        "description": "Vea viajes pasados y edite entradas de millaje según sea necesario"
+      },
+      "iftaExport": {
+        "title": "Exportación IFTA",
+        "description": "Exporte datos de millaje en formato listo para IFTA para declaraciones trimestrales"
+      }
+    },
+    "tips": [
+      "Inicie un viaje antes de salir y agregue entradas de estado al cruzar fronteras",
+      "Registre lecturas de odómetro en cada línea estatal para cálculos precisos",
+      "Use la Calculadora IFTA para combinar millaje con datos de combustible",
+      "Exporte sus datos de viaje antes de las fechas límite de declaración IFTA trimestral"
+    ]
+  },
+
+  "featureCards": {
+    "activeTripRecording": {
+      "title": "Grabación de Viaje Activo",
+      "description": "Agregue cruces de estado mientras conduce para calcular automáticamente millas por estado."
+    },
+    "stateByStateTracking": {
+      "title": "Seguimiento Estado por Estado",
+      "description": "Calcule automáticamente las millas conducidas en cada estado según sus lecturas de odómetro."
+    },
+    "iftaMileageReports": {
+      "title": "Reportes de Millaje IFTA",
+      "description": "Exporte sus datos de viaje en formato compatible con IFTA para declaraciones trimestrales fáciles."
+    }
+  },
+
+  "tabs": {
+    "activeTrips": "Viajes Activos",
+    "pastTrips": "Viajes Pasados",
+    "summary": "Resumen"
+  },
+
+  "deleteModal": {
+    "title": "Eliminar Viaje",
+    "confirmTitle": "¿Eliminar este viaje?",
+    "confirmMessage": "¿Está seguro de que desea eliminar el viaje con {{vehicleName}} del {{tripDate}}? Esto eliminará permanentemente todos los cruces de estado y datos de millaje asociados con este viaje.",
+    "iftaWarningTitle": "Este viaje tiene datos IFTA",
+    "iftaWarningMessage": "{{count}} registro{{plural}} IFTA ({{miles}} millas) en {{quarters}} también se eliminarán de su calculadora IFTA.",
+    "cannotUndo": "Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando...",
+    "deleteTrip": "Eliminar Viaje",
+    "deleteTripAndIfta": "Eliminar Viaje y Datos IFTA"
+  },
+
+  "activeTrips": {
+    "title": "Viajes Activos",
+    "noTrips": "No hay viajes activos",
+    "noTripsDescription": "Inicie un nuevo viaje para rastrear millaje por estado",
+    "newTrip": "Nuevo Viaje"
+  },
+
+  "newTrip": {
+    "title": "Iniciar Nuevo Viaje",
+    "selectVehicle": "Seleccionar Vehículo",
+    "selectVehiclePlaceholder": "Seleccionar Vehículo",
+    "startingState": "Estado Inicial",
+    "selectState": "Seleccionar Estado",
+    "startingOdometer": "Odómetro Inicial",
+    "odometerPlaceholder": "Lectura del odómetro",
+    "date": "Fecha",
+    "startTrip": "Iniciar Viaje"
+  },
+
+  "tripDetails": {
+    "startedOn": "Iniciado el {{date}}",
+    "ending": "Finalizando...",
+    "endTrip": "Finalizar Viaje"
+  },
+
+  "stateCrossings": {
+    "title": "Cruces de Estado",
+    "noData": "Aún no se han registrado cruces de estado",
+    "addTitle": "Agregar Cruce de Estado",
+    "enteringState": "Entrando al Estado",
+    "odometerReading": "Lectura del Odómetro",
+    "currentReading": "Lectura actual",
+    "crossingDate": "Fecha del Cruce",
+    "adding": "Agregando...",
+    "add": "Agregar",
+    "noDate": "Sin fecha"
+  },
+
+  "milesByState": {
+    "title": "Millas por Estado",
+    "total": "Total",
+    "milesUnit": "mi"
+  },
+
+  "selectPrompts": {
+    "selectActiveTrip": "Seleccione un Viaje Activo",
+    "activeTripsCount": "Tiene {{count}} viaje{{plural}} activo{{plural}}.",
+    "selectFromList": "Por favor seleccione uno de la lista a la izquierda para ver detalles o agregar cruces de estado.",
+    "moreTrips": "+{{count}} más",
+    "selectOrCreate": "Seleccione o Cree un Viaje",
+    "selectOrCreateDescription": "Para comenzar a rastrear su millaje por estado, seleccione un viaje existente de la lista o cree uno nuevo."
+  },
+
+  "pastTrips": {
+    "title": "Viajes Completados",
+    "loading": "Cargando viajes completados...",
+    "noTrips": "No hay viajes completados",
+    "noTripsDescription": "Complete viajes activos para ver el historial",
+    "tripDetailsTitle": "Detalles del Viaje - {{vehicleName}}",
+    "importToIfta": "Importar a IFTA",
+    "tripDuration": "Duración del Viaje",
+    "totalMiles": "Millas Totales",
+    "calculating": "Calculando...",
+    "noMileageData": "No hay datos de millaje disponibles",
+    "loadingTripData": "Cargando datos del viaje...",
+    "noStateCrossings": "No se encontraron cruces de estado para este viaje",
+    "selectPastTrip": "Seleccione un Viaje Pasado",
+    "selectPastTripDescription": "Seleccione un viaje completado de la lista para ver detalles y desglose de millaje."
+  },
+
+  "summaryTab": {
+    "title": "Resumen de Millaje por Estado (Todo el Tiempo)",
+    "noData": "No hay datos históricos de millaje disponibles",
+    "noDataDescription": "Complete viajes para ver su resumen de millaje",
+    "totalMileageStats": "Estadísticas Totales de Millaje",
+    "totalStatesDriven": "Total de Estados Conducidos",
+    "totalMiles": "Millas Totales",
+    "completedTrips": "Viajes Completados"
+  },
+
+  "export": {
+    "button": "Exportar",
+    "buttonFull": "Exportar Reporte de Millaje",
+    "failed": "Error al exportar datos de millaje. Por favor intente de nuevo."
+  },
+
+  "messages": {
+    "error": "Error",
+    "success": "Éxito",
+    "tripStarted": "¡Viaje iniciado exitosamente!",
+    "crossingAdded": "¡Cruce de estado agregado exitosamente!",
+    "tripDeleted": "Viaje eliminado exitosamente",
+    "iftaRecordsRemoved": "({{count}} registro{{plural}} IFTA también eliminado{{plural}})",
+    "tripCompleted": "¡Viaje completado exitosamente! Ahora puede importarlo manualmente a su calculadora IFTA.",
+    "alreadyImported": "Este viaje ya ha sido importado a la calculadora IFTA",
+    "noDataToImport": "No hay datos de millaje para importar",
+    "importSuccess": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA",
+    "importSuccessQuarters": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA para {{quarter}}",
+    "importSuccessMultiQuarters": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA (dividido entre {{quarters}})"
+  },
+
+  "errors": {
+    "loadTripDetails": "Error al cargar detalles del viaje. Por favor intente de nuevo.",
+    "loadActiveTrips": "Error al cargar viajes activos. Por favor actualice la página.",
+    "loadTripHistory": "Error al cargar historial de viajes. Por favor actualice la página.",
+    "deleteTrip": "Error al eliminar viaje. Por favor intente de nuevo.",
+    "fillRequired": "Por favor complete todos los campos requeridos.",
+    "odometerTooLow": "La lectura del odómetro debe ser mayor que la última lectura ({{odometer}}).",
+    "startTrip": "Error al iniciar viaje. Por favor intente de nuevo.",
+    "addCrossing": "Error al agregar cruce de estado. Por favor intente de nuevo.",
+    "deleteCrossing": "Error al eliminar cruce. Por favor intente de nuevo.",
+    "endTrip": "Error al finalizar viaje. Por favor intente de nuevo.",
+    "authError": "Error de autenticación. Por favor inicie sesión de nuevo.",
+    "importIfta": "Error al importar a calculadora IFTA. Por favor intente de nuevo."
+  }
+}

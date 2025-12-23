@@ -21,8 +21,10 @@ import {
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
+  const { t } = useTranslation('dispatching');
   const [driverPhone, setDriverPhone] = useState(null);
 
   // Fetch driver phone number if driver is assigned
@@ -143,7 +145,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           <div className="flex items-center">
             <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Pickup</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('loadCard.pickup')}</div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {formatDate(load.pickupDate || load.pickup_date)}
               </div>
@@ -154,7 +156,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           <div className="flex items-center">
             <Calendar size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Delivery</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('loadCard.delivery')}</div>
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {formatDate(load.deliveryDate || load.delivery_date)}
               </div>
@@ -165,9 +167,9 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           <div className="flex items-center">
             <Users size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Driver</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('loadCard.driver')}</div>
               <div className={`text-sm font-medium ${load.driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}>
-                {load.driver || "Unassigned"}
+                {load.driver || t('loadCard.unassigned')}
               </div>
             </div>
           </div>
@@ -176,7 +178,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           <div className="flex items-center">
             <DollarSign size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Rate</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('loadCard.rate')}</div>
               <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(load.rate)}
               </div>
@@ -196,7 +198,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
         {load.status === "Completed" && load.completedAt && (
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
             <CheckCircle size={14} className="mr-2" />
-            Completed on {formatDateForDisplayMMDDYYYY(load.completedAt)}
+            {t('loadCard.completedOn')} {formatDateForDisplayMMDDYYYY(load.completedAt)}
           </div>
         )}
 
@@ -204,7 +206,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
         {load.status === "Delayed" && (
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm text-orange-600 dark:text-orange-400 flex items-center">
             <AlertCircle size={14} className="mr-2" />
-            Load is delayed - check details
+            {t('loadCard.delayedMessage')}
           </div>
         )}
       </div>
@@ -215,11 +217,11 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           {load.status === "Completed" ? (
             <span className="inline-flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-1 rounded-full">
               <CheckCircle size={12} className="mr-1" />
-              Completed
+              {t('statusLabels.completed')}
             </span>
           ) : load.status === "Cancelled" ? (
             <span className="inline-flex items-center text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 px-2 py-1 rounded-full">
-              Cancelled
+              {t('statusLabels.cancelled')}
             </span>
           ) : (
             <Link
@@ -228,7 +230,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
               onClick={(e) => e.stopPropagation()}
             >
               <CheckCircle size={14} className="mr-1" />
-              Mark Complete
+              {t('loadCard.markComplete')}
             </Link>
           )}
         </div>
@@ -243,7 +245,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
                 ? 'text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/40'
                 : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
             }`}
-            title={driverPhone?.phone ? `Call ${driverPhone.name || 'Driver'}` : 'No driver phone'}
+            title={driverPhone?.phone ? `${t('loadCard.callDriver')} ${driverPhone.name || t('loadCard.driver')}` : t('loadCard.noDriverPhone')}
           >
             <Phone size={16} />
           </button>
@@ -255,7 +257,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
                 ? 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40'
                 : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
             }`}
-            title={driverPhone?.phone ? `Message ${driverPhone.name || 'Driver'}` : 'No driver phone'}
+            title={driverPhone?.phone ? `${t('loadCard.messageDriver')} ${driverPhone.name || t('loadCard.driver')}` : t('loadCard.noDriverPhone')}
           >
             <MessageSquare size={16} />
           </button>
@@ -267,7 +269,7 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
                 ? 'text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'
                 : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
             }`}
-            title="Get Directions"
+            title={t('loadCard.getDirections')}
           >
             <Navigation size={16} />
           </button>

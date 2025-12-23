@@ -1,8 +1,10 @@
 "use client";
 
 import { Download, Flag } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function StateSummary({ fuelData = [], onExportForIFTA }) {
+  const { t } = useTranslation('fuel');
   // Group and calculate fuel by state
   const stateData = fuelData.reduce((acc, entry) => {
     if (!acc[entry.state]) {
@@ -31,8 +33,8 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
         <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-4">
           <Flag size={24} className="text-blue-600 dark:text-blue-400" />
         </div>
-        <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">No State Data Available</h3>
-        <p className="text-gray-500 dark:text-gray-400">Add fuel entries to see a breakdown by state.</p>
+        <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">{t('stateSummaryTable.noData')}</h3>
+        <p className="text-gray-500 dark:text-gray-400">{t('stateSummaryTable.noDataDescription')}</p>
       </div>
     );
   }
@@ -40,14 +42,14 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Fuel by State</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('stateSummaryTable.title')}</h3>
         {onExportForIFTA && (
           <button
             onClick={onExportForIFTA}
             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
           >
             <Download size={14} className="mr-1" />
-            View IFTA Calculator
+            {t('stateSummaryTable.viewIFTA')}
           </button>
         )}
       </div>
@@ -56,19 +58,19 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                State
+                {t('stateSummaryTable.state')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Gallons
+                {t('stateSummaryTable.gallons')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Amount
+                {t('stateSummaryTable.amount')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Purchases
+                {t('stateSummaryTable.purchases')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Avg. Price/Gal
+                {t('stateSummaryTable.avgPricePerGal')}
               </th>
             </tr>
           </thead>
@@ -103,7 +105,7 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
           <tfoot className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                Total ({stateArray.length} states)
+                {t('stateSummaryTable.total')} ({t('stateSummaryTable.statesCount', { count: stateArray.length })})
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                 {stateArray.reduce((sum, state) => sum + state.gallons, 0).toFixed(3)} gal

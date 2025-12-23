@@ -1,25 +1,30 @@
+"use client";
+
 import { BarChart2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function InvoiceReportsComponent() {
+  const { t } = useTranslation('invoices');
+
   const reports = [
     {
-      title: "Monthly Revenue",
-      description: "Track your monthly invoice revenue",
+      title: t('reports.monthlyRevenue.title'),
+      description: t('reports.monthlyRevenue.description'),
       icon: <BarChart2 size={24} className="text-blue-600" />,
       link: "/dashboard/reports/monthly-revenue",
       color: "bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100"
     },
     {
-      title: "Customer Insights",
-      description: "Analyze your top customers by invoice volume",
+      title: t('reports.customerInsights.title'),
+      description: t('reports.customerInsights.description'),
       icon: <BarChart2 size={24} className="text-purple-600" />,
       link: "/dashboard/reports/customer-insights",
       color: "bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100"
     },
     {
-      title: "Payment Analytics",
-      description: "Review payment trends and overdue statistics",
+      title: t('reports.paymentAnalytics.title'),
+      description: t('reports.paymentAnalytics.description'),
       icon: <BarChart2 size={24} className="text-green-600" />,
       link: "/dashboard/reports/payment-analytics",
       color: "bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100"
@@ -30,8 +35,8 @@ export default function InvoiceReportsComponent() {
     <div className="mt-8 mb-6">
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
-          <h2 className="text-xl font-semibold">Invoice Reports & Analytics</h2>
-          <p className="text-blue-100 mt-2">Get valuable insights from your invoice data</p>
+          <h2 className="text-xl font-semibold">{t('reports.pageTitle')}</h2>
+          <p className="text-blue-100 mt-2">{t('reports.pageSubtitle')}</p>
         </div>
         <div className="p-6 bg-gradient-to-br from-white to-gray-50">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -52,7 +57,7 @@ export default function InvoiceReportsComponent() {
                 </div>
                 <div className="mt-4 flex justify-end">
                   <span className="text-sm font-medium text-blue-600 flex items-center">
-                    View Report <ArrowRight size={16} className="ml-1" />
+                    {t('reports.viewReport')} <ArrowRight size={16} className="ml-1" />
                   </span>
                 </div>
               </Link>

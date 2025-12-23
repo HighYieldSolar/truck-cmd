@@ -15,10 +15,11 @@ import TrialBanner from "@/components/subscriptions/TrialBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useSidebar } from "@/context/SidebarContext";
+import { useTranslation } from "@/context/LanguageContext";
 import UserDropdown from "@/components/UserDropdown";
 import NotificationIcon from "@/components/notifications/NotificationIcon";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
-import GlobalSearch, { useGlobalSearchShortcut } from "@/components/search/GlobalSearch";
+import GlobalSearch from "@/components/search/GlobalSearch";
 
 export default function DashboardLayout({ activePage = "dashboard", children, pageTitle }) {
   const [loading, setLoading] = useState(true);
@@ -41,14 +42,12 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   
   const { theme } = useTheme();
   const { sidebarConfig } = useSidebar();
+  const { t } = useTranslation('common');
 
   const [notificationsData, setNotificationsData] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [notificationError, setNotificationError] = useState(null);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-
-  // Keyboard shortcut for global search (Cmd+K / Ctrl+K)
-  useGlobalSearchShortcut(() => setGlobalSearchOpen(true));
 
   // Handle mounting to prevent hydration mismatch
   useEffect(() => {
@@ -208,14 +207,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   const baseMenuItems = {
     dashboard: {
       id: 'dashboard',
-      name: 'Dashboard',
+      name: t('navigation.dashboard'),
       href: '/dashboard',
       icon: <LayoutDashboard size={20} />,
       active: currentActivePage === 'dashboard' && !pageTitle
     },
     dispatching: {
       id: 'dispatching',
-      name: 'Load Management',
+      name: t('navigation.loadManagement'),
       href: '/dashboard/dispatching',
       icon: <Truck size={20} />,
       active: currentActivePage === 'dispatching' && !pageTitle,
@@ -223,7 +222,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     mileage: {
       id: 'mileage',
-      name: 'State Mileage',
+      name: t('navigation.stateMileage'),
       href: '/dashboard/mileage',
       icon: <MapPin size={20} />,
       active: currentActivePage === 'mileage' && !pageTitle,
@@ -231,7 +230,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     invoices: {
       id: 'invoices',
-      name: 'Invoices',
+      name: t('navigation.invoices'),
       href: '/dashboard/invoices',
       icon: <FileText size={20} />,
       active: currentActivePage === 'invoices' && !pageTitle,
@@ -239,7 +238,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     expenses: {
       id: 'expenses',
-      name: 'Expenses',
+      name: t('navigation.expenses'),
       href: '/dashboard/expenses',
       icon: <Wallet size={20} />,
       active: currentActivePage === 'expenses' && !pageTitle,
@@ -247,7 +246,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     customers: {
       id: 'customers',
-      name: 'Customers',
+      name: t('navigation.customers'),
       href: '/dashboard/customers',
       icon: <Users size={20} />,
       active: currentActivePage === 'customers' && !pageTitle,
@@ -255,7 +254,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     fleet: {
       id: 'fleet',
-      name: 'Fleet',
+      name: t('navigation.fleet'),
       href: '/dashboard/fleet',
       icon: <Package size={20} />,
       active: currentActivePage === 'fleet' && !pageTitle,
@@ -263,7 +262,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     compliance: {
       id: 'compliance',
-      name: 'Compliance',
+      name: t('navigation.compliance'),
       href: '/dashboard/compliance',
       icon: <CheckCircle size={20} />,
       active: currentActivePage === 'compliance' && !pageTitle,
@@ -271,7 +270,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     ifta: {
       id: 'ifta',
-      name: 'IFTA Calculator',
+      name: t('navigation.iftaCalculator'),
       href: '/dashboard/ifta',
       icon: <Calculator size={20} />,
       active: currentActivePage === 'ifta' && !pageTitle,
@@ -279,7 +278,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     },
     fuel: {
       id: 'fuel',
-      name: 'Fuel Tracker',
+      name: t('navigation.fuelTracker'),
       href: '/dashboard/fuel',
       icon: <Fuel size={20} />,
       active: currentActivePage === 'fuel' && !pageTitle,
@@ -295,7 +294,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   // System menu items - only Settings now
   const systemItems = [
     {
-      name: 'Settings',
+      name: t('navigation.settings'),
       href: '/dashboard/settings',
       icon: <Settings size={20} />,
       active: currentActivePage === 'settings' && !pageTitle
@@ -376,7 +375,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     || menuItems.find(item => item.active)?.name
     || systemItems.find(item => item.active)?.name
     || Object.values(baseMenuItems).find(item => item.active)?.name
-    || 'Dashboard';
+    || t('navigation.dashboard');
 
   if (loading || subscriptionLoading) {
     return (
@@ -410,7 +409,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             {/* Main Navigation */}
             <div className="px-3">
               <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
-                Main
+                {t('navigation.main')}
               </h2>
               <nav className="space-y-1">
                 {menuItems.map((item) => {
@@ -444,7 +443,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             {/* System Navigation */}
             <div className="px-3 mt-6">
               <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
-                System
+                {t('navigation.system')}
               </h2>
               <nav className="space-y-1">
                 {systemItems.map((item) => (
@@ -471,22 +470,22 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             {['trial', 'expired'].includes(subscriptionStatus) && (
               <div className="mt-6 mx-3 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20">
                 <div className="px-4 py-3 bg-blue-500 dark:bg-blue-600 text-white">
-                  <div className="font-medium">Truck Command Free Trial</div>
+                  <div className="font-medium">{t('trial.truckCommandFreeTrial')}</div>
                 </div>
                 <div className="p-4">
                   {subscriptionStatus === 'expired' ? (
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      <p className="mb-2">Your trial has expired. Upgrade now to continue accessing all features.</p>
+                      <p className="mb-2">{t('trial.trialExpired')}. {t('trial.upgradeMessage')}</p>
                       <Link
                         href="/dashboard/upgrade"
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
-                        Upgrade now
+                        {t('buttons.upgradeNow')}
                       </Link>
                     </div>
                   ) : (
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
+                      <p className="mb-2">{t('trial.daysLeft', { count: daysLeft })}</p>
                       <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
@@ -497,7 +496,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                         href="/dashboard/upgrade"
                         className="flex items-center text-sm font-medium text-[#007BFF] hover:text-blue-500"
                       >
-                        View plans
+                        {t('buttons.viewPlans')}
                       </Link>
                     </div>
                   )}
@@ -569,14 +568,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 }}
               >
                 <Search size={18} className="text-gray-400 dark:text-gray-500 mr-2" />
-                Search loads, invoices...
+                {t('search.searchLoads')}
               </button>
             </div>
 
             {/* Main Navigation */}
             <div className="mt-1 pb-2">
               <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
-                Main
+                {t('navigation.main')}
               </h2>
               {menuItems.map((item) => {
                 // Determine if this menu item should be disabled
@@ -608,7 +607,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             {/* System Navigation */}
             <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
               <h2 className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
-                System
+                {t('navigation.system')}
               </h2>
               {systemItems.map((item) => (
                 <Link
@@ -633,7 +632,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                 className="w-full flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all my-0.5"
               >
                 <LogOut size={20} className="mr-3 text-gray-500 dark:text-gray-400" />
-                Logout
+                {t('navigation.logout')}
               </button>
             </div>
 
@@ -641,23 +640,23 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             {subscriptionStatus !== 'active' && (
               <div className="mt-6 mx-2 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20">
                 <div className="px-4 py-3 bg-blue-500 dark:bg-blue-600 text-white">
-                  <div className="font-medium">Free Trial Status</div>
+                  <div className="font-medium">{t('trial.freeTrialStatus')}</div>
                 </div>
                 <div className="p-4">
                   {subscriptionStatus === 'expired' ? (
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      <p className="mb-2">Your trial has expired. Subscribe now to continue using all features.</p>
+                      <p className="mb-2">{t('trial.trialExpired')}. {t('trial.subscribeMessage')}</p>
                       <Link
                         href="/dashboard/upgrade"
                         className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        Upgrade Now
+                        {t('buttons.upgradeNow')}
                       </Link>
                     </div>
                   ) : (
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                      <p className="mb-2">You have <span className="font-bold">{daysLeft} days</span> left in your trial</p>
+                      <p className="mb-2">{t('trial.daysLeft', { count: daysLeft })}</p>
                       <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
@@ -669,7 +668,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                         className="mt-2 w-full py-2 flex justify-center items-center text-sm font-medium bg-[#007BFF] dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        View Plans
+                        {t('buttons.viewPlans')}
                       </Link>
                     </div>
                   )}
@@ -701,7 +700,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     {displayedTitle}
                   </h1>
                   <div className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-                    <Link href="/dashboard" className="hover:text-[#007BFF] dark:hover:text-blue-400">Home</Link>
+                    <Link href="/dashboard" className="hover:text-[#007BFF] dark:hover:text-blue-400">{t('navigation.home')}</Link>
                     <span className="mx-1.5">/</span>
                     <span className="text-gray-700 dark:text-gray-300">
                       {displayedTitle}
@@ -721,9 +720,6 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                   >
                     <Search size={16} className="mr-2" />
                     <span className="hidden lg:inline">Search...</span>
-                    <kbd className="hidden lg:inline ml-3 px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 rounded">
-                      {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}K
-                    </kbd>
                   </button>
                 </div>
 
@@ -783,23 +779,23 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
             <div className="container mx-auto">
               <div className="flex flex-col sm:flex-row items-center justify-between">
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 sm:mb-0">
-                  &copy; {new Date().getFullYear()} Truck Command LLC. All rights reserved.
+                  {t('footer.copyright', { year: new Date().getFullYear() })}
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
                   <Link href="/terms" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Terms
+                    {t('footer.terms')}
                   </Link>
                   <Link href="/privacy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Privacy
+                    {t('footer.privacy')}
                   </Link>
                   <Link href="/cookies" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Cookies
+                    {t('footer.cookies')}
                   </Link>
                   <Link href="/acceptable-use" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Acceptable Use
+                    {t('footer.acceptableUse')}
                   </Link>
                   <Link href="/contact" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    Contact
+                    {t('footer.contact')}
                   </Link>
                 </div>
               </div>

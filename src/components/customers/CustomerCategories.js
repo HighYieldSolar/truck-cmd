@@ -1,6 +1,7 @@
 "use client";
 
 import { Package, Briefcase, Building2, Truck, Users, Tag, Check } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Customer Categories Sidebar Widget
@@ -12,6 +13,7 @@ export default function CustomerCategories({
   onTypeSelect,
   isLoading = false
 }) {
+  const { t } = useTranslation('customers');
   // Calculate category counts
   const getCategoryCounts = () => {
     const counts = {
@@ -40,11 +42,11 @@ export default function CustomerCategories({
   const counts = getCategoryCounts();
 
   const categories = [
-    { key: 'shipper', label: 'Shippers', icon: Package, color: 'blue' },
-    { key: 'broker', label: 'Brokers', icon: Briefcase, color: 'amber' },
-    { key: 'consignee', label: 'Consignees', icon: Truck, color: 'emerald' },
-    { key: 'direct', label: 'Direct', icon: Users, color: 'purple' },
-    { key: 'business', label: 'Business', icon: Building2, color: 'slate' }
+    { key: 'shipper', labelKey: 'types.shipper', icon: Package, color: 'blue' },
+    { key: 'broker', labelKey: 'types.broker', icon: Briefcase, color: 'amber' },
+    { key: 'consignee', labelKey: 'types.consignee', icon: Truck, color: 'emerald' },
+    { key: 'direct', labelKey: 'types.direct', icon: Users, color: 'purple' },
+    { key: 'business', labelKey: 'types.business', icon: Building2, color: 'slate' }
   ];
 
   const colorClasses = {
@@ -86,7 +88,7 @@ export default function CustomerCategories({
             <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3">
               <Tag size={16} className="text-purple-600 dark:text-purple-400" />
             </div>
-            Customer Types
+            {t('categoryWidget.title')}
           </h3>
         </div>
         <div className="p-4 space-y-2">
@@ -111,7 +113,7 @@ export default function CustomerCategories({
           <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3">
             <Tag size={16} className="text-purple-600 dark:text-purple-400" />
           </div>
-          Customer Types
+          {t('categoryWidget.title')}
         </h3>
       </div>
       <div className="p-3 space-y-1">
@@ -128,7 +130,7 @@ export default function CustomerCategories({
             <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
               <Users size={16} className="text-gray-600 dark:text-gray-400" />
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">All Types</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('categoryWidget.allTypes')}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200">
@@ -161,7 +163,7 @@ export default function CustomerCategories({
                   <Icon size={16} className={colors.text} />
                 </div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {category.label}
+                  {t(category.labelKey)}
                 </span>
               </div>
               <div className="flex items-center gap-2">

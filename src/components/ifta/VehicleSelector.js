@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { Truck, ChevronDown, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from 'react-i18next';
 
 export default function VehicleSelector({
   selectedVehicle,
@@ -12,6 +13,7 @@ export default function VehicleSelector({
   isLoading = false,
   userId = null
 }) {
+  const { t } = useTranslation('ifta');
   const [vehicleOptions, setVehicleOptions] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState({});
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export default function VehicleSelector({
           vehiclesData.forEach(vehicle => {
             detailsMap[vehicle.id] = {
               id: vehicle.id,
-              name: vehicle.name || `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || 'Unknown Vehicle',
+              name: vehicle.name || `${vehicle.make || ''} ${vehicle.model || ''}`.trim() || t('vehicleSelector.unknownVehicle'),
               licensePlate: vehicle.license_plate || '',
               make: vehicle.make || '',
               model: vehicle.model || '',
@@ -72,7 +74,7 @@ export default function VehicleSelector({
           processPassedVehicles();
         }
       } catch (err) {
-        setError('Failed to load vehicles. Please try again.');
+        setError(t('vehicleSelector.failedToLoad'));
         // Fall back to passed vehicles on error
         processPassedVehicles();
       } finally {
@@ -108,7 +110,7 @@ export default function VehicleSelector({
   // Format vehicle display with name and license plate
   const formatVehicleDisplay = (vehicleId) => {
     if (!vehicleId || vehicleId === 'all') {
-      return "All Vehicles";
+      return t('vehicleSelector.allVehicles');
     }
 
     // Check if we have the details in our lookup table
@@ -143,7 +145,7 @@ export default function VehicleSelector({
         focus:ring-blue-500 focus:border-blue-500 
         bg-gray-800 text-white"
       >
-        <option value="all" className="bg-gray-800 text-white">All Vehicles</option>
+        <option value="all" className="bg-gray-800 text-white">{t('vehicleSelector.allVehicles')}</option>
         {vehicleOptions.map((vehicle) => (
           <option key={vehicle.id} value={vehicle.id} className="bg-gray-800 text-white">
             {vehicle.licensePlate

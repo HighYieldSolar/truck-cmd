@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   AlertCircle,
@@ -95,6 +96,8 @@ function LoadingSkeleton() {
 }
 
 export default function CompliancePage() {
+  const { t } = useTranslation('compliance');
+
   // Feature access check
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
   const hasComplianceAccess = canAccess('compliance');
@@ -432,17 +435,17 @@ export default function CompliancePage() {
 
   // Export configuration
   const exportColumns = useMemo(() => [
-    { key: 'title', label: 'Title', width: 20 },
-    { key: 'type', label: 'Type', width: 15 },
-    { key: 'entity_type', label: 'Entity Type', width: 12 },
-    { key: 'entity_name', label: 'Entity Name', width: 15 },
-    { key: 'document_number', label: 'Document #', width: 12 },
-    { key: 'issue_date', label: 'Issue Date', width: 10 },
-    { key: 'expiration_date', label: 'Expiration', width: 10 },
-    { key: 'status', label: 'Status', width: 12 },
-    { key: 'issuing_authority', label: 'Issuing Authority', width: 15 },
-    { key: 'notes', label: 'Notes', width: 20 }
-  ], []);
+    { key: 'title', label: t('fields.title'), width: 20 },
+    { key: 'type', label: t('fields.complianceType'), width: 15 },
+    { key: 'entity_type', label: t('fields.entityType'), width: 12 },
+    { key: 'entity_name', label: t('fields.entityName'), width: 15 },
+    { key: 'document_number', label: t('fields.documentNumber'), width: 12 },
+    { key: 'issue_date', label: t('fields.issueDate'), width: 10 },
+    { key: 'expiration_date', label: t('fields.expirationDate'), width: 10 },
+    { key: 'status', label: t('fields.status'), width: 12 },
+    { key: 'issuing_authority', label: t('fields.issuingAuthority'), width: 15 },
+    { key: 'notes', label: t('fields.notes'), width: 20 }
+  ], [t]);
 
   const getExportData = useCallback(() => {
     return filteredItems.map((item) => ({
@@ -471,16 +474,16 @@ export default function CompliancePage() {
     const companyCount = filteredItems.filter(item => item.entity_type === 'Company').length;
 
     return [
-      { label: 'Total Records', value: filteredItems.length },
-      { label: 'Active', value: activeCount },
-      { label: 'Expiring Soon', value: expiringSoonCount },
-      { label: 'Expired', value: expiredCount },
-      { label: 'Pending', value: pendingCount },
-      { label: 'Vehicle Records', value: vehicleCount },
-      { label: 'Driver Records', value: driverCount },
-      { label: 'Company Records', value: companyCount }
+      { label: t('page.export.summaryLabels.totalRecords'), value: filteredItems.length },
+      { label: t('page.export.summaryLabels.active'), value: activeCount },
+      { label: t('page.export.summaryLabels.expiringSoon'), value: expiringSoonCount },
+      { label: t('page.export.summaryLabels.expired'), value: expiredCount },
+      { label: t('page.export.summaryLabels.pending'), value: pendingCount },
+      { label: t('page.export.summaryLabels.vehicleRecords'), value: vehicleCount },
+      { label: t('page.export.summaryLabels.driverRecords'), value: driverCount },
+      { label: t('page.export.summaryLabels.companyRecords'), value: companyCount }
     ];
-  }, [filteredItems, computeItemStatus]);
+  }, [filteredItems, computeItemStatus, t]);
 
   const getExportDateRange = useCallback(() => {
     if (filteredItems.length === 0) return null;
@@ -552,9 +555,9 @@ export default function CompliancePage() {
                   <Shield size={28} />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">Compliance Management</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold">{t('page.upgrade.title')}</h1>
                   <p className="text-blue-100 dark:text-blue-200 text-sm md:text-base">
-                    Upgrade to Premium to access compliance tracking
+                    {t('page.upgrade.subtitle')}
                   </p>
                 </div>
               </div>
@@ -566,38 +569,38 @@ export default function CompliancePage() {
             {/* Feature Preview */}
             <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                What you'll get with Compliance Tracking:
+                {t('page.upgrade.featuresTitle')}
               </h3>
               <ul className="space-y-3 text-gray-600 dark:text-gray-300">
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                     <FileText size={16} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span>Track document expirations for licenses, registrations, and permits</span>
+                  <span>{t('page.upgrade.features.documentTracking')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
                     <AlertCircle size={16} className="text-orange-600 dark:text-orange-400" />
                   </div>
-                  <span>Get alerts before documents expire to stay DOT compliant</span>
+                  <span>{t('page.upgrade.features.alerts')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0">
                     <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
                   </div>
-                  <span>Store digital copies of all compliance documents</span>
+                  <span>{t('page.upgrade.features.storage')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
                     <Clock size={16} className="text-purple-600 dark:text-purple-400" />
                   </div>
-                  <span>Track driver medical cards, CDLs, and vehicle inspections</span>
+                  <span>{t('page.upgrade.features.fleetTracking')}</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                     <Download size={16} className="text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <span>Export compliance reports for audits</span>
+                  <span>{t('page.upgrade.features.export')}</span>
                 </li>
               </ul>
             </div>
@@ -615,8 +618,8 @@ export default function CompliancePage() {
           <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold mb-1">Compliance Management</h1>
-                <p className="text-blue-100">Track and manage all your regulatory compliance documents</p>
+                <h1 className="text-3xl font-bold mb-1">{t('page.title')}</h1>
+                <p className="text-blue-100">{t('page.subtitle')}</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -624,7 +627,7 @@ export default function CompliancePage() {
                   className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors shadow-sm flex items-center font-medium"
                 >
                   <Plus size={18} className="mr-2" />
-                  Add Record
+                  {t('page.buttons.addRecord')}
                 </button>
                 <button
                   onClick={handleExportData}
@@ -632,7 +635,7 @@ export default function CompliancePage() {
                   disabled={complianceItems.length === 0}
                 >
                   <Download size={18} className="mr-2" />
-                  Export Report
+                  {t('page.buttons.exportReport')}
                 </button>
               </div>
             </div>
@@ -647,36 +650,31 @@ export default function CompliancePage() {
           {/* Tutorial Card */}
           <TutorialCard
             pageId="compliance"
-            title="Compliance Management"
-            description="Track and manage all your regulatory compliance documents"
+            title={t('page.tutorial.title')}
+            description={t('page.tutorial.description')}
             features={[
               {
                 icon: FileText,
-                title: "Document Tracking",
-                description: "Store and track licenses, permits, insurance, and other compliance documents"
+                title: t('page.tutorial.features.documentTracking.title'),
+                description: t('page.tutorial.features.documentTracking.description')
               },
               {
                 icon: Calendar,
-                title: "Expiration Alerts",
-                description: "Get notified before documents expire to stay compliant"
+                title: t('page.tutorial.features.expirationAlerts.title'),
+                description: t('page.tutorial.features.expirationAlerts.description')
               },
               {
                 icon: Upload,
-                title: "Document Upload",
-                description: "Upload copies of documents for easy access and backup"
+                title: t('page.tutorial.features.documentUpload.title'),
+                description: t('page.tutorial.features.documentUpload.description')
               },
               {
                 icon: TruckIcon,
-                title: "Fleet Coverage",
-                description: "Track compliance for drivers, trucks, and company-wide documents"
+                title: t('page.tutorial.features.fleetCoverage.title'),
+                description: t('page.tutorial.features.fleetCoverage.description')
               }
             ]}
-            tips={[
-              "Add all document expiration dates to get automatic reminders",
-              "Upload scanned copies of documents for quick reference",
-              "Use the 'Expiring Soon' filter to prioritize renewals",
-              "Keep company-wide documents like authority and insurance updated"
-            ]}
+            tips={t('page.tutorial.tips', { returnObjects: true })}
             accentColor="purple"
             userId={user?.id}
           />
@@ -693,14 +691,14 @@ export default function CompliancePage() {
                 <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <Clock size={18} className="mr-2" />
-                    Upcoming Expirations
+                    {t('page.upcomingExpirations.title')}
                   </h3>
                 </div>
                 <div className="p-4">
                   {upcomingExpirations.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <CheckCircle size={36} className="mx-auto mb-2 text-green-500 dark:text-green-400" />
-                      <p>No documents expiring soon</p>
+                      <p>{t('page.upcomingExpirations.noExpiring')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -723,7 +721,7 @@ export default function CompliancePage() {
                                   ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                   : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
                               }`}>
-                                {daysLeft} days
+                                {t('page.upcomingExpirations.days', { count: daysLeft })}
                               </span>
                             </div>
                           </div>
@@ -735,7 +733,7 @@ export default function CompliancePage() {
                           onClick={() => setFilters({ ...filters, status: 'expiring soon' })}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                         >
-                          View all expiring items
+                          {t('page.upcomingExpirations.viewAll')}
                           <ArrowRight size={14} className="ml-1" />
                         </button>
                       </div>
@@ -749,7 +747,7 @@ export default function CompliancePage() {
                 <div className="bg-blue-500 dark:bg-blue-600 px-5 py-4 text-white">
                   <h3 className="font-semibold flex items-center">
                     <FileText size={18} className="mr-2" />
-                    Compliance Categories
+                    {t('page.categories.title')}
                   </h3>
                 </div>
                 <div className="p-4">
@@ -781,7 +779,7 @@ export default function CompliancePage() {
                   {Object.values(categoryCounts).every(count => count === 0) && (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <FileText size={36} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-                      <p>No compliance items found</p>
+                      <p>{t('page.categories.noItems')}</p>
                     </div>
                   )}
 
@@ -790,7 +788,7 @@ export default function CompliancePage() {
                       onClick={() => handleOpenFormModal()}
                       className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center w-full"
                     >
-                      Add compliance record
+                      {t('page.categories.addRecord')}
                       <Plus size={14} className="ml-1" />
                     </button>
                   </div>
@@ -810,7 +808,7 @@ export default function CompliancePage() {
                       type="text"
                       value={filters.search}
                       onChange={handleSearch}
-                      placeholder="Search by title, entity, or document number..."
+                      placeholder={t('page.filters.searchPlaceholder')}
                       className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
                     {filters.search && (
@@ -831,11 +829,11 @@ export default function CompliancePage() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
                     >
-                      <option value="all">All Statuses</option>
-                      <option value="active">Active</option>
-                      <option value="expiring soon">Expiring Soon</option>
-                      <option value="expired">Expired</option>
-                      <option value="pending">Pending</option>
+                      <option value="all">{t('page.filters.allStatuses')}</option>
+                      <option value="active">{t('status.active')}</option>
+                      <option value="expiring soon">{t('status.expiringSoon')}</option>
+                      <option value="expired">{t('status.expired')}</option>
+                      <option value="pending">{t('status.pending')}</option>
                     </select>
 
                     <select
@@ -844,7 +842,7 @@ export default function CompliancePage() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[140px] transition-colors"
                     >
-                      <option value="all">All Types</option>
+                      <option value="all">{t('page.filters.allTypes')}</option>
                       {Object.entries(COMPLIANCE_TYPES).map(([key, type]) => (
                         <option key={key} value={key}>
                           {type.name}
@@ -858,18 +856,18 @@ export default function CompliancePage() {
                       onChange={handleFilterChange}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 min-w-[130px] transition-colors"
                     >
-                      <option value="all">All Entities</option>
-                      <option value="Vehicle">Vehicles</option>
-                      <option value="Driver">Drivers</option>
-                      <option value="Company">Company</option>
-                      <option value="Other">Other</option>
+                      <option value="all">{t('page.filters.allEntities')}</option>
+                      <option value="Vehicle">{t('page.filters.vehicles')}</option>
+                      <option value="Driver">{t('page.filters.drivers')}</option>
+                      <option value="Company">{t('page.filters.company')}</option>
+                      <option value="Other">{t('page.filters.other')}</option>
                     </select>
 
                     {/* Reset Filters Button */}
                     <button
                       onClick={resetFilters}
                       className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Reset Filters"
+                      title={t('page.emptyState.resetFilters')}
                       disabled={
                         filters.status === "all" &&
                         filters.type === "all" &&
@@ -886,13 +884,13 @@ export default function CompliancePage() {
               {/* Compliance Table */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                  <h3 className="font-medium text-gray-700 dark:text-gray-200">Compliance Records</h3>
+                  <h3 className="font-medium text-gray-700 dark:text-gray-200">{t('page.table.title')}</h3>
                   <button
                     onClick={() => handleOpenFormModal()}
                     className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     <Plus size={16} className="mr-1" />
-                    Add New
+                    {t('page.buttons.addNew')}
                   </button>
                 </div>
 
@@ -902,22 +900,22 @@ export default function CompliancePage() {
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
                         <th scope="col" className="w-[28%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Compliance Item
+                          {t('page.table.complianceItem')}
                         </th>
                         <th scope="col" className="w-[18%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Entity
+                          {t('page.table.entity')}
                         </th>
                         <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Issue Date
+                          {t('page.table.issueDate')}
                         </th>
                         <th scope="col" className="w-[12%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Expiration
+                          {t('page.table.expiration')}
                         </th>
                         <th scope="col" className="w-[14%] px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
+                          {t('page.table.status')}
                         </th>
                         <th scope="col" className="w-[16%] px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Actions
+                          {t('page.table.actions')}
                         </th>
                       </tr>
                     </thead>
@@ -930,25 +928,25 @@ export default function CompliancePage() {
                                 <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
                                   <Shield className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No compliance records</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-4">Start tracking your compliance documents and stay on top of expirations.</p>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('page.emptyState.noRecords')}</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-4">{t('page.emptyState.startTracking')}</p>
                                 <button
                                   onClick={() => handleOpenFormModal()}
                                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                                 >
                                   <Plus size={16} className="mr-2" />
-                                  Add Compliance Record
+                                  {t('page.emptyState.addRecord')}
                                 </button>
                               </div>
                             ) : (
                               <div>
-                                <p className="text-gray-500 dark:text-gray-400 mb-2">No records match your current filters</p>
+                                <p className="text-gray-500 dark:text-gray-400 mb-2">{t('page.emptyState.noMatchingFilters')}</p>
                                 <button
                                   onClick={resetFilters}
                                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                                 >
                                   <RefreshCw size={14} className="mr-1" />
-                                  Reset Filters
+                                  {t('page.emptyState.resetFilters')}
                                 </button>
                               </div>
                             )}
@@ -1022,23 +1020,23 @@ export default function CompliancePage() {
                     complianceItems.length === 0 ? (
                       <EmptyState
                         icon={Shield}
-                        title="No compliance records"
-                        description="Start tracking your compliance documents and stay on top of expirations."
+                        title={t('page.emptyState.noRecords')}
+                        description={t('page.emptyState.startTracking')}
                         action={{
-                          label: 'Add Compliance Record',
+                          label: t('page.emptyState.addRecord'),
                           onClick: () => handleOpenFormModal(),
                           icon: Plus
                         }}
                       />
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">No records match your current filters</p>
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">{t('page.emptyState.noMatchingFilters')}</p>
                         <button
                           onClick={resetFilters}
                           className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                         >
                           <RefreshCw size={14} className="mr-2" />
-                          Reset Filters
+                          {t('page.emptyState.resetFilters')}
                         </button>
                       </div>
                     )
@@ -1063,9 +1061,9 @@ export default function CompliancePage() {
                             </span>
                           </div>
                           <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                            <p><span className="font-medium">Entity:</span> {item.entity_name}</p>
-                            <p><span className="font-medium">Issue:</span> {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}</p>
-                            <p><span className="font-medium">Expires:</span> {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}</p>
+                            <p><span className="font-medium">{t('page.mobile.entity')}:</span> {item.entity_name}</p>
+                            <p><span className="font-medium">{t('page.mobile.issue')}:</span> {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}</p>
+                            <p><span className="font-medium">{t('page.mobile.expires')}:</span> {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}</p>
                           </div>
                           <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
                             <button
@@ -1147,16 +1145,16 @@ export default function CompliancePage() {
         <ExportReportModal
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
-          title="Compliance Report"
-          description="Export your compliance records and expiration tracking data"
+          title={t('page.export.title')}
+          description={t('page.export.description')}
           data={getExportData()}
           columns={exportColumns}
           filename="compliance_report"
           summaryInfo={getExportSummaryInfo()}
           dateRange={getExportDateRange()}
           pdfConfig={{
-            title: 'Compliance Report',
-            subtitle: 'Document Expiration & Compliance Tracking',
+            title: t('page.export.pdfTitle'),
+            subtitle: t('page.export.pdfSubtitle'),
             showLogo: true
           }}
         />

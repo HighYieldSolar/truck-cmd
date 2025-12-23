@@ -1,0 +1,601 @@
+{
+  "title": "Invoices",
+  "subtitle": "Manage your invoicing and payments",
+  "createInvoice": "Create Invoice",
+  "editInvoice": "Edit Invoice",
+  "deleteInvoice": "Delete Invoice",
+  "newInvoice": "New Invoice",
+  "viewInvoice": "View Invoice",
+  "sendInvoice": "Send Invoice",
+  "printInvoice": "Print Invoice",
+  "downloadPdf": "Download PDF",
+  "invoices": {
+    "all": "All Invoices",
+    "draft": "Drafts",
+    "sent": "Sent",
+    "paid": "Paid",
+    "overdue": "Overdue"
+  },
+  "status": {
+    "label": "Status",
+    "draft": "Draft",
+    "sent": "Sent",
+    "viewed": "Viewed",
+    "paid": "Paid",
+    "partiallyPaid": "Partially Paid",
+    "overdue": "Overdue",
+    "overdueUppercase": "OVERDUE",
+    "cancelled": "Cancelled",
+    "void": "Void",
+    "voided": "Voided",
+    "pending": "Pending"
+  },
+  "fields": {
+    "invoiceNumber": "Invoice #",
+    "customer": "Customer",
+    "amount": "Amount",
+    "date": "Date",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "paidDate": "Paid Date",
+    "paymentTerms": "Payment Terms",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total",
+    "amountDue": "Amount Due",
+    "amountPaid": "Amount Paid",
+    "balance": "Balance",
+    "description": "Description",
+    "quantity": "Quantity",
+    "unitPrice": "Unit Price",
+    "lineTotal": "Line Total",
+    "notes": "Notes",
+    "loadReference": "Load Reference",
+    "poNumber": "PO Number"
+  },
+  "placeholders": {
+    "selectCustomer": "Select a customer",
+    "enterDescription": "Enter item description",
+    "addNotes": "Add any notes for this invoice..."
+  },
+  "paymentTerms": {
+    "label": "Payment Terms",
+    "dueOnReceipt": "Due on Receipt",
+    "net15": "Net 15",
+    "net30": "Net 30",
+    "net45": "Net 45",
+    "net60": "Net 60"
+  },
+  "actions": {
+    "markAsSent": "Mark as Sent",
+    "markAsPaid": "Mark as Paid",
+    "recordPayment": "Record Payment",
+    "sendReminder": "Send Reminder",
+    "duplicate": "Duplicate Invoice",
+    "void": "Void Invoice"
+  },
+  "email": {
+    "title": "Email Invoice",
+    "to": "To",
+    "subject": "Subject",
+    "message": "Message",
+    "send": "Send Email",
+    "sendCopy": "Send me a copy",
+    "defaultSubject": "Invoice {{number}} from {{company}}",
+    "sent": "Invoice sent successfully",
+    "failed": "Failed to send invoice"
+  },
+  "payment": {
+    "title": "Record Payment",
+    "amount": "Payment Amount",
+    "date": "Payment Date",
+    "method": "Payment Method",
+    "reference": "Reference Number",
+    "notes": "Payment Notes",
+    "methods": {
+      "cash": "Cash",
+      "check": "Check",
+      "bankTransfer": "Bank Transfer",
+      "creditCard": "Credit Card",
+      "ach": "ACH",
+      "other": "Other"
+    }
+  },
+  "stats": {
+    "title": "Invoice Statistics",
+    "totalInvoiced": "Total Invoiced",
+    "totalPaid": "Total Paid",
+    "totalOutstanding": "Total Outstanding",
+    "overdueAmount": "Overdue Amount",
+    "averageInvoice": "Average Invoice",
+    "invoiceCount": "Invoice Count"
+  },
+  "reports": {
+    "title": "Invoice Reports",
+    "pageTitle": "Invoice Reports & Analytics",
+    "pageSubtitle": "Get valuable insights from your invoice data",
+    "aging": "Aging Report",
+    "summary": "Invoice Summary",
+    "byCustomer": "By Customer",
+    "byMonth": "By Month",
+    "viewReport": "View Report",
+    "monthlyRevenue": {
+      "title": "Monthly Revenue",
+      "description": "Track your monthly invoice revenue"
+    },
+    "customerInsights": {
+      "title": "Customer Insights",
+      "description": "Analyze your top customers by invoice volume"
+    },
+    "paymentAnalytics": {
+      "title": "Payment Analytics",
+      "description": "Review payment trends and overdue statistics"
+    }
+  },
+  "list": {
+    "filterInvoices": "Filter Invoices",
+    "invoiceRecords": "Invoice Records",
+    "allStatuses": "All Statuses",
+    "status": "Status",
+    "dateRange": "Date Range",
+    "sortBy": "Sort By",
+    "search": "Search",
+    "applyFilters": "Apply Filters",
+    "resetFilters": "Reset filters",
+    "loadingInvoices": "Loading invoices...",
+    "noInvoicesFound": "No invoices found",
+    "createFirstInvoice": "Create your first invoice to get started",
+    "createInvoice": "Create Invoice",
+    "invoice": "Invoice",
+    "customer": "Customer",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "amount": "Amount",
+    "actions": "Actions",
+    "showingInvoices": "Showing {{count}} invoice",
+    "showingInvoicesPlural": "Showing {{count}} invoices"
+  },
+  "emptyState": {
+    "title": "No invoices yet",
+    "description": "Create your first invoice to start tracking payments",
+    "noDrafts": "No draft invoices",
+    "noOverdue": "No overdue invoices"
+  },
+  "messages": {
+    "invoiceCreated": "Invoice created successfully",
+    "invoiceUpdated": "Invoice updated successfully",
+    "invoiceDeleted": "Invoice deleted successfully",
+    "invoiceSent": "Invoice sent successfully",
+    "paymentRecorded": "Payment recorded successfully",
+    "confirmDelete": "Are you sure you want to delete this invoice?",
+    "failedToCreate": "Failed to create invoice",
+    "failedToUpdate": "Failed to update invoice",
+    "failedToDelete": "Failed to delete invoice",
+    "failedToSend": "Failed to send invoice"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "newInvoice": "New Invoice",
+    "createInvoice": "Create Invoice",
+    "createNewInvoice": "Create new invoice",
+    "recordPayment": "Record Payment",
+    "draftInvoices": "Draft Invoices",
+    "sendReminders": "Send Reminders",
+    "invoiceReports": "Invoice Reports",
+    "exportInvoices": "Export Invoices",
+    "viewOverdue": "View Overdue",
+    "exportReport": "Export Report"
+  },
+  "sidebar": {
+    "paymentsDueSoon": "Payments Due Soon",
+    "noPaymentsDueSoon": "No payments due soon",
+    "viewAllPending": "View all pending invoices",
+    "viewAllOverdue": "View all overdue invoices",
+    "dueToday": "Due today",
+    "dueInDays": "Due in {{days}} days",
+    "dayOverdue": "{{days}} day overdue",
+    "daysOverdue": "{{days}} days overdue"
+  },
+  "overdueInvoices": {
+    "title": "Overdue Invoices",
+    "noOverdue": "No overdue invoices",
+    "daysOverdue": "{{days}} days overdue"
+  },
+  "paymentDueSoon": {
+    "title": "Payment Due Soon",
+    "noDue": "No payments due soon",
+    "dueIn": "Due in {{days}} days",
+    "dueToday": "Due today"
+  },
+  "dashboard": {
+    "fromLastMonth": "from last month",
+    "noInvoicesFound": "No invoices found.",
+    "viewAll": "View All"
+  },
+  "filters": {
+    "allInvoices": "All Invoices",
+    "allTime": "All Time",
+    "last30": "Last 30 Days",
+    "last90": "Last 90 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisYear": "This Year",
+    "sortBy": "Sort by",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "amount": "Amount",
+    "status": "Status",
+    "customer": "Customer",
+    "descending": "Descending",
+    "ascending": "Ascending",
+    "searchPlaceholder": "Search invoices..."
+  },
+  "deleteModal": {
+    "title": "Delete Confirmation",
+    "deleteInvoice": "Delete Invoice",
+    "confirmText": "Are you sure you want to delete invoice #{{invoiceNumber}}? This action cannot be undone.",
+    "alsoDeleteLoad": "Also delete associated load",
+    "deleteLoadHint": "If checked, the load linked to this invoice will also be deleted.",
+    "deleting": "Deleting..."
+  },
+  "paymentModal": {
+    "title": "Record Payment",
+    "paymentAmount": "Payment Amount",
+    "invoiceBalance": "Invoice balance",
+    "paymentMethod": "Payment Method",
+    "paymentDate": "Payment Date",
+    "reference": "Reference / Transaction ID",
+    "notes": "Notes",
+    "optional": "Optional",
+    "optionalNotes": "Optional payment notes",
+    "processing": "Processing...",
+    "recordPayment": "Record Payment",
+    "methods": {
+      "creditCard": "Credit Card",
+      "bankTransfer": "Bank Transfer",
+      "check": "Check",
+      "cash": "Cash",
+      "other": "Other"
+    }
+  },
+  "header": {
+    "title": "Invoice Management",
+    "subtitle": "Create, track, and manage your trucking invoices",
+    "breadcrumb": {
+      "dashboard": "Dashboard",
+      "invoices": "Invoices"
+    },
+    "createInvoice": "Create Invoice",
+    "export": "Export",
+    "description": "Generate, manage, and track your invoices for all your trucking operations in one place."
+  },
+  "statsLabels": {
+    "totalValue": "Total Value",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "draft": "Draft",
+    "allInvoices": "All invoices ({{count}})",
+    "completedInvoices": "Completed invoices",
+    "awaitingPayment": "Awaiting payment",
+    "pastDueDate": "Past due date",
+    "notYetSent": "Not yet sent"
+  },
+  "statsDashboard": {
+    "totalInvoices": "Total Invoices",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "invoiceStatus": "Invoice Status",
+    "invoiceSummary": "Invoice Summary",
+    "totalInvoicesLabel": "Total Invoices:",
+    "averageInvoiceValue": "Average Invoice Value:",
+    "collectionRate": "Collection Rate:",
+    "outstandingBalance": "Outstanding Balance:",
+    "failedToLoad": "Failed to load invoice statistics. Please try again."
+  },
+  "form": {
+    "steps": {
+      "customer": "Customer",
+      "details": "Details",
+      "items": "Items"
+    },
+    "customerInfo": "Customer Information",
+    "customerRequired": "Customer",
+    "selectCustomer": "Select a customer",
+    "customerEmail": "Customer Email",
+    "customerAddress": "Customer Address",
+    "poNumber": "PO Number",
+    "poNumberPlaceholder": "Purchase Order Number (Optional)",
+    "relatedLoad": "Related Load (Optional)",
+    "selectLoadToFill": "Select a load to auto-fill",
+    "selectingLoadHint": "Selecting a load will automatically add it as a line item",
+    "invoiceDetails": "Invoice Details",
+    "invoiceNumber": "Invoice Number",
+    "status": "Status",
+    "statusDraft": "Draft",
+    "statusPending": "Pending",
+    "statusSent": "Sent",
+    "statusPaid": "Paid",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "paymentTerms": "Payment Terms",
+    "dueOnReceipt": "Due on Receipt",
+    "net7": "Net 7",
+    "net15": "Net 15",
+    "net30": "Net 30",
+    "net60": "Net 60",
+    "taxRate": "Tax Rate (%)",
+    "notesOptional": "Notes (Optional)",
+    "notesPlaceholder": "Additional notes for the customer...",
+    "lineItems": "Line Items",
+    "addItem": "Add Item",
+    "description": "Description",
+    "descriptionPlaceholder": "Service or item description",
+    "quantity": "Quantity",
+    "unitPrice": "Unit Price",
+    "total": "Total",
+    "subtotal": "Subtotal:",
+    "tax": "Tax ({{rate}}%):",
+    "termsConditions": "Terms & Conditions",
+    "reviewSummary": "Review Invoice Summary",
+    "invoiceHash": "Invoice #:",
+    "customerLabel": "Customer:",
+    "invoiceDateLabel": "Invoice Date:",
+    "dueDateLabel": "Due Date:",
+    "statusLabel": "Status:",
+    "totalLabel": "Total:",
+    "cancel": "Cancel",
+    "previous": "Previous",
+    "next": "Next",
+    "updating": "Updating...",
+    "creating": "Creating...",
+    "updateInvoice": "Update Invoice",
+    "createInvoice": "Create Invoice",
+    "restoredProgress": "We've restored your previous progress. You can continue where you left off.",
+    "clear": "Clear",
+    "invoiceSavedSuccess": "Invoice saved successfully! Redirecting...",
+    "failedToInit": "Failed to initialize form. Please try again.",
+    "failedToSave": "Failed to save invoice. Please try again.",
+    "validation": {
+      "customerRequired": "Customer is required",
+      "validEmail": "Please enter a valid email address",
+      "invoiceDateRequired": "Invoice date is required",
+      "dueDateRequired": "Due date is required",
+      "itemsRequired": "All items must have a description and quantity greater than 0",
+      "invoiceValueRequired": "Invoice must have at least one item with a value"
+    }
+  },
+  "emailModal": {
+    "title": "Email Invoice",
+    "invoicePreview": "Invoice Preview",
+    "invoiceNumber": "Invoice #{{number}}",
+    "customer": "Customer",
+    "date": "Date",
+    "total": "Total",
+    "due": "Due",
+    "to": "To",
+    "cc": "CC",
+    "bcc": "BCC",
+    "subject": "Subject",
+    "message": "Message",
+    "attachPdf": "Attach PDF invoice",
+    "includePaymentLink": "Include payment link",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "sendInvoice": "Send Invoice",
+    "recipientRequired": "Recipient email is required",
+    "validEmail": "Please enter a valid email address",
+    "pleaseLogin": "Please log in to send invoices",
+    "sentSuccess": "Invoice has been sent successfully!",
+    "sendFailed": "Failed to send invoice. Please try again.",
+    "invoiceFor": "Invoice for",
+    "amount": "Amount"
+  },
+  "pdfGenerator": {
+    "downloadPdf": "Download PDF",
+    "printInvoice": "Print Invoice",
+    "preparing": "Preparing...",
+    "generating": "Generating...",
+    "failedToGenerate": "Failed to generate PDF. Please try again."
+  },
+  "detail": {
+    "createdOn": "Created on",
+    "edit": "Edit",
+    "recordPayment": "Record Payment",
+    "send": "Send",
+    "download": "Download",
+    "pdf": "PDF",
+    "invoiceNotFound": "Invoice Not Found",
+    "invoiceNotFoundDesc": "The invoice you're looking for doesn't exist or you don't have access to it.",
+    "backToInvoices": "Back to Invoices",
+    "invoice": "INVOICE",
+    "invoiceNumber": "Invoice #:",
+    "date": "Date:",
+    "dueDate": "Due Date:",
+    "poNumber": "PO #:",
+    "billTo": "BILL TO:",
+    "shipmentInfo": "SHIPMENT INFO:",
+    "loadNumber": "Load #:",
+    "qty": "Qty",
+    "unitPrice": "Unit Price",
+    "total": "Total",
+    "subtotal": "Subtotal:",
+    "tax": "Tax ({{rate}}%):",
+    "amountPaid": "Amount Paid:",
+    "balanceDue": "Balance Due:",
+    "notes": "NOTES:",
+    "termsConditions": "TERMS & CONDITIONS:",
+    "paymentStatus": "Payment Status",
+    "totalAmount": "Total Amount:",
+    "dueOn": "Due on",
+    "paymentTermsLabel": "Payment Terms:",
+    "paymentHistory": "Payment History",
+    "payments": "payments",
+    "noPaymentsYet": "No payments recorded yet.",
+    "activityHistory": "Activity History",
+    "activities": "activities",
+    "failedToLoad": "Failed to load invoice data. Please try again or contact support if the issue persists.",
+    "failedToAction": "Failed to {{action}} invoice. Please try again.",
+    "actions": {
+      "editInvoice": "Edit Invoice",
+      "duplicate": "Duplicate",
+      "sendByEmail": "Send by Email",
+      "downloadPdf": "Download PDF",
+      "print": "Print",
+      "markAsPaid": "Mark as Paid",
+      "recordPayment": "Record Payment"
+    },
+    "emailModal": {
+      "title": "Send Invoice",
+      "compose": "Compose and send invoice",
+      "invoiceFor": "Invoice for",
+      "amount": "Amount",
+      "dueDate": "Due Date",
+      "recipient": "Recipient",
+      "addCcBcc": "Add CC/BCC",
+      "hideCcBcc": "Hide CC/BCC",
+      "subjectLine": "Subject Line",
+      "emailTemplate": "Email Template",
+      "templates": {
+        "professional": {
+          "name": "Professional",
+          "description": "Formal business tone"
+        },
+        "friendly": {
+          "name": "Friendly",
+          "description": "Casual and warm"
+        },
+        "reminder": {
+          "name": "Payment Reminder",
+          "description": "Follow-up for pending payment"
+        }
+      },
+      "message": "Message",
+      "attachPdf": "Attach PDF Invoice",
+      "attachPdfDesc": "Include invoice as attachment",
+      "includePaymentLink": "Include Payment Link",
+      "includePaymentLinkDesc": "Allow online payment",
+      "emailFromAccount": "Email will be sent from your account",
+      "cancel": "Cancel",
+      "sending": "Sending...",
+      "sendInvoice": "Send Invoice"
+    }
+  },
+  "tutorial": {
+    "title": "Invoice Management",
+    "description": "Create, track, and manage all your customer invoices",
+    "fullDescription": "Create, track, and manage professional invoices for your trucking services. Get paid faster with organized billing.",
+    "features": {
+      "createInvoices": {
+        "title": "Create Invoices",
+        "description": "Generate professional invoices from completed loads or create custom invoices"
+      },
+      "createProfessional": {
+        "title": "Create Professional Invoices",
+        "description": "Generate detailed invoices with line items, tax calculations, and payment terms"
+      },
+      "trackPayments": {
+        "title": "Track Payments",
+        "description": "Monitor payment status and record payments when received"
+      },
+      "trackPaymentsFull": {
+        "title": "Track Payments",
+        "description": "Monitor payment status, mark invoices as paid, and track outstanding balances"
+      },
+      "dueDateAlerts": {
+        "title": "Due Date Alerts",
+        "description": "See upcoming and overdue invoices at a glance"
+      },
+      "dueDateAlertsFull": {
+        "title": "Due Date Alerts",
+        "description": "Stay on top of accounts receivable with upcoming and overdue payment alerts"
+      },
+      "emailInvoices": {
+        "title": "Email Invoices",
+        "description": "Send invoices directly to customers via email"
+      },
+      "exportReports": {
+        "title": "Export Reports",
+        "description": "Download invoice reports in PDF, CSV, or TXT format for your records"
+      }
+    },
+    "tips": [
+      "Mark invoices as paid when payment is received to keep your records accurate",
+      "Use the status filters to quickly find pending or overdue invoices",
+      "Export invoice reports for your accounting records",
+      "Check the 'Payment Due Soon' section to follow up on unpaid invoices"
+    ],
+    "tipsList": [
+      "Complete loads can be automatically converted to invoices",
+      "Set appropriate payment terms (Net 15, Net 30) based on customer agreements",
+      "Review overdue invoices regularly and follow up with customers",
+      "Use the export feature to generate billing reports for accounting"
+    ]
+  },
+  "page": {
+    "title": "Invoice Management",
+    "subtitle": "Track and manage all your customer invoices and payments",
+    "newInvoice": "New Invoice",
+    "exportData": "Export Data",
+    "limitReached": "Limit Reached",
+    "addNew": "Add New",
+    "view": "View",
+    "delete": "Delete",
+    "markAsPaid": "Mark as Paid",
+    "searchPlaceholder": "Search by invoice #, customer, or description...",
+    "noMatchingFilters": "No invoices match your current filters"
+  },
+  "limits": {
+    "approaching": "Approaching Invoice Limit",
+    "usedOfTotal": "You've used {{current}} of {{limit}} invoices this month.",
+    "upgradeLink": "Upgrade for unlimited invoices",
+    "upgradeToCreate": "Upgrade to create more invoices",
+    "reachedTitle": "Invoice Limit Reached",
+    "reachedDescription": "You've used {{current}}/{{limit}} invoices this month. Upgrade your plan for unlimited invoices.",
+    "upgradePlan": "Upgrade Plan",
+    "limitReachedCount": "Limit Reached ({{current}}/{{limit}})"
+  },
+  "export": {
+    "title": "Export Invoices Report",
+    "description": "Export your invoice records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records.",
+    "success": "Report exported successfully!",
+    "pdf": {
+      "title": "Invoice Report",
+      "subtitle": "Billing & Accounts Receivable"
+    },
+    "summary": {
+      "totalInvoices": "Total Invoices",
+      "totalAmount": "Total Amount",
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "outstanding": "Outstanding"
+    },
+    "columns": {
+      "invoiceNumber": "Invoice #",
+      "customer": "Customer",
+      "invoiceDate": "Invoice Date",
+      "dueDate": "Due Date",
+      "amount": "Amount",
+      "status": "Status"
+    }
+  },
+  "newPage": {
+    "duplicateInvoice": "Duplicate Invoice",
+    "createNewInvoice": "Create New Invoice",
+    "duplicateDescription": "Create a copy of an existing invoice",
+    "createDescription": "Fill out the form to create a new invoice"
+  },
+  "editPage": {
+    "loading": "Loading invoice...",
+    "unableToLoad": "Unable to Load Invoice",
+    "backToInvoices": "Back to Invoices",
+    "tryAgain": "Try Again",
+    "editInvoice": "Edit Invoice",
+    "editingInvoice": "Editing Invoice",
+    "editingDescription": "You're editing an existing invoice. Changes will update the invoice and any line items. The invoice number cannot be changed.",
+    "cannotFindInvoice": "We couldn't find the invoice you're looking for. It may have been deleted or you don't have permission to view it.",
+    "loadError": "Failed to load invoice. Please try again."
+  }
+}

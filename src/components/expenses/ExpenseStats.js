@@ -1,6 +1,7 @@
 'use client';
 
 import { DollarSign, TrendingUp, Tag, Calendar } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Statistics Cards
@@ -12,6 +13,8 @@ import { DollarSign, TrendingUp, Tag, Calendar } from 'lucide-react';
  * - Total Entries
  */
 export default function ExpenseStats({ stats, isLoading, dateRange }) {
+  const { t } = useTranslation('expenses');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -24,27 +27,27 @@ export default function ExpenseStats({ stats, isLoading, dateRange }) {
 
   const statCards = [
     {
-      title: 'Total Expenses',
+      title: t('statsLabels.totalExpenses'),
       value: formatCurrency(stats.total),
       icon: <DollarSign size={20} className="text-blue-600 dark:text-blue-400" />,
       color: 'blue'
     },
     {
-      title: 'Daily Average',
+      title: t('statsLabels.dailyAverage'),
       value: formatCurrency(stats.dailyAverage),
       icon: <TrendingUp size={20} className="text-emerald-600 dark:text-emerald-400" />,
       color: 'green'
     },
     {
-      title: 'Top Category',
+      title: t('statsLabels.topCategory'),
       value: stats.topCategory?.name || 'N/A',
       icon: <Tag size={20} className="text-amber-600 dark:text-amber-400" />,
       color: 'yellow',
       subtitle: stats.topCategory ? formatCurrency(stats.topCategory.amount) : null
     },
     {
-      title: 'Total Entries',
-      value: `${stats.count?.toLocaleString() || '0'} ${stats.count === 1 ? 'entry' : 'entries'}`,
+      title: t('statsLabels.totalEntries'),
+      value: `${stats.count?.toLocaleString() || '0'} ${stats.count === 1 ? t('statsLabels.entry') : t('statsLabels.entries')}`,
       icon: <Calendar size={20} className="text-purple-600 dark:text-purple-400" />,
       color: 'purple'
     }

@@ -1,12 +1,16 @@
 "use client";
 
+import { useTranslation } from "@/context/LanguageContext";
+
 export default function ComplianceTypes({ types, complianceItems, onTypeSelect }) {
+  const { t } = useTranslation('compliance');
+
   const hasItems = Object.entries(types).some(([key]) =>
     complianceItems.some(item => item.compliance_type === key)
   );
   return (
     <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Compliance Types</h2>
+      <h2 className="text-lg font-medium text-gray-900 mb-4">{t('types.complianceTypes')}</h2>
       <div className="md:flex md:flex-wrap">
         {hasItems ? (
           Object.entries(types).map(([key, type]) => {
@@ -23,13 +27,13 @@ export default function ComplianceTypes({ types, complianceItems, onTypeSelect }
                   <span key={`${key}-name`} className="ml-2 text-sm font-semibold text-gray-700">{type.name}</span>
                 </div>
                 <span key={`${key}-count`} className="text-xs text-gray-500">
-                  {count} item{count !== 1 && "s"}
+                  {count} {count !== 1 ? t('itemCount.items') : t('itemCount.item')}
                 </span>
               </div>
             );
           })
         ) : (
-          <p className="text-center text-gray-500">No compliance items found</p>
+          <p className="text-center text-gray-500">{t('emptyState.noComplianceItems')}</p>
         )}
       </div>
     </div>

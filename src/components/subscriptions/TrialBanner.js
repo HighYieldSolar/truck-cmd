@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { Clock, X, CreditCard, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function TrialBanner() {
+  const { t } = useTranslation('common');
   const { subscription, isTrialActive, isSubscriptionActive, getDaysLeftInTrial } = useSubscription();
   const [dismissed, setDismissed] = useState(false);
 
@@ -56,20 +58,20 @@ export default function TrialBanner() {
               <>
                 <AlertTriangle size={20} className="mr-3" />
                 <span className="font-medium">
-                  Your free trial has ended. Subscribe now to regain access to all features.
+                  {t('trial.banner.trialEnded')}
                 </span>
               </>
             ) : (
               <>
                 <Clock size={20} className="mr-3" />
                 <span className="font-medium">
-                  {daysLeft === 1 ? 'Last day' : `${daysLeft} days left`} in your free trial
-                  {daysLeft <= 3 && '. Act now to avoid losing access.'}
+                  {daysLeft === 1 ? t('trial.banner.lastDay') : t('trial.banner.daysLeftInTrial', { count: daysLeft })}
+                  {daysLeft <= 3 && `. ${t('trial.banner.actNow')}`}
                 </span>
               </>
             )}
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-center sm:justify-end">
             <Link
@@ -77,7 +79,7 @@ export default function TrialBanner() {
               className="whitespace-nowrap py-1.5 px-4 rounded-md bg-white text-blue-700 hover:bg-blue-50 font-medium text-sm transition-colors flex items-center"
             >
               <CreditCard size={16} className="mr-1.5" />
-              {!isTrialActive() ? "Subscribe Now" : "Upgrade Plan"}
+              {!isTrialActive() ? t('trial.banner.subscribeNow') : t('trial.banner.upgradePlan')}
             </Link>
             
             <button

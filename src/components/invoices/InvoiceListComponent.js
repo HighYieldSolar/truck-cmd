@@ -11,9 +11,12 @@ import {
 } from "lucide-react";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import TableActions from "@/components/shared/TableActions";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Invoice Filters Component
 const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
+  const { t } = useTranslation('invoices');
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -35,29 +38,29 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
   };
 
   const statusOptions = [
-    { value: 'all', label: 'All Invoices' },
-    { value: 'paid', label: 'Paid' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'draft', label: 'Draft' },
-    { value: 'sent', label: 'Sent' }
+    { value: 'all', label: t('filters.allInvoices') },
+    { value: 'paid', label: t('status.paid') },
+    { value: 'pending', label: t('common:status.pending') },
+    { value: 'overdue', label: t('status.overdue') },
+    { value: 'draft', label: t('status.draft') },
+    { value: 'sent', label: t('status.sent') }
   ];
 
   const dateRangeOptions = [
-    { value: 'all', label: 'All Time' },
-    { value: 'last30', label: 'Last 30 Days' },
-    { value: 'last90', label: 'Last 90 Days' },
-    { value: 'thisMonth', label: 'This Month' },
-    { value: 'lastMonth', label: 'Last Month' },
-    { value: 'thisYear', label: 'This Year' },
+    { value: 'all', label: t('filters.allTime') },
+    { value: 'last30', label: t('filters.last30') },
+    { value: 'last90', label: t('filters.last90') },
+    { value: 'thisMonth', label: t('filters.thisMonth') },
+    { value: 'lastMonth', label: t('filters.lastMonth') },
+    { value: 'thisYear', label: t('filters.thisYear') },
   ];
 
   const sortOptions = [
-    { value: 'invoice_date', label: 'Invoice Date' },
-    { value: 'due_date', label: 'Due Date' },
-    { value: 'total', label: 'Amount' },
-    { value: 'status', label: 'Status' },
-    { value: 'customer', label: 'Customer' }
+    { value: 'invoice_date', label: t('list.invoiceDate') },
+    { value: 'due_date', label: t('list.dueDate') },
+    { value: 'total', label: t('list.amount') },
+    { value: 'status', label: t('list.status') },
+    { value: 'customer', label: t('list.customer') }
   ];
 
   return (
@@ -65,21 +68,21 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
       <div className="bg-blue-500 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <Filter size={18} className="mr-2" />
-          Filter Invoices
+          {t('list.filterInvoices')}
         </h3>
       </div>
 
       <div className="p-5">
         <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Status</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.status')}</label>
             <select
               name="status"
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">{t('list.allStatuses')}</option>
               {statusOptions.filter(option => option.value !== 'all').map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -89,14 +92,14 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Date Range</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.dateRange')}</label>
             <select
               name="dateRange"
               value={filters.dateRange}
               onChange={(e) => handleFilterChange('dateRange', e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
             >
-              <option value="all">All Time</option>
+              <option value="all">{t('filters.allTime')}</option>
               {dateRangeOptions.filter(option => option.value !== 'all').map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -106,7 +109,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Sort By</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.sortBy')}</label>
             <select
               name="sortBy"
               value={filters.sortBy}
@@ -122,7 +125,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Search</label>
+            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.search')}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-gray-400" />
@@ -132,7 +135,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search invoices..."
+                placeholder={t('filters.searchPlaceholder')}
               />
             </div>
           </div>
@@ -144,7 +147,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm flex items-center font-medium"
           >
             <Filter size={16} className="mr-2" />
-            Apply Filters
+            {t('list.applyFilters')}
           </button>
 
           <button
@@ -159,7 +162,7 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
             }
           >
             <RefreshCw size={14} className="mr-1" />
-            Reset filters
+            {t('list.resetFilters')}
           </button>
         </div>
       </div>
@@ -177,6 +180,8 @@ export default function InvoiceListComponent({
   onApplyFilters,
   loading
 }) {
+  const { t } = useTranslation('invoices');
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -200,7 +205,7 @@ export default function InvoiceListComponent({
         <div className="bg-blue-500 px-5 py-4 text-white">
           <h3 className="font-semibold flex items-center">
             <FileText size={18} className="mr-2" />
-            Invoice Records
+            {t('list.invoiceRecords')}
           </h3>
         </div>
 
@@ -210,25 +215,25 @@ export default function InvoiceListComponent({
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice
+                  {t('list.invoice')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
+                  {t('list.customer')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice Date
+                  {t('list.invoiceDate')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Due Date
+                  {t('list.dueDate')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
+                  {t('list.amount')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  {t('list.status')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t('list.actions')}
                 </th>
               </tr>
             </thead>
@@ -237,7 +242,7 @@ export default function InvoiceListComponent({
                 <tr>
                   <td colSpan="7" className="px-6 py-10 text-center">
                     <RefreshCw size={32} className="mx-auto text-blue-500 animate-spin" />
-                    <p className="mt-2 text-gray-500">Loading invoices...</p>
+                    <p className="mt-2 text-gray-500">{t('list.loadingInvoices')}</p>
                   </td>
                 </tr>
               ) : invoices.length === 0 ? (
@@ -245,14 +250,14 @@ export default function InvoiceListComponent({
                   <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="max-w-sm mx-auto">
                       <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">No invoices found</h3>
-                      <p className="text-gray-500 mb-4">Create your first invoice to get started</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">{t('list.noInvoicesFound')}</h3>
+                      <p className="text-gray-500 mb-4">{t('list.createFirstInvoice')}</p>
                       <Link
                         href="/dashboard/invoices/new"
                         className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                       >
                         <Plus size={16} className="mr-2" />
-                        Create Invoice
+                        {t('list.createInvoice')}
                       </Link>
                     </div>
                   </td>
@@ -265,7 +270,7 @@ export default function InvoiceListComponent({
                         onClick={() => handleViewInvoice(invoice.id)}
                         className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                       >
-                        Invoice #{invoice.invoice_number}
+                        {t('list.invoice')} #{invoice.invoice_number}
                       </a>
                     </td>
 
@@ -298,7 +303,7 @@ export default function InvoiceListComponent({
                             {
                               icon: DollarSign,
                               onClick: () => handleMarkAsPaid(invoice.id),
-                              title: "Mark as Paid",
+                              title: t('actions.markAsPaid'),
                               color: "green"
                             }
                           ] : []}
@@ -315,7 +320,7 @@ export default function InvoiceListComponent({
 
         <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            Showing {invoices.length} {invoices.length === 1 ? 'invoice' : 'invoices'}
+            {invoices.length === 1 ? t('list.showingInvoices', { count: invoices.length }) : t('list.showingInvoicesPlural', { count: invoices.length })}
           </div>
           <div>
             {/* Pagination controls would go here */}

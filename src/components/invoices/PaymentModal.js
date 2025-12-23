@@ -8,6 +8,7 @@ import {
   RefreshCw,
   XCircle
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * PaymentModal - Modal for recording payments on invoices
@@ -19,6 +20,7 @@ import {
  * @param {boolean} isSubmitting - Whether a submission is in progress
  */
 export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSubmitting }) {
+  const { t } = useTranslation('invoices');
   const [payment, setPayment] = useState({
     amount: invoice?.balance || 0,
     method: 'credit_card',
@@ -59,7 +61,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
         <div className="bg-green-500 dark:bg-green-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
           <h2 className="text-lg font-bold flex items-center">
             <DollarSign size={20} className="mr-2" />
-            Record Payment
+            {t('paymentModal.title')}
           </h2>
           <button onClick={onClose} className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors">
             <XCircle size={20} />
@@ -71,7 +73,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600 dark:text-gray-400">
-                Invoice #{invoice.invoice_number}
+                {t('list.invoice')} #{invoice.invoice_number}
               </span>
               <span className="font-medium text-gray-900 dark:text-gray-100">
                 {invoice.customer}
@@ -83,7 +85,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Payment Amount
+              {t('paymentModal.paymentAmount')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -103,13 +105,13 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               />
             </div>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Invoice balance: ${balance.toFixed(2)}
+              {t('paymentModal.invoiceBalance')}: ${balance.toFixed(2)}
             </p>
           </div>
 
           <div className="mb-4">
             <label htmlFor="method" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Payment Method
+              {t('paymentModal.paymentMethod')}
             </label>
             <select
               id="method"
@@ -119,17 +121,17 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
-              <option value="credit_card">Credit Card</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="check">Check</option>
-              <option value="cash">Cash</option>
-              <option value="other">Other</option>
+              <option value="credit_card">{t('paymentModal.methods.creditCard')}</option>
+              <option value="bank_transfer">{t('paymentModal.methods.bankTransfer')}</option>
+              <option value="check">{t('paymentModal.methods.check')}</option>
+              <option value="cash">{t('paymentModal.methods.cash')}</option>
+              <option value="other">{t('paymentModal.methods.other')}</option>
             </select>
           </div>
 
           <div className="mb-4">
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Payment Date
+              {t('paymentModal.paymentDate')}
             </label>
             <input
               type="date"
@@ -144,7 +146,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
 
           <div className="mb-4">
             <label htmlFor="reference" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Reference / Transaction ID
+              {t('paymentModal.reference')}
             </label>
             <input
               type="text"
@@ -153,13 +155,13 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               value={payment.reference}
               onChange={handleChange}
               className="block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Optional"
+              placeholder={t('paymentModal.optional')}
             />
           </div>
 
           <div className="mb-6">
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes
+              {t('paymentModal.notes')}
             </label>
             <textarea
               id="notes"
@@ -168,7 +170,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               onChange={handleChange}
               rows="2"
               className="block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Optional payment notes"
+              placeholder={t('paymentModal.optionalNotes')}
             ></textarea>
           </div>
 
@@ -179,7 +181,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common:buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -189,12 +191,12 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
               {isSubmitting ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
-                  Processing...
+                  {t('paymentModal.processing')}
                 </>
               ) : (
                 <>
                   <CheckCircle size={16} className="mr-2" />
-                  Record Payment
+                  {t('paymentModal.recordPayment')}
                 </>
               )}
             </button>

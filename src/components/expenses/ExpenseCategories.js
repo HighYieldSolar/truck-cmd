@@ -10,6 +10,7 @@ import {
   Coffee,
   Tag
 } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Categories Sidebar Widget
@@ -22,6 +23,8 @@ export default function ExpenseCategories({
   onCategorySelect,
   selectedCategory
 }) {
+  const { t } = useTranslation('expenses');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -61,7 +64,7 @@ export default function ExpenseCategories({
           <Tag className="h-6 w-6 text-gray-400 dark:text-gray-500" />
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          No expense categories yet
+          {t('categoryWidget.noCategoriesYet')}
         </p>
       </div>
     );
@@ -108,7 +111,7 @@ export default function ExpenseCategories({
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              All Categories
+              {t('categoryWidget.allCategories')}
             </span>
           </div>
           <span className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300 shadow-sm">

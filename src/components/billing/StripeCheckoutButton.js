@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CreditCard, RefreshCw } from 'lucide-react';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * A button component that initiates the Stripe checkout flow
@@ -12,13 +13,17 @@ export default function StripeCheckoutButton({
   billingCycle,
   userId,
   disabled = false,
-  buttonText = "Subscribe Now",
+  buttonText,
   className = "",
   returnUrl = ""
 }) {
+  const { t } = useTranslation('billing');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [checkoutInitiated, setCheckoutInitiated] = useState(false);
+
+  // Use translated default if no buttonText provided
+  const displayButtonText = buttonText || t('checkout.subscribeNow');
 
   const handleCheckout = async () => {
     if (disabled || loading || checkoutInitiated || !planId || !userId) return;
@@ -93,19 +98,19 @@ export default function StripeCheckoutButton({
         {loading || checkoutInitiated ? (
           <>
             <RefreshCw size={20} className="animate-spin mr-2" />
-            {checkoutInitiated ? 'Redirecting to Stripe...' : 'Processing...'}
+            {checkoutInitiated ? t('checkout.redirectingToStripe') : t('checkout.processing')}
           </>
         ) : (
           <>
             <CreditCard size={20} className="mr-2" />
-            {buttonText}
+            {displayButtonText}
           </>
         )}
       </button>
 
       {error && (
         <div className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-          <p className="font-medium">Error:</p>
+          <p className="font-medium">{t('checkout.error')}:</p>
           <p>{error}</p>
         </div>
       )}

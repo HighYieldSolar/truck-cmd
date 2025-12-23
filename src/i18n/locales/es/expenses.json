@@ -1,0 +1,380 @@
+{
+  "title": "Gastos",
+  "subtitle": "Rastree y administre los gastos de su negocio",
+  "addExpense": "Agregar Gasto",
+  "editExpense": "Editar Gasto",
+  "deleteExpense": "Eliminar Gasto",
+  "newExpense": "Nuevo Gasto",
+  "viewExpense": "Ver Gasto",
+  "expenses": {
+    "all": "Todos los Gastos",
+    "recent": "Gastos Recientes",
+    "byCategory": "Por Categoría",
+    "byMonth": "Por Mes"
+  },
+  "fields": {
+    "date": "Fecha",
+    "amount": "Monto",
+    "category": "Categoría",
+    "description": "Descripción",
+    "vendor": "Proveedor",
+    "paymentMethod": "Método de Pago",
+    "receipt": "Recibo",
+    "notes": "Notas",
+    "tax": "Impuesto",
+    "taxDeductible": "Deducible de Impuestos",
+    "reimbursable": "Reembolsable"
+  },
+  "categories": {
+    "title": "Categorías",
+    "fuel": "Combustible",
+    "maintenance": "Mantenimiento",
+    "repairs": "Reparaciones",
+    "insurance": "Seguro",
+    "permits": "Permisos y Licencias",
+    "tolls": "Peajes",
+    "parking": "Estacionamiento",
+    "lodging": "Hospedaje",
+    "meals": "Comidas",
+    "supplies": "Suministros",
+    "equipment": "Equipo",
+    "office": "Oficina",
+    "professional": "Servicios Profesionales",
+    "taxes": "Impuestos",
+    "other": "Otro"
+  },
+  "placeholders": {
+    "selectCategory": "Seleccione una categoría",
+    "enterAmount": "Ingrese monto",
+    "enterDescription": "Ingrese descripción",
+    "enterVendor": "Ingrese nombre del proveedor",
+    "addNotes": "Agregue notas..."
+  },
+  "receipt": {
+    "title": "Recibo",
+    "upload": "Subir Recibo",
+    "view": "Ver Recibo",
+    "download": "Descargar Recibo",
+    "noReceipt": "No hay recibo subido",
+    "dragDrop": "Arrastre y suelte o haga clic para subir"
+  },
+  "filters": {
+    "title": "Filtros",
+    "byCategory": "Filtrar por Categoría",
+    "byDate": "Filtrar por Fecha",
+    "byAmount": "Filtrar por Monto",
+    "clearFilters": "Limpiar Filtros",
+    "allCategories": "Todas las Categorías"
+  },
+  "stats": {
+    "title": "Resumen de Gastos",
+    "totalExpenses": "Gastos Totales",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "avgPerDay": "Promedio Por Día",
+    "topCategory": "Categoría Principal",
+    "expenseCount": "Número de Gastos"
+  },
+  "chart": {
+    "title": "Tendencias de Gastos",
+    "byCategory": "Por Categoría",
+    "byMonth": "Por Mes",
+    "comparison": "Comparación Mensual"
+  },
+  "emptyState": {
+    "title": "No hay gastos registrados",
+    "description": "Registre su primer gasto para comenzar a administrar las finanzas de su negocio",
+    "noExpenses": "No hay gastos para este período"
+  },
+  "messages": {
+    "expenseCreated": "Gasto agregado exitosamente",
+    "expenseUpdated": "Gasto actualizado exitosamente",
+    "expenseDeleted": "Gasto eliminado exitosamente",
+    "confirmDelete": "¿Está seguro que desea eliminar este gasto?",
+    "failedToCreate": "Error al agregar gasto",
+    "failedToUpdate": "Error al actualizar gasto",
+    "failedToDelete": "Error al eliminar gasto",
+    "receiptUploaded": "Recibo subido exitosamente",
+    "receiptDeleted": "Recibo eliminado exitosamente"
+  },
+  "topExpenses": {
+    "title": "Gastos Principales",
+    "byAmount": "Por Monto",
+    "byCategory": "Por Categoría"
+  },
+  "receiptDirectory": {
+    "title": "Directorio de Recibos",
+    "allReceipts": "Todos los Recibos",
+    "noReceipts": "No se encontraron recibos"
+  },
+  "table": {
+    "date": "Fecha",
+    "description": "Descripción",
+    "category": "Categoría",
+    "amount": "Monto",
+    "receipt": "Recibo",
+    "actions": "Acciones",
+    "paymentMethod": "Método de Pago",
+    "total": "Total",
+    "noExpensesFound": "No se encontraron gastos",
+    "getStarted": "Comience agregando su primer gasto"
+  },
+  "form": {
+    "editExpense": "Editar Gasto",
+    "addExpense": "Agregar Gasto",
+    "basicInformation": "Información Básica",
+    "vehicleReceipt": "Vehículo y Recibo",
+    "additionalNotes": "Notas Adicionales",
+    "description": "Descripción",
+    "amount": "Monto",
+    "date": "Fecha",
+    "category": "Categoría",
+    "paymentMethod": "Método de Pago",
+    "vehicle": "Vehículo",
+    "selectVehicle": "Seleccionar Vehículo (opcional)",
+    "loading": "Cargando...",
+    "receiptImage": "Imagen del Recibo",
+    "receiptPreview": "Vista Previa del Recibo",
+    "remove": "Eliminar",
+    "taxDeductible": "Deducible de Impuestos",
+    "notes": "Notas",
+    "notesPlaceholder": "Cualquier información adicional...",
+    "descriptionPlaceholder": "ej. Combustible para Camión #123",
+    "formRestored": "Se han restaurado los datos de su formulario anterior.",
+    "cancel": "Cancelar",
+    "saving": "Guardando...",
+    "saveExpense": "Guardar Gasto",
+    "updateExpense": "Actualizar Gasto"
+  },
+  "paymentMethods": {
+    "creditCard": "Tarjeta de Crédito",
+    "debitCard": "Tarjeta de Débito",
+    "cash": "Efectivo",
+    "check": "Cheque",
+    "eft": "Transferencia Electrónica",
+    "other": "Otro"
+  },
+  "validation": {
+    "descriptionRequired": "La descripción es requerida.",
+    "descriptionMinLength": "La descripción debe tener al menos 3 caracteres.",
+    "amountRequired": "El monto es requerido.",
+    "amountPositive": "El monto debe ser un número positivo.",
+    "amountMax": "El monto excede el valor máximo permitido.",
+    "dateRequired": "La fecha es requerida.",
+    "dateFuture": "La fecha no puede ser en el futuro.",
+    "datePast": "La fecha es muy antigua.",
+    "categoryRequired": "La categoría es requerida."
+  },
+  "statsLabels": {
+    "totalExpenses": "Gastos Totales",
+    "dailyAverage": "Promedio Diario",
+    "topCategory": "Categoría Principal",
+    "totalEntries": "Total de Registros",
+    "entry": "registro",
+    "entries": "registros"
+  },
+  "deleteModal": {
+    "title": "¿Eliminar Gasto?",
+    "description": "Esta acción no se puede deshacer. El siguiente gasto será eliminado permanentemente:",
+    "descriptionLabel": "Descripción:",
+    "dateLabel": "Fecha:",
+    "categoryLabel": "Categoría:",
+    "amountLabel": "Monto:",
+    "noDescription": "Sin descripción",
+    "receiptWarning": "La imagen del recibo adjunto también será eliminada.",
+    "note": "Nota:",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "deleting": "Eliminando..."
+  },
+  "filtersExpanded": {
+    "category": "Categoría",
+    "allCategories": "Todas las Categorías",
+    "dateRange": "Rango de Fechas",
+    "allTime": "Todo el Tiempo",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "thisQuarter": "Este Trimestre",
+    "lastQuarter": "Trimestre Pasado",
+    "thisYear": "Este Año",
+    "customRange": "Rango Personalizado",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "sortBy": "Ordenar Por",
+    "sortDate": "Fecha",
+    "sortAmount": "Monto",
+    "sortCategory": "Categoría",
+    "sortDescription": "Descripción",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar gastos...",
+    "resetFilters": "Restablecer Filtros"
+  },
+  "item": {
+    "loading": "Cargando...",
+    "noDescription": "Sin descripción"
+  },
+  "summary": {
+    "total": "Total",
+    "expenses": "gastos",
+    "topCategory": "Categoría Principal",
+    "none": "Ninguna",
+    "noDataAvailable": "No hay datos disponibles",
+    "dailyAverage": "Promedio Diario",
+    "averageSpendingPerDay": "Gasto promedio por día",
+    "monthlyTrend": "Tendencia Mensual",
+    "comparedToPrevMonth": "Comparado con el mes anterior",
+    "categories": "Categorías",
+    "activeCategories": "Categorías de gasto activas"
+  },
+  "categoryWidget": {
+    "noCategoriesYet": "Aún no hay categorías de gastos",
+    "allCategories": "Todas las Categorías"
+  },
+  "topExpensesWidget": {
+    "noExpensesYet": "Aún no hay gastos",
+    "viewReceipt": "Ver Recibo",
+    "edit": "Editar"
+  },
+  "chartWidget": {
+    "title": "Análisis de Gastos",
+    "noData": "No hay datos de gastos disponibles",
+    "addExpenses": "Agregue gastos para ver su análisis de gastos",
+    "bar": "Barras",
+    "pie": "Pastel",
+    "ofTotal": "del total",
+    "totalFor": "total para",
+    "category": "categoría",
+    "categories": "categorías"
+  },
+  "receiptDirectoryWidget": {
+    "title": "Directorio de Recibos",
+    "receipts": "recibos",
+    "searchPlaceholder": "Buscar recibos...",
+    "allYears": "Todos los Años",
+    "allCategories": "Todas las Categorías",
+    "selected": "seleccionados",
+    "downloadSelected": "Descargar Seleccionados",
+    "downloading": "Descargando recibos...",
+    "noReceiptsFound": "No se Encontraron Recibos",
+    "uploadReceiptsHint": "Suba recibos al agregar gastos para verlos aquí.",
+    "noMatchingReceipts": "No Hay Recibos Coincidentes",
+    "adjustFilters": "Intente ajustar sus filtros.",
+    "downloadAllYear": "Descargar todos los recibos",
+    "deselectAll": "Deseleccionar todos",
+    "selectAll": "Seleccionar todos",
+    "downloadMonth": "Descargar recibos",
+    "untitledReceipt": "Recibo Sin Título",
+    "viewReceipt": "Ver recibo",
+    "downloadReceipt": "Descargar recibo"
+  },
+  "receiptViewer": {
+    "title": "Detalles del Recibo",
+    "receiptImage": "Imagen del Recibo",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "rotate": "Rotar",
+    "downloading": "Descargando...",
+    "download": "Descargar",
+    "pdfReceipt": "Recibo PDF",
+    "pdfStored": "Este recibo está guardado como documento PDF.",
+    "viewPdf": "Ver PDF",
+    "unableToDisplay": "No se puede mostrar el recibo",
+    "imageUnavailable": "La imagen puede no estar disponible o estar en un formato no soportado.",
+    "openInNewTab": "Abrir en Nueva Pestaña",
+    "noReceiptAvailable": "No Hay Recibo Disponible",
+    "noReceiptAttached": "Este gasto no tiene un recibo adjunto.",
+    "expenseInformation": "Información del Gasto",
+    "paymentInformation": "Información de Pago",
+    "vehicleInformation": "Información del Vehículo",
+    "vehicleId": "ID del Vehículo",
+    "notes": "Notas",
+    "noNotesAvailable": "No hay notas disponibles.",
+    "downloadReceipt": "Descargar Recibo",
+    "close": "Cerrar"
+  },
+  "card": {
+    "date": "Fecha",
+    "category": "Categoría",
+    "payment": "Pago",
+    "deductible": "Deducible",
+    "receipt": "Recibo",
+    "noReceipt": "Sin recibo",
+    "noDescription": "Sin descripción",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "common": {
+    "description": "Descripción",
+    "amount": "Monto",
+    "category": "Categoría",
+    "date": "Fecha",
+    "paymentMethod": "Método de Pago",
+    "taxDeductible": "Deducible de Impuestos",
+    "yes": "Sí",
+    "no": "No",
+    "na": "N/D"
+  },
+  "page": {
+    "title": "Seguimiento de Gastos",
+    "subtitle": "Rastree y administre todos los gastos de su negocio",
+    "addExpense": "Agregar Gasto",
+    "exportReport": "Exportar Reporte",
+    "topExpenses": "Gastos Principales",
+    "expenseCategories": "Categorías de Gastos",
+    "expenseRecords": "Registros de Gastos",
+    "addNew": "Agregar Nuevo",
+    "expenseAnalysis": "Análisis de Gastos",
+    "expensesSuffix": "gastos",
+    "total": "Total:"
+  },
+  "emptyStateFiltered": {
+    "title": "No se encontraron gastos",
+    "description": "Intente ajustar su búsqueda o filtros.",
+    "addExpenseLabel": "Agregar Gasto"
+  },
+  "emptyStateNoData": {
+    "description": "Comience a rastrear sus gastos agregando su primera entrada."
+  },
+  "tutorial": {
+    "title": "Guía de Seguimiento de Gastos",
+    "description": "Registre y categorice gastos de negocio para cumplimiento fiscal",
+    "features": {
+      "logExpenses": {
+        "title": "Registrar Gastos",
+        "description": "Registre gastos con categoría, monto, fecha y método de pago"
+      },
+      "receiptUpload": {
+        "title": "Subir Recibos",
+        "description": "Adjunte imágenes de recibos para documentación y registros fiscales"
+      },
+      "smartCategories": {
+        "title": "Categorías Inteligentes",
+        "description": "Combustible, Mantenimiento, Seguro, Peajes, Comidas, Equipo y más"
+      },
+      "taxDeductions": {
+        "title": "Deducciones Fiscales",
+        "description": "Rastree gastos deducibles para reportes fiscales precisos"
+      }
+    },
+    "tips": [
+      "Suba recibos inmediatamente - no pierda la documentación",
+      "Los gastos de combustible se sincronizan automáticamente desde el Rastreador de Combustible",
+      "Use filtros de categoría para revisar gastos por tipo",
+      "Exporte reportes trimestralmente para contabilidad y preparación de impuestos"
+    ]
+  },
+  "export": {
+    "modalTitle": "Exportar Reporte de Gastos",
+    "modalDescription": "Exporte sus registros de gastos en múltiples formatos. Elija PDF para un reporte profesional o CSV para análisis en hojas de cálculo.",
+    "totalRecords": "Total de Registros",
+    "totalAmount": "Monto Total",
+    "deductible": "Deducible",
+    "dateRange": "Rango de Fechas",
+    "exportSuccess": "¡Reporte exportado exitosamente!"
+  },
+  "successMessages": {
+    "expenseAdded": "Gasto agregado exitosamente.",
+    "expenseUpdated": "Gasto actualizado exitosamente.",
+    "expenseDeleted": "Gasto eliminado exitosamente."
+  }
+}

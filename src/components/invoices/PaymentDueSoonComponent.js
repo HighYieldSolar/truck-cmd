@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { Calendar, Clock } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
+  const { t } = useTranslation('invoices');
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -15,13 +18,13 @@ export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
       <div className="bg-blue-500 px-5 py-4 text-white">
         <h3 className="font-semibold flex items-center">
           <Calendar size={18} className="mr-2" />
-          Payments Due Soon
+          {t('sidebar.paymentsDueSoon')}
         </h3>
       </div>
       <div className="p-4">
         {invoices.length === 0 ? (
           <div className="text-gray-500 text-center py-6">
-            No payments due soon
+            {t('sidebar.noPaymentsDueSoon')}
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
@@ -42,7 +45,7 @@ export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
                         {invoice.customer}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {daysUntilDue === 0 ? 'Due today' : `Due in ${daysUntilDue} days`} ({formatDate(invoice.due_date)})
+                        {daysUntilDue === 0 ? t('sidebar.dueToday') : t('sidebar.dueInDays', { days: daysUntilDue })} ({formatDate(invoice.due_date)})
                       </div>
                     </div>
                     <div className="flex items-center">
@@ -60,7 +63,7 @@ export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
               href="/dashboard/invoices?filter=pending"
               className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full"
             >
-              View all pending invoices
+              {t('sidebar.viewAllPending')}
             </Link>
           </div>
         )}

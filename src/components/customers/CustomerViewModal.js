@@ -16,8 +16,11 @@ import {
   Edit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function CustomerViewModal({ isOpen, onClose, customer, onEdit }) {
+  const { t } = useTranslation('customers');
+
   if (!isOpen || !customer) return null;
 
   const getTypeIcon = (type) => {
@@ -49,10 +52,18 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
   };
 
   const formatType = (type) => {
-    if (!type) return 'Business';
-    return type.split('-').map(word =>
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    if (!type) return t('types.business');
+    const typeKey = type.toLowerCase().replace('-', '');
+    const typeMap = {
+      'shipper': 'types.shipper',
+      'broker': 'types.broker',
+      'consignee': 'types.consignee',
+      'direct': 'types.direct',
+      'freightforwarder': 'types.freightForwarder',
+      '3pl': 'types.thirdPartyLogistics',
+      'business': 'types.business'
+    };
+    return t(typeMap[typeKey] || 'types.business');
   };
 
   const formatDate = (dateString) => {
@@ -117,10 +128,10 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
               {/* Status Badge */}
               <div className="flex items-center gap-3">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(customer.status)}`}>
-                  {customer.status || 'Active'}
+                  {customer.status || t('status.active')}
                 </span>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Customer since {formatDate(customer.created_at)}
+                  {t('viewModal.customerSince')} {formatDate(customer.created_at)}
                 </span>
               </div>
 
@@ -128,17 +139,17 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <User size={18} className="text-blue-500" />
-                  Contact Information
+                  {t('viewModal.contactInformation')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Contact Name</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('viewModal.contactName')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {customer.contact_name || '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.email')}</p>
                     {customer.email ? (
                       <a
                         href={`mailto:${customer.email}`}
@@ -152,7 +163,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.phone')}</p>
                     {customer.phone ? (
                       <a
                         href={`tel:${customer.phone}`}
@@ -172,29 +183,29 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-5">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <MapPin size={18} className="text-blue-500" />
-                  Location
+                  {t('viewModal.location')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Address</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.address')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {customer.address || '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">City</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.city')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {customer.city || '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">State</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.state')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {customer.state || '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">ZIP Code</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('form.zipCode')}</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100 mt-0.5">
                       {customer.zip || '—'}
                     </p>
@@ -207,7 +218,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 border border-blue-100 dark:border-blue-800">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                     <FileText size={18} className="text-blue-500" />
-                    Notes
+                    {t('viewModal.notes')}
                   </h3>
                   <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                     {customer.notes}
@@ -221,7 +232,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                   onClick={onClose}
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Close
+                  {t('viewModal.close')}
                 </button>
                 {onEdit && (
                   <button
@@ -232,7 +243,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                     className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 transition-colors"
                   >
                     <Edit size={16} />
-                    Edit Customer
+                    {t('viewModal.editCustomer')}
                   </button>
                 )}
               </div>

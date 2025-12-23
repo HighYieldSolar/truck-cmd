@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { ShieldCheck, AlertTriangle, XCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FleetHealthScoreComponent({
   drivers = [],
   vehicles = [],
   documentReminders = []
 }) {
+  const { t } = useTranslation('fleet');
   const [healthData, setHealthData] = useState({
     score: 100,
     status: 'excellent',
@@ -160,7 +162,7 @@ export default function FleetHealthScoreComponent({
           bg: 'bg-red-100 dark:bg-red-900/30',
           border: 'border-red-200 dark:border-red-800',
           ringColor: 'stroke-red-500',
-          label: 'Critical'
+          label: t('healthScore.critical')
         };
       case 'warning':
         return {
@@ -169,7 +171,7 @@ export default function FleetHealthScoreComponent({
           bg: 'bg-amber-100 dark:bg-amber-900/30',
           border: 'border-amber-200 dark:border-amber-800',
           ringColor: 'stroke-amber-500',
-          label: 'Needs Attention'
+          label: t('healthScore.needsAttention')
         };
       case 'good':
         return {
@@ -178,7 +180,7 @@ export default function FleetHealthScoreComponent({
           bg: 'bg-blue-100 dark:bg-blue-900/30',
           border: 'border-blue-200 dark:border-blue-800',
           ringColor: 'stroke-blue-500',
-          label: 'Good'
+          label: t('healthScore.good')
         };
       default:
         return {
@@ -187,7 +189,7 @@ export default function FleetHealthScoreComponent({
           bg: 'bg-green-100 dark:bg-green-900/30',
           border: 'border-green-200 dark:border-green-800',
           ringColor: 'stroke-green-500',
-          label: 'Excellent'
+          label: t('healthScore.excellent')
         };
     }
   };
@@ -205,7 +207,7 @@ export default function FleetHealthScoreComponent({
       <div className={`${config.bg} px-5 py-4`}>
         <h3 className={`font-semibold flex items-center ${config.color}`}>
           <StatusIcon size={18} className="mr-2" />
-          Fleet Health Score
+          {t('healthScore.title')}
         </h3>
       </div>
       <div className="p-4">
@@ -249,15 +251,15 @@ export default function FleetHealthScoreComponent({
         <div className="grid grid-cols-3 gap-2 mb-4 text-center">
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
             <p className="text-lg font-semibold text-green-600 dark:text-green-400">{healthData.compliantItems}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Valid</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScore.valid')}</p>
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
             <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">{healthData.expiringItems}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Expiring</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScore.expiring')}</p>
           </div>
           <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
             <p className="text-lg font-semibold text-red-600 dark:text-red-400">{healthData.expiredItems}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Expired</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('healthScore.expired')}</p>
           </div>
         </div>
 
@@ -275,7 +277,7 @@ export default function FleetHealthScoreComponent({
               >
                 <span className="truncate">{issue.entity} - {issue.doc}</span>
                 <span className="font-medium ml-2 whitespace-nowrap">
-                  {issue.type === 'expired' ? 'Expired' : 'Soon'}
+                  {issue.type === 'expired' ? t('healthScore.expired') : t('healthScore.soon')}
                 </span>
               </div>
             ))}
@@ -285,14 +287,14 @@ export default function FleetHealthScoreComponent({
         {/* No issues message */}
         {healthData.issues.length === 0 && healthData.totalItems > 0 && (
           <div className="text-center py-2 text-sm text-green-600 dark:text-green-400">
-            All documents are up to date!
+            {t('healthScore.allDocumentsUpToDate')}
           </div>
         )}
 
         {/* No documents tracked message */}
         {healthData.totalItems === 0 && (
           <div className="text-center py-2 text-sm text-gray-500 dark:text-gray-400">
-            No documents being tracked yet
+            {t('healthScore.noDocumentsTracked')}
           </div>
         )}
 
@@ -301,7 +303,7 @@ export default function FleetHealthScoreComponent({
           href="/dashboard/compliance"
           className="mt-2 flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
         >
-          View Compliance Details
+          {t('healthScore.viewComplianceDetails')}
           <ChevronRight size={16} className="ml-1" />
         </Link>
       </div>

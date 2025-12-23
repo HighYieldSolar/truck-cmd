@@ -8,8 +8,10 @@ import { ChevronLeft, FileText, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import InvoiceForm from "@/components/invoices/InvoiceForm";
 import { duplicateInvoice } from "@/lib/services/invoiceService";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function NewInvoicePage() {
+  const { t } = useTranslation('invoices');
   const searchParams = useSearchParams();
   const duplicateId = searchParams.get('duplicate');
 
@@ -90,10 +92,10 @@ export default function NewInvoicePage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">
-                    {duplicateId ? 'Duplicate Invoice' : 'Create New Invoice'}
+                    {duplicateId ? t('newPage.duplicateInvoice') : t('newPage.createNewInvoice')}
                   </h1>
                   <p className="text-blue-100">
-                    {duplicateId ? 'Create a copy of an existing invoice' : 'Fill out the form to create a new invoice'}
+                    {duplicateId ? t('newPage.duplicateDescription') : t('newPage.createDescription')}
                   </p>
                 </div>
               </div>

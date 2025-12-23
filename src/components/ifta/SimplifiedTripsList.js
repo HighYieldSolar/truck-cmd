@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from 'react-i18next';
 
 export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoading = false }) {
+  const { t } = useTranslation('ifta');
   const [vehicleDetails, setVehicleDetails] = useState({});
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -47,7 +49,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
           const detailsMap = {};
           vehiclesData.forEach(vehicle => {
             detailsMap[vehicle.id] = {
-              name: vehicle.name || 'Unknown Truck',
+              name: vehicle.name || t('tripsList.unknownTruck'),
               licensePlate: vehicle.license_plate || ''
             };
           });
@@ -79,19 +81,19 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
     if (trip.is_imported && trip.source === 'mileage_tracker' && trip.mileage_trip_id) {
       return (
         <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          State Mileage
+          {t('tripsList.stateMileage')}
         </span>
       );
     } else if (trip.is_imported && trip.load_id) {
       return (
         <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-          Load
+          {t('tripsList.load')}
         </span>
       );
     } else if (trip.is_fuel_only) {
       return (
         <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          Fuel Only
+          {t('tripsList.fuelOnly')}
         </span>
       );
     }
@@ -112,7 +114,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
       return (
         <span className="flex items-center text-gray-500">
           <RefreshCw size={12} className="animate-spin mr-1" />
-          Loading...
+          {t('tripsList.loading')}
         </span>
       );
     }
@@ -155,12 +157,14 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
         <div className="flex justify-between items-center">
           <h3 className="font-semibold flex items-center">
             <Route size={18} className="mr-2" />
-            Trip Records
+            {t('tripsList.title')}
           </h3>
           <div className="flex items-center space-x-3">
             {trips.length > 0 && (
               <span className="text-sm text-blue-100">
-                {trips.length} {trips.length === 1 ? 'trip' : 'trips'} recorded
+                {trips.length === 1
+                  ? t('tripsList.tripsRecorded', { count: trips.length })
+                  : t('tripsList.tripsRecorded_plural', { count: trips.length })}
               </span>
             )}
             <button
@@ -170,12 +174,12 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
               {isExpanded ? (
                 <>
                   <ChevronDown size={16} className="mr-1" />
-                  Hide
+                  {t('tripsList.hide')}
                 </>
               ) : (
                 <>
                   <ChevronRight size={16} className="mr-1" />
-                  Show
+                  {t('tripsList.show')}
                 </>
               )}
             </button>
@@ -191,22 +195,22 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      {t('tripsList.date')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vehicle
+                      {t('tripsList.vehicle')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Route
+                      {t('tripsList.route')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Miles
+                      {t('tripsList.miles')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Gallons
+                      {t('tripsList.gallons')}
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50">
-                      Actions
+                      {t('tripsList.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -218,13 +222,13 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
                           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Route size={32} className="text-blue-600" />
                           </div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-1">No trips recorded</h3>
-                          <p className="text-gray-500 mb-4">Start tracking your IFTA trips to see them here</p>
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">{t('tripsList.noTripsRecorded')}</h3>
+                          <p className="text-gray-500 mb-4">{t('tripsList.startTracking')}</p>
                           <button
                             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
                           >
                             <Plus size={16} className="mr-2" />
-                            Add New Trip
+                            {t('tripsList.addNewTrip')}
                           </button>
                         </div>
                       </td>
@@ -285,7 +289,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
                             {!trip.is_imported && (
                               <button
                                 className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
-                                title="Edit"
+                                title={t('tripsList.edit')}
                               >
                                 <Edit size={16} />
                               </button>
@@ -293,7 +297,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
                             <button
                               className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
                               onClick={() => onDeleteTrip(trip)}
-                              title="Delete"
+                              title={t('tripsList.delete')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -309,7 +313,7 @@ export default function SimplifiedTripsList({ trips = [], onDeleteTrip, isLoadin
 
           {trips.length > 5 && (
             <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 text-center text-sm text-gray-500">
-              Showing all {trips.length} trips. Scroll to view more.
+              {t('tripsList.showingAllTrips', { count: trips.length })}
             </div>
           )}
         </>

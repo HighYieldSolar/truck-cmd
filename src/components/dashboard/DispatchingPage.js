@@ -26,6 +26,7 @@ import {
   BarChart2
 } from "lucide-react";
 import TutorialCard from "@/components/shared/TutorialCard";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Import dispatching components
 import LoadStats from "@/components/dispatching/LoadStats";
@@ -246,6 +247,7 @@ const calculateLoadStats = (loads) => {
 
 // Main Dispatching Dashboard Component
 export default function DispatchingPage() {
+  const { t } = useTranslation('dispatching');
   const searchParams = useSearchParams();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -510,12 +512,12 @@ export default function DispatchingPage() {
       const updatedLoads = loads.map(load => load.id === savedLoad.id ? savedLoad : load);
       setLoads(updatedLoads);
       setLoadStats(calculateLoadStats(updatedLoads));
-      setMessage({ type: 'success', text: 'Load updated successfully!' });
+      setMessage({ type: 'success', text: t('messages.loadUpdated') });
     } else {
       const updatedLoads = [savedLoad, ...loads];
       setLoads(updatedLoads);
       setLoadStats(calculateLoadStats(updatedLoads));
-      setMessage({ type: 'success', text: 'Load created successfully!' });
+      setMessage({ type: 'success', text: t('messages.loadCreated') });
     }
     setEditingLoad(null);
   };
@@ -543,7 +545,7 @@ export default function DispatchingPage() {
       const updatedLoads = loads.filter(load => load.id !== loadToDelete.id);
       setLoads(updatedLoads);
       setLoadStats(calculateLoadStats(updatedLoads));
-      setMessage({ type: 'success', text: 'Load deleted successfully!' });
+      setMessage({ type: 'success', text: t('messages.loadDeleted') });
 
       setDeleteModalOpen(false);
       setLoadToDelete(null);
@@ -609,14 +611,14 @@ export default function DispatchingPage() {
       : 0;
 
     return {
-      'Total Loads': loads.length.toString(),
-      'Active Loads': activeLoads.toString(),
-      'Completed': completedLoads.toString(),
-      'Assigned': assignedLoads.toString(),
-      'Total Revenue': `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      'Avg Rate': `$${avgRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      [t('page.exportSummary.totalLoads')]: loads.length.toString(),
+      [t('page.exportSummary.activeLoads')]: activeLoads.toString(),
+      [t('page.exportSummary.completed')]: completedLoads.toString(),
+      [t('page.exportSummary.assigned')]: assignedLoads.toString(),
+      [t('page.exportSummary.totalRevenue')]: `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      [t('page.exportSummary.avgRate')]: `$${avgRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     };
-  }, [loads]);
+  }, [loads, t]);
 
   // Get date range for export
   const getExportDateRange = useCallback(() => {
@@ -680,9 +682,9 @@ export default function DispatchingPage() {
                   <div className="mb-4 sm:mb-0">
                     <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
                       <Truck size={28} className="mr-3" />
-                      Load Management
+                      {t('page.title')}
                     </h1>
-                    <p className="mt-1 text-blue-100">Create and manage your loads and dispatching</p>
+                    <p className="mt-1 text-blue-100">{t('page.subtitle')}</p>
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -691,7 +693,7 @@ export default function DispatchingPage() {
                       className="inline-flex items-center px-4 py-2.5 bg-blue-700 dark:bg-blue-800 text-white rounded-lg hover:bg-blue-800 dark:hover:bg-blue-900 font-medium shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Download size={18} className="mr-2" />
-                      Export
+                      {t('page.export')}
                     </button>
                     {(() => {
                       const loadLimit = checkResourceUpgrade('loadsPerMonth', monthlyLoadCount);
@@ -702,7 +704,7 @@ export default function DispatchingPage() {
                             className="inline-flex items-center px-4 py-2.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 font-medium shadow-lg transition-all duration-200"
                           >
                             <Lock size={18} className="mr-2" />
-                            Limit Reached ({monthlyLoadCount}/{loadLimit.limit})
+                            {t('page.limitReached')} ({monthlyLoadCount}/{loadLimit.limit})
                           </Link>
                         );
                       }
@@ -715,7 +717,7 @@ export default function DispatchingPage() {
                           className="inline-flex items-center px-4 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium shadow-lg transition-all duration-200"
                         >
                           <Plus size={18} className="mr-2" />
-                          Create Load
+                          {t('createLoad')}
                         </button>
                       );
                     })()}
@@ -729,37 +731,37 @@ export default function DispatchingPage() {
           {user && (
             <TutorialCard
               pageId="dispatching"
-              title="Load Management Guide"
-              description="Create, track, and manage all your freight loads in one place"
+              title={t('page.tutorial.title')}
+              description={t('page.tutorial.description')}
               accentColor="blue"
               userId={user.id}
               features={[
                 {
                   icon: Plus,
-                  title: "Create Loads",
-                  description: "Add loads with pickup/delivery details, customer, rate, and more"
+                  title: t('page.tutorial.createLoads'),
+                  description: t('page.tutorial.createLoadsDesc')
                 },
                 {
                   icon: UserCheck,
-                  title: "Assign Driver & Truck",
-                  description: "Assign available drivers and vehicles to loads for complete tracking"
+                  title: t('page.tutorial.assignDriverTruck'),
+                  description: t('page.tutorial.assignDriverTruckDesc')
                 },
                 {
                   icon: Route,
-                  title: "Track Status",
-                  description: "Monitor loads through Pending → Assigned → In Transit → Completed"
+                  title: t('page.tutorial.trackStatus'),
+                  description: t('page.tutorial.trackStatusDesc')
                 },
                 {
                   icon: Filter,
-                  title: "Filter & Search",
-                  description: "Filter by status, date range, driver, vehicle, or search any field"
+                  title: t('page.tutorial.filterSearch'),
+                  description: t('page.tutorial.filterSearchDesc')
                 }
               ]}
               tips={[
-                "Assign both driver AND truck for accurate IFTA and compliance tracking",
-                "Mark loads complete promptly to trigger automatic invoicing",
-                "Use the Export button to download load reports as PDF, CSV, or TXT",
-                "Click any load to view full details and update status"
+                t('page.tips.assignBoth'),
+                t('page.tips.markComplete'),
+                t('page.tips.exportButton'),
+                t('page.tips.clickAny')
               ]}
             />
           )}
@@ -774,9 +776,9 @@ export default function DispatchingPage() {
                   <div className="flex items-center gap-3">
                     <Lock size={20} className="text-amber-600" />
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
-                      <span className="font-medium">Approaching limit:</span> You've used {monthlyLoadCount} of {limit} loads this month.
+                      <span className="font-medium">{t('page.limitWarning.approaching')}</span> {t('page.limitWarning.usedOf', { used: monthlyLoadCount, limit: limit })}
                       <Link href="/dashboard/upgrade" className="ml-2 underline hover:no-underline">
-                        Upgrade for unlimited loads
+                        {t('page.limitWarning.upgrade')}
                       </Link>
                     </p>
                   </div>
@@ -832,10 +834,10 @@ export default function DispatchingPage() {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div className="mb-4 sm:mb-0">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loads</h2>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('page.loadsTitle')}</h2>
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {loads.length} total load{loads.length !== 1 ? 's' : ''}
-                        {filters.status !== 'All' && ` (filtered by ${filters.status})`}
+                        {t('page.totalLoads', { count: loads.length })}
+                        {filters.status !== 'All' && ` (${t('page.filteredBy', { status: filters.status })})`}
                       </p>
                     </div>
                     {dataLoading && (
@@ -853,7 +855,15 @@ export default function DispatchingPage() {
                         <table className="w-full table-fixed">
                           <thead>
                             <tr className="border-b border-gray-200 dark:border-gray-700">
-                              {['Load', 'Route', 'Dates', 'Driver', 'Rate', 'Status', 'Actions'].map((h, i) => (
+                              {[
+                                t('page.tableHeaders.load'),
+                                t('page.tableHeaders.route'),
+                                t('page.tableHeaders.dates'),
+                                t('page.tableHeaders.driver'),
+                                t('page.tableHeaders.rate'),
+                                t('page.tableHeaders.status'),
+                                t('page.tableHeaders.actions')
+                              ].map((h, i) => (
                                 <th key={i} className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {h}
                                 </th>
@@ -877,14 +887,14 @@ export default function DispatchingPage() {
                   ) : loads.length === 0 ? (
                     <EmptyState
                       icon={Package}
-                      title="No loads found"
+                      title={t('emptyState.title')}
                       description={
                         filters.status !== "All" || filters.search || filters.dateRange !== "all"
-                          ? "Try adjusting your filters or search criteria."
-                          : "Get started by creating your first load."
+                          ? t('common:filters.adjustFilters')
+                          : t('emptyState.description')
                       }
                       action={{
-                        label: "Create Load",
+                        label: t('createLoad'),
                         onClick: () => {
                           setEditingLoad(null);
                           setShowNewLoadModal(true);
@@ -898,13 +908,13 @@ export default function DispatchingPage() {
                         <table className="w-full table-fixed">
                           <thead>
                             <tr className="border-b border-gray-200 dark:border-gray-700">
-                              <th className="w-[18%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Load</th>
-                              <th className="w-[20%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Route</th>
-                              <th className="w-[15%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Dates</th>
-                              <th className="w-[14%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Driver</th>
-                              <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rate</th>
-                              <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                              <th className="w-[12%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                              <th className="w-[18%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.load')}</th>
+                              <th className="w-[20%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.route')}</th>
+                              <th className="w-[15%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.dates')}</th>
+                              <th className="w-[14%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.driver')}</th>
+                              <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.rate')}</th>
+                              <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.status')}</th>
+                              <th className="w-[12%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.actions')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -938,7 +948,7 @@ export default function DispatchingPage() {
                       {totalPages > 1 && (
                         <div className="mt-6 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4">
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Showing page {currentPage} of {totalPages}
+                            {t('page.showingPage', { current: currentPage, total: totalPages })}
                           </div>
                           <div className="flex space-x-2">
                             <button
@@ -949,7 +959,7 @@ export default function DispatchingPage() {
                                 : 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
                                 }`}
                             >
-                              Previous
+                              {t('common:pagination.previous')}
                             </button>
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                               let pageNum;
@@ -983,7 +993,7 @@ export default function DispatchingPage() {
                                 : 'text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed'
                                 }`}
                             >
-                              Next
+                              {t('common:pagination.next')}
                             </button>
                           </div>
                         </div>
@@ -1038,21 +1048,21 @@ export default function DispatchingPage() {
       <ExportReportModal
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
-        title="Export Loads Report"
-        description="Export your load records in multiple formats. Choose PDF for professional reports, CSV for spreadsheets, or TXT for simple text records."
+        title={t('page.exportModal.title')}
+        description={t('page.exportModal.description')}
         data={getExportData()}
         columns={exportColumns}
         filename="loads_report"
         summaryInfo={getExportSummaryInfo()}
         dateRange={getExportDateRange()}
         pdfConfig={{
-          title: 'Load Management Report',
-          subtitle: 'Dispatching & Logistics'
+          title: t('page.exportModal.pdfTitle'),
+          subtitle: t('page.exportModal.pdfSubtitle')
         }}
         onExportComplete={() => {
           setMessage({
             type: 'success',
-            text: 'Report exported successfully!'
+            text: t('common:export.success')
           });
         }}
       />

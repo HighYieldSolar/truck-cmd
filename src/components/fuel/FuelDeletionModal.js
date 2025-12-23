@@ -1,6 +1,8 @@
 // src/components/fuel/FuelDeletionModal.js
+"use client";
 import { useState } from "react";
 import { RefreshCw, AlertTriangle, X, Trash2, FileText, DollarSign, Fuel } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Specialized deletion modal for fuel entries with linked expenses
@@ -19,6 +21,7 @@ export default function FuelDeletionModal({
   fuelEntry,
   isDeleting = false
 }) {
+  const { t } = useTranslation('fuel');
   const [deleteLinkedExpense, setDeleteLinkedExpense] = useState(true);
 
   if (!isOpen || !fuelEntry) return null;
@@ -36,7 +39,7 @@ export default function FuelDeletionModal({
         <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
             <Trash2 size={20} className="text-red-500 dark:text-red-400 mr-2" />
-            Delete Fuel Entry
+            {t('deleteModal.title')}
           </h2>
           <button
             onClick={onClose}
@@ -58,17 +61,17 @@ export default function FuelDeletionModal({
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                Delete &quot;{fuelEntry.location}&quot; fuel purchase?
+                {t('deleteModal.confirmDelete', { location: fuelEntry.location })}
               </h3>
 
               <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                <p><span className="font-medium text-gray-700 dark:text-gray-300">Date:</span> {new Date(fuelEntry.date).toLocaleDateString()}</p>
-                <p><span className="font-medium text-gray-700 dark:text-gray-300">Gallons:</span> {fuelEntry.gallons.toFixed(3)}</p>
-                <p><span className="font-medium text-gray-700 dark:text-gray-300">Amount:</span> {formattedAmount}</p>
+                <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.dateLabel')}</span> {new Date(fuelEntry.date).toLocaleDateString()}</p>
+                <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.gallonsLabel')}</span> {fuelEntry.gallons.toFixed(3)}</p>
+                <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.amountLabel')}</span> {formattedAmount}</p>
               </div>
 
               <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                This action cannot be undone. This fuel entry will be permanently deleted from your records.
+                {t('deleteModal.permanentDelete')}
               </p>
 
               {/* Option for linked expense if applicable */}
@@ -77,8 +80,8 @@ export default function FuelDeletionModal({
                   <div className="flex items-start mb-2">
                     <DollarSign size={18} className="text-red-500 dark:text-red-400 mr-2 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">This fuel entry has a linked expense record</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">The expense created from this fuel entry appears in your Expenses section.</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.linkedExpense')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('deleteModal.linkedExpenseDescription')}</p>
                     </div>
                   </div>
 
@@ -91,11 +94,11 @@ export default function FuelDeletionModal({
                     />
                     <span className="flex items-center">
                       <FileText size={16} className="text-gray-500 dark:text-gray-400 mr-1.5" />
-                      Also delete the linked expense record
+                      {t('deleteModal.alsoDeleteLinkedExpense')}
                     </span>
                   </label>
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 ml-6">
-                    If unchecked, the expense record will remain in your expenses but will no longer be linked to this fuel entry.
+                    {t('deleteModal.linkedExpenseNote')}
                   </p>
                 </div>
               )}
@@ -111,7 +114,7 @@ export default function FuelDeletionModal({
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             disabled={isDeleting}
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
           <button
             type="button"
@@ -122,12 +125,12 @@ export default function FuelDeletionModal({
             {isDeleting ? (
               <>
                 <RefreshCw size={16} className="animate-spin mr-2" />
-                Deleting...
+                {t('deleteModal.deleting')}
               </>
             ) : (
               <>
                 <Trash2 size={16} className="mr-2" />
-                Delete Fuel Entry
+                {t('deleteModal.title')}
               </>
             )}
           </button>

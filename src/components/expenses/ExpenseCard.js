@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2, Eye, Receipt, CheckCircle } from 'lucide-react';
 import TableActions from '@/components/shared/TableActions';
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Card Component (Mobile View)
@@ -10,6 +11,8 @@ import TableActions from '@/components/shared/TableActions';
  * Follows the design spec mobile card pattern.
  */
 export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }) {
+  const { t } = useTranslation('expenses');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -51,7 +54,7 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
       {/* Card Header */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1 mr-2">
-          {expense.description || 'No description'}
+          {expense.description || t('card.noDescription')}
         </h4>
         <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
           {formatCurrency(expense.amount)}
@@ -61,33 +64,33 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
       {/* Card Body - 2x2 Grid */}
       <div className="p-4 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('card.date')}</p>
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {formatDate(expense.date)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Category</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('card.category')}</p>
           <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
             {expense.category || 'Other'}
           </span>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Payment</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('card.payment')}</p>
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {expense.payment_method || 'N/A'}
+            {expense.payment_method || t('common.na')}
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Deductible</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('card.deductible')}</p>
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1">
             {expense.deductible !== false ? (
               <>
                 <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-                Yes
+                {t('card.yes')}
               </>
             ) : (
-              'No'
+              t('card.no')
             )}
           </p>
         </div>
@@ -100,10 +103,10 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
           {expense.receipt_image ? (
             <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
               <Receipt className="h-3 w-3 mr-1" />
-              Receipt
+              {t('card.receipt')}
             </span>
           ) : (
-            <span className="text-xs text-gray-400 dark:text-gray-500">No receipt</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{t('card.noReceipt')}</span>
           )}
         </div>
 

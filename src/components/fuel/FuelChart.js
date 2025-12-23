@@ -2,8 +2,10 @@
 "use client";
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelChart({ data, period = 'This Quarter' }) {
+  const { t } = useTranslation('fuel');
   const [chartType, setChartType] = useState('bar'); // 'bar' or 'pie'
   
   // Format data for charts
@@ -39,12 +41,12 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
     
     const topStates = chartData.slice(0, 7);
     const otherStates = chartData.slice(7);
-    
+
     const otherAmount = otherStates.reduce((sum, item) => sum + item.amount, 0);
-    
+
     return [
       ...topStates,
-      { state: 'Other States', amount: otherAmount }
+      { state: t('chartView.otherStates'), amount: otherAmount }
     ];
   };
 
@@ -52,27 +54,27 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
     <div>
       {/* Chart type selector */}
       <div className="mb-6 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-700">{`Fuel Expenses by State (${period})`}</h3>
+        <h3 className="text-lg font-medium text-gray-700">{t('chartView.titleWithPeriod', { period })}</h3>
         <div className="flex space-x-2">
           <button
             onClick={() => setChartType('bar')}
             className={`px-3 py-1 text-sm rounded-md ${
-              chartType === 'bar' 
-                ? 'bg-blue-100 text-blue-700 font-medium' 
+              chartType === 'bar'
+                ? 'bg-blue-100 text-blue-700 font-medium'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Bar Chart
+            {t('chartView.barChart')}
           </button>
           <button
             onClick={() => setChartType('pie')}
             className={`px-3 py-1 text-sm rounded-md ${
-              chartType === 'pie' 
-                ? 'bg-blue-100 text-blue-700 font-medium' 
+              chartType === 'pie'
+                ? 'bg-blue-100 text-blue-700 font-medium'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Pie Chart
+            {t('chartView.pieChart')}
           </button>
         </div>
       </div>
@@ -81,7 +83,7 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
       <div className="w-full h-64 sm:h-80">
         {chartData.length === 0 ? (
           <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-gray-500">No data available for chart</p>
+            <p className="text-gray-500">{t('chartView.noData')}</p>
           </div>
         ) : chartType === 'bar' ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -102,7 +104,7 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="amount" name="Amount ($)" fill="#0088FE" />
+              <Bar dataKey="amount" name={`${t('chartView.amount')} ($)`} fill="#0088FE" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -132,7 +134,7 @@ export default function FuelChart({ data, period = 'This Quarter' }) {
       
       {/* Total amount display */}
       <div className="mt-4 text-right text-gray-700">
-        <span className="font-medium">Total: </span>
+        <span className="font-medium">{t('chartView.total')} </span>
         <span className="text-lg font-bold">
           ${Object.values(data).reduce((sum, amount) => sum + parseFloat(amount), 0).toLocaleString()}
         </span>

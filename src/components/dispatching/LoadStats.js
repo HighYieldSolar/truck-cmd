@@ -2,8 +2,10 @@
 "use client";
 
 import { Package, Truck, Clock, CheckCircle, DollarSign } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadStats({ stats, isLoading = false, period = "All Time", className = "" }) {
+  const { t } = useTranslation('dispatching');
   // Helper function to format currency
   const formatCurrency = (value) => {
     if (value === undefined || value === null || isNaN(value)) return '$0';
@@ -15,25 +17,25 @@ export default function LoadStats({ stats, isLoading = false, period = "All Time
 
   const statsItems = [
     {
-      title: "Total Loads",
+      title: t('stats.totalLoads'),
       value: stats.totalLoads || 0,
       icon: <Package size={20} className="text-blue-600 dark:text-blue-400" />,
       color: "blue"
     },
     {
-      title: "Active Loads",
+      title: t('stats.activeLoads'),
       value: stats.activeLoads || 0,
       icon: <Truck size={20} className="text-amber-600 dark:text-amber-400" />,
       color: "yellow"
     },
     {
-      title: "Completed",
+      title: t('stats.completedLoads'),
       value: stats.completedLoads || 0,
       icon: <CheckCircle size={20} className="text-emerald-600 dark:text-emerald-400" />,
       color: "green"
     },
     {
-      title: "Total Revenue",
+      title: t('stats.totalRevenue'),
       value: formatCurrency(stats.totalRevenue),
       icon: <DollarSign size={20} className="text-purple-600 dark:text-purple-400" />,
       color: "purple"

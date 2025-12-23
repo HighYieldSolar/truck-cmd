@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { AlertTriangle, CreditCard, X, Clock } from "lucide-react";
 import UpdatePaymentModal from "./UpdatePaymentModal";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function FailedPaymentBanner({
   subscription,
   userId,
   onDismiss
 }) {
+  const { t } = useTranslation('billing');
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -56,20 +58,20 @@ export default function FailedPaymentBanner({
 
           <div className="flex-1 min-w-0">
             <h3 className={`font-semibold ${textColor}`}>
-              {isUrgent ? "Action Required: Payment Failed" : "Payment Issue"}
+              {isUrgent ? t('failedPayment.actionRequired') : t('failedPayment.paymentIssue')}
             </h3>
 
             <p className={`mt-1 text-sm ${textColor} opacity-90`}>
               {failureCount === 1
-                ? "We couldn't process your last payment. Please update your payment method to avoid service interruption."
-                : `We've tried to process your payment ${failureCount} times without success. Please update your payment method immediately to keep your account active.`
+                ? t('failedPayment.singleFailure')
+                : t('failedPayment.multipleFailures', { count: failureCount })
               }
             </p>
 
             {nextRetry && !isUrgent && (
               <p className={`mt-2 text-xs flex items-center gap-1 ${textColor} opacity-75`}>
                 <Clock size={12} />
-                Next retry: {nextRetry.toLocaleDateString('en-US', {
+                {t('failedPayment.nextRetry')} {nextRetry.toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   hour: 'numeric',
@@ -88,7 +90,7 @@ export default function FailedPaymentBanner({
                   }`}
               >
                 <CreditCard size={16} />
-                Update Payment Method
+                {t('failedPayment.updatePaymentMethod')}
               </button>
             </div>
           </div>

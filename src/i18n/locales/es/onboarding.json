@@ -1,0 +1,43 @@
+{
+  "setupChecklist": {
+    "title": "Comienza con Truck Command",
+    "subtitle": "Completa estos pasos para configurar tu negocio",
+    "yourProgress": "Tu progreso",
+    "percentComplete": "{{percent}}% completado",
+    "next": "Siguiente",
+    "celebration": {
+      "title": "¡Configuración Completa!",
+      "message": "Estás listo para administrar tu negocio de camiones con Truck Command"
+    },
+    "items": {
+      "truck": {
+        "title": "Agrega tu primer camión",
+        "description": "Rastrea el kilometraje y administra tu flota"
+      },
+      "customer": {
+        "title": "Agrega un cliente",
+        "description": "Prepárate para facturar a clientes"
+      },
+      "load": {
+        "title": "Crea tu primera carga",
+        "description": "Comienza a rastrear tus viajes"
+      },
+      "expense": {
+        "title": "Registra un gasto",
+        "description": "Rastrea los costos de tu negocio"
+      },
+      "profile": {
+        "title": "Completa tu perfil",
+        "description": "Agrega teléfono y nombre de empresa para facturas"
+      }
+    }
+  },
+  "tutorialCard": {
+    "quickGuide": "Guía Rápida",
+    "keyFeatures": "Funciones Clave",
+    "proTips": "Consejos Pro",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "gotIt": "¡Entendido!"
+  }
+}

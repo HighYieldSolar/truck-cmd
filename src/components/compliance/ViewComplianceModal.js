@@ -5,8 +5,10 @@ import { useState } from "react";
 import { X, FileText, Clock, Download, ExternalLink, Shield, Building2, User, FileCheck, Loader2 } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
+  const { t } = useTranslation('compliance');
   const [imagePreviewExpanded, setImagePreviewExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -14,10 +16,10 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
 
   // Get type info from constants or use defaults
   const typeInfo = COMPLIANCE_TYPES[compliance.compliance_type] || {
-    name: compliance.compliance_type || "Unknown Type",
+    name: compliance.compliance_type || t('entityTypes.unknown'),
     icon: <FileText size={18} className="text-gray-500 dark:text-gray-400" />,
-    description: "Compliance document",
-    frequency: "Unknown"
+    description: t('form.complianceDocument'),
+    frequency: t('entityTypes.unknown')
   };
 
   const getStatusColor = (status) => {
@@ -50,11 +52,11 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
 
   // Format dates for display
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t('table.notAvailable');
     try {
       return formatDateForDisplayMMDDYYYY(dateString);
     } catch (error) {
-      return dateString || "N/A";
+      return dateString || t('table.notAvailable');
     }
   };
 
@@ -152,7 +154,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-6 rounded-t-xl">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold mb-1">Compliance Details</h2>
+              <h2 className="text-2xl font-bold mb-1">{t('viewModal.title')}</h2>
               <p className="text-blue-100">{compliance.title}</p>
             </div>
             <button
@@ -169,11 +171,11 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
           {/* Status and Type Badges */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(compliance.status)}`}>
-              {compliance.status || "Active"}
+              {compliance.status ? t(`status.${compliance.status.toLowerCase().replace(' ', '')}`, { defaultValue: compliance.status }) : t('status.active')}
             </span>
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
               {getEntityIcon(compliance.entity_type)}
-              {compliance.entity_type || "Unknown"}
+              {compliance.entity_type ? t(`entityTypes.${compliance.entity_type.toLowerCase()}`, { defaultValue: compliance.entity_type }) : t('entityTypes.unknown')}
             </span>
             {daysUntilExpiration !== null && (
               <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium
@@ -185,10 +187,10 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                 }`}>
                 <Clock size={16} className="mr-1" />
                 {daysUntilExpiration <= 0
-                  ? "Expired"
+                  ? t('status.expired')
                   : daysUntilExpiration === 1
-                    ? "1 day left"
-                    : `${daysUntilExpiration} days left`}
+                    ? t('expiration.oneDayLeft')
+                    : t('expiration.daysLeft', { days: daysUntilExpiration })}
               </span>
             )}
           </div>
@@ -199,23 +201,23 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-600">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
                 <Shield size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
-                Compliance Information
+                {t('viewModal.complianceInformation')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Compliance Type</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.complianceType')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{typeInfo.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Renewal Frequency</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.renewalFrequency')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{typeInfo.frequency}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Document Number</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.documentNumber')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{compliance.document_number || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Issuing Authority</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.issuingAuthority')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{compliance.issuing_authority || "—"}</p>
                 </div>
               </div>
@@ -225,31 +227,31 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-600">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
                 {getEntityIcon(compliance.entity_type)}
-                <span className="ml-2">Entity Details</span>
+                <span className="ml-2">{t('viewModal.entityDetails')}</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Entity Type</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.entityType')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{compliance.entity_type || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Entity Name</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.entityName')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">{compliance.entity_name || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Issue Date</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.issueDate')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                     {compliance.issue_date ? formatDate(compliance.issue_date) : "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Expiration Date</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.expirationDate')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                     {compliance.expiration_date ? formatDate(compliance.expiration_date) : "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Created On</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('fields.createdOn')}</p>
                   <p className="text-base font-medium text-gray-900 dark:text-gray-100">
                     {compliance.created_at
                       ? new Date(compliance.created_at).toLocaleDateString('en-US', {
@@ -268,7 +270,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-5 border border-blue-200 dark:border-blue-800">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                   <FileText size={20} className="mr-2 text-blue-600 dark:text-blue-400" />
-                  Notes
+                  {t('viewModal.notes')}
                 </h3>
                 <p className="text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{compliance.notes}</p>
               </div>
@@ -279,7 +281,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-5 border border-gray-200 dark:border-gray-600">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
                   <FileText size={20} className="mr-2 text-gray-600 dark:text-gray-400" />
-                  Document
+                  {t('viewModal.document')}
                 </h3>
 
                 {/* Document Preview for images */}
@@ -288,19 +290,19 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                     imagePreviewExpanded ? "max-h-none" : "max-h-60"
                   }`}>
                     <div className="bg-gray-800 dark:bg-gray-900 px-3 py-2 flex justify-between items-center">
-                      <span className="text-white text-sm font-medium">Document Preview</span>
+                      <span className="text-white text-sm font-medium">{t('viewModal.documentPreview')}</span>
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => setImagePreviewExpanded(!imagePreviewExpanded)}
                           className="text-white hover:text-gray-200 text-xs"
                         >
-                          {imagePreviewExpanded ? "Collapse" : "Expand"}
+                          {imagePreviewExpanded ? t('viewModal.collapse') : t('viewModal.expand')}
                         </button>
                         <button
                           onClick={handleDownloadDocument}
                           disabled={isDownloading}
                           className="text-white hover:text-gray-200 disabled:opacity-50"
-                          title={isDownloading ? "Downloading..." : "Download Document"}
+                          title={isDownloading ? t('viewModal.downloading') : t('viewModal.download')}
                         >
                           {isDownloading ? (
                             <Loader2 size={16} className="animate-spin" />
@@ -334,7 +336,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                       className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     >
                       <FileText size={16} className="mr-2" />
-                      View PDF
+                      {t('viewModal.viewPdf')}
                     </a>
                   ) : !isImageDocument() && (
                     <a
@@ -344,7 +346,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                       className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     >
                       <ExternalLink size={16} className="mr-2" />
-                      View Document
+                      {t('viewModal.viewDocument')}
                     </a>
                   )}
                   <button
@@ -357,7 +359,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                     ) : (
                       <Download size={16} className="mr-2" />
                     )}
-                    {isDownloading ? 'Downloading...' : 'Download'}
+                    {isDownloading ? t('viewModal.downloading') : t('viewModal.download')}
                   </button>
                 </div>
               </div>
@@ -370,7 +372,7 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              Close
+              {t('viewModal.close')}
             </button>
           </div>
         </div>

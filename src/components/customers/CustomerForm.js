@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createCustomer, updateCustomer } from "@/lib/services/customerService";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 
 const FORM_STORAGE_KEY = "customer_form_draft";
 
@@ -75,6 +76,7 @@ const initialFormState = {
 };
 
 export default function CustomerForm({ isOpen, onClose, onSuccess, initialData = null }) {
+  const { t } = useTranslation('customers');
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,6 +86,17 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
   const stateDropdownRef = useRef(null);
 
   const isEditing = !!initialData;
+
+  // Translated customer types
+  const customerTypes = [
+    { value: 'shipper', labelKey: 'types.shipper' },
+    { value: 'broker', labelKey: 'types.broker' },
+    { value: 'consignee', labelKey: 'types.consignee' },
+    { value: 'direct', labelKey: 'types.direct' },
+    { value: 'freight-forwarder', labelKey: 'types.freightForwarder' },
+    { value: '3pl', labelKey: 'types.thirdPartyLogistics' },
+    { value: 'business', labelKey: 'types.business' }
+  ];
 
   // Load draft from localStorage or populate with initialData
   useEffect(() => {
@@ -178,11 +191,11 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
     const newErrors = {};
 
     if (!formData.company_name.trim()) {
-      newErrors.company_name = 'Company name is required';
+      newErrors.company_name = t('form.validation.companyNameRequired');
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('form.validation.validEmail');
     }
 
     setErrors(newErrors);
@@ -261,10 +274,10 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    {isEditing ? 'Edit Customer' : 'Add New Customer'}
+                    {isEditing ? t('form.editTitle') : t('form.addTitle')}
                   </h2>
                   <p className="text-blue-100 text-sm mt-0.5">
-                    {isEditing ? 'Update customer information' : 'Enter customer details below'}
+                    {isEditing ? t('form.editSubtitle') : t('form.addSubtitle')}
                   </p>
                 </div>
                 <button
@@ -282,14 +295,14 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="mx-6 mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                   <AlertCircle size={16} />
-                  <span>Draft restored from your previous session</span>
+                  <span>{t('form.draftRestored')}</span>
                 </div>
                 <button
                   onClick={clearDraft}
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 flex items-center gap-1 text-sm"
                 >
                   <Trash2 size={14} />
-                  Clear
+                  {t('form.clearDraft')}
                 </button>
               </div>
             )}
@@ -308,7 +321,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Company Name <span className="text-red-500">*</span>
+                    {t('form.companyName')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -322,7 +335,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                           ? 'border-red-500 dark:border-red-400'
                           : 'border-gray-300 dark:border-gray-600'
                       }`}
-                      placeholder="Enter company name"
+                      placeholder={t('form.placeholders.companyName')}
                     />
                   </div>
                   {errors.company_name && (
@@ -332,7 +345,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Customer Type
+                    {t('form.customerType')}
                   </label>
                   <select
                     name="customer_type"
@@ -340,8 +353,8 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
                   >
-                    {CUSTOMER_TYPES.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
+                    {customerTypes.map(type => (
+                      <option key={type.value} value={type.value}>{t(type.labelKey)}</option>
                     ))}
                   </select>
                 </div>
@@ -351,7 +364,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Contact Name
+                    {t('form.contactName')}
                   </label>
                   <div className="relative">
                     <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -361,14 +374,14 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                       value={formData.contact_name}
                       onChange={handleInputChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-                      placeholder="Primary contact name"
+                      placeholder={t('form.placeholders.contactName')}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Status
+                    {t('form.status')}
                   </label>
                   <select
                     name="status"
@@ -376,9 +389,9 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Pending">Pending</option>
+                    <option value="Active">{t('status.active')}</option>
+                    <option value="Inactive">{t('status.inactive')}</option>
+                    <option value="Pending">{t('status.pending')}</option>
                   </select>
                 </div>
               </div>
@@ -387,7 +400,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email
+                    {t('form.email')}
                   </label>
                   <div className="relative">
                     <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -401,7 +414,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                           ? 'border-red-500 dark:border-red-400'
                           : 'border-gray-300 dark:border-gray-600'
                       }`}
-                      placeholder="email@company.com"
+                      placeholder={t('form.placeholders.email')}
                     />
                   </div>
                   {errors.email && (
@@ -411,7 +424,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Phone
+                    {t('form.phone')}
                   </label>
                   <div className="relative">
                     <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -421,7 +434,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                       value={formData.phone}
                       onChange={handleInputChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-                      placeholder="(555) 123-4567"
+                      placeholder={t('form.placeholders.phone')}
                     />
                   </div>
                 </div>
@@ -430,7 +443,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Address
+                  {t('form.address')}
                 </label>
                 <div className="relative">
                   <MapPin size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
@@ -440,7 +453,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     value={formData.address}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-                    placeholder="Street address"
+                    placeholder={t('form.placeholders.address')}
                   />
                 </div>
               </div>
@@ -449,7 +462,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    City
+                    {t('form.city')}
                   </label>
                   <input
                     type="text"
@@ -457,13 +470,13 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     value={formData.city}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-                    placeholder="City"
+                    placeholder={t('form.placeholders.city')}
                   />
                 </div>
 
                 <div className="relative" ref={stateDropdownRef}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    State
+                    {t('form.state')}
                   </label>
                   <button
                     type="button"
@@ -473,7 +486,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     <span className={formData.state ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
                       {formData.state
                         ? US_STATES.find(s => s.code === formData.state)?.name || formData.state
-                        : 'Select'}
+                        : t('form.select')}
                     </span>
                     <ChevronDown size={16} className={`text-gray-400 transition-transform ${showStateDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -496,7 +509,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    ZIP Code
+                    {t('form.zipCode')}
                   </label>
                   <input
                     type="text"
@@ -512,7 +525,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes
+                  {t('form.notes')}
                 </label>
                 <div className="relative">
                   <FileText size={18} className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
@@ -522,7 +535,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                     onChange={handleInputChange}
                     rows={3}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors resize-none"
-                    placeholder="Additional notes about this customer..."
+                    placeholder={t('form.placeholders.notes')}
                   />
                 </div>
               </div>
@@ -535,7 +548,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                   className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {t('common:buttons.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -545,12 +558,12 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
                   {isSubmitting ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      {isEditing ? 'Updating...' : 'Creating...'}
+                      {isEditing ? t('form.updating') : t('form.creating')}
                     </>
                   ) : (
                     <>
                       <Check size={16} />
-                      {isEditing ? 'Update Customer' : 'Create Customer'}
+                      {isEditing ? t('form.updateCustomer') : t('form.createCustomer')}
                     </>
                   )}
                 </button>

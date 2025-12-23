@@ -1,0 +1,367 @@
+{
+  "navigation": {
+    "main": "Principal",
+    "system": "Sistema",
+    "dashboard": "Panel de Control",
+    "loadManagement": "Gestión de Cargas",
+    "stateMileage": "Millaje por Estado",
+    "invoices": "Facturas",
+    "expenses": "Gastos",
+    "customers": "Clientes",
+    "fleet": "Flota",
+    "compliance": "Cumplimiento",
+    "iftaCalculator": "Calculadora IFTA",
+    "fuelTracker": "Registro de Combustible",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión",
+    "home": "Inicio"
+  },
+  "userDropdown": {
+    "yourProfile": "Tu Perfil",
+    "freeTrial": "Prueba gratuita",
+    "basicPlan": "Plan Básico",
+    "premiumPlan": "Plan Premium",
+    "fleetPlan": "Plan Flota",
+    "settings": "Configuración",
+    "language": "Idioma",
+    "beta": "BETA",
+    "getHelp": "Obtener ayuda",
+    "viewAllPlans": "Ver todos los planes",
+    "learnMore": "Más información",
+    "aboutUs": "Sobre Nosotros",
+    "feedback": "Comentarios",
+    "termsOfService": "Términos de Servicio",
+    "privacyPolicy": "Política de Privacidad",
+    "cookiePolicy": "Política de Cookies",
+    "acceptableUse": "Uso Aceptable",
+    "logOut": "Cerrar sesión",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "buttons": {
+    "save": "Guardar",
+    "saveChanges": "Guardar Cambios",
+    "saving": "Guardando...",
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "view": "Ver",
+    "viewAll": "Ver Todo",
+    "create": "Crear",
+    "add": "Agregar",
+    "remove": "Quitar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "done": "Listo",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "import": "Importar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "print": "Imprimir",
+    "send": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "clear": "Limpiar",
+    "reset": "Restablecer",
+    "apply": "Aplicar",
+    "more": "Más",
+    "moreOptions": "Más Opciones",
+    "yes": "Sí",
+    "no": "No",
+    "ok": "OK",
+    "upgrade": "Mejorar",
+    "upgradeNow": "Mejorar Ahora",
+    "viewPlans": "Ver Planes",
+    "subscribe": "Suscribirse",
+    "subscribeNow": "Suscribirse Ahora"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending": "Pendiente",
+    "completed": "Completado",
+    "cancelled": "Cancelado",
+    "failed": "Fallido",
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "loading": "Cargando...",
+    "processing": "Procesando...",
+    "draft": "Borrador",
+    "sent": "Enviado",
+    "paid": "Pagado",
+    "unpaid": "Sin Pagar",
+    "overdue": "Vencido",
+    "pastDue": "Atrasado",
+    "inTransit": "En Tránsito",
+    "assigned": "Asignado",
+    "delivered": "Entregado",
+    "archived": "Archivado",
+    "expired": "Expirado",
+    "verified": "Verificado",
+    "unverified": "Sin Verificar"
+  },
+  "time": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "thisWeek": "Esta Semana",
+    "lastWeek": "Semana Pasada",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "thisQuarter": "Este Trimestre",
+    "thisYear": "Este Año",
+    "lastYear": "Año Pasado",
+    "allTime": "Todo el Tiempo",
+    "dateRange": "Rango de Fechas",
+    "from": "Desde",
+    "to": "Hasta",
+    "days": "días",
+    "day": "día",
+    "hours": "horas",
+    "hour": "hora",
+    "minutes": "minutos",
+    "minute": "minuto",
+    "ago": "hace",
+    "left": "restantes",
+    "remaining": "restantes"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "requiredField": "Campo obligatorio",
+    "invalidEmail": "Por favor ingrese un correo electrónico válido",
+    "invalidPhone": "Por favor ingrese un número de teléfono válido",
+    "invalidFormat": "Formato inválido",
+    "tooShort": "Muy corto",
+    "tooLong": "Muy largo",
+    "passwordTooWeak": "La contraseña es muy débil",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "emailInUse": "Este correo electrónico ya está en uso",
+    "minLength": "Se requieren mínimo {{count}} caracteres",
+    "maxLength": "Máximo {{count}} caracteres permitidos",
+    "selectOption": "Por favor seleccione una opción"
+  },
+  "messages": {
+    "successSaved": "Guardado exitosamente",
+    "successDeleted": "Eliminado exitosamente",
+    "successUpdated": "Actualizado exitosamente",
+    "successCreated": "Creado exitosamente",
+    "errorOccurred": "Ocurrió un error",
+    "tryAgain": "Por favor intente de nuevo",
+    "noDataAvailable": "No hay datos disponibles",
+    "noRecordsFound": "No se encontraron registros",
+    "confirmDelete": "¿Está seguro que desea eliminar esto?",
+    "actionCannotBeUndone": "Esta acción no se puede deshacer",
+    "changesNotSaved": "Tiene cambios sin guardar",
+    "sessionExpired": "Su sesión ha expirado",
+    "pleaseLogin": "Por favor inicie sesión para continuar"
+  },
+  "emptyStates": {
+    "noData": "No hay datos disponibles",
+    "noRecords": "No se encontraron registros",
+    "noResults": "No se encontraron resultados",
+    "getStarted": "Comenzar",
+    "createFirst": "Cree su primer {{item}} para verlo aquí"
+  },
+  "footer": {
+    "copyright": "© {{year}} Truck Command LLC. Todos los derechos reservados.",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "cookies": "Cookies",
+    "acceptableUse": "Uso Aceptable",
+    "contact": "Contacto"
+  },
+  "search": {
+    "placeholder": "Buscar...",
+    "searchLoads": "Buscar cargas, facturas...",
+    "noResults": "No se encontraron resultados",
+    "recentSearches": "Búsquedas recientes"
+  },
+  "globalSearch": {
+    "placeholder": "Buscar cargas, facturas, clientes...",
+    "recentSearches": "Búsquedas Recientes",
+    "clear": "Limpiar",
+    "typeAtLeast": "Escriba al menos 2 caracteres para buscar",
+    "pleaseLogIn": "Por favor inicie sesión para buscar",
+    "noResults": "No se encontraron resultados",
+    "result": "resultado",
+    "results": "resultados",
+    "keyboard": {
+      "navigate": "Navegar",
+      "select": "Seleccionar",
+      "close": "Cerrar"
+    },
+    "categories": {
+      "create": "Crear",
+      "navigate": "Navegar",
+      "manage": "Administrar"
+    },
+    "quickLinks": {
+      "newLoad": "Nueva Carga",
+      "newLoadDesc": "Agregar una nueva carga",
+      "newInvoice": "Nueva Factura",
+      "newInvoiceDesc": "Crear una factura",
+      "addExpense": "Agregar Gasto",
+      "addExpenseDesc": "Registrar un gasto",
+      "addCustomer": "Agregar Cliente",
+      "addCustomerDesc": "Agregar un nuevo cliente",
+      "dashboard": "Panel Principal",
+      "dashboardDesc": "Resumen y estadísticas",
+      "iftaCalculator": "Calculadora IFTA",
+      "iftaCalculatorDesc": "Calcular impuestos IFTA",
+      "stateMileage": "Millaje por Estado",
+      "stateMileageDesc": "Rastrear millas por estado",
+      "fuelTracker": "Rastreador de Combustible",
+      "fuelTrackerDesc": "Registrar compras de combustible",
+      "fleet": "Flota",
+      "fleetDesc": "Camiones y conductores",
+      "compliance": "Cumplimiento",
+      "complianceDesc": "Documentos y vencimientos",
+      "settings": "Configuración",
+      "settingsDesc": "Configuración de cuenta"
+    }
+  },
+  "trial": {
+    "freeTrial": "Prueba Gratuita",
+    "freeTrialStatus": "Estado de Prueba Gratuita",
+    "truckCommandFreeTrial": "Prueba Gratuita de Truck Command",
+    "daysLeft": "{{count}} días restantes en su prueba",
+    "daysRemaining": "Días Restantes",
+    "trialExpired": "Su prueba ha expirado",
+    "upgradeMessage": "Mejore ahora para continuar accediendo a todas las funciones",
+    "subscribeMessage": "Suscríbase ahora para continuar usando todas las funciones",
+    "banner": {
+      "trialEnded": "Su prueba gratuita ha terminado. Suscríbase ahora para recuperar el acceso a todas las funciones.",
+      "lastDay": "Último día",
+      "daysLeftInTrial": "{{count}} días restantes en su prueba gratuita",
+      "actNow": "Actúe ahora para evitar perder el acceso.",
+      "subscribeNow": "Suscribirse Ahora",
+      "upgradePlan": "Mejorar Plan"
+    }
+  },
+  "accessibility": {
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "toggleTheme": "Cambiar tema",
+    "userMenu": "Menú de usuario",
+    "notifications": "Notificaciones",
+    "mainNavigation": "Navegación principal",
+    "skipToContent": "Saltar al contenido"
+  },
+  "currency": {
+    "usd": "USD",
+    "symbol": "$"
+  },
+  "units": {
+    "miles": "millas",
+    "gallons": "galones",
+    "gal": "gal",
+    "perGallon": "por galón",
+    "perMile": "por milla"
+  },
+  "state": "estado",
+  "states": "estados",
+  "tip": "Consejo",
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "showingPage": "Mostrando página {{current}} de {{total}}",
+    "of": "de"
+  },
+  "filters": {
+    "adjustFilters": "Intente ajustar sus filtros o criterios de búsqueda."
+  },
+  "export": {
+    "success": "¡Reporte exportado exitosamente!",
+    "exporting": "Exportando...",
+    "exported": "Exportado",
+    "exportReport": "Exportar Reporte",
+    "selectFormat": "Seleccionar Formato de Exportación",
+    "dateRange": "Rango de fechas:",
+    "generated": "Generado",
+    "page": "Página",
+    "of": "de",
+    "summary": "RESUMEN",
+    "details": "DETALLES",
+    "data": "DATOS",
+    "formats": {
+      "pdf": {
+        "label": "Reporte PDF",
+        "description": "Formato profesional con marca"
+      },
+      "csv": {
+        "label": "Hoja de cálculo (CSV)",
+        "description": "Para Excel o Google Sheets"
+      },
+      "txt": {
+        "label": "Texto Plano",
+        "description": "Formato simple para correo"
+      },
+      "print": {
+        "label": "Imprimir",
+        "description": "Enviar a impresora"
+      }
+    },
+    "errors": {
+      "csvFailed": "Error al exportar CSV. Por favor intente de nuevo.",
+      "txtFailed": "Error al exportar archivo de texto. Por favor intente de nuevo.",
+      "pdfFailed": "Error al generar PDF. Por favor intente de nuevo."
+    }
+  },
+  "deleteConfirmation": {
+    "title": "Eliminar Elemento",
+    "confirmTitle": "Confirmar eliminación",
+    "deleteItem": "¿Eliminar \"{{itemName}}\"?",
+    "message": "¿Está seguro de que desea eliminar este elemento? Esta acción no se puede deshacer.",
+    "deleting": "Eliminando..."
+  },
+  "lockedFeature": {
+    "title": "Función Premium",
+    "description": "Esta función requiere un plan mejorado.",
+    "upgradeNow": "Mejorar Ahora",
+    "viewPlans": "Ver Planes"
+  },
+  "statusAlert": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "readAll": "Leer todo",
+    "viewAll": "Ver todas las notificaciones",
+    "markAsRead": "Marcar como leída",
+    "deleteNotification": "Eliminar notificación",
+    "emptyState": {
+      "title": "¡Todo al día!",
+      "description": "No hay notificaciones nuevas"
+    },
+    "urgency": {
+      "critical": "Crítico",
+      "highPriority": "Alta Prioridad",
+      "medium": "Media"
+    },
+    "time": {
+      "justNow": "Ahora mismo",
+      "minuteAgo": "hace 1 minuto",
+      "minutesAgo": "hace {{count}} minutos",
+      "hourAgo": "hace 1 hora",
+      "hoursAgo": "hace {{count}} horas",
+      "dayAgo": "hace 1 día",
+      "daysAgo": "hace {{count}} días",
+      "yesterday": "Ayer",
+      "mAgo": "hace {{count}}m",
+      "hAgo": "hace {{count}}h",
+      "dAgo": "hace {{count}}d"
+    },
+    "due": "Vence:"
+  }
+}

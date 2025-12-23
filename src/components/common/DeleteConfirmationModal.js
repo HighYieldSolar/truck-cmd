@@ -1,10 +1,11 @@
 "use client";
 
 import { RefreshCw, AlertTriangle, X } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * A reusable confirmation modal for delete operations
- * 
+ *
  * @param {Object} props Component props
  * @param {boolean} props.isOpen Whether the modal is open
  * @param {Function} props.onClose Function to close the modal
@@ -19,12 +20,19 @@ export default function DeleteConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  title = "Delete Item",
-  message = "Are you sure you want to delete this item? This action cannot be undone.",
+  title,
+  message,
   itemName,
   isDeleting = false,
-  confirmButtonText = "Delete"
+  confirmButtonText
 }) {
+  const { t } = useTranslation('common');
+
+  // Use translated defaults if not provided
+  const displayTitle = title || t('deleteConfirmation.title');
+  const displayMessage = message || t('deleteConfirmation.message');
+  const displayConfirmText = confirmButtonText || t('buttons.delete');
+
   if (!isOpen) return null;
 
   return (
@@ -33,7 +41,7 @@ export default function DeleteConfirmationModal({
         {/* Header */}
         <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {title}
+            {displayTitle}
           </h2>
           <button
             onClick={onClose}
@@ -55,10 +63,10 @@ export default function DeleteConfirmationModal({
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                {itemName ? `Delete "${itemName}"?` : "Confirm deletion"}
+                {itemName ? t('deleteConfirmation.deleteItem', { itemName }) : t('deleteConfirmation.confirmTitle')}
               </h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {message}
+                {displayMessage}
               </p>
             </div>
           </div>
@@ -72,7 +80,7 @@ export default function DeleteConfirmationModal({
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             disabled={isDeleting}
           >
-            Cancel
+            {t('buttons.cancel')}
           </button>
           <button
             type="button"
@@ -83,10 +91,10 @@ export default function DeleteConfirmationModal({
             {isDeleting ? (
               <>
                 <RefreshCw size={16} className="animate-spin mr-2" />
-                Deleting...
+                {t('deleteConfirmation.deleting')}
               </>
             ) : (
-              confirmButtonText
+              displayConfirmText
             )}
           </button>
         </div>

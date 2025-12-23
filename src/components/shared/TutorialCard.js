@@ -7,6 +7,7 @@ import {
   X, Lightbulb, ChevronRight, ChevronLeft, CheckCircle2,
   Sparkles, BookOpen, ArrowRight
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * TutorialCard - A dismissible tutorial popup for onboarding new users
@@ -28,6 +29,7 @@ export default function TutorialCard({
   accentColor = "blue",
   userId
 }) {
+  const { t } = useTranslation('onboarding');
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -267,7 +269,7 @@ export default function TutorialCard({
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-semibold text-white">{title}</h3>
                     <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs text-white/90 font-medium">
-                      Quick Guide
+                      {t('tutorialCard.quickGuide')}
                     </span>
                   </div>
                   <p className="text-white/80 text-sm mt-0.5">{description}</p>
@@ -297,7 +299,7 @@ export default function TutorialCard({
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles className={`w-4 h-4 ${colors.text}`} />
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">Key Features</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('tutorialCard.keyFeatures')}</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {features.map((feature, index) => {
@@ -336,7 +338,7 @@ export default function TutorialCard({
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <Lightbulb className={`w-4 h-4 ${colors.text}`} />
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">Pro Tips</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100">{t('tutorialCard.proTips')}</h4>
                   </div>
                   <ul className="space-y-2">
                     {tips.map((tip, index) => (
@@ -376,7 +378,7 @@ export default function TutorialCard({
                     className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
                   >
                     <ChevronLeft size={16} />
-                    Back
+                    {t('tutorialCard.back')}
                   </button>
                 )}
                 <button
@@ -385,12 +387,12 @@ export default function TutorialCard({
                 >
                   {currentStep === totalSteps - 1 ? (
                     <>
-                      Got it!
+                      {t('tutorialCard.gotIt')}
                       <CheckCircle2 size={16} />
                     </>
                   ) : (
                     <>
-                      Next
+                      {t('tutorialCard.next')}
                       <ChevronRight size={16} />
                     </>
                   )}

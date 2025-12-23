@@ -22,8 +22,10 @@ import {
 import { useLocalStorage } from "@/lib/hooks/useLocalStorage";
 import { createDriver, updateDriver, uploadDriverImage } from "@/lib/services/driverService";
 import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function DriverFormModal({ isOpen, onClose, driver, userId, onSubmit }) {
+  const { t } = useTranslation('fleet');
   const initialFormData = {
     name: '',
     position: 'Driver',
@@ -66,9 +68,9 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
 
   // Field labels for error messages
   const fieldLabels = {
-    name: 'Driver Name',
-    license_number: 'License Number',
-    license_state: 'License State'
+    name: t('driverForm.fields.driverName'),
+    license_number: t('driverForm.fields.licenseNumber'),
+    license_state: t('driverForm.fields.licenseState')
   };
 
   // Handle localStorage save
@@ -387,14 +389,14 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         result = await createDriver(driverData);
       }
 
-      setSubmitMessage({ type: 'success', text: driver ? 'Driver updated successfully!' : 'Driver added successfully!' });
+      setSubmitMessage({ type: 'success', text: driver ? t('driverForm.driverUpdatedSuccess') : t('driverForm.driverAddedSuccess') });
       localStorage.removeItem(formKey);
 
       if (onSubmit) await onSubmit(result);
 
       setTimeout(() => onClose(), 1500);
     } catch (error) {
-      setSubmitMessage({ type: 'error', text: error.message || 'Failed to save driver. Please try again.' });
+      setSubmitMessage({ type: 'error', text: error.message || t('driverForm.failedToSaveDriver') });
     } finally {
       setIsSubmitting(false);
     }
@@ -403,9 +405,9 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'basic', label: 'Basic Info', icon: <User size={16} /> },
-    { id: 'contact', label: 'Contact', icon: <Phone size={16} /> },
-    { id: 'license', label: 'License & Compliance', icon: <Shield size={16} /> }
+    { id: 'basic', label: t('driverForm.tabs.basicInfo'), icon: <User size={16} /> },
+    { id: 'contact', label: t('driverForm.tabs.contact'), icon: <Phone size={16} /> },
+    { id: 'license', label: t('driverForm.tabs.licenseCompliance'), icon: <Shield size={16} /> }
   ];
 
   return (
@@ -420,10 +422,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  {driver ? `Edit Driver: ${driver.name}` : 'Add New Driver'}
+                  {driver ? t('driverForm.editDriver', { name: driver.name }) : t('driverForm.addNewDriver')}
                 </h2>
                 <p className="text-blue-100 text-sm">
-                  {driver ? 'Update driver information' : 'Enter driver details to add to your fleet'}
+                  {driver ? t('driverForm.updateDriverInfo') : t('driverForm.enterDriverDetails')}
                 </p>
               </div>
             </div>
@@ -516,11 +518,11 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
           {/* Required Fields Legend */}
           <div className="flex items-center justify-center mt-3 text-xs text-gray-500 dark:text-gray-400">
             <span className="text-red-500 mr-1">*</span>
-            <span>Required fields</span>
+            <span>{t('driverForm.requiredFields')}</span>
             {Object.keys(tabErrors).some(k => tabErrors[k]) && (
               <span className="ml-4 flex items-center text-red-500 dark:text-red-400">
                 <AlertCircle size={12} className="mr-1" />
-                Please complete required fields
+                {t('driverForm.pleaseCompleteRequired')}
               </span>
             )}
           </div>
@@ -897,7 +899,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
             disabled={isSubmitting}
             className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
 
           <div className="flex items-center space-x-3">
@@ -908,7 +910,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                 className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                 disabled={isSubmitting}
               >
-                Previous
+                {t('driverForm.previous')}
               </button>
             )}
 
@@ -919,7 +921,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                 className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                 disabled={isSubmitting}
               >
-                Next
+                {t('driverForm.next')}
               </button>
             ) : (
               <button
@@ -931,10 +933,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                 {isSubmitting ? (
                   <>
                     <Loader2 size={18} className="animate-spin mr-2" />
-                    Saving...
+                    {t('driverForm.saving')}
                   </>
                 ) : (
-                  <>{driver ? 'Update Driver' : 'Add Driver'}</>
+                  <>{driver ? t('driverForm.updateDriver') : t('driverForm.addDriver')}</>
                 )}
               </button>
             )}

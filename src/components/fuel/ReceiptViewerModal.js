@@ -17,8 +17,10 @@ import {
   Loader2
 } from "lucide-react";
 import SupabaseImage from "./SupabaseImage";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleInfo }) {
+  const { t } = useTranslation('fuel');
   const [isDownloading, setIsDownloading] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
   
@@ -170,11 +172,11 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
           text: `Fuel receipt from ${receipt.location} on ${new Date(receipt.date).toLocaleDateString()}: $${receipt.total_amount.toFixed(2)} for ${receipt.gallons.toFixed(3)} gallons`
         });
       } catch (shareError) {
-        alert('Unable to share the receipt.');
+        alert(t('receiptViewer.unableToShare'));
       }
     } else {
       // Web Share API not available
-      alert('Share functionality is not supported on this browser.');
+      alert(t('receiptViewer.shareNotSupported'));
     }
   };
   
@@ -189,7 +191,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="font-bold text-xl text-gray-900 dark:text-gray-100 flex items-center">
             <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
-            Fuel Receipt - {receipt.location}
+            {t('receiptViewer.title')} - {receipt.location}
           </h2>
           <button
             onClick={onClose}
@@ -206,7 +208,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             <button
               onClick={handleDownload}
               className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper disabled:opacity-50"
-              title={isDownloading ? "Downloading..." : "Download"}
+              title={isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}
               disabled={isDownloading}
             >
               {isDownloading ? (
@@ -214,31 +216,31 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
               ) : (
                 <Download size={20} />
               )}
-              <span className="tooltip">{isDownloading ? "Downloading..." : "Download"}</span>
+              <span className="tooltip">{isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}</span>
             </button>
             <button
               onClick={handlePrint}
               className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
-              title="Print"
+              title={t('receiptViewer.print')}
             >
               <Printer size={20} />
-              <span className="tooltip">Print</span>
+              <span className="tooltip">{t('receiptViewer.print')}</span>
             </button>
             <button
               onClick={handleShare}
               className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
-              title="Share"
+              title={t('receiptViewer.share')}
             >
               <Share2 size={20} />
-              <span className="tooltip">Share</span>
+              <span className="tooltip">{t('receiptViewer.share')}</span>
             </button>
             <button
               onClick={toggleFullScreen}
               className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
-              title="Toggle Fullscreen"
+              title={t('receiptViewer.fullscreen')}
             >
               <Maximize2 size={20} />
-              <span className="tooltip">Fullscreen</span>
+              <span className="tooltip">{t('receiptViewer.fullscreen')}</span>
             </button>
           </div>
         </div>
@@ -261,7 +263,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             </div>
           ) : (
             <div className="w-full aspect-[3/4] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
-              No receipt image available
+              {t('receiptViewer.noReceiptImage')}
             </div>
           )}
         </div>
@@ -272,7 +274,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                 <Calendar size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                Date
+                {t('receiptViewer.date')}
               </div>
               <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
             </div>
@@ -280,7 +282,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                 <MapPin size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                State
+                {t('receiptViewer.state')}
               </div>
               <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.state_name} ({receipt.state})</div>
             </div>
@@ -288,7 +290,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                 <Fuel size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                Gallons
+                {t('receiptViewer.gallons')}
               </div>
               <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.gallons.toFixed(3)}</div>
             </div>
@@ -296,7 +298,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
               <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                 <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                Total
+                {t('receiptViewer.total')}
               </div>
               <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">${receipt.total_amount.toFixed(2)}</div>
             </div>
@@ -310,7 +312,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                       <Truck size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                      Vehicle
+                      {t('receiptViewer.vehicle')}
                     </div>
                     <div className="text-gray-900 dark:text-gray-100">
                       {vehicleInfo ? (
@@ -328,7 +330,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                       <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                      Odometer
+                      {t('receiptViewer.odometer')}
                     </div>
                     <div className="text-gray-900 dark:text-gray-100">{receipt.odometer.toLocaleString()} mi</div>
                   </div>
@@ -338,7 +340,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                       <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                      Price Per Gallon
+                      {t('receiptViewer.pricePerGallon')}
                     </div>
                     <div className="text-gray-900 dark:text-gray-100">${receipt.price_per_gallon.toFixed(3)}</div>
                   </div>
@@ -349,7 +351,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                 <div className="mt-3">
                   <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
                     <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                    Notes
+                    {t('receiptViewer.notes')}
                   </div>
                   <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-600 p-2 rounded border border-gray-100 dark:border-gray-500">
                     {receipt.notes}
@@ -364,7 +366,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
             >
-              Close
+              {t('receiptViewer.close')}
             </button>
           </div>
         </div>

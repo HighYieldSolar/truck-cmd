@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { Search, Filter, Calendar, Truck, Users, X, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadFilterBar({
   filters,
@@ -12,42 +13,43 @@ export default function LoadFilterBar({
   onReset,
   className = ""
 }) {
+  const { t } = useTranslation('dispatching');
   const [expanded, setExpanded] = useState(false);
 
   const statusOptions = [
-    { value: "All", label: "All Status" },
-    { value: "Pending", label: "Pending" },
-    { value: "Assigned", label: "Assigned" },
-    { value: "In Transit", label: "In Transit" },
-    { value: "Loading", label: "Loading" },
-    { value: "Unloading", label: "Unloading" },
-    { value: "Delivered", label: "Delivered" },
-    { value: "Completed", label: "Completed" },
-    { value: "Cancelled", label: "Cancelled" },
-    { value: "Delayed", label: "Delayed" }
+    { value: "All", label: t('filterBar.allStatus') },
+    { value: "Pending", label: t('statusLabels.pending') },
+    { value: "Assigned", label: t('statusLabels.assigned') },
+    { value: "In Transit", label: t('statusLabels.inTransit') },
+    { value: "Loading", label: t('statusLabels.loading') },
+    { value: "Unloading", label: t('statusLabels.unloading') },
+    { value: "Delivered", label: t('statusLabels.delivered') },
+    { value: "Completed", label: t('statusLabels.completed') },
+    { value: "Cancelled", label: t('statusLabels.cancelled') },
+    { value: "Delayed", label: t('statusLabels.delayed') }
   ];
 
   const dateRangeOptions = [
-    { value: "all", label: "All Time" },
-    { value: "today", label: "Today" },
-    { value: "tomorrow", label: "Tomorrow" },
-    { value: "thisWeek", label: "This Week" },
-    { value: "lastWeek", label: "Last Week" },
-    { value: "thisMonth", label: "This Month" },
-    { value: "lastMonth", label: "Last Month" },
-    { value: "thisQuarter", label: "This Quarter" },
-    { value: "lastQuarter", label: "Last Quarter" },
-    { value: "Custom", label: "Custom Range" }
+    { value: "all", label: t('filterBar.dateRanges.all') },
+    { value: "today", label: t('filterBar.dateRanges.today') },
+    { value: "tomorrow", label: t('filterBar.dateRanges.tomorrow') },
+    { value: "thisWeek", label: t('filterBar.dateRanges.thisWeek') },
+    { value: "lastWeek", label: t('filterBar.dateRanges.lastWeek') },
+    { value: "thisMonth", label: t('filterBar.dateRanges.thisMonth') },
+    { value: "lastMonth", label: t('filterBar.dateRanges.lastMonth') },
+    { value: "thisQuarter", label: t('filterBar.dateRanges.thisQuarter') },
+    { value: "lastQuarter", label: t('filterBar.dateRanges.lastQuarter') },
+    { value: "Custom", label: t('common:time.dateRange') }
   ];
 
   const sortOptions = [
-    { value: "created_at", label: "Newest First" },
-    { value: "deliveryDate", label: "Delivery Date" },
-    { value: "pickupDate", label: "Pickup Date" },
-    { value: "completedDate", label: "Completed Date" },
-    { value: "status", label: "Status" },
-    { value: "customer", label: "Customer" },
-    { value: "rate", label: "Rate (High to Low)" }
+    { value: "created_at", label: t('common:time.allTime') },
+    { value: "deliveryDate", label: t('filterBar.sortOptions.deliveryDate') },
+    { value: "pickupDate", label: t('filterBar.sortOptions.pickupDate') },
+    { value: "completedDate", label: t('filterBar.sortOptions.completedDate') },
+    { value: "status", label: t('filterBar.sortOptions.status') },
+    { value: "customer", label: t('filterBar.sortOptions.customer') },
+    { value: "rate", label: t('filterBar.sortOptions.rate') }
   ];
 
   const handleDateFilterChange = (value) => {
@@ -79,7 +81,7 @@ export default function LoadFilterBar({
             </div>
             <input
               type="text"
-              placeholder="Search loads by number, customer, driver..."
+              placeholder={t('filterBar.searchPlaceholder')}
               value={filters.search || ''}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
@@ -119,11 +121,11 @@ export default function LoadFilterBar({
               } rounded-lg shadow-sm text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors`}
           >
             <Filter size={16} className={`mr-2 ${hasActiveFilters() ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
-            {hasActiveFilters() ? `Filters (${(filters.status !== 'All' ? 1 : 0) +
+            {hasActiveFilters() ? `${t('common:buttons.filter')} (${(filters.status !== 'All' ? 1 : 0) +
               (filters.driverId ? 1 : 0) +
               (filters.vehicleId ? 1 : 0) +
               (filters.dateRange !== 'all' ? 1 : 0)
-              })` : 'Filters'}
+              })` : t('common:buttons.filter')}
           </button>
 
           {/* Reset Button (Only shown when filters are active) */}
@@ -133,7 +135,7 @@ export default function LoadFilterBar({
               className="flex-shrink-0 inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
               <RefreshCw size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
-              Reset
+              {t('common:buttons.reset')}
             </button>
           )}
         </div>
@@ -146,7 +148,7 @@ export default function LoadFilterBar({
             {/* Date Range Filter */}
             <div>
               <label htmlFor="dateRange" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <Calendar size={12} className="mr-1" /> Date Range
+                <Calendar size={12} className="mr-1" /> {t('common:time.dateRange')}
               </label>
               <select
                 id="dateRange"
@@ -164,7 +166,7 @@ export default function LoadFilterBar({
             {drivers.length > 0 && (
               <div>
                 <label htmlFor="driverId" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <Users size={12} className="mr-1" /> Driver
+                  <Users size={12} className="mr-1" /> {t('fields.driver')}
                 </label>
                 <select
                   id="driverId"
@@ -172,7 +174,7 @@ export default function LoadFilterBar({
                   value={filters.driverId || ''}
                   onChange={(e) => setFilters({ ...filters, driverId: e.target.value })}
                 >
-                  <option value="">All Drivers</option>
+                  <option value="">{t('filters.allStatuses')}</option>
                   {drivers.map((driver) => (
                     <option key={driver.id} value={driver.id}>
                       {driver.name}
@@ -186,7 +188,7 @@ export default function LoadFilterBar({
             {vehicles.length > 0 && (
               <div>
                 <label htmlFor="vehicleId" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                  <Truck size={12} className="mr-1" /> Vehicle
+                  <Truck size={12} className="mr-1" /> {t('fields.truck')}
                 </label>
                 <select
                   id="vehicleId"
@@ -194,7 +196,7 @@ export default function LoadFilterBar({
                   value={filters.vehicleId || ''}
                   onChange={(e) => setFilters({ ...filters, vehicleId: e.target.value })}
                 >
-                  <option value="">All Vehicles</option>
+                  <option value="">{t('filters.allStatuses')}</option>
                   {vehicles.map((vehicle) => (
                     <option key={vehicle.id} value={vehicle.id}>
                       {vehicle.name}{vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}
@@ -207,7 +209,7 @@ export default function LoadFilterBar({
             {/* Sort By */}
             <div>
               <label htmlFor="sortBy" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                <SlidersHorizontal size={12} className="mr-1" /> Sort By
+                <SlidersHorizontal size={12} className="mr-1" /> {t('filterBar.sortBy')}
               </label>
               <select
                 id="sortBy"
@@ -227,7 +229,7 @@ export default function LoadFilterBar({
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startDate" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Start Date
+                  {t('common:time.from')}
                 </label>
                 <input
                   type="date"
@@ -239,7 +241,7 @@ export default function LoadFilterBar({
               </div>
               <div>
                 <label htmlFor="endDate" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  End Date
+                  {t('common:time.to')}
                 </label>
                 <input
                   type="date"
@@ -255,10 +257,10 @@ export default function LoadFilterBar({
           {/* Active Filters Summary */}
           {hasActiveFilters() && (
             <div className="mt-3 flex flex-wrap items-center">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2">Active filters:</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-2">{t('filters.title')}:</span>
               {filters.status !== 'All' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Status: {filters.status}
+                  {t('status.label')}: {filters.status}
                   <button
                     onClick={() => setFilters({ ...filters, status: 'All' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -269,7 +271,7 @@ export default function LoadFilterBar({
               )}
               {filters.driverId && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Driver: {drivers.find(d => d.id === filters.driverId)?.name || 'Selected'}
+                  {t('fields.driver')}: {drivers.find(d => d.id === filters.driverId)?.name || t('status.assigned')}
                   <button
                     onClick={() => setFilters({ ...filters, driverId: '' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -280,7 +282,7 @@ export default function LoadFilterBar({
               )}
               {filters.vehicleId && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Vehicle: {vehicles.find(v => v.id === filters.vehicleId)?.name || 'Selected'}
+                  {t('fields.truck')}: {vehicles.find(v => v.id === filters.vehicleId)?.name || t('status.assigned')}
                   <button
                     onClick={() => setFilters({ ...filters, vehicleId: '' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -291,7 +293,7 @@ export default function LoadFilterBar({
               )}
               {filters.dateRange !== 'all' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 mr-2 mb-1">
-                  Date: {filters.dateRange === 'Custom' ? 'Custom Range' : dateRangeOptions.find(d => d.value === filters.dateRange)?.label}
+                  {t('common:time.dateRange')}: {filters.dateRange === 'Custom' ? t('common:time.dateRange') : dateRangeOptions.find(d => d.value === filters.dateRange)?.label}
                   <button
                     onClick={() => setFilters({ ...filters, dateRange: 'all', startDate: '', endDate: '' })}
                     className="ml-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"

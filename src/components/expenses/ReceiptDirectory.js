@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from "@/context/LanguageContext";
 import {
   Folder,
   FolderOpen,
@@ -33,6 +34,8 @@ export default function ReceiptDirectory({
   onViewReceipt,
   isLoading = false
 }) {
+  const { t } = useTranslation('expenses');
+
   // Filter state
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -396,10 +399,10 @@ export default function ReceiptDirectory({
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-white flex items-center gap-2">
             <FolderArchive className="h-5 w-5" />
-            Receipt Directory
+            {t('receiptDirectoryWidget.title')}
           </h3>
           <span className="text-emerald-100 text-sm">
-            {totalReceiptsCount} receipts
+            {totalReceiptsCount} {t('receiptDirectoryWidget.receipts')}
           </span>
         </div>
       </div>
@@ -412,7 +415,7 @@ export default function ReceiptDirectory({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search receipts..."
+              placeholder={t('receiptDirectoryWidget.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -425,7 +428,7 @@ export default function ReceiptDirectory({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="all">All Years</option>
+            <option value="all">{t('receiptDirectoryWidget.allYears')}</option>
             {availableYears.map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
@@ -437,7 +440,7 @@ export default function ReceiptDirectory({
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="all">All Categories</option>
+            <option value="all">{t('receiptDirectoryWidget.allCategories')}</option>
             {availableCategories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -449,7 +452,7 @@ export default function ReceiptDirectory({
       {selectedReceipts.size > 0 && (
         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-between">
           <span className="text-sm text-emerald-700 dark:text-emerald-300">
-            {selectedReceipts.size} receipt{selectedReceipts.size > 1 ? 's' : ''} selected
+            {selectedReceipts.size} {t('receiptDirectoryWidget.selected')}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -462,7 +465,7 @@ export default function ReceiptDirectory({
               ) : (
                 <Download className="h-4 w-4 mr-1.5" />
               )}
-              Download Selected
+              {t('receiptDirectoryWidget.downloadSelected')}
             </button>
             <button
               onClick={clearSelections}
@@ -479,7 +482,7 @@ export default function ReceiptDirectory({
         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm text-blue-700 dark:text-blue-300">
-              Downloading receipts...
+              {t('receiptDirectoryWidget.downloading')}
             </span>
             <span className="text-sm text-blue-700 dark:text-blue-300">
               {downloadProgress.current} / {downloadProgress.total}
@@ -500,20 +503,20 @@ export default function ReceiptDirectory({
           <div className="text-center py-12">
             <FolderArchive className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-              No Receipts Found
+              {t('receiptDirectoryWidget.noReceiptsFound')}
             </h4>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Upload receipts when adding expenses to see them here.
+              {t('receiptDirectoryWidget.uploadReceiptsHint')}
             </p>
           </div>
         ) : Object.keys(folderStructure).length === 0 ? (
           <div className="text-center py-12">
             <Search className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h4 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-              No Matching Receipts
+              {t('receiptDirectoryWidget.noMatchingReceipts')}
             </h4>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Try adjusting your filters.
+              {t('receiptDirectoryWidget.adjustFilters')}
             </p>
           </div>
         ) : (
@@ -558,7 +561,7 @@ export default function ReceiptDirectory({
                           }}
                           disabled={isDownloading}
                           className="p-1.5 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors disabled:opacity-50"
-                          title={`Download all ${year} receipts`}
+                          title={t('receiptDirectoryWidget.downloadAllYear')}
                         >
                           <Download className="h-4 w-4" />
                         </button>
@@ -613,7 +616,7 @@ export default function ReceiptDirectory({
                                         }
                                       }}
                                       className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400"
-                                      title={allSelected ? "Deselect all" : "Select all"}
+                                      title={allSelected ? t('receiptDirectoryWidget.deselectAll') : t('receiptDirectoryWidget.selectAll')}
                                     >
                                       {allSelected ? (
                                         <CheckSquare className="h-4 w-4" />
@@ -630,7 +633,7 @@ export default function ReceiptDirectory({
                                       }}
                                       disabled={isDownloading}
                                       className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50"
-                                      title={`Download ${monthData.name} receipts`}
+                                      title={t('receiptDirectoryWidget.downloadMonth')}
                                     >
                                       <Download className="h-4 w-4" />
                                     </button>
@@ -663,7 +666,7 @@ export default function ReceiptDirectory({
                                             <FileImage className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                             <div className="min-w-0 flex-1">
                                               <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                                {expense.description || 'Untitled Receipt'}
+                                                {expense.description || t('receiptDirectoryWidget.untitledReceipt')}
                                               </p>
                                               <div className="flex items-center gap-2 mt-0.5">
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -682,14 +685,14 @@ export default function ReceiptDirectory({
                                             <button
                                               onClick={() => onViewReceipt && onViewReceipt(expense)}
                                               className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                              title="View receipt"
+                                              title={t('receiptDirectoryWidget.viewReceipt')}
                                             >
                                               <Eye className="h-4 w-4" />
                                             </button>
                                             <button
                                               onClick={() => downloadSingleReceipt(expense)}
                                               className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
-                                              title="Download receipt"
+                                              title={t('receiptDirectoryWidget.downloadReceipt')}
                                             >
                                               <Download className="h-4 w-4" />
                                             </button>

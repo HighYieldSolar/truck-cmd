@@ -1,18 +1,21 @@
 // src/components/fuel/TopFuelEntries.js
 "use client";
 
-import { 
-  Fuel, 
-  MapPin, 
+import {
+  Fuel,
+  MapPin,
   Image,
   Edit
 } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
-export default function TopFuelEntries({ 
-  entries, 
-  onViewReceipt, 
-  onEditFuelEntry 
+export default function TopFuelEntries({
+  entries,
+  onViewReceipt,
+  onEditFuelEntry
 }) {
+  const { t } = useTranslation('fuel');
+
   // Format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -37,7 +40,7 @@ export default function TopFuelEntries({
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <Fuel size={36} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-        <p>No fuel purchases found</p>
+        <p>{t('topEntriesWidget.noEntries')}</p>
       </div>
     );
   }
@@ -72,7 +75,7 @@ export default function TopFuelEntries({
               <button
                 onClick={(e) => { e.stopPropagation(); onEditFuelEntry(entry); }}
                 className="mt-1 opacity-0 group-hover:opacity-100 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-1 transition-opacity duration-200"
-                title="Edit Fuel Entry"
+                title={t('topEntriesWidget.editEntry')}
               >
                 <Edit size={14} />
               </button>

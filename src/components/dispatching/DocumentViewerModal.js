@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, ExternalLink, Image as ImageIcon, Download } from 'lucide-react';
 import { supabase } from "@/lib/supabaseClient";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Helper to check if a URL points to an image
 const isImageUrl = (url) => {
@@ -16,6 +17,7 @@ const isPdfUrl = (url) => {
 };
 
 export default function DocumentViewerModal({ loadId, onClose }) {
+  const { t } = useTranslation('dispatching');
   const [documents, setDocuments] = useState([]);
   const [loadDetails, setLoadDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
         setLoadDetails(loadData);
 
       } catch (err) {
-        setError('Failed to load documents. Please try again.');
+        setError(t('documentViewer.failedToLoad'));
       } finally {
         setLoading(false);
       }
@@ -59,7 +61,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-            Documents for Load #{loadDetails?.load_number || 'N/A'}
+            {t('documentViewer.title', { loadNumber: loadDetails?.load_number || 'N/A' })}
           </h3>
           <button
             onClick={onClose}
@@ -85,7 +87,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                 <li key={index} className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden shadow-sm bg-white dark:bg-gray-800">
                   <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <span className="font-medium text-gray-700 dark:text-gray-300 truncate max-w-xs">
-                      {doc.name || `Document ${index + 1}`}
+                      {doc.name || `${t('documentViewer.document')} ${index + 1}`}
                     </span>
                     <div className="flex space-x-2">
                       <a
@@ -93,7 +95,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-                        title="Open in new tab"
+                        title={t('documentViewer.openInNewTab')}
                       >
                         <ExternalLink size={16} />
                       </a>
@@ -101,7 +103,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                         href={doc.url}
                         download
                         className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-                        title="Download"
+                        title={t('documentViewer.download')}
                       >
                         <Download size={16} />
                       </a>
@@ -120,7 +122,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                     ) : isPdfUrl(doc.url) ? (
                       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-700/50 rounded">
                         <FileText size={48} className="text-red-500 dark:text-red-400 mb-4" />
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">PDF Document</p>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">{t('documentViewer.pdfDocument')}</p>
                         <a
                           href={doc.url}
                           target="_blank"
@@ -128,13 +130,13 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                           className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center"
                         >
                           <ExternalLink size={16} className="mr-2" />
-                          View PDF
+                          {t('documentViewer.viewPdf')}
                         </a>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-700/50 rounded">
                         <FileText size={48} className="text-gray-400 dark:text-gray-500 mb-4" />
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">Unknown document type</p>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">{t('documentViewer.unknownDocumentType')}</p>
                         <a
                           href={doc.url}
                           target="_blank"
@@ -142,7 +144,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                           className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center"
                         >
                           <ExternalLink size={16} className="mr-2" />
-                          Open Document
+                          {t('documentViewer.openDocument')}
                         </a>
                       </div>
                     )}
@@ -153,9 +155,9 @@ export default function DocumentViewerModal({ loadId, onClose }) {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText size={48} className="text-gray-300 dark:text-gray-600 mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Documents Found</h4>
+              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('documentViewer.noDocumentsFound')}</h4>
               <p className="text-gray-500 dark:text-gray-400 max-w-md">
-                There are no proof of delivery documents available for this load.
+                {t('documentViewer.noDocumentsDescription')}
               </p>
             </div>
           )}
@@ -167,7 +169,7 @@ export default function DocumentViewerModal({ loadId, onClose }) {
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
-            Close
+            {t('documentViewer.close')}
           </button>
         </div>
       </div>

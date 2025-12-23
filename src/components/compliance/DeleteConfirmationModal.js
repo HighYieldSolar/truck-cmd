@@ -1,8 +1,11 @@
 "use client";
 
 import { AlertCircle, RefreshCw, Trash2, X } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, complianceTitle, isDeleting }) {
+  const { t } = useTranslation('compliance');
+
   if (!isOpen) return null;
 
   return (
@@ -12,7 +15,7 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, co
         <div className="bg-red-500 dark:bg-red-600 text-white px-5 py-4 rounded-t-xl flex items-center justify-between">
           <h3 className="text-lg font-bold flex items-center">
             <AlertCircle size={20} className="mr-2" />
-            Delete Confirmation
+            {t('deleteModal.title')}
           </h3>
           <button
             onClick={onClose}
@@ -30,9 +33,9 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, co
             <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
               <Trash2 size={28} className="text-red-600 dark:text-red-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Delete Compliance Record</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('deleteModal.deleteRecord')}</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Are you sure you want to delete &quot;{complianceTitle}&quot;? This action cannot be undone.
+              {t('deleteModal.confirmText', { title: complianceTitle })}
             </p>
           </div>
 
@@ -42,7 +45,7 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, co
               disabled={isDeleting}
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors min-w-[100px]"
             >
-              Cancel
+              {t('common:buttons.cancel')}
             </button>
             <button
               onClick={onConfirm}
@@ -52,10 +55,10 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, co
               {isDeleting ? (
                 <>
                   <RefreshCw size={16} className="animate-spin mr-2" />
-                  Deleting...
+                  {t('deleteModal.deleting')}
                 </>
               ) : (
-                "Delete"
+                t('common:buttons.delete')
               )}
             </button>
           </div>

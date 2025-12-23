@@ -2,58 +2,46 @@
 
 import { useState } from "react";
 import { Check, Star } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export default function PlanSelection({ selectedPlan, setSelectedPlan }) {
-  // Plans data - matches tierConfig.js
+  const { t } = useTranslation('billing');
+
+  // Plans data - matches tierConfig.js, uses translations
   const plans = [
     {
       id: "basic",
-      name: "Basic",
-      description: "For owner-operators just getting started",
+      name: t('planSelection.plans.basic.name'),
+      description: t('planSelection.plans.basic.description'),
       price: "$20/month",
       yearlyPrice: "$16/month",
-      limits: "1 Truck • 1 Driver • 50 Loads/mo",
-      features: [
-        "Load management & dispatching",
-        "Basic invoicing (50/month)",
-        "Expense tracking",
-        "Email support"
-      ]
+      limits: t('planSelection.plans.basic.limits'),
+      features: t('planSelection.plans.basic.features', { returnObjects: true }) || []
     },
     {
       id: "premium",
-      name: "Premium",
-      description: "For growing owner-operators",
+      name: t('planSelection.plans.premium.name'),
+      description: t('planSelection.plans.premium.description'),
       price: "$35/month",
       yearlyPrice: "$28/month",
-      limits: "3 Trucks • 3 Drivers • Unlimited Loads",
-      features: [
-        "Everything in Basic, plus:",
-        "Compliance tracking & alerts",
-        "IFTA Calculator",
-        "Email notifications"
-      ],
+      limits: t('planSelection.plans.premium.limits'),
+      features: t('planSelection.plans.premium.features', { returnObjects: true }) || [],
       recommended: true
     },
     {
       id: "fleet",
-      name: "Fleet",
-      description: "For small to medium fleets",
+      name: t('planSelection.plans.fleet.name'),
+      description: t('planSelection.plans.fleet.description'),
       price: "$75/month",
       yearlyPrice: "$60/month",
-      limits: "12 Trucks • 12 Drivers • 6 Team Users",
-      features: [
-        "Everything in Premium, plus:",
-        "Maintenance scheduling",
-        "Advanced fleet reports",
-        "Priority phone support"
-      ]
+      limits: t('planSelection.plans.fleet.limits'),
+      features: t('planSelection.plans.fleet.features', { returnObjects: true }) || []
     },
   ];
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Select a Plan</h3>
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('planSelection.selectPlan')}</h3>
       <div className="grid grid-cols-1 gap-4">
         {plans.map((plan) => (
           <button
@@ -70,7 +58,7 @@ export default function PlanSelection({ selectedPlan, setSelectedPlan }) {
                 <div className="absolute top-0 right-0">
                   <span className="inline-flex items-center bg-orange-500 text-white text-center text-xs py-1 px-3 rounded-full">
                     <Star size={12} className="mr-1" />
-                    Popular
+                    {t('planSelection.popular')}
                   </span>
                 </div>
               )}
@@ -86,7 +74,7 @@ export default function PlanSelection({ selectedPlan, setSelectedPlan }) {
               )}
 
               <ul className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-                {plan.features.map((feature, index) => (
+                {(Array.isArray(plan.features) ? plan.features : []).map((feature, index) => (
                   <li key={index} className="flex items-center mt-1">
                     <Check size={16} className="text-emerald-500 dark:text-emerald-400 mr-2 flex-shrink-0" />
                     {feature}
@@ -95,7 +83,7 @@ export default function PlanSelection({ selectedPlan, setSelectedPlan }) {
               </ul>
 
               <div className="mt-4 w-full py-2 bg-blue-600 dark:bg-blue-500 text-white text-center rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium">
-                {selectedPlan === plan.id ? 'Selected' : 'Select Plan'}
+                {selectedPlan === plan.id ? t('planSelection.selected') : t('planSelection.selectPlanButton')}
               </div>
             </div>
           </button>
