@@ -30,7 +30,7 @@
     "react-dom": "19.2.1",
     "react-i18next": "^16.5.0",
     "recharts": "^2.15.3",
-    "stripe": "^17.7.0",
+    "stripe": "^20.1.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
