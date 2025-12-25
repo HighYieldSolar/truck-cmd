@@ -160,7 +160,7 @@ export default function DowngradePlanPage() {
       yearlyPrice: 60,
       yearlyTotal: 720,
       savings: 180,
-      limits: "10 Trucks • 6 Team Users • Unlimited Everything",
+      limits: "12 Trucks • 12 Drivers • 6 Team Users",
       features: [
         "Everything in Premium, plus:",
         "Maintenance scheduling",

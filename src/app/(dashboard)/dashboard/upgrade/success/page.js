@@ -336,16 +336,28 @@ export default function SuccessPage() {
     const processedSessionId = sessionStorage.getItem('payment-success-processed');
     if (processedSessionId === sessionId) {
       const savedPlan = sessionStorage.getItem('checkout_plan') || 'premium';
-      const savedCycle = sessionStorage.getItem('checkout_billing_cycle') || 'yearly';
+      const savedCycle = sessionStorage.getItem('checkout_billing_cycle') || 'monthly';
       const planData = plans[savedPlan] || plans.premium;
       const isYearly = savedCycle === 'yearly';
+
+      // Calculate next billing date
+      const nextBillingDate = new Date();
+      if (isYearly) {
+        nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+      } else {
+        nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+      }
 
       setSubscriptionDetails({
         plan: planData.name,
         limits: planData.limits,
         billingCycle: savedCycle,
-        nextPaymentDate: isYearly ? "One year from today" : "One month from today",
-        amount: isYearly ? `$${planData.yearlyTotal}` : `$${planData.monthlyPrice}/mo`,
+        nextPaymentDate: nextBillingDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        amount: isYearly ? `$${planData.yearlyTotal}/year` : `$${planData.monthlyPrice}/month`,
         status: "active"
       });
       setLoading(false);
@@ -385,20 +397,37 @@ export default function SuccessPage() {
     // Set subscription details
     const planKey = (verifyResult.plan || 'premium').toLowerCase();
     const planData = plans[planKey] || plans.premium;
-    const isYearly = verifyResult.billingCycle === 'yearly';
+    const billingCycle = verifyResult.billingCycle || 'monthly';
+    const isYearly = billingCycle === 'yearly';
+
+    // Calculate next billing date if not provided
+    let nextPaymentDate;
+    if (verifyResult.currentPeriodEnd) {
+      nextPaymentDate = new Date(verifyResult.currentPeriodEnd).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } else {
+      const nextBillingDate = new Date();
+      if (isYearly) {
+        nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+      } else {
+        nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+      }
+      nextPaymentDate = nextBillingDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
 
     setSubscriptionDetails({
       plan: planData.name,
       limits: planData.limits,
-      billingCycle: verifyResult.billingCycle || 'yearly',
-      nextPaymentDate: verifyResult.currentPeriodEnd
-        ? new Date(verifyResult.currentPeriodEnd).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-        : isYearly ? "One year from today" : "One month from today",
-      amount: isYearly ? `$${planData.yearlyTotal}` : `$${planData.monthlyPrice}/mo`,
+      billingCycle: billingCycle,
+      nextPaymentDate: nextPaymentDate,
+      amount: isYearly ? `$${planData.yearlyTotal}/year` : `$${planData.monthlyPrice}/month`,
       status: "active"
     });
 
