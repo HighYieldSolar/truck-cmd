@@ -272,7 +272,7 @@ export default function BillingSettings() {
         return 'canceled';
       }
       return 'active';
-    } else if (subscription?.status === 'trial' && isTrialActive()) {
+    } else if (subscription?.status === 'trialing' && isTrialActive()) {
       return 'trial';
     } else if (subscription?.status === 'canceled') {
       return 'canceled';

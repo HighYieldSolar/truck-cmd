@@ -370,7 +370,7 @@ export const FEATURE_DESCRIPTIONS = {
 
 // Helper to get effective tier (trial users get basic features)
 export function getEffectiveTier(plan, status) {
-  if (status === 'trial') return 'basic';
+  if (status === 'trialing') return 'basic';
   if (!plan || plan === 'null') return 'basic';
   return plan.toLowerCase();
 }

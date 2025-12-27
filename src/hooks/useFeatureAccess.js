@@ -30,7 +30,7 @@ export function useFeatureAccess() {
     }
 
     // If trial is active, treat as basic
-    if (subscription.status === 'trial' && isTrialActive()) {
+    if (subscription.status === 'trialing' && isTrialActive()) {
       return 'basic';
     }
 

@@ -9,20 +9,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   PartyPopper, CheckCircle, ArrowRight, Truck, Users, User,
   FileText, Calculator, DollarSign, Fuel, MapPin, Clock,
-  Sparkles, ChevronRight, Shield, Zap, X
+  Sparkles, ChevronRight, Shield, Zap, X, Play, Plus
 } from "lucide-react";
 import Confetti from "@/components/shared/Confetti";
+import { useTranslation } from "@/context/LanguageContext";
 
 function WelcomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation('onboarding');
   const isNewUser = searchParams.get('new') === 'true';
   const emailParam = searchParams.get('email');
 
-  // Wizard state
-  const [step, setStep] = useState(isNewUser ? 0 : 1); // 0 = celebration, 1+ = wizard
+  // Wizard state - 0 = celebration, 1 = quick start choice, 2+ = wizard
+  const [step, setStep] = useState(isNewUser ? 0 : 1);
   const [showConfetti, setShowConfetti] = useState(isNewUser);
   const [loading, setLoading] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
   const [user, setUser] = useState(null);
 
   // Onboarding data
@@ -62,20 +65,20 @@ function WelcomeContent() {
 
   const handleOperatorSelect = (type) => {
     setOperatorType(type);
-    setStep(2);
+    setStep(3); // Go to fleet size (for fleet) or truck step (for owner-operator)
   };
 
   const handleFleetSizeSelect = (size) => {
     setFleetSize(size);
-    setStep(3);
+    setStep(4); // Go to truck step
   };
 
   const handleTruckSubmit = () => {
-    setStep(4);
+    setStep(5); // Go to focus selection
   };
 
   const handleSkipTruck = () => {
-    setStep(4);
+    setStep(5); // Go to focus selection
   };
 
   const handleFocusSelect = async (focus) => {
@@ -177,6 +180,58 @@ function WelcomeContent() {
     }
   ];
 
+  // Handle demo data seeding
+  const handleUseDemoData = async () => {
+    if (!user) {
+      // If not authenticated yet, wait a moment and check again
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        router.push('/login');
+        return;
+      }
+      setUser(session.user);
+    }
+
+    setLoadingDemo(true);
+    try {
+      const response = await fetch('/api/seed-demo-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Error seeding demo data:', data.error);
+      }
+
+      // Mark onboarding as complete
+      if (user) {
+        await supabase
+          .from('users')
+          .update({
+            operator_type: 'owner-operator',
+            onboarding_completed: true,
+            onboarding_completed_at: new Date().toISOString(),
+            used_demo_data: true
+          })
+          .eq('id', user.id);
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error setting up demo data:', error);
+      router.push('/dashboard');
+    }
+  };
+
+  // Handle start fresh (skip demo data)
+  const handleStartFresh = () => {
+    setStep(2); // Go to operator type selection
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white flex items-center justify-center px-4 py-12">
       {showConfetti && <Confetti />}
@@ -260,7 +315,7 @@ function WelcomeContent() {
                 onClick={() => setStep(1)}
                 className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
               >
-                Let's Get You Set Up
+                {t('welcome.celebration.getStarted')}
                 <ArrowRight size={20} />
               </motion.button>
 
@@ -270,13 +325,85 @@ function WelcomeContent() {
                 transition={{ delay: 0.8 }}
                 className="text-gray-400 text-sm mt-4"
               >
-                Takes less than 2 minutes
+                {t('welcome.celebration.estimatedTime')}
               </motion.p>
             </motion.div>
           )}
 
-          {/* Step 1: Operator Type */}
+          {/* Step 1: Quick Start Choice - Demo Data or Start Fresh */}
           {step === 1 && (
+            <motion.div
+              key="quick-start"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
+            >
+              <div className="text-center mb-8">
+                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Sparkles size={24} className="text-purple-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">{t('welcome.quickStart.title')}</h2>
+                <p className="text-gray-500 mt-1">{t('welcome.quickStart.subtitle')}</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Demo Data Option */}
+                <motion.button
+                  onClick={handleUseDemoData}
+                  disabled={loadingDemo}
+                  className="w-full p-5 border-2 border-purple-200 rounded-xl text-left bg-purple-50/50 hover:border-purple-400 hover:bg-purple-50 transition-all group"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <Play size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{t('welcome.quickStart.demoData.title')}</h3>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-sm mt-1">{t('welcome.quickStart.demoData.description')}</p>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0 mt-1" />
+                  </div>
+                  {loadingDemo && (
+                    <div className="flex items-center gap-2 mt-3 text-purple-600 text-sm">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                      <span>{t('welcome.quickStart.demoData.loading')}</span>
+                    </div>
+                  )}
+                </motion.button>
+
+                {/* Start Fresh Option */}
+                <motion.button
+                  onClick={handleStartFresh}
+                  disabled={loadingDemo}
+                  className="w-full p-5 border-2 border-gray-200 rounded-xl text-left hover:border-blue-500 hover:bg-blue-50/50 transition-all group"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0">
+                      <Plus size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{t('welcome.quickStart.startFresh.title')}</h3>
+                      <p className="text-gray-500 text-sm mt-1">{t('welcome.quickStart.startFresh.description')}</p>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0 mt-1" />
+                  </div>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 2: Operator Type */}
+          {step === 2 && (
             <motion.div
               key="operator-type"
               initial={{ opacity: 0, x: 50 }}
@@ -331,8 +458,8 @@ function WelcomeContent() {
             </motion.div>
           )}
 
-          {/* Step 2: Fleet Size (only for small-fleet) or Skip to Step 3 */}
-          {step === 2 && operatorType === 'small-fleet' && (
+          {/* Step 3: Fleet Size (only for small-fleet) */}
+          {step === 3 && operatorType === 'small-fleet' && (
             <motion.div
               key="fleet-size"
               initial={{ opacity: 0, x: 50 }}
@@ -341,7 +468,7 @@ function WelcomeContent() {
               className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
             >
               <button
-                onClick={() => setStep(1)}
+                onClick={() => setStep(2)}
                 className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1 mb-4"
               >
                 ← Back
@@ -382,8 +509,8 @@ function WelcomeContent() {
             </motion.div>
           )}
 
-          {/* Step 2 for owner-operators goes straight to truck, or Step 3 for fleets */}
-          {((step === 2 && operatorType === 'owner-operator') || step === 3) && (
+          {/* Step 3 for owner-operators goes straight to truck, or Step 4 for fleets */}
+          {((step === 3 && operatorType === 'owner-operator') || step === 4) && (
             <motion.div
               key="add-truck"
               initial={{ opacity: 0, x: 50 }}
@@ -392,7 +519,7 @@ function WelcomeContent() {
               className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
             >
               <button
-                onClick={() => setStep(operatorType === 'owner-operator' ? 1 : 2)}
+                onClick={() => setStep(operatorType === 'owner-operator' ? 2 : 3)}
                 className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1 mb-4"
               >
                 ← Back
@@ -473,8 +600,8 @@ function WelcomeContent() {
             </motion.div>
           )}
 
-          {/* Step 4: Choose Focus */}
-          {step === 4 && (
+          {/* Step 5: Choose Focus */}
+          {step === 5 && (
             <motion.div
               key="choose-focus"
               initial={{ opacity: 0, x: 50 }}
@@ -483,7 +610,7 @@ function WelcomeContent() {
               className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
             >
               <button
-                onClick={() => setStep(operatorType === 'owner-operator' ? 2 : 3)}
+                onClick={() => setStep(operatorType === 'owner-operator' ? 3 : 4)}
                 className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1 mb-4"
               >
                 ← Back

@@ -10,26 +10,62 @@
       "message": "Estás listo para administrar tu negocio de camiones con Truck Command"
     },
     "items": {
+      "load": {
+        "title": "Crea tu primera carga",
+        "description": "Rastrea un envío desde recogida hasta entrega"
+      },
+      "invoice": {
+        "title": "Genera una factura",
+        "description": "Cobra más rápido con facturas profesionales"
+      },
       "truck": {
-        "title": "Agrega tu primer camión",
-        "description": "Rastrea el kilometraje y administra tu flota"
+        "title": "Agrega tu camión",
+        "description": "Rastrea kilometraje y mantenimiento"
+      },
+      "profile": {
+        "title": "Completa tu perfil",
+        "description": "Para facturas y recibos profesionales"
       },
       "customer": {
         "title": "Agrega un cliente",
         "description": "Prepárate para facturar a clientes"
       },
-      "load": {
-        "title": "Crea tu primera carga",
-        "description": "Comienza a rastrear tus viajes"
-      },
       "expense": {
         "title": "Registra un gasto",
         "description": "Rastrea los costos de tu negocio"
-      },
-      "profile": {
-        "title": "Completa tu perfil",
-        "description": "Agrega teléfono y nombre de empresa para facturas"
       }
+    }
+  },
+  "welcome": {
+    "celebration": {
+      "title": "¡Bienvenido a Truck Command!",
+      "subtitle": "Tu prueba gratuita de 7 días ha comenzado",
+      "trialBadge": "7 días de acceso completo - sin tarjeta de crédito",
+      "getStarted": "Vamos a Configurarte",
+      "estimatedTime": "Toma menos de 2 minutos"
+    },
+    "quickStart": {
+      "title": "¿Cómo te gustaría empezar?",
+      "subtitle": "Elige la opción que mejor te funcione",
+      "demoData": {
+        "title": "Explorar con Datos de Demostración",
+        "description": "Ve cómo funciona Truck Command con camiones, cargas y facturas de ejemplo ya configurados.",
+        "button": "Usar Datos Demo",
+        "loading": "Configurando demo..."
+      },
+      "startFresh": {
+        "title": "Empezar desde Cero",
+        "description": "Comienza con una pizarra limpia y agrega tus propios datos.",
+        "button": "Agregar Mi Primer Camión"
+      }
+    },
+    "operatorType": {
+      "title": "Cuéntanos sobre tu operación",
+      "subtitle": "Personalizaremos tu experiencia"
+    },
+    "focus": {
+      "title": "¿Qué quieres hacer primero?",
+      "subtitle": "Te ayudaremos a comenzar"
     }
   },
   "tutorialCard": {

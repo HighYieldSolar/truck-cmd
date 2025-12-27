@@ -70,7 +70,7 @@ export function SubscriptionProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState({
-    status: 'loading', // loading, trial, active, expired, none
+    status: 'loading', // loading, trialing, active, expired, none
     plan: null,
     trialEndsAt: null,
     currentPeriodEndsAt: null
@@ -337,7 +337,7 @@ export function SubscriptionProvider({ children }) {
 
   // Check if trial is active and valid
   const isTrialActive = () => {
-    if (subscription.status !== 'trial') return false;
+    if (subscription.status !== 'trialing') return false;
     if (!subscription.trialEndsAt) return false;
 
     const now = new Date();

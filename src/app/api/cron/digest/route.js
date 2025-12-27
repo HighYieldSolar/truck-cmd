@@ -165,7 +165,7 @@ async function sendOnboardingEmails(supabase) {
         status,
         users!inner (id, email, full_name, operator_type, primary_focus)
       `)
-      .eq('status', 'trial')
+      .eq('status', 'trialing')
       .not('users.email', 'is', null);
 
     if (error) {

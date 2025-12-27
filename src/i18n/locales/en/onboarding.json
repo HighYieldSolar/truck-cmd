@@ -10,26 +10,62 @@
       "message": "You're all set to run your trucking business with Truck Command"
     },
     "items": {
+      "load": {
+        "title": "Create your first load",
+        "description": "Track a shipment from pickup to delivery"
+      },
+      "invoice": {
+        "title": "Generate an invoice",
+        "description": "Get paid faster with professional invoices"
+      },
       "truck": {
-        "title": "Add your first truck",
-        "description": "Track mileage and manage your fleet"
+        "title": "Add your truck",
+        "description": "Track mileage and maintenance"
+      },
+      "profile": {
+        "title": "Complete your profile",
+        "description": "For professional invoices & receipts"
       },
       "customer": {
         "title": "Add a customer",
         "description": "Get ready to invoice clients"
       },
-      "load": {
-        "title": "Create your first load",
-        "description": "Start tracking your hauls"
-      },
       "expense": {
         "title": "Log an expense",
         "description": "Track your business costs"
-      },
-      "profile": {
-        "title": "Complete your profile",
-        "description": "Add phone & company name for invoices"
       }
+    }
+  },
+  "welcome": {
+    "celebration": {
+      "title": "Welcome to Truck Command!",
+      "subtitle": "Your 7-day free trial has started",
+      "trialBadge": "7 days of full access - no credit card needed",
+      "getStarted": "Let's Get You Set Up",
+      "estimatedTime": "Takes less than 2 minutes"
+    },
+    "quickStart": {
+      "title": "How would you like to start?",
+      "subtitle": "Choose the option that works best for you",
+      "demoData": {
+        "title": "Explore with Demo Data",
+        "description": "See how Truck Command works with sample trucks, loads, and invoices already set up.",
+        "button": "Use Demo Data",
+        "loading": "Setting up demo..."
+      },
+      "startFresh": {
+        "title": "Start from Scratch",
+        "description": "Begin with a clean slate and add your own data.",
+        "button": "Add My First Truck"
+      }
+    },
+    "operatorType": {
+      "title": "Tell us about your operation",
+      "subtitle": "We'll customize your experience"
+    },
+    "focus": {
+      "title": "What do you want to do first?",
+      "subtitle": "We'll help you get started"
     }
   },
   "tutorialCard": {

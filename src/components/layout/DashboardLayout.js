@@ -12,6 +12,7 @@ import {
   User, MapPin, Home
 } from "lucide-react";
 import TrialBanner from "@/components/subscriptions/TrialBanner";
+import EmailVerificationBanner from "@/components/onboarding/EmailVerificationBanner";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useSidebar } from "@/context/SidebarContext";
@@ -109,7 +110,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
   // Determine subscription status
   const subscriptionStatus = subscription?.status === 'active' && isSubscriptionActive()
     ? 'active'
-    : subscription?.status === 'trial' && isTrialActive()
+    : subscription?.status === 'trialing' && isTrialActive()
       ? 'trial'
       : 'expired';
 
@@ -389,6 +390,9 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
     <div className={`dashboard-theme flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Trial Banner */}
       <TrialBanner />
+
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
