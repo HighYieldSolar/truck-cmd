@@ -151,16 +151,24 @@ export async function POST(request) {
           sub => sub.metadata?.userId === userId
         );
 
-        if (existingIncompleteSub) {
+        if (existingIncompleteSub && existingIncompleteSub.latest_invoice) {
           // Return the existing incomplete subscription's client secret
-          const invoice = await stripe.invoices.retrieve(existingIncompleteSub.latest_invoice);
-          const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
-
-          return NextResponse.json({
-            clientSecret: paymentIntent.client_secret,
-            subscriptionId: existingIncompleteSub.id,
-            customerId: existingIncompleteSub.customer
-          });
+          try {
+            const invoice = await stripe.invoices.retrieve(existingIncompleteSub.latest_invoice);
+            if (invoice.payment_intent) {
+              const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
+              if (paymentIntent.client_secret) {
+                return NextResponse.json({
+                  clientSecret: paymentIntent.client_secret,
+                  subscriptionId: existingIncompleteSub.id,
+                  customerId: existingIncompleteSub.customer
+                });
+              }
+            }
+          } catch (retrieveError) {
+            log('Error retrieving existing subscription payment intent:', retrieveError.message);
+            // Continue to create a new subscription
+          }
         }
       }
     }
