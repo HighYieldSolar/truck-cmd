@@ -1,7 +1,7 @@
 // src/app/api/create-subscription-intent/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[create-subscription-intent]', ...args);
@@ -66,7 +66,7 @@ export async function POST(request) {
     if (!userEmail) {
       try {
         // First try users table
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseAdmin
           .from('users')
           .select('email, full_name')
           .eq('id', userId)
@@ -77,7 +77,7 @@ export async function POST(request) {
         } else {
           // Try auth.users via admin API
           try {
-            const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+            const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
             if (authUser?.user?.email) {
               userEmail = authUser.user.email;
             }
@@ -93,7 +93,7 @@ export async function POST(request) {
     // If still no email, try to get from subscriptions table (might have been stored there)
     if (!userEmail) {
       try {
-        const { data: subData } = await supabase
+        const { data: subData } = await supabaseAdmin
           .from('subscriptions')
           .select('stripe_customer_id')
           .eq('user_id', userId)
@@ -118,7 +118,7 @@ export async function POST(request) {
     }
 
     // Check for existing subscription - include trial info to preserve it
-    const { data: existingSub } = await supabase
+    const { data: existingSub } = await supabaseAdmin
       .from('subscriptions')
       .select('stripe_customer_id, stripe_subscription_id, status, checkout_initiated_at, trial_ends_at, plan')
       .eq('user_id', userId)
@@ -166,7 +166,7 @@ export async function POST(request) {
     }
 
     // Mark checkout as initiated to prevent race conditions
-    await supabase
+    await supabaseAdmin
       .from('subscriptions')
       .upsert({
         user_id: userId,
@@ -198,7 +198,7 @@ export async function POST(request) {
       }
 
       // Save customer ID to database
-      await supabase
+      await supabaseAdmin
         .from('subscriptions')
         .upsert({
           user_id: userId,
@@ -385,7 +385,7 @@ export async function POST(request) {
       // User is on trial - ONLY update Stripe IDs, keep trial status intact
       // The webhook will update status to 'active' when payment succeeds
       log('User is on trial - preserving trial status while storing Stripe subscription ID');
-      await supabase
+      await supabaseAdmin
         .from('subscriptions')
         .update({
           stripe_customer_id: customerId,
@@ -396,7 +396,7 @@ export async function POST(request) {
         .eq('user_id', userId);
     } else {
       // User is NOT on trial - update with incomplete status as normal
-      await supabase
+      await supabaseAdmin
         .from('subscriptions')
         .upsert({
           user_id: userId,
