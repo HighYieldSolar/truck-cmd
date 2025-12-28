@@ -6,6 +6,17 @@ import { supabase } from '@/lib/supabaseClient';
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[create-subscription-intent]', ...args);
 
+// Helper to check if user is on valid trial
+function isValidTrial(subscription) {
+  if (!subscription) return false;
+  if (subscription.status !== 'trialing') return false;
+  if (!subscription.trial_ends_at) return false;
+
+  const now = new Date();
+  const trialEnd = new Date(subscription.trial_ends_at);
+  return trialEnd > now;
+}
+
 // Valid plans and billing cycles
 const VALID_PLANS = ['basic', 'premium', 'fleet'];
 const VALID_BILLING_CYCLES = ['monthly', 'yearly'];
@@ -106,12 +117,15 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Check for existing subscription
+    // Check for existing subscription - include trial info to preserve it
     const { data: existingSub } = await supabase
       .from('subscriptions')
-      .select('stripe_customer_id, stripe_subscription_id, status, checkout_initiated_at')
+      .select('stripe_customer_id, stripe_subscription_id, status, checkout_initiated_at, trial_ends_at, plan')
       .eq('user_id', userId)
       .single();
+
+    // Check if user is on a valid trial (we'll preserve this if they abandon checkout)
+    const userOnTrial = isValidTrial(existingSub);
 
     // Check if user already has an active subscription
     if (existingSub?.status === 'active' && existingSub?.stripe_subscription_id) {
@@ -226,6 +240,20 @@ export async function POST(request) {
       }, { status: 500 });
     }
 
+    // Validate price ID format
+    if (!priceId.startsWith('price_')) {
+      log(`Invalid price ID format for ${plan}/${billingCycle}: ${priceId}`);
+      return NextResponse.json({
+        error: 'Invalid price configuration. Please contact support.',
+        code: 'INVALID_PRICE_ID'
+      }, { status: 500 });
+    }
+
+    // Check for test/live mode mismatch (test keys start with sk_test, live with sk_live)
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test');
+    const isTestPriceId = priceId.includes('test');
+    log(`Mode check: API ${isTestMode ? 'test' : 'live'}, Price ID: ${priceId.substring(0, 20)}...`);
+
     // Create the subscription with payment_behavior: 'default_incomplete'
     // This creates the subscription but leaves it incomplete until payment is confirmed
     const subscriptionParams = {
@@ -291,31 +319,96 @@ export async function POST(request) {
       }
     }
 
-    const subscription = await stripe.subscriptions.create(subscriptionParams);
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.create(subscriptionParams);
+    } catch (stripeError) {
+      log('Stripe subscription creation failed:', stripeError.message, stripeError.code);
+      return NextResponse.json({
+        error: `Failed to create subscription: ${stripeError.message}`,
+        code: stripeError.code || 'STRIPE_ERROR'
+      }, { status: 500 });
+    }
 
     // Get the client secret from the payment intent
     const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
 
     if (!clientSecret) {
-      // If no payment intent (e.g., free trial), handle differently
+      // Log detailed info to help debug live mode issues
+      log('No client secret found. Subscription details:', {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        hasInvoice: !!subscription.latest_invoice,
+        invoiceId: subscription.latest_invoice?.id,
+        hasPaymentIntent: !!subscription.latest_invoice?.payment_intent,
+        paymentIntentId: typeof subscription.latest_invoice?.payment_intent === 'string'
+          ? subscription.latest_invoice.payment_intent
+          : subscription.latest_invoice?.payment_intent?.id,
+        priceId: priceId
+      });
+
+      // Try to retrieve the payment intent if it's just an ID string
+      if (subscription.latest_invoice?.payment_intent && typeof subscription.latest_invoice.payment_intent === 'string') {
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(subscription.latest_invoice.payment_intent);
+          if (paymentIntent.client_secret) {
+            log('Retrieved client secret from payment intent');
+            return NextResponse.json({
+              clientSecret: paymentIntent.client_secret,
+              subscriptionId: subscription.id,
+              customerId,
+              appliedCoupon,
+              amountDue: subscription.latest_invoice?.amount_due ? Math.round(subscription.latest_invoice.amount_due) / 100 : null
+            });
+          }
+        } catch (piError) {
+          log('Failed to retrieve payment intent:', piError.message);
+        }
+      }
+
       return NextResponse.json({
-        error: 'Unable to create payment intent'
+        error: 'Unable to create payment intent. Please check that Stripe price IDs are correctly configured for this environment.',
+        details: process.env.NODE_ENV === 'development' ? {
+          subscriptionStatus: subscription.status,
+          hasInvoice: !!subscription.latest_invoice,
+          priceId
+        } : undefined
       }, { status: 500 });
     }
 
-    // Store the pending subscription info (amount in dollars, not cents)
-    await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id,
-        plan: plan,
-        billing_cycle: billingCycle,
-        status: 'incomplete',
-        amount: Math.round(pricing[plan][billingCycle]) / 100,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+    // IMPORTANT: Preserve trial status if user is on a valid trial
+    // We only store the Stripe subscription ID for reference
+    // The status will be updated to 'active' by the webhook when payment succeeds
+    // This prevents breaking the user's trial if they visit checkout but don't complete payment
+
+    if (userOnTrial) {
+      // User is on trial - ONLY update Stripe IDs, keep trial status intact
+      // The webhook will update status to 'active' when payment succeeds
+      log('User is on trial - preserving trial status while storing Stripe subscription ID');
+      await supabase
+        .from('subscriptions')
+        .update({
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          checkout_initiated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+    } else {
+      // User is NOT on trial - update with incomplete status as normal
+      await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id: userId,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          plan: plan,
+          billing_cycle: billingCycle,
+          status: 'incomplete',
+          amount: Math.round(pricing[plan][billingCycle]) / 100,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+    }
 
     return NextResponse.json({
       clientSecret,
