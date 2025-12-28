@@ -75,6 +75,7 @@ export default function SignupForm() {
   const [processingOAuth, setProcessingOAuth] = useState(false);
 
   const passwordStrength = getPasswordStrength(password);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Handle OAuth tokens in URL hash (from Google redirect)
   useEffect(() => {
@@ -103,6 +104,20 @@ export default function SignupForm() {
             }
 
             if (data.session) {
+              const user = data.session.user;
+
+              // Check if this is an existing user (created_at is more than 1 minute old)
+              const createdAt = new Date(user.created_at);
+              const now = new Date();
+              const timeDiffMs = now - createdAt;
+              const isExistingUser = timeDiffMs > 60000; // More than 1 minute old = existing user
+
+              if (isExistingUser) {
+                // Existing user trying to sign up - redirect to dashboard instead
+                router.push('/dashboard');
+                return;
+              }
+
               // New user from OAuth - redirect to welcome
               router.push('/welcome?new=true');
               return;
@@ -155,12 +170,51 @@ export default function SignupForm() {
     return true;
   };
 
-  const handleStep1Submit = (e) => {
+  // Check if email already exists in users table
+  const checkEmailExists = async (emailToCheck) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', emailToCheck.toLowerCase().trim())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking email:', error);
+        return false; // Allow signup attempt if check fails
+      }
+
+      return !!data; // Returns true if email exists
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return false;
+    }
+  };
+
+  const handleStep1Submit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (validateStep1()) {
-      setStep(2);
+
+    if (!validateStep1()) {
+      return;
     }
+
+    // Check if email already exists
+    setCheckingEmail(true);
+    try {
+      const emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        setError("An account with this email already exists. Please log in instead.");
+        setCheckingEmail(false);
+        return;
+      }
+    } catch (error) {
+      // If check fails, allow signup attempt
+      console.error('Email check failed:', error);
+    }
+    setCheckingEmail(false);
+
+    setStep(2);
   };
 
   const handleSignup = async (e) => {
@@ -371,10 +425,23 @@ export default function SignupForm() {
             {/* Continue Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
+              disabled={checkingEmail}
+              className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Continue
-              <ArrowRight size={18} />
+              {checkingEmail ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Checking...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight size={18} />
+                </>
+              )}
             </button>
 
             {/* Terms */}
