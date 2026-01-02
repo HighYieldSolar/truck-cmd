@@ -264,6 +264,7 @@ export async function POST(request) {
 
     // Create the subscription with payment_behavior: 'default_incomplete'
     // This creates the subscription but leaves it incomplete until payment is confirmed
+    // Note: Stripe now uses confirmation_secret instead of payment_intent for client_secret
     const subscriptionParams = {
       customer: customerId,
       items: [{ price: priceId }],
@@ -272,7 +273,7 @@ export async function POST(request) {
         save_default_payment_method: 'on_subscription',
         payment_method_types: ['card', 'link']
       },
-      expand: ['latest_invoice.payment_intent'],
+      expand: ['latest_invoice.confirmation_secret'],
       metadata: {
         userId,
         plan,
@@ -338,18 +339,18 @@ export async function POST(request) {
       }, { status: 500 });
     }
 
-    // Get the client secret from the payment intent
-    // Handle case where latest_invoice or payment_intent might be string IDs instead of expanded objects
+    // Get the client secret from the invoice's confirmation_secret
+    // Stripe now uses confirmation_secret instead of payment_intent for subscription payments
     let clientSecret = null;
     let invoiceObj = subscription.latest_invoice;
     let amountDue = null;
 
-    // If latest_invoice is a string ID, retrieve the full invoice
+    // If latest_invoice is a string ID, retrieve the full invoice with confirmation_secret expanded
     if (typeof invoiceObj === 'string') {
       log('latest_invoice is a string ID, retrieving invoice:', invoiceObj);
       try {
         invoiceObj = await stripe.invoices.retrieve(invoiceObj, {
-          expand: ['payment_intent']
+          expand: ['confirmation_secret']
         });
       } catch (invError) {
         log('Failed to retrieve invoice:', invError.message);
@@ -360,20 +361,26 @@ export async function POST(request) {
     if (invoiceObj) {
       amountDue = invoiceObj.amount_due ? Math.round(invoiceObj.amount_due) / 100 : null;
 
-      // Check if payment_intent is expanded or just an ID
-      if (invoiceObj.payment_intent) {
-        if (typeof invoiceObj.payment_intent === 'string') {
-          // payment_intent is a string ID, retrieve it
-          log('payment_intent is a string ID, retrieving:', invoiceObj.payment_intent);
-          try {
-            const paymentIntent = await stripe.paymentIntents.retrieve(invoiceObj.payment_intent);
-            clientSecret = paymentIntent.client_secret;
-          } catch (piError) {
-            log('Failed to retrieve payment intent:', piError.message);
+      // Get client_secret from confirmation_secret (new Stripe API approach)
+      if (invoiceObj.confirmation_secret?.client_secret) {
+        clientSecret = invoiceObj.confirmation_secret.client_secret;
+        log('Got client_secret from confirmation_secret');
+      } else {
+        // Fallback: try payment_intent for backwards compatibility
+        log('No confirmation_secret, trying payment_intent fallback');
+        if (invoiceObj.payment_intent) {
+          if (typeof invoiceObj.payment_intent === 'string') {
+            try {
+              const paymentIntent = await stripe.paymentIntents.retrieve(invoiceObj.payment_intent);
+              clientSecret = paymentIntent.client_secret;
+              log('Got client_secret from payment_intent retrieval');
+            } catch (piError) {
+              log('Failed to retrieve payment intent:', piError.message);
+            }
+          } else if (invoiceObj.payment_intent.client_secret) {
+            clientSecret = invoiceObj.payment_intent.client_secret;
+            log('Got client_secret from expanded payment_intent');
           }
-        } else {
-          // payment_intent is already expanded
-          clientSecret = invoiceObj.payment_intent.client_secret;
         }
       }
     }
@@ -385,7 +392,8 @@ export async function POST(request) {
         status: subscription.status,
         latestInvoiceType: typeof subscription.latest_invoice,
         invoiceObjId: invoiceObj?.id,
-        paymentIntentType: invoiceObj ? typeof invoiceObj.payment_intent : 'no invoice',
+        hasConfirmationSecret: !!invoiceObj?.confirmation_secret,
+        hasPaymentIntent: !!invoiceObj?.payment_intent,
         priceId: priceId
       });
 
@@ -394,6 +402,7 @@ export async function POST(request) {
         details: process.env.NODE_ENV === 'development' ? {
           subscriptionStatus: subscription.status,
           hasInvoice: !!invoiceObj,
+          hasConfirmationSecret: !!invoiceObj?.confirmation_secret,
           priceId
         } : undefined
       }, { status: 500 });
