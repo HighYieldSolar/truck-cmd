@@ -339,46 +339,61 @@ export async function POST(request) {
     }
 
     // Get the client secret from the payment intent
-    const clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+    // Handle case where latest_invoice or payment_intent might be string IDs instead of expanded objects
+    let clientSecret = null;
+    let invoiceObj = subscription.latest_invoice;
+    let amountDue = null;
+
+    // If latest_invoice is a string ID, retrieve the full invoice
+    if (typeof invoiceObj === 'string') {
+      log('latest_invoice is a string ID, retrieving invoice:', invoiceObj);
+      try {
+        invoiceObj = await stripe.invoices.retrieve(invoiceObj, {
+          expand: ['payment_intent']
+        });
+      } catch (invError) {
+        log('Failed to retrieve invoice:', invError.message);
+        invoiceObj = null;
+      }
+    }
+
+    if (invoiceObj) {
+      amountDue = invoiceObj.amount_due ? Math.round(invoiceObj.amount_due) / 100 : null;
+
+      // Check if payment_intent is expanded or just an ID
+      if (invoiceObj.payment_intent) {
+        if (typeof invoiceObj.payment_intent === 'string') {
+          // payment_intent is a string ID, retrieve it
+          log('payment_intent is a string ID, retrieving:', invoiceObj.payment_intent);
+          try {
+            const paymentIntent = await stripe.paymentIntents.retrieve(invoiceObj.payment_intent);
+            clientSecret = paymentIntent.client_secret;
+          } catch (piError) {
+            log('Failed to retrieve payment intent:', piError.message);
+          }
+        } else {
+          // payment_intent is already expanded
+          clientSecret = invoiceObj.payment_intent.client_secret;
+        }
+      }
+    }
 
     if (!clientSecret) {
-      // Log detailed info to help debug live mode issues
+      // Log detailed info to help debug
       log('No client secret found. Subscription details:', {
         subscriptionId: subscription.id,
         status: subscription.status,
-        hasInvoice: !!subscription.latest_invoice,
-        invoiceId: subscription.latest_invoice?.id,
-        hasPaymentIntent: !!subscription.latest_invoice?.payment_intent,
-        paymentIntentId: typeof subscription.latest_invoice?.payment_intent === 'string'
-          ? subscription.latest_invoice.payment_intent
-          : subscription.latest_invoice?.payment_intent?.id,
+        latestInvoiceType: typeof subscription.latest_invoice,
+        invoiceObjId: invoiceObj?.id,
+        paymentIntentType: invoiceObj ? typeof invoiceObj.payment_intent : 'no invoice',
         priceId: priceId
       });
 
-      // Try to retrieve the payment intent if it's just an ID string
-      if (subscription.latest_invoice?.payment_intent && typeof subscription.latest_invoice.payment_intent === 'string') {
-        try {
-          const paymentIntent = await stripe.paymentIntents.retrieve(subscription.latest_invoice.payment_intent);
-          if (paymentIntent.client_secret) {
-            log('Retrieved client secret from payment intent');
-            return NextResponse.json({
-              clientSecret: paymentIntent.client_secret,
-              subscriptionId: subscription.id,
-              customerId,
-              appliedCoupon,
-              amountDue: subscription.latest_invoice?.amount_due ? Math.round(subscription.latest_invoice.amount_due) / 100 : null
-            });
-          }
-        } catch (piError) {
-          log('Failed to retrieve payment intent:', piError.message);
-        }
-      }
-
       return NextResponse.json({
-        error: 'Unable to create payment intent. Please check that Stripe price IDs are correctly configured for this environment.',
+        error: 'Unable to create payment intent. Please try again or contact support.',
         details: process.env.NODE_ENV === 'development' ? {
           subscriptionStatus: subscription.status,
-          hasInvoice: !!subscription.latest_invoice,
+          hasInvoice: !!invoiceObj,
           priceId
         } : undefined
       }, { status: 500 });
@@ -423,7 +438,7 @@ export async function POST(request) {
       subscriptionId: subscription.id,
       customerId,
       appliedCoupon,
-      amountDue: subscription.latest_invoice?.amount_due ? Math.round(subscription.latest_invoice.amount_due) / 100 : null
+      amountDue
     });
 
   } catch (error) {

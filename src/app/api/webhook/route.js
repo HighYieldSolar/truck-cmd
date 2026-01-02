@@ -239,6 +239,48 @@ async function handleSubscriptionUpdate(event) {
     throw new Error(`User not found for Stripe customer: ${stripeCustomerId}`);
   }
 
+  // IMPORTANT: Preserve trial status for users on active trials
+  // When a user opens checkout but doesn't complete payment, Stripe creates an 'incomplete' subscription
+  // We should NOT overwrite their trial status with 'incomplete' - they should keep their trial
+  // Only update to the new status if:
+  // 1. The new status is 'active' (payment succeeded)
+  // 2. The user is not on a valid trial
+  // 3. The new status is a terminal state like 'canceled', 'past_due', etc.
+
+  // Check if user is currently on a valid trial
+  const { data: currentSubData } = await supabase
+    .from("subscriptions")
+    .select("status, trial_ends_at")
+    .eq("user_id", userId)
+    .single();
+
+  const isOnValidTrial = currentSubData?.status === 'trialing' &&
+    currentSubData?.trial_ends_at &&
+    new Date(currentSubData.trial_ends_at) > new Date();
+
+  // If user is on a valid trial and the incoming status is 'incomplete', preserve their trial
+  // Only update Stripe IDs, not the status
+  if (isOnValidTrial && status === 'incomplete') {
+    log(`User ${userId} is on valid trial - preserving trial status, only updating Stripe IDs`);
+
+    const { error: updateError } = await supabase
+      .from("subscriptions")
+      .update({
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: stripeCustomerId,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      log(`Error updating subscription: ${updateError.message}`);
+      throw updateError;
+    }
+
+    log(`Preserved trial status for user ${userId}, updated Stripe IDs only`);
+    return; // Exit early - don't overwrite trial
+  }
+
   // Update the subscription in Supabase
   const updateData = {
     status: status,
