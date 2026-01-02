@@ -3,8 +3,8 @@ import { sendNotificationEmail, isEmailServiceConfigured } from '@/lib/services/
 import { sendNotificationSMS, isSMSServiceConfigured, formatPhoneE164 } from '@/lib/services/smsService';
 import { verifyAuth } from '@/lib/serverAuth';
 
-const DEBUG = process.env.NODE_ENV === 'development';
-const log = (...args) => DEBUG && console.log('[notifications/test]', ...args);
+// Always log for test endpoint to help with debugging
+const log = (...args) => console.log('[notifications/test]', ...args);
 
 /**
  * Test endpoint for notification delivery
@@ -54,17 +54,29 @@ export async function POST(request) {
 
     // Test email
     if (testEmail && email) {
+      log('Testing email to:', email);
+      log('Email service configured:', isEmailServiceConfigured());
+
       if (!isEmailServiceConfigured()) {
         results.email = {
           success: false,
-          error: 'Email service not configured. Set RESEND_API_KEY in environment variables.'
+          error: 'Email service not configured. RESEND_API_KEY environment variable is missing.'
         };
       } else {
-        const emailResult = await sendNotificationEmail({
-          to: email,
-          notification: testNotification
-        });
-        results.email = emailResult;
+        try {
+          const emailResult = await sendNotificationEmail({
+            to: email,
+            notification: testNotification
+          });
+          log('Email result:', emailResult);
+          results.email = emailResult;
+        } catch (emailError) {
+          log('Email error:', emailError);
+          results.email = {
+            success: false,
+            error: emailError.message || 'Unknown email error'
+          };
+        }
       }
     }
 

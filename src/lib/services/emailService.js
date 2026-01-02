@@ -12,8 +12,9 @@
  *   await sendNotificationEmail({ to, notification, userPrefs });
  */
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Truck Command <notifications@truckcommand.com>';
+// Read environment variables at runtime to support serverless environments
+const getResendApiKey = () => process.env.RESEND_API_KEY;
+const getFromEmail = () => process.env.EMAIL_FROM || 'Truck Command <notifications@truckcommand.com>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://truckcommand.com';
 
 /**
@@ -318,20 +319,23 @@ function getCategoryFromType(type) {
  * @returns {Promise<{success: boolean, data?: any, error?: string}>}
  */
 export async function sendNotificationEmail({ to, notification }) {
-  if (!RESEND_API_KEY) {
+  const apiKey = getResendApiKey();
+  const fromEmail = getFromEmail();
+
+  if (!apiKey) {
     console.warn('RESEND_API_KEY not configured, skipping email');
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: 'Email service not configured. RESEND_API_KEY missing.' };
   }
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: fromEmail,
         to: [to],
         subject: `${getNotificationIcon(notification.notification_type)} ${notification.title}`,
         html: generateNotificationEmailHTML(notification)
@@ -360,9 +364,12 @@ export async function sendNotificationEmail({ to, notification }) {
  * @returns {Promise<{success: boolean, data?: any, error?: string}>}
  */
 export async function sendDigestEmail({ to, notifications, period = 'daily' }) {
-  if (!RESEND_API_KEY) {
+  const apiKey = getResendApiKey();
+  const fromEmail = getFromEmail();
+
+  if (!apiKey) {
     console.warn('RESEND_API_KEY not configured, skipping digest email');
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: 'Email service not configured. RESEND_API_KEY missing.' };
   }
 
   if (!notifications || notifications.length === 0) {
@@ -373,11 +380,11 @@ export async function sendDigestEmail({ to, notifications, period = 'daily' }) {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: fromEmail,
         to: [to],
         subject: `📬 Your ${period} Truck Command digest (${notifications.length} notification${notifications.length !== 1 ? 's' : ''})`,
         html: generateDigestEmailHTML(notifications, period)
@@ -401,7 +408,7 @@ export async function sendDigestEmail({ to, notifications, period = 'daily' }) {
  * Check if email service is configured
  */
 export function isEmailServiceConfigured() {
-  return !!RESEND_API_KEY;
+  return !!getResendApiKey();
 }
 
 /**
@@ -812,9 +819,12 @@ const onboardingEmails = {
  * @returns {Promise<{success: boolean, data?: any, error?: string}>}
  */
 export async function sendOnboardingEmail({ to, emailType, userName, operatorType, primaryFocus }) {
-  if (!RESEND_API_KEY) {
+  const apiKey = getResendApiKey();
+  const fromEmail = getFromEmail();
+
+  if (!apiKey) {
     console.warn('RESEND_API_KEY not configured, skipping onboarding email');
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: 'Email service not configured. RESEND_API_KEY missing.' };
   }
 
   const template = onboardingEmails[emailType];
@@ -826,11 +836,11 @@ export async function sendOnboardingEmail({ to, emailType, userName, operatorTyp
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: fromEmail,
         to: [to],
         subject: template.subject,
         html: template.getHTML(userName, operatorType, primaryFocus)

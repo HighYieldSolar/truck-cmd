@@ -84,15 +84,22 @@ export async function GET(request) {
       let emailSent = false;
       let smsSent = false;
 
-      // Check email preference
-      const { data: shouldSendEmail } = await supabase.rpc('should_send_notification', {
-        p_user_id: notification.user_id,
-        p_notification_type: notification.notification_type,
-        p_channel: 'email'
-      });
+      // Check email preference - with fallback for missing function
+      let shouldSendEmail = true; // Default to sending for urgent
+      try {
+        const { data: emailPref, error: emailPrefError } = await supabase.rpc('should_send_notification', {
+          p_user_id: notification.user_id,
+          p_notification_type: notification.notification_type,
+          p_channel: 'email'
+        });
+        if (!emailPrefError) shouldSendEmail = emailPref !== false;
+      } catch (e) {
+        // Function may not exist - use default (send)
+        log('should_send_notification not available, defaulting to send');
+      }
 
       // Send email
-      if (shouldSendEmail !== false && user.email) {
+      if (shouldSendEmail && user.email) {
         const emailResult = await sendNotificationEmail({
           to: user.email,
           notification
@@ -111,13 +118,19 @@ export async function GET(request) {
 
       // Check SMS preference (only for CRITICAL)
       if (notification.urgency === 'CRITICAL' && user.phone) {
-        const { data: shouldSendSMS } = await supabase.rpc('should_send_notification', {
-          p_user_id: notification.user_id,
-          p_notification_type: notification.notification_type,
-          p_channel: 'sms'
-        });
+        let shouldSendSMS = true; // Default to sending for CRITICAL
+        try {
+          const { data: smsPref, error: smsPrefError } = await supabase.rpc('should_send_notification', {
+            p_user_id: notification.user_id,
+            p_notification_type: notification.notification_type,
+            p_channel: 'sms'
+          });
+          if (!smsPrefError) shouldSendSMS = smsPref !== false;
+        } catch (e) {
+          // Function may not exist - use default (send for CRITICAL)
+        }
 
-        if (shouldSendSMS !== false) {
+        if (shouldSendSMS) {
           const smsResult = await sendNotificationSMS({
             to: user.phone,
             notification

@@ -71,18 +71,32 @@ export async function POST(request) {
       );
     }
 
-    // Check notification preferences
-    const { data: shouldSendEmail } = await supabase.rpc('should_send_notification', {
-      p_user_id: userId,
-      p_notification_type: notification.notification_type,
-      p_channel: 'email'
-    });
+    // Check notification preferences - with fallback for missing function
+    let shouldSendEmail = true; // Default to sending for HIGH/CRITICAL
+    let shouldSendSMS = notification.urgency === 'CRITICAL'; // SMS only for critical by default
 
-    const { data: shouldSendSMS } = await supabase.rpc('should_send_notification', {
-      p_user_id: userId,
-      p_notification_type: notification.notification_type,
-      p_channel: 'sms'
-    });
+    try {
+      const { data: emailPref, error: emailPrefError } = await supabase.rpc('should_send_notification', {
+        p_user_id: userId,
+        p_notification_type: notification.notification_type,
+        p_channel: 'email'
+      });
+      if (!emailPrefError) shouldSendEmail = emailPref !== false;
+    } catch (e) {
+      // Function may not exist - use defaults
+      log('should_send_notification not available, using defaults');
+    }
+
+    try {
+      const { data: smsPref, error: smsPrefError } = await supabase.rpc('should_send_notification', {
+        p_user_id: userId,
+        p_notification_type: notification.notification_type,
+        p_channel: 'sms'
+      });
+      if (!smsPrefError) shouldSendSMS = smsPref !== false;
+    } catch (e) {
+      // Function may not exist - use defaults
+    }
 
     const results = {
       email: { sent: false, error: null },
@@ -193,18 +207,31 @@ export async function PUT(request) {
     for (const notification of pendingNotifications) {
       const user = notification.users;
 
-      // Check preferences
-      const { data: shouldSendEmail } = await supabase.rpc('should_send_notification', {
-        p_user_id: notification.user_id,
-        p_notification_type: notification.notification_type,
-        p_channel: 'email'
-      });
+      // Check preferences - with fallback for missing function
+      let shouldSendEmail = true;
+      let shouldSendSMS = notification.urgency === 'CRITICAL';
 
-      const { data: shouldSendSMS } = await supabase.rpc('should_send_notification', {
-        p_user_id: notification.user_id,
-        p_notification_type: notification.notification_type,
-        p_channel: 'sms'
-      });
+      try {
+        const { data: emailPref, error: emailPrefError } = await supabase.rpc('should_send_notification', {
+          p_user_id: notification.user_id,
+          p_notification_type: notification.notification_type,
+          p_channel: 'email'
+        });
+        if (!emailPrefError) shouldSendEmail = emailPref !== false;
+      } catch (e) {
+        // Function may not exist - use defaults
+      }
+
+      try {
+        const { data: smsPref, error: smsPrefError } = await supabase.rpc('should_send_notification', {
+          p_user_id: notification.user_id,
+          p_notification_type: notification.notification_type,
+          p_channel: 'sms'
+        });
+        if (!smsPrefError) shouldSendSMS = smsPref !== false;
+      } catch (e) {
+        // Function may not exist - use defaults
+      }
 
       let emailSent = false;
       let smsSent = false;
