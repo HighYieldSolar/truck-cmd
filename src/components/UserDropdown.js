@@ -111,7 +111,7 @@ export default function UserDropdown() {
     switch(plan) {
       case 'basic': return t('userDropdown.basicPlan');
       case 'premium': return t('userDropdown.premiumPlan');
-      case 'premium-trial': return t('userDropdown.premiumTrial') || 'Premium Trial';
+      case 'premium-trial': return 'Premium Trial';
       case 'fleet': return t('userDropdown.fleetPlan');
       default: return t('userDropdown.freeTrial');
     }
