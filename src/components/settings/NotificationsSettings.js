@@ -265,16 +265,21 @@ export default function NotificationsSettings() {
 
   // Update category preference
   const updateCategoryPreference = (categoryId, channel, value) => {
-    setPreferences(prev => ({
-      ...prev,
-      categories: {
-        ...prev.categories,
-        [categoryId]: {
-          ...prev.categories[categoryId],
-          [channel]: value
+    setPreferences(prev => {
+      // Get existing category preferences or use defaults
+      const existingCatPrefs = prev.categories?.[categoryId] || { email: true, push: true, sms: false };
+
+      return {
+        ...prev,
+        categories: {
+          ...prev.categories,
+          [categoryId]: {
+            ...existingCatPrefs,
+            [channel]: value
+          }
         }
-      }
-    }));
+      };
+    });
     setHasChanges(true);
   };
 
@@ -610,7 +615,7 @@ export default function NotificationsSettings() {
                 {/* Channel Toggles - Compact Row */}
                 <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1 pl-7">
                   {/* Email */}
-                  <label className="flex items-center gap-1 cursor-pointer">
+                  <div className="flex items-center gap-1">
                     <Toggle
                       enabled={catPrefs.email}
                       onChange={(v) => updateCategoryPreference(category.id, 'email', v)}
@@ -624,10 +629,10 @@ export default function NotificationsSettings() {
                     }`}>
                       {t('notifications.channelLabels.email')}
                     </span>
-                  </label>
+                  </div>
 
                   {/* Push */}
-                  <label className="flex items-center gap-1 cursor-pointer">
+                  <div className="flex items-center gap-1">
                     <Toggle
                       enabled={catPrefs.push}
                       onChange={(v) => updateCategoryPreference(category.id, 'push', v)}
@@ -641,10 +646,10 @@ export default function NotificationsSettings() {
                     }`}>
                       {t('notifications.channelLabels.app')}
                     </span>
-                  </label>
+                  </div>
 
                   {/* SMS */}
-                  <label className="flex items-center gap-1 cursor-pointer">
+                  <div className="flex items-center gap-1">
                     <Toggle
                       enabled={catPrefs.sms}
                       onChange={(v) => updateCategoryPreference(category.id, 'sms', v)}
@@ -658,7 +663,7 @@ export default function NotificationsSettings() {
                     }`}>
                       {t('notifications.channelLabels.sms')}
                     </span>
-                  </label>
+                  </div>
                 </div>
               </div>
             );
