@@ -4,10 +4,11 @@
  */
 
 export const TIERS = {
-  // Trial users get Basic features
-  trial: 'basic',
+  // Trial users get Premium features via premium-trial plan
+  trial: 'premium-trial',
 
   // Plan names
+  'premium-trial': 'premium-trial', // Free trial with premium features
   basic: 'basic',
   premium: 'premium',
   fleet: 'fleet',
@@ -15,6 +16,16 @@ export const TIERS = {
 };
 
 export const TIER_LIMITS = {
+  'premium-trial': {
+    name: 'Premium Trial',
+    price: { monthly: 0, yearly: 0 }, // Free trial
+    trucks: 3,
+    drivers: 3,
+    loadsPerMonth: Infinity,
+    invoicesPerMonth: Infinity,
+    customers: Infinity,
+    teamUsers: 1,
+  },
   basic: {
     name: 'Basic',
     price: { monthly: 20, yearly: 16 },
@@ -58,6 +69,75 @@ export const TIER_LIMITS = {
 };
 
 export const TIER_FEATURES = {
+  'premium-trial': {
+    // Premium Trial gets all Premium features
+    // Dashboard
+    dashboard: true,
+    dashboardAdvancedWidgets: true,
+
+    // Load Management
+    loadManagement: true,
+    loadAssignment: true,
+    loadDocuments: true,
+
+    // Invoicing
+    invoices: true,
+    invoiceExport: true,
+
+    // Expenses
+    expenses: true,
+    expenseExport: true,
+
+    // Customers
+    customers: true,
+    customerExport: true,
+
+    // Fleet Management
+    fleetManagement: true,
+    fleetReports: false, // Fleet+ only
+    maintenanceScheduling: false,
+
+    // Compliance
+    compliance: true,
+    complianceAlerts: true,
+
+    // IFTA & Mileage
+    iftaCalculator: true,
+    stateMileage: true,
+
+    // Fuel Tracker
+    fuelTracker: true,
+    fuelTrackerReceipts: true,
+    fuelTrackerSync: true,
+
+    // Notifications
+    notificationsInApp: true,
+    notificationsEmail: true,
+    notificationsSMS: false,
+    notificationsQuietHours: false,
+    notificationsDigest: true,
+
+    // Notification Categories
+    notifCompliance: true,
+    notifDriverAlerts: true,
+    notifLoadUpdates: true,
+    notifIFTADeadlines: true,
+    notifMaintenance: true,
+    notifFuelAlerts: true,
+    notifBilling: true,
+    notifSystem: true,
+
+    // Export
+    exportPDF: true,
+    exportCSV: false, // Fleet+ only
+    exportExcel: false,
+
+    // Support
+    supportEmail: true,
+    supportPhone: false,
+    supportPriority: false,
+  },
+
   basic: {
     // Dashboard
     dashboard: true,
@@ -368,9 +448,12 @@ export const FEATURE_DESCRIPTIONS = {
   }
 };
 
-// Helper to get effective tier (trial users get basic features)
+// Helper to get effective tier (premium-trial users get premium features)
 export function getEffectiveTier(plan, status) {
-  if (status === 'trialing') return 'basic';
+  // If plan is premium-trial, return it directly (has premium features)
+  if (plan === 'premium-trial') return 'premium-trial';
+  // Legacy: if status is trialing with old basic plan, treat as premium-trial
+  if (status === 'trialing' && (!plan || plan === 'basic')) return 'premium-trial';
   if (!plan || plan === 'null') return 'basic';
   return plan.toLowerCase();
 }
@@ -404,8 +487,15 @@ export function getRequiredTierForFeature(feature) {
 
 // Helper to compare tiers (returns true if tier1 >= tier2)
 export function isTierAtLeast(currentTier, requiredTier) {
-  const tierOrder = ['basic', 'premium', 'fleet', 'enterprise'];
-  const currentIndex = tierOrder.indexOf(currentTier?.toLowerCase() || 'basic');
-  const requiredIndex = tierOrder.indexOf(requiredTier?.toLowerCase() || 'basic');
+  const tierOrder = ['basic', 'premium-trial', 'premium', 'fleet', 'enterprise'];
+  // Normalize tier names - premium-trial has same level as premium
+  let normalizedCurrent = currentTier?.toLowerCase() || 'basic';
+  let normalizedRequired = requiredTier?.toLowerCase() || 'basic';
+
+  // For comparison purposes, premium-trial is equivalent to premium
+  if (normalizedCurrent === 'premium-trial') normalizedCurrent = 'premium';
+
+  const currentIndex = tierOrder.indexOf(normalizedCurrent);
+  const requiredIndex = tierOrder.indexOf(normalizedRequired);
   return currentIndex >= requiredIndex;
 }

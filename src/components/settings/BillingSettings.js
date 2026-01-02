@@ -492,9 +492,13 @@ export default function BillingSettings() {
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                       <Clock size={18} className="mr-2 text-blue-500" />
-                      {t('billing.subscription.freeTrial')}
+                      {subscription?.plan === 'premium-trial' ? t('billing.subscription.premiumTrial') || 'Premium Trial' : t('billing.subscription.freeTrial')}
                     </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('billing.subscription.fullAccess')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {subscription?.plan === 'premium-trial'
+                        ? t('billing.subscription.fullPremiumAccess') || 'Full access to Premium features'
+                        : t('billing.subscription.fullAccess')}
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{daysLeft}</span>

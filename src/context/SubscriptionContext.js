@@ -170,12 +170,13 @@ export function SubscriptionProvider({ children }) {
           // Try to create trial subscription - use INSERT first, then upsert as fallback
           try {
             // First, try a direct INSERT (most common case - no existing row)
+            // New users get premium-trial plan with Premium features during trial
             const { data: insertData, error: insertError } = await supabase
               .from('subscriptions')
               .insert({
                 user_id: user.id,
                 status: 'trialing',
-                plan: 'basic',
+                plan: 'premium-trial', // Premium features during trial
                 trial_ends_at: trialEndDate.toISOString(),
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -208,11 +209,11 @@ export function SubscriptionProvider({ children }) {
                   currentPeriodEndsAt: existingData.current_period_ends_at
                 });
               } else {
-                // Fallback to trial state
+                // Fallback to premium-trial state
                 setSubscription({
                   userId: user.id,
                   status: 'trialing',
-                  plan: 'basic',
+                  plan: 'premium-trial',
                   trialEndsAt: trialEndDate.toISOString(),
                   currentPeriodEndsAt: null
                 });
@@ -220,11 +221,11 @@ export function SubscriptionProvider({ children }) {
             } else if (insertError) {
               // Log error only in development
               if (DEBUG) console.error('Subscription creation failed:', insertError.message, insertError.code);
-              // Set trial state anyway so user can use the app
+              // Set premium-trial state anyway so user can use the app
               setSubscription({
                 userId: user.id,
                 status: 'trialing',
-                plan: 'basic',
+                plan: 'premium-trial',
                 trialEndsAt: trialEndDate.toISOString(),
                 currentPeriodEndsAt: null
               });
@@ -232,11 +233,11 @@ export function SubscriptionProvider({ children }) {
           } catch (insertError) {
             // Log only in development
             if (DEBUG) console.error('Subscription creation exception:', insertError);
-            // Set default trial data anyway
+            // Set default premium-trial data anyway
             setSubscription({
               userId: user.id,
               status: 'trialing',
-              plan: 'basic',
+              plan: 'premium-trial',
               trialEndsAt: trialEndDate.toISOString(),
               currentPeriodEndsAt: null
             });
