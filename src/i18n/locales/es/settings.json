@@ -7,7 +7,8 @@
     "account": "Cuenta",
     "privacy": "Privacidad",
     "billing": "Facturación",
-    "notifications": "Notificaciones"
+    "notifications": "Notificaciones",
+    "eld": "Integración ELD"
   },
   "descriptions": {
     "profile": "Administre la configuración de su perfil",
@@ -15,7 +16,8 @@
     "account": "Administre la configuración de su cuenta",
     "privacy": "Administre la configuración de privacidad",
     "billing": "Administre la configuración de facturación",
-    "notifications": "Administre la configuración de notificaciones"
+    "notifications": "Administre la configuración de notificaciones",
+    "eld": "Conecte y administre sus proveedores ELD"
   },
   "profile": {
     "title": "Perfil",
@@ -505,6 +507,137 @@
       "reactivateSuccess": "¡Su suscripción ha sido reactivada! Continuará siendo facturado normalmente.",
       "reactivateFailed": "Error al reactivar suscripción. Por favor intente de nuevo.",
       "paymentUpdated": "¡Método de pago actualizado exitosamente!"
+    }
+  },
+  "eld": {
+    "title": "Integración ELD",
+    "subtitle": "Conecte su proveedor ELD para sincronización automática de datos",
+    "description": "Conecte su dispositivo Motive o Samsara ELD para sincronización automática de datos",
+    "connection": {
+      "title": "Conexión ELD",
+      "noConnection": "Ningún Proveedor ELD Conectado",
+      "noConnectionDescription": "Conecte su dispositivo ELD para sincronizar automáticamente kilometraje, registros HOS, ubicaciones GPS y diagnósticos de vehículos.",
+      "connectEld": "Conectar ELD",
+      "addProvider": "Agregar Proveedor",
+      "moreComingSoon": "Más próximamente",
+      "selectProvider": "Seleccionar Proveedor ELD",
+      "selectProviderDescription": "Elija su proveedor ELD para conectar vía OAuth",
+      "requestProvider": "Solicitar un proveedor"
+    },
+    "providers": {
+      "motive": {
+        "name": "Motive",
+        "subtitle": "(KeepTruckin)",
+        "description": "El proveedor ELD #1 con endpoints dedicados para IFTA"
+      },
+      "samsara": {
+        "name": "Samsara",
+        "description": "Gestión de flotas líder con GPS en tiempo real"
+      }
+    },
+    "status": {
+      "connected": "Conectado",
+      "pending": "Pendiente",
+      "tokenExpired": "Token Expirado",
+      "error": "Error",
+      "disconnected": "Desconectado",
+      "reconnect": "Reconectar"
+    },
+    "sync": {
+      "title": "Estado de Sincronización",
+      "lastSync": "Última sincronización",
+      "syncing": "Sincronizando...",
+      "syncNow": "Sincronizar Ahora",
+      "neverSynced": "Nunca sincronizado",
+      "ago": "hace",
+      "totalSyncs": "Sincronizaciones Totales",
+      "successful": "Exitosas"
+    },
+    "features": {
+      "title": "Funciones ELD",
+      "featuresWithPlan": "Funciones disponibles con su plan {{plan}}",
+      "iftaMileage": {
+        "name": "Sincronización de Kilometraje IFTA",
+        "description": "Importar automáticamente kilometraje por jurisdicción para reportes IFTA"
+      },
+      "hosTracking": {
+        "name": "Seguimiento HOS",
+        "description": "Monitorear horas de servicio del conductor y cumplimiento"
+      },
+      "gpsTracking": {
+        "name": "Rastreo GPS",
+        "description": "Seguimiento de ubicación de vehículos en tiempo real en mapa interactivo"
+      },
+      "diagnostics": {
+        "name": "Diagnósticos de Vehículos",
+        "description": "Monitorear códigos de falla y recibir alertas de salud del vehículo"
+      },
+      "enabled": "Habilitado"
+    },
+    "syncSettings": {
+      "title": "Configuración de Sincronización",
+      "description": "Configure la sincronización automática de datos",
+      "automaticSync": "Sincronización Automática por Hora",
+      "automaticSyncDescription": "Los datos se sincronizan automáticamente cada hora",
+      "webhooks": "Webhooks en Tiempo Real",
+      "webhooksDescription": "Reciba actualizaciones instantáneas para eventos críticos",
+      "active": "Activo",
+      "enabled": "Habilitado",
+      "contactSupport": "La configuración de sincronización está optimizada para su plan. Contacte soporte para intervalos personalizados."
+    },
+    "dataSource": {
+      "title": "Preferencias de Fuente de Datos",
+      "description": "Elija fuentes de datos principales para reportes IFTA",
+      "explanation": "Puede elegir su fuente de datos preferida al generar reportes IFTA:",
+      "eld": {
+        "name": "Datos ELD",
+        "recommended": "Recomendado",
+        "description": "Importado automáticamente desde su proveedor ELD conectado"
+      },
+      "manual": {
+        "name": "Entrada Manual",
+        "description": "Viajes y kilometraje ingresados mediante el Rastreador de Kilometraje Estatal"
+      },
+      "combined": {
+        "name": "Combinado",
+        "description": "Fusionar datos ELD y manuales para cobertura completa"
+      },
+      "perReportNote": "La fuente de datos se puede seleccionar por reporte en la Calculadora IFTA."
+    },
+    "mapping": {
+      "title": "Mapeo de Entidades",
+      "vehiclesMapped": "Vehículos Mapeados",
+      "driversMapped": "Conductores Mapeados",
+      "autoMatch": "Auto-Vincular Vehículos y Conductores",
+      "autoMatchSuccess": "Se vincularon automáticamente {{total}} elementos ({{vehicles}} vehículos, {{drivers}} conductores)"
+    },
+    "actions": {
+      "disconnect": "Desconectar",
+      "disconnectSuccess": "Proveedor ELD desconectado exitosamente",
+      "connectSuccess": "conectado exitosamente",
+      "reconnectSuccess": "reconectado exitosamente",
+      "connectionUpdated": "conexión actualizada"
+    },
+    "help": {
+      "title": "¿Necesita Ayuda con la Integración ELD?",
+      "description": "Conecte su dispositivo Motive o Samsara ELD para sincronización automática de datos. La conexión usa OAuth seguro y normalmente toma menos de 2 minutos.",
+      "motiveDocs": "Documentación API Motive",
+      "samsaraDocs": "Documentación API Samsara",
+      "contactSupport": "Contactar Soporte"
+    },
+    "upgrade": {
+      "title": "Actualización Requerida",
+      "description": "La integración ELD requiere plan Premium o superior",
+      "upgrade": "Actualizar"
+    },
+    "messages": {
+      "loadFailed": "Error al cargar conexiones ELD",
+      "connectFailed": "Error al conectar",
+      "disconnectFailed": "Error al desconectar",
+      "autoMatchFailed": "Error en auto-vinculación",
+      "syncFailed": "Error en sincronización",
+      "redirecting": "Redirigiendo al proveedor...",
+      "alreadyConnected": "{{provider}} ya está conectado"
     }
   }
 }

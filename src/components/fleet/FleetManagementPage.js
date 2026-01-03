@@ -20,6 +20,9 @@ import VehicleListComponent from "@/components/fleet/VehicleListComponent";
 import DriverListComponent from "@/components/fleet/DriverListComponent";
 import FleetReportsComponent from "@/components/fleet/FleetReportsComponent";
 
+// ELD Integration Components
+import { HOSDashboard, GPSTrackingMap, VehicleDiagnostics, ELDSyncStatus } from "@/components/eld";
+
 // Loading skeleton component
 function LoadingSkeleton() {
   return (
@@ -69,9 +72,12 @@ export default function FleetManagementPage() {
     outOfService: 0
   });
 
-  // Feature access check for Fleet Reports
+  // Feature access check for Fleet Reports and ELD features
   const { canAccess } = useFeatureAccess();
   const hasFleetReportsAccess = canAccess('fleetReports');
+  const hasEldAccess = canAccess('eldIntegration');
+  const hasGpsAccess = canAccess('eldGpsTracking');
+  const hasDiagnosticsAccess = canAccess('eldDiagnostics');
 
   const [driverStats, setDriverStats] = useState({
     total: 0,
@@ -371,6 +377,38 @@ export default function FleetManagementPage() {
             truckStats={truckStats}
             driverStats={driverStats}
           />
+
+          {/* ELD Integration Section */}
+          {hasEldAccess && (
+            <div className="mb-6">
+              {/* ELD Sync Status */}
+              <div className="mb-4 flex justify-end">
+                <ELDSyncStatus mode="compact" />
+              </div>
+
+              {/* ELD Widgets Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* HOS Dashboard - Always visible for Premium+ */}
+                <div className="lg:col-span-1">
+                  <HOSDashboard compact={true} />
+                </div>
+
+                {/* GPS Tracking Map - Fleet+ tier */}
+                {hasGpsAccess && (
+                  <div className="lg:col-span-2">
+                    <GPSTrackingMap />
+                  </div>
+                )}
+
+                {/* Vehicle Diagnostics - Fleet+ tier (shows when GPS is enabled) */}
+                {hasDiagnosticsAccess && (
+                  <div className="lg:col-span-3">
+                    <VehicleDiagnostics />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

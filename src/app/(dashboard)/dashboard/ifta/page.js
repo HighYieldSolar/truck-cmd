@@ -35,6 +35,7 @@ import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal
 import VehicleSelector from "@/components/ifta/VehicleSelector";
 import SimplifiedExportModal from "@/components/ifta/SimplifiedExportModal";
 import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
+import ELDDataPanel from "@/components/ifta/ELDDataPanel";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
@@ -93,6 +94,9 @@ export default function IFTACalculatorPage() {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 10;
+
+  // ELD data source state (eld, manual, or combined)
+  const [dataSource, setDataSource] = useState('eld');
 
   // Messages
   const [error, setError] = useState(null);
@@ -630,6 +634,15 @@ export default function IFTACalculatorPage() {
                 {t('page.refreshButton')}
               </button>
             </div>
+          </div>
+
+          {/* ELD Data Import Panel */}
+          <div className="mb-6">
+            <ELDDataPanel
+              quarter={activeQuarter}
+              onDataSourceChange={setDataSource}
+              selectedSource={dataSource}
+            />
           </div>
 
           {/* Stats Row */}

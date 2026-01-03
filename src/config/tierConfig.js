@@ -110,6 +110,14 @@ export const TIER_FEATURES = {
     fuelTrackerReceipts: true,
     fuelTrackerSync: true,
 
+    // ELD Integration (Premium+ feature)
+    eldIntegration: true,
+    eldIftaSync: true,
+    eldHosTracking: true,
+    eldGpsTracking: false, // Fleet+ only
+    eldDiagnostics: false, // Fleet+ only
+    eldMultipleProviders: false, // Enterprise only
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -126,6 +134,7 @@ export const TIER_FEATURES = {
     notifFuelAlerts: true,
     notifBilling: true,
     notifSystem: true,
+    notifEldAlerts: true, // ELD-related notifications
 
     // Export
     exportPDF: true,
@@ -178,6 +187,14 @@ export const TIER_FEATURES = {
     fuelTrackerReceipts: false,
     fuelTrackerSync: false,
 
+    // ELD Integration (Not available on Basic)
+    eldIntegration: false,
+    eldIftaSync: false,
+    eldHosTracking: false,
+    eldGpsTracking: false,
+    eldDiagnostics: false,
+    eldMultipleProviders: false,
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: false,
@@ -194,6 +211,7 @@ export const TIER_FEATURES = {
     notifFuelAlerts: false,
     notifBilling: true,
     notifSystem: true,
+    notifEldAlerts: false,
 
     // Export
     exportPDF: true,
@@ -246,6 +264,14 @@ export const TIER_FEATURES = {
     fuelTrackerReceipts: true,
     fuelTrackerSync: true,
 
+    // ELD Integration (Premium tier)
+    eldIntegration: true,
+    eldIftaSync: true,
+    eldHosTracking: true,
+    eldGpsTracking: false, // Fleet+ only
+    eldDiagnostics: false, // Fleet+ only
+    eldMultipleProviders: false, // Enterprise only
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -262,6 +288,7 @@ export const TIER_FEATURES = {
     notifFuelAlerts: true,
     notifBilling: true,
     notifSystem: true,
+    notifEldAlerts: true,
 
     // Export
     exportPDF: true,
@@ -314,6 +341,14 @@ export const TIER_FEATURES = {
     fuelTrackerReceipts: true,
     fuelTrackerSync: true,
 
+    // ELD Integration (Fleet tier - full features)
+    eldIntegration: true,
+    eldIftaSync: true,
+    eldHosTracking: true,
+    eldGpsTracking: true, // Fleet+ feature
+    eldDiagnostics: true, // Fleet+ feature
+    eldMultipleProviders: false, // Enterprise only
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -330,6 +365,7 @@ export const TIER_FEATURES = {
     notifFuelAlerts: true,
     notifBilling: true,
     notifSystem: true,
+    notifEldAlerts: true,
 
     // Export
     exportPDF: true,
@@ -365,6 +401,14 @@ export const TIER_FEATURES = {
     fuelTracker: true,
     fuelTrackerReceipts: true,
     fuelTrackerSync: true,
+    // ELD Integration (Enterprise - all features including multiple providers)
+    eldIntegration: true,
+    eldIftaSync: true,
+    eldHosTracking: true,
+    eldGpsTracking: true,
+    eldDiagnostics: true,
+    eldMultipleProviders: true, // Enterprise exclusive
+    // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
     notificationsSMS: true,
@@ -378,6 +422,7 @@ export const TIER_FEATURES = {
     notifFuelAlerts: true,
     notifBilling: true,
     notifSystem: true,
+    notifEldAlerts: true,
     exportPDF: true,
     exportCSV: true,
     exportExcel: true,
@@ -445,6 +490,37 @@ export const FEATURE_DESCRIPTIONS = {
     name: 'Fuel Receipt Upload',
     description: 'Upload and store fuel receipts',
     requiredTier: 'premium'
+  },
+  // ELD Integration Features
+  eldIntegration: {
+    name: 'ELD Integration',
+    description: 'Connect your ELD/telematics provider for automated data sync',
+    requiredTier: 'premium'
+  },
+  eldIftaSync: {
+    name: 'IFTA Auto-Sync',
+    description: 'Automatically import jurisdiction mileage from your ELD for IFTA reporting',
+    requiredTier: 'premium'
+  },
+  eldHosTracking: {
+    name: 'HOS Compliance',
+    description: 'Track driver hours of service and receive violation alerts',
+    requiredTier: 'premium'
+  },
+  eldGpsTracking: {
+    name: 'GPS Tracking',
+    description: 'View real-time vehicle locations on an interactive map',
+    requiredTier: 'fleet'
+  },
+  eldDiagnostics: {
+    name: 'Vehicle Diagnostics',
+    description: 'Monitor fault codes and receive vehicle health alerts',
+    requiredTier: 'fleet'
+  },
+  eldMultipleProviders: {
+    name: 'Multiple ELD Providers',
+    description: 'Connect multiple ELD providers for mixed fleet management',
+    requiredTier: 'enterprise'
   }
 };
 

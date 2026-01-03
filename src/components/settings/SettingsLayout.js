@@ -10,7 +10,8 @@ import {
   CreditCard,
   Shield,
   Settings,
-  Bell
+  Bell,
+  Zap
 } from "lucide-react";
 
 export default function SettingsLayout({ children }) {
@@ -60,6 +61,13 @@ export default function SettingsLayout({ children }) {
       href: "/dashboard/settings/notifications",
       icon: <Bell size={20} />,
       active: pathname === "/dashboard/settings/notifications"
+    },
+    {
+      name: t('menu.eld') || 'ELD Integration',
+      key: 'eld',
+      href: "/dashboard/settings/eld",
+      icon: <Zap size={20} />,
+      active: pathname === "/dashboard/settings/eld"
     }
   ];
 

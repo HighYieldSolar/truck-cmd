@@ -7,7 +7,8 @@
     "account": "Account",
     "privacy": "Privacy",
     "billing": "Billing",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "eld": "ELD Integration"
   },
   "descriptions": {
     "profile": "Manage your profile settings",
@@ -15,7 +16,8 @@
     "account": "Manage your account settings",
     "privacy": "Manage your privacy settings",
     "billing": "Manage your billing settings",
-    "notifications": "Manage your notifications settings"
+    "notifications": "Manage your notifications settings",
+    "eld": "Connect and manage your ELD providers"
   },
   "profile": {
     "title": "Profile",
@@ -505,6 +507,137 @@
       "reactivateSuccess": "Your subscription has been reactivated! You will continue to be billed normally.",
       "reactivateFailed": "Failed to reactivate subscription. Please try again.",
       "paymentUpdated": "Payment method updated successfully!"
+    }
+  },
+  "eld": {
+    "title": "ELD Integration",
+    "subtitle": "Connect your ELD provider for automated data sync",
+    "description": "Connect your Motive or Samsara ELD device for automatic data synchronization",
+    "connection": {
+      "title": "ELD Connection",
+      "noConnection": "No ELD Provider Connected",
+      "noConnectionDescription": "Connect your ELD device to automatically sync mileage, HOS logs, GPS locations, and vehicle diagnostics.",
+      "connectEld": "Connect ELD",
+      "addProvider": "Add Provider",
+      "moreComingSoon": "More coming soon",
+      "selectProvider": "Select ELD Provider",
+      "selectProviderDescription": "Choose your ELD provider to connect via OAuth",
+      "requestProvider": "Request a provider"
+    },
+    "providers": {
+      "motive": {
+        "name": "Motive",
+        "subtitle": "(KeepTruckin)",
+        "description": "The #1 ELD provider with dedicated IFTA endpoints"
+      },
+      "samsara": {
+        "name": "Samsara",
+        "description": "Leading fleet management with real-time GPS"
+      }
+    },
+    "status": {
+      "connected": "Connected",
+      "pending": "Pending",
+      "tokenExpired": "Token Expired",
+      "error": "Error",
+      "disconnected": "Disconnected",
+      "reconnect": "Reconnect"
+    },
+    "sync": {
+      "title": "Sync Status",
+      "lastSync": "Last sync",
+      "syncing": "Syncing...",
+      "syncNow": "Sync Now",
+      "neverSynced": "Never synced",
+      "ago": "ago",
+      "totalSyncs": "Total Syncs",
+      "successful": "Successful"
+    },
+    "features": {
+      "title": "ELD Features",
+      "featuresWithPlan": "Features available with your {{plan}} plan",
+      "iftaMileage": {
+        "name": "IFTA Mileage Sync",
+        "description": "Automatically import jurisdiction mileage for IFTA reporting"
+      },
+      "hosTracking": {
+        "name": "HOS Tracking",
+        "description": "Monitor driver hours of service and compliance"
+      },
+      "gpsTracking": {
+        "name": "GPS Tracking",
+        "description": "Real-time vehicle location tracking on an interactive map"
+      },
+      "diagnostics": {
+        "name": "Vehicle Diagnostics",
+        "description": "Monitor fault codes and receive vehicle health alerts"
+      },
+      "enabled": "Enabled"
+    },
+    "syncSettings": {
+      "title": "Sync Settings",
+      "description": "Configure automatic data synchronization",
+      "automaticSync": "Automatic Hourly Sync",
+      "automaticSyncDescription": "Data is automatically synced every hour",
+      "webhooks": "Real-time Webhooks",
+      "webhooksDescription": "Receive instant updates for critical events",
+      "active": "Active",
+      "enabled": "Enabled",
+      "contactSupport": "Sync settings are optimized for your plan. Contact support for custom sync intervals."
+    },
+    "dataSource": {
+      "title": "Data Source Preferences",
+      "description": "Choose primary data sources for IFTA reporting",
+      "explanation": "You can choose your preferred data source when generating IFTA reports:",
+      "eld": {
+        "name": "ELD Data",
+        "recommended": "Recommended",
+        "description": "Automatically imported from your connected ELD provider"
+      },
+      "manual": {
+        "name": "Manual Entry",
+        "description": "Trips and mileage entered via State Mileage Tracker"
+      },
+      "combined": {
+        "name": "Combined",
+        "description": "Merge ELD and manual data for complete coverage"
+      },
+      "perReportNote": "Data source can be selected per report in the IFTA Calculator."
+    },
+    "mapping": {
+      "title": "Entity Mapping",
+      "vehiclesMapped": "Vehicles Mapped",
+      "driversMapped": "Drivers Mapped",
+      "autoMatch": "Auto-Match Vehicles & Drivers",
+      "autoMatchSuccess": "Auto-matched {{total}} items ({{vehicles}} vehicles, {{drivers}} drivers)"
+    },
+    "actions": {
+      "disconnect": "Disconnect",
+      "disconnectSuccess": "ELD provider disconnected successfully",
+      "connectSuccess": "connected successfully",
+      "reconnectSuccess": "reconnected successfully",
+      "connectionUpdated": "connection updated"
+    },
+    "help": {
+      "title": "Need Help with ELD Integration?",
+      "description": "Connect your Motive or Samsara ELD device for automatic data synchronization. Connection uses secure OAuth and typically takes less than 2 minutes.",
+      "motiveDocs": "Motive API Docs",
+      "samsaraDocs": "Samsara API Docs",
+      "contactSupport": "Contact Support"
+    },
+    "upgrade": {
+      "title": "Upgrade Required",
+      "description": "ELD integration requires Premium or higher plan",
+      "upgrade": "Upgrade"
+    },
+    "messages": {
+      "loadFailed": "Failed to load ELD connections",
+      "connectFailed": "Failed to connect",
+      "disconnectFailed": "Failed to disconnect",
+      "autoMatchFailed": "Auto-match failed",
+      "syncFailed": "Sync failed",
+      "redirecting": "Redirecting to provider...",
+      "alreadyConnected": "{{provider}} is already connected"
     }
   }
 }
