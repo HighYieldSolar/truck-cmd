@@ -509,7 +509,7 @@ export default function BillingSettings() {
                 <div className="w-full bg-blue-100 dark:bg-blue-900/50 rounded-full h-2 mb-3">
                   <div
                     className="bg-blue-500 dark:bg-blue-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
+                    style={{ width: `${Math.max(5, (daysLeft / 30) * 100)}%` }}
                   ></div>
                 </div>
 

@@ -108,7 +108,7 @@ export default function ComplianceFeature() {
             </a>
           </div>
           <p className="text-sm text-gray-500">
-            No credit card required &bull; 7-day free trial &bull; Cancel anytime
+            No credit card required &bull; 30-day free trial &bull; Cancel anytime
           </p>
         </div>
       </section>
@@ -435,7 +435,7 @@ export default function ComplianceFeature() {
               View Pricing
             </Link>
           </div>
-          <p className="mt-6 text-red-200">No credit card required &bull; 7-day free trial &bull; Cancel anytime</p>
+          <p className="mt-6 text-red-200">No credit card required &bull; 30-day free trial &bull; Cancel anytime</p>
         </div>
       </section>
 

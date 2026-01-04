@@ -53,7 +53,7 @@ export const pageMetadata = {
   
   signup: createMetadata({
     title: 'Sign Up for Truck Command | Start Your Free Trial',
-    description: 'Create your Truck Command account and start your 7-day free trial. No credit card required.',
+    description: 'Create your Truck Command account and start your 30-day free trial. No credit card required.',
   }),
   
   pricing: createMetadata({

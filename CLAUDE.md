@@ -393,7 +393,7 @@ Components are organized by feature domain in `src/components/`:
 
 ### Subscription System
 
-- **Trial Management**: 7-day trials created automatically for new users
+- **Trial Management**: 30-day trials created automatically for new users
 - **Real-time Updates**: Subscription changes via Stripe webhooks update UI immediately
 - **Feature Gating**: Components check subscription status to control access
 - **Billing Integration**: Stripe Customer Portal for subscription management

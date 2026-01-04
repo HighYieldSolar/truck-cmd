@@ -29,7 +29,7 @@ const SocialProofBar = () => (
         </div>
         <div className="flex items-center gap-2">
           <Award size={18} className="text-yellow-600" />
-          <span>7-day free trial</span>
+          <span>30-day free trial</span>
         </div>
       </div>
     </div>
@@ -272,7 +272,7 @@ const PricingPreview = () => {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Start with a 7-day free trial. No credit card required. Cancel anytime.
+            Start with a 30-day free trial. No credit card required. Cancel anytime.
           </p>
         </div>
 
@@ -597,7 +597,7 @@ export default function LandingPage() {
   const faqs = [
     {
       question: "How does the free trial work?",
-      answer: "Your 7-day free trial gives you full access to all features of your chosen plan. No credit card required to start. You can cancel anytime during the trial period with no charges."
+      answer: "Your 30-day free trial gives you full access to all features of your chosen plan. No credit card required to start. You can cancel anytime during the trial period with no charges."
     },
     {
       question: "Can I switch plans later?",
@@ -693,7 +693,7 @@ export default function LandingPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock size={14} className="text-blue-600" />
-                  7-day free trial
+                  30-day free trial
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle size={14} className="text-green-600" />

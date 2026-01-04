@@ -271,7 +271,7 @@ function WelcomeContent() {
                 transition={{ delay: 0.4 }}
                 className="text-lg text-gray-600 mb-6"
               >
-                Your 7-day free trial has started
+                Your 30-day free trial has started
               </motion.p>
 
               {/* Trial Badge */}
@@ -282,7 +282,7 @@ function WelcomeContent() {
                 className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-8"
               >
                 <Clock size={16} />
-                7 days of full access - no credit card needed
+                30 days of full access - no credit card needed
               </motion.div>
 
               {/* Email Verification Notice */}

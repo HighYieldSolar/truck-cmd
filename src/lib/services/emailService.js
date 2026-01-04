@@ -422,7 +422,7 @@ export function isEmailServiceConfigured() {
 const onboardingEmails = {
   // Day 0 - Welcome Email
   welcome: {
-    subject: "Welcome to Truck Command - Your 7-day trial has started!",
+    subject: "Welcome to Truck Command - Your 30-day trial has started!",
     getHTML: (userName, operatorType) => `
 <!DOCTYPE html>
 <html>
@@ -451,7 +451,7 @@ const onboardingEmails = {
                 Hey ${userName || 'there'},
               </p>
               <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Thanks for starting your free trial! For the next 7 days, you have full access to everything Truck Command offers.
+                Thanks for starting your free trial! For the next 30 days, you have full access to everything Truck Command offers.
               </p>
 
               <!-- Features Box -->
@@ -756,7 +756,7 @@ const onboardingEmails = {
                 Hey ${userName || 'there'},
               </p>
               <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Just a heads up - your 7-day trial ends tomorrow. If you've enjoyed using Truck Command, now's the time to upgrade and keep all your data.
+                Just a heads up - your 30-day trial ends tomorrow. If you've enjoyed using Truck Command, now's the time to upgrade and keep all your data.
               </p>
 
               <!-- What you'll keep -->

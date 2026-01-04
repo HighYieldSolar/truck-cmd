@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-8 text-gray-700 space-y-2 mb-4">
               <li>You will have access to specified features of the Services;</li>
               <li>No payment information is required to start the trial;</li>
-              <li>The trial period is seven (7) days unless otherwise specified;</li>
+              <li>The trial period is thirty (30) days unless otherwise specified;</li>
               <li>At the end of the trial, you must subscribe to continue using paid features;</li>
               <li>We may modify or discontinue trial offers at any time.</li>
             </ul>

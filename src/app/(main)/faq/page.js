@@ -65,7 +65,7 @@ export default function FAQPage() {
       },
       {
         question: "How does the free trial work?",
-        answer: "Your 7-day free trial gives you full access to all features of your chosen plan. No credit card is required to start. You can cancel anytime during the trial period with no charges, or upgrade to continue using the platform."
+        answer: "Your 30-day free trial gives you full access to all features of your chosen plan. No credit card is required to start. You can cancel anytime during the trial period with no charges, or upgrade to continue using the platform."
       },
       {
         question: "Who is Truck Command designed for?",
@@ -99,7 +99,7 @@ export default function FAQPage() {
       },
       {
         question: "Do you offer refunds?",
-        answer: "We offer a 7-day free trial so you can test the platform before committing. After the trial, we don't offer refunds for partial billing periods, but you can cancel anytime to stop future charges."
+        answer: "We offer a 30-day free trial so you can test the platform before committing. After the trial, we don't offer refunds for partial billing periods, but you can cancel anytime to stop future charges."
       }
     ],
     features: [

@@ -73,8 +73,8 @@ export async function GET(request) {
       const trialEndsAt = new Date(subscription.trial_ends_at);
       const daysUntilEnd = Math.ceil((trialEndsAt - now) / (1000 * 60 * 60 * 24));
 
-      // Only send reminders at specific days
-      if (![3, 1, 0].includes(daysUntilEnd)) {
+      // Only send reminders at specific days (for 30-day trial: 7, 3, 1, 0 days left)
+      if (![7, 3, 1, 0].includes(daysUntilEnd)) {
         continue;
       }
 
@@ -102,7 +102,9 @@ export async function GET(request) {
         ? 'Your Truck Command trial ends today!'
         : daysUntilEnd === 1
           ? 'Your trial ends tomorrow - don\'t lose your data!'
-          : 'Your trial ends in 3 days - upgrade now';
+          : daysUntilEnd === 3
+            ? 'Your trial ends in 3 days - upgrade now'
+            : 'Your trial ends in 7 days - upgrade now';
 
       const emailResult = await sendTrialReminderEmail({
         to: user.email,
@@ -160,7 +162,7 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
   }
 
   const urgencyText = daysLeft === 0 ? 'TODAY' : daysLeft === 1 ? 'TOMORROW' : `in ${daysLeft} days`;
-  const urgencyColor = daysLeft === 0 ? '#dc2626' : daysLeft === 1 ? '#ea580c' : '#ca8a04';
+  const urgencyColor = daysLeft === 0 ? '#dc2626' : daysLeft === 1 ? '#ea580c' : daysLeft <= 3 ? '#ca8a04' : '#2563eb';
 
   const html = `
 <!DOCTYPE html>
@@ -256,7 +258,9 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
           ? '⏰ Your Truck Command trial ends TODAY'
           : daysLeft === 1
             ? '⚠️ Your trial ends tomorrow - don\'t lose your data!'
-            : '📅 Your trial ends in 3 days - upgrade now',
+            : daysLeft === 3
+              ? '📅 Your trial ends in 3 days - upgrade now'
+              : '📅 Your trial ends in 7 days - upgrade now',
         html
       })
     });

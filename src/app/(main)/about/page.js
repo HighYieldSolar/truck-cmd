@@ -218,7 +218,7 @@ export default function AboutPage() {
               href="/signup"
               className="px-8 py-4 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
-              Start Your 7-Day Free Trial
+              Start Your 30-Day Free Trial
               <ArrowRight size={20} />
             </Link>
             <Link

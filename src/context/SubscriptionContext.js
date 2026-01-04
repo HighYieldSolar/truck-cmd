@@ -165,7 +165,7 @@ export function SubscriptionProvider({ children }) {
           // to prevent duplicate creation race condition
           const createdAt = new Date(user.created_at || Date.now());
           const trialEndDate = new Date(createdAt);
-          trialEndDate.setDate(trialEndDate.getDate() + 7);
+          trialEndDate.setDate(trialEndDate.getDate() + 30);
 
           // Try to create trial subscription - use INSERT first, then upsert as fallback
           try {

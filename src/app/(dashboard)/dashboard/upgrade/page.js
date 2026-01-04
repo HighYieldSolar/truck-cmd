@@ -448,7 +448,7 @@ export default function UpgradePage() {
                       <div className="hidden sm:flex w-24 bg-blue-100 dark:bg-blue-900/50 rounded-full h-1.5">
                         <div
                           className="bg-blue-500 h-1.5 rounded-full"
-                          style={{ width: `${Math.max(10, ((getDaysLeftInTrial ? getDaysLeftInTrial() : 0) / 7) * 100)}%` }}
+                          style={{ width: `${Math.max(10, ((getDaysLeftInTrial ? getDaysLeftInTrial() : 0) / 30) * 100)}%` }}
                         ></div>
                       </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">

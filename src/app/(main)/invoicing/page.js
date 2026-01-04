@@ -386,7 +386,7 @@ export default function InvoicingFeature() {
               Request Demo
             </a>
           </div>
-          <p className="mt-6 text-blue-200">No credit card required • 7-day free trial • Cancel anytime</p>
+          <p className="mt-6 text-blue-200">No credit card required • 30-day free trial • Cancel anytime</p>
         </div>
       </section>
 

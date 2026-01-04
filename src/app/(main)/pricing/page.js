@@ -72,7 +72,7 @@ export default function PricingPage() {
   const faqs = [
     {
       question: "How does the free trial work?",
-      answer: "Your 7-day free trial gives you full access to all features of your chosen plan. No credit card required to start. You can cancel anytime during the trial period with no charges."
+      answer: "Your 30-day free trial gives you full access to all features of your chosen plan. No credit card required to start. You can cancel anytime during the trial period with no charges."
     },
     {
       question: "Can I switch plans later?",
@@ -107,7 +107,7 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-gray-600 mb-8">
-            Start with a 7-day free trial. No credit card required. Cancel anytime.
+            Start with a 30-day free trial. No credit card required. Cancel anytime.
           </p>
 
           {/* Billing Toggle */}
@@ -206,7 +206,7 @@ export default function PricingPage() {
           </div>
 
           <p className="text-center text-gray-500 text-sm mt-8">
-            All plans include a 7-day free trial. No credit card required.
+            All plans include a 30-day free trial. No credit card required.
           </p>
         </div>
       </section>
@@ -309,7 +309,7 @@ export default function PricingPage() {
             </div>
             <div className="flex flex-col items-center">
               <Zap size={32} className="text-yellow-600 mb-2" />
-              <p className="text-sm text-gray-600">7-Day Free Trial</p>
+              <p className="text-sm text-gray-600">30-Day Free Trial</p>
             </div>
             <div className="flex flex-col items-center">
               <Award size={32} className="text-purple-600 mb-2" />
@@ -368,7 +368,7 @@ export default function PricingPage() {
               href="/signup"
               className="px-8 py-4 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
             >
-              Start Your 7-Day Free Trial
+              Start Your 30-Day Free Trial
               <ArrowRight size={20} />
             </Link>
           </div>

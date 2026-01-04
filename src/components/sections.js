@@ -578,7 +578,7 @@ export function PlanCard({
         {freeTrial && (
           <div className="mt-4 bg-green-100 text-green-800 py-2 px-3 rounded-lg inline-flex items-center">
             <CheckCircle size={16} className="mr-1" />
-            <span>7-day free trial</span>
+            <span>30-day free trial</span>
           </div>
         )}
       </div>

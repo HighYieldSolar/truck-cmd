@@ -41,7 +41,7 @@ export default function HelpPage() {
     },
     {
       question: "How does the trial period work?",
-      answer: "You get a 7-day free trial with full access to all features. No credit card required to start. You can upgrade anytime during or after the trial."
+      answer: "You get a 30-day free trial with full access to all features. No credit card required to start. You can upgrade anytime during or after the trial."
     },
     {
       question: "Is my data secure?",

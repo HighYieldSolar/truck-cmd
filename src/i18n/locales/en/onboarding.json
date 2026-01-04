@@ -39,8 +39,8 @@
   "welcome": {
     "celebration": {
       "title": "Welcome to Truck Command!",
-      "subtitle": "Your 7-day free trial has started",
-      "trialBadge": "7 days of full access - no credit card needed",
+      "subtitle": "Your 30-day free trial has started",
+      "trialBadge": "30 days of full access - no credit card needed",
       "getStarted": "Let's Get You Set Up",
       "estimatedTime": "Takes less than 2 minutes"
     },

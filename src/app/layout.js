@@ -144,7 +144,7 @@ const structuredData = {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'USD',
-        description: '7-day free trial',
+        description: '30-day free trial',
       },
       aggregateRating: {
         '@type': 'AggregateRating',

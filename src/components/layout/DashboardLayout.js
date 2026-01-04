@@ -493,7 +493,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
-                          style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
+                          style={{ width: `${Math.max(5, (daysLeft / 30) * 100)}%` }}
                         ></div>
                       </div>
                       <Link
@@ -664,7 +664,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                       <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 mb-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
-                          style={{ width: `${Math.max(5, (daysLeft / 7) * 100)}%` }}
+                          style={{ width: `${Math.max(5, (daysLeft / 30) * 100)}%` }}
                         ></div>
                       </div>
                       <Link

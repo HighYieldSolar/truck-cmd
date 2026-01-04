@@ -87,7 +87,7 @@ export default function DispatchingFeature() {
             </a>
           </div>
           <p className="text-sm text-gray-500">
-            No credit card required • 7-day free trial • Cancel anytime
+            No credit card required • 30-day free trial • Cancel anytime
           </p>
         </div>
       </section>
@@ -393,7 +393,7 @@ export default function DispatchingFeature() {
               Request Demo
             </a>
           </div>
-          <p className="mt-6 text-blue-200">No credit card required • 7-day free trial • Cancel anytime</p>
+          <p className="mt-6 text-blue-200">No credit card required • 30-day free trial • Cancel anytime</p>
         </div>
       </section>
 
