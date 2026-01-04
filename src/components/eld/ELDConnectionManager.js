@@ -67,6 +67,20 @@ const STATUS_CONFIG = {
 };
 
 /**
+ * Helper to get auth headers with current session token
+ */
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('No active session');
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`
+  };
+}
+
+/**
  * ELDConnectionManager - Manages ELD provider connections
  *
  * @param {function} onConnectionChange - Callback when connection status changes
@@ -96,8 +110,9 @@ export default function ELDConnectionManager({ onConnectionChange }) {
 
       setUser(user);
 
-      // Fetch connections from API
-      const response = await fetch('/api/eld/connections');
+      // Fetch connections from API with auth token
+      const headers = await getAuthHeaders();
+      const response = await fetch('/api/eld/connections', { headers });
       const data = await response.json();
 
       if (response.ok) {
@@ -117,9 +132,10 @@ export default function ELDConnectionManager({ onConnectionChange }) {
     setDisconnecting(connectionId);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/eld/connections', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ connectionId })
       });
 
@@ -147,9 +163,10 @@ export default function ELDConnectionManager({ onConnectionChange }) {
 
     try {
       // Initiate OAuth flow for reconnection
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/eld/connections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'initiate-oauth',
           provider: connection.provider,
@@ -181,9 +198,10 @@ export default function ELDConnectionManager({ onConnectionChange }) {
     setAutoMatching(connectionId);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch('/api/eld/connections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'auto-match',
           connectionId

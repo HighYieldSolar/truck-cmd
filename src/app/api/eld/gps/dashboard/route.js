@@ -6,7 +6,6 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { getGpsDashboard } from '@/lib/services/eld/eldGpsService';
 import { hasFeature } from '@/config/tierConfig';
 
@@ -26,20 +25,36 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * Get the authenticated user from the session
+ * Create an authenticated Supabase client with the user's token
  */
-async function getAuthenticatedUser() {
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get: (name) => cookieStore.get(name)?.value
+function createAuthenticatedClient(accessToken) {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
     }
-  });
+  );
+}
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+/**
+ * Get the authenticated user from the Authorization header
+ */
+async function getAuthenticatedUser(request) {
+  const authHeader = request.headers.get('authorization');
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = createAuthenticatedClient(token);
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
     return null;

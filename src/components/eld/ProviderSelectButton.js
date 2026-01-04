@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link2, Loader2, ChevronDown, Check, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * Provider metadata for display
@@ -78,10 +79,19 @@ export default function ProviderSelectButton({
     setLoading(provider.id);
 
     try {
+      // Get auth token for API request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Please log in to connect an ELD provider');
+      }
+
       // Request OAuth URL from our API
       const response = await fetch('/api/eld/connections', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           action: 'initiate-oauth',
           provider: provider.id

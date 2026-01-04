@@ -7,7 +7,6 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import {
   syncAll,
   syncVehicles,
@@ -38,20 +37,36 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * Get the authenticated user from the session
+ * Create an authenticated Supabase client with the user's token
+ */
+function createAuthenticatedClient(accessToken) {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    }
+  );
+}
+
+/**
+ * Get the authenticated user from the Authorization header
  */
 async function getAuthenticatedUser(request) {
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const authHeader = request.headers.get('authorization');
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get: (name) => cookieStore.get(name)?.value
-    }
-  });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const token = authHeader.replace('Bearer ', '');
+  const supabase = createAuthenticatedClient(token);
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
     return null;
