@@ -16,8 +16,10 @@ import {
   Users,
   Wrench,
   AlertTriangle,
-  BarChart2
+  BarChart2,
+  Lock
 } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { supabase } from "@/lib/supabaseClient";
 import { fetchTrucks, getTruckStats } from "@/lib/services/truckService";
 import { fetchDrivers, getDriverStats, checkDriverDocumentStatus } from "@/lib/services/driverService";
@@ -85,6 +87,10 @@ function FleetExportModal({ isOpen, onClose, user }) {
   const [exportFormat, setExportFormat] = useState('pdf');
   const [exportState, setExportState] = useState('idle');
   const [error, setError] = useState(null);
+
+  // Feature access for export formats
+  const { canAccess } = useFeatureAccess();
+  const canExportCSV = canAccess('exportCSV');
 
   useEffect(() => {
     if (isOpen) {
@@ -655,31 +661,59 @@ function FleetExportModal({ isOpen, onClose, user }) {
             <div className="grid grid-cols-2 gap-2">
               {formatOptions.map((format) => {
                 const Icon = format.icon;
+                const isCSV = format.value === 'csv';
+                const isLocked = isCSV && !canExportCSV;
+                const isSelected = exportFormat === format.value && !isLocked;
+
                 return (
                   <label
                     key={format.value}
-                    className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                      exportFormat === format.value
-                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    className={`flex items-center p-3 border-2 rounded-xl transition-all ${
+                      isLocked
+                        ? 'cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                        : isSelected
+                          ? 'cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400'
+                          : 'cursor-pointer border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <input
                       type="radio"
                       name="exportFormat"
                       value={format.value}
-                      checked={exportFormat === format.value}
-                      onChange={() => setExportFormat(format.value)}
+                      checked={isSelected}
+                      onChange={() => !isLocked && setExportFormat(format.value)}
+                      disabled={isLocked}
                       className="sr-only"
                     />
-                    <Icon size={18} className={exportFormat === format.value ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
-                    <span className={`ml-2 text-sm font-medium ${exportFormat === format.value ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                    <Icon size={18} className={
+                      isLocked
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : isSelected
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                    } />
+                    <span className={`ml-2 text-sm font-medium ${
+                      isLocked
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : isSelected
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-700 dark:text-gray-300'
+                    }`}>
                       {format.label.split(' ')[0]}
                     </span>
+                    {isLocked && (
+                      <Lock size={12} className="ml-1 text-amber-500" />
+                    )}
                   </label>
                 );
               })}
             </div>
+            {!canExportCSV && (
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                <Lock size={10} className="inline mr-1" />
+                CSV export requires Fleet plan
+              </p>
+            )}
           </div>
 
           {/* Error/Success Messages */}

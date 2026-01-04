@@ -187,10 +187,10 @@ export const TIER_FEATURES = {
     fuelTrackerReceipts: false,
     fuelTrackerSync: false,
 
-    // ELD Integration (Not available on Basic)
-    eldIntegration: false,
-    eldIftaSync: false,
-    eldHosTracking: false,
+    // ELD Integration (Basic tier - connection allowed, limited features)
+    eldIntegration: true,  // Basic can connect ELD
+    eldIftaSync: false,    // IFTA sync requires Premium+
+    eldHosTracking: false, // HOS tracking requires Premium+
     eldGpsTracking: false,
     eldDiagnostics: false,
     eldMultipleProviders: false,
@@ -495,7 +495,7 @@ export const FEATURE_DESCRIPTIONS = {
   eldIntegration: {
     name: 'ELD Integration',
     description: 'Connect your ELD/telematics provider for automated data sync',
-    requiredTier: 'premium'
+    requiredTier: 'basic'  // Basic tier can connect ELD
   },
   eldIftaSync: {
     name: 'IFTA Auto-Sync',

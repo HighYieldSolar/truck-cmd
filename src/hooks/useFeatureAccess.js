@@ -29,9 +29,11 @@ export function useFeatureAccess() {
       return subscription.plan.toLowerCase();
     }
 
-    // If trial is active, treat as basic
+    // If trial is active, use premium-trial tier (gets Premium features)
     if (subscription.status === 'trialing' && isTrialActive()) {
-      return 'basic';
+      // Use the plan from subscription if available (should be 'premium-trial')
+      // Otherwise default to 'premium-trial' for all trial users
+      return subscription.plan?.toLowerCase() || 'premium-trial';
     }
 
     // Default to basic for other states

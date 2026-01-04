@@ -13,9 +13,11 @@ import {
   FileSpreadsheet,
   File,
   Calendar,
-  Filter
+  Filter,
+  Lock
 } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 /**
  * Reusable Export Report Modal Component
@@ -51,6 +53,11 @@ export default function ExportReportModal({
   const [exportState, setExportState] = useState('idle');
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
+
+  // Feature access for export formats
+  const { canAccess, currentTier } = useFeatureAccess();
+  const canExportCSV = canAccess('exportCSV');
+  const canExportExcel = canAccess('exportExcel');
 
   // Default title and description with translations
   const modalTitle = title || t('export.exportReport');
@@ -444,10 +451,10 @@ export default function ExportReportModal({
   };
 
   const formatOptions = [
-    { value: 'pdf', icon: FileText, labelKey: 'export.formats.pdf.label', descKey: 'export.formats.pdf.description' },
-    { value: 'csv', icon: FileSpreadsheet, labelKey: 'export.formats.csv.label', descKey: 'export.formats.csv.description' },
-    { value: 'txt', icon: File, labelKey: 'export.formats.txt.label', descKey: 'export.formats.txt.description' },
-    { value: 'print', icon: Printer, labelKey: 'export.formats.print.label', descKey: 'export.formats.print.description' }
+    { value: 'pdf', icon: FileText, labelKey: 'export.formats.pdf.label', descKey: 'export.formats.pdf.description', locked: false },
+    { value: 'csv', icon: FileSpreadsheet, labelKey: 'export.formats.csv.label', descKey: 'export.formats.csv.description', locked: !canExportCSV, requiredTier: 'Fleet' },
+    { value: 'txt', icon: File, labelKey: 'export.formats.txt.label', descKey: 'export.formats.txt.description', locked: false },
+    { value: 'print', icon: Printer, labelKey: 'export.formats.print.label', descKey: 'export.formats.print.description', locked: false }
   ];
 
   const modalContent = (
@@ -519,40 +526,68 @@ export default function ExportReportModal({
             <div className="space-y-3">
               {formatOptions.map((option) => {
                 const Icon = option.icon;
+                const isLocked = option.locked;
+                const isSelected = exportFormat === option.value && !isLocked;
+
                 return (
                   <label
                     key={option.value}
-                    className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                      exportFormat === option.value
-                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    className={`flex items-center p-4 border-2 rounded-xl transition-all ${
+                      isLocked
+                        ? 'cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                        : isSelected
+                          ? 'cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                          : 'cursor-pointer border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }`}
                   >
                     <input
                       type="radio"
                       name="exportFormat"
                       value={option.value}
-                      checked={exportFormat === option.value}
-                      onChange={() => setExportFormat(option.value)}
+                      checked={isSelected}
+                      onChange={() => !isLocked && setExportFormat(option.value)}
+                      disabled={isLocked}
                       className="sr-only"
                     />
                     <div className={`p-2 rounded-lg ${
-                      exportFormat === option.value
-                        ? 'bg-blue-100 dark:bg-blue-900/40'
-                        : 'bg-gray-100 dark:bg-gray-700'
+                      isLocked
+                        ? 'bg-gray-200 dark:bg-gray-700'
+                        : isSelected
+                          ? 'bg-blue-100 dark:bg-blue-900/40'
+                          : 'bg-gray-100 dark:bg-gray-700'
                     }`}>
                       <Icon size={24} className={
-                        exportFormat === option.value
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-gray-500 dark:text-gray-400'
+                        isLocked
+                          ? 'text-gray-400 dark:text-gray-500'
+                          : isSelected
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-gray-500 dark:text-gray-400'
                       } />
                     </div>
                     <div className="ml-4 flex-1">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{t(option.labelKey)}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{t(option.descKey)}</div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${isLocked ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                          {t(option.labelKey)}
+                        </span>
+                        {isLocked && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                            <Lock size={10} />
+                            {option.requiredTier}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-sm ${isLocked ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {isLocked
+                          ? `Upgrade to ${option.requiredTier} plan to unlock ${t(option.labelKey).toLowerCase()} exports`
+                          : t(option.descKey)
+                        }
+                      </div>
                     </div>
-                    {exportFormat === option.value && (
+                    {isSelected && !isLocked && (
                       <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
+                    )}
+                    {isLocked && (
+                      <Lock size={18} className="text-gray-400 dark:text-gray-500 ml-2" />
                     )}
                   </label>
                 );

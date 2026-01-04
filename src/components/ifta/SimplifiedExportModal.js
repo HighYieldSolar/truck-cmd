@@ -12,8 +12,10 @@ import {
   FileSpreadsheet,
   File,
   Truck,
-  Building2
+  Building2,
+  Lock
 } from "lucide-react";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 export default function SimplifiedExportModal({
   isOpen,
@@ -29,6 +31,10 @@ export default function SimplifiedExportModal({
   const [exportState, setExportState] = useState('idle'); // idle, loading, success, error
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
+
+  // Feature access for export formats
+  const { canAccess } = useFeatureAccess();
+  const canExportCSV = canAccess('exportCSV');
 
   // Use effect for better mobile handling
   useEffect(() => {
@@ -719,29 +725,62 @@ export default function SimplifiedExportModal({
                   )}
                 </label>
 
-                {/* CSV Option */}
-                <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                  exportFormat === 'csv'
-                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                {/* CSV Option - Fleet plan required */}
+                <label className={`flex items-center p-4 border-2 rounded-xl transition-all touch-manipulation ${
+                  !canExportCSV
+                    ? 'cursor-not-allowed opacity-60 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                    : exportFormat === 'csv'
+                      ? 'cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 shadow-sm'
+                      : 'cursor-pointer border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                 }`}>
                   <input
                     type="radio"
                     name="exportFormat"
                     value="csv"
-                    checked={exportFormat === 'csv'}
-                    onChange={() => setExportFormat('csv')}
+                    checked={exportFormat === 'csv' && canExportCSV}
+                    onChange={() => canExportCSV && setExportFormat('csv')}
+                    disabled={!canExportCSV}
                     className="sr-only"
                   />
-                  <div className={`p-2 rounded-lg ${exportFormat === 'csv' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                    <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
+                  <div className={`p-2 rounded-lg ${
+                    !canExportCSV
+                      ? 'bg-gray-200 dark:bg-gray-700'
+                      : exportFormat === 'csv'
+                        ? 'bg-blue-100 dark:bg-blue-900/40'
+                        : 'bg-gray-100 dark:bg-gray-700'
+                  }`}>
+                    <FileSpreadsheet size={24} className={
+                      !canExportCSV
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : exportFormat === 'csv'
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                    } />
                   </div>
                   <div className="ml-4 flex-1">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">{t('exportModal.spreadsheetCsv')}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{t('exportModal.csvDescription')}</div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${!canExportCSV ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                        {t('exportModal.spreadsheetCsv')}
+                      </span>
+                      {!canExportCSV && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                          <Lock size={10} />
+                          Fleet
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-sm ${!canExportCSV ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {!canExportCSV
+                        ? 'Upgrade to Fleet plan to unlock CSV exports'
+                        : t('exportModal.csvDescription')
+                      }
+                    </div>
                   </div>
-                  {exportFormat === 'csv' && (
+                  {exportFormat === 'csv' && canExportCSV && (
                     <Check size={20} className="text-blue-600 dark:text-blue-400 ml-2" />
+                  )}
+                  {!canExportCSV && (
+                    <Lock size={18} className="text-gray-400 dark:text-gray-500 ml-2" />
                   )}
                 </label>
 

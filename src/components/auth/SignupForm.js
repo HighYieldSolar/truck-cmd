@@ -132,7 +132,16 @@ export default function SignupForm() {
       // Check for error in query params
       const errorParam = searchParams?.get('error');
       if (errorParam) {
-        setError('An error occurred during sign up. Please try again.');
+        if (errorParam === 'no_account') {
+          // User tried to log in with Google but doesn't have an account
+          const emailParam = searchParams?.get('email');
+          if (emailParam) {
+            setEmail(emailParam);
+          }
+          setError("This email doesn't have an account yet. Please sign up first to get started.");
+        } else {
+          setError('An error occurred during sign up. Please try again.');
+        }
       }
     };
 

@@ -9,6 +9,38 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Processing authentication...");
 
+  // Check if user exists in the users table (has completed signup)
+  const checkUserExists = async (userId, email) => {
+    try {
+      // First check by user ID
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking user:', error);
+        // If there's an error, allow the user through (fail-open for login)
+        return true;
+      }
+
+      if (userData) return true;
+
+      // Fallback: check by email in case ID doesn't match
+      const { data: emailData } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email?.toLowerCase())
+        .maybeSingle();
+
+      return !!emailData;
+    } catch (err) {
+      console.error('Error checking user exists:', err);
+      return true; // Fail-open
+    }
+  };
+
   useEffect(() => {
     const handleAuth = async () => {
       try {
@@ -20,17 +52,35 @@ function AuthCallbackContent() {
           return;
         }
 
+        // Determine if this is a login flow (redirect to dashboard) or signup flow (redirect to welcome)
+        const next = searchParams.get("next") || "/dashboard";
+        const isLoginFlow = next.includes('/dashboard') && !next.includes('new=true');
+
         // Check for code parameter (PKCE flow)
         const code = searchParams.get("code");
         if (code) {
           setStatus("Exchanging code for session...");
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.error("Code exchange error:", exchangeError);
             router.push("/login?error=auth_error");
             return;
           }
-          const next = searchParams.get("next") || "/dashboard";
+
+          // For login flow, check if user exists in the users table
+          if (isLoginFlow && exchangeData?.session?.user) {
+            const user = exchangeData.session.user;
+            setStatus("Verifying account...");
+            const userExists = await checkUserExists(user.id, user.email);
+
+            if (!userExists) {
+              // User doesn't exist - sign them out and redirect to signup
+              await supabase.auth.signOut();
+              router.push("/signup?error=no_account&email=" + encodeURIComponent(user.email || ''));
+              return;
+            }
+          }
+
           router.push(next);
           return;
         }
@@ -58,8 +108,21 @@ function AuthCallbackContent() {
             }
 
             if (data.session) {
+              // For login flow, check if user exists in the users table
+              if (isLoginFlow && data.session.user) {
+                const user = data.session.user;
+                setStatus("Verifying account...");
+                const userExists = await checkUserExists(user.id, user.email);
+
+                if (!userExists) {
+                  // User doesn't exist - sign them out and redirect to signup
+                  await supabase.auth.signOut();
+                  router.push("/signup?error=no_account&email=" + encodeURIComponent(user.email || ''));
+                  return;
+                }
+              }
+
               setStatus("Authentication successful! Redirecting...");
-              const next = searchParams.get("next") || "/dashboard";
               router.push(next);
               return;
             }
@@ -69,8 +132,21 @@ function AuthCallbackContent() {
         // Try to get existing session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          // For login flow, check if user exists in the users table
+          if (isLoginFlow && session.user) {
+            const user = session.user;
+            setStatus("Verifying account...");
+            const userExists = await checkUserExists(user.id, user.email);
+
+            if (!userExists) {
+              // User doesn't exist - sign them out and redirect to signup
+              await supabase.auth.signOut();
+              router.push("/signup?error=no_account&email=" + encodeURIComponent(user.email || ''));
+              return;
+            }
+          }
+
           setStatus("Session found! Redirecting...");
-          const next = searchParams.get("next") || "/dashboard";
           router.push(next);
           return;
         }
