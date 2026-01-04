@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getConnection, createClientForConnection } from './eldConnectionService';
+import { getConnection, createProviderForConnection } from './eldConnectionService';
 import { getLocalDriverId } from './eldMappingService';
 import { normalizeDutyStatus } from './terminalClient';
 
@@ -248,7 +248,7 @@ export async function getAvailableTime(userId) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
 
-    const client = await createClientForConnection(connectionResult.data.id);
+    const client = await createProviderForConnection(connectionResult.data.id);
     if (!client) {
       return { error: true, errorMessage: 'Failed to create API client' };
     }

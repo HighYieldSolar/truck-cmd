@@ -20,7 +20,7 @@ export {
   verifyConnection,
   getConnectionStatus,
   getConnectionsNeedingSync,
-  createClientForConnection
+  createProviderForConnection
 } from './eldConnectionService';
 
 // Entity Mapping

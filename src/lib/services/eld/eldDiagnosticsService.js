@@ -5,9 +5,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getTerminalClient } from './terminalClient';
-import { getActiveConnection } from './eldConnectionService';
-import { mapExternalVehicleId } from './eldMappingService';
+import { getConnection, createProviderForConnection } from './eldConnectionService';
+import { getLocalVehicleId } from './eldMappingService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[eldDiagnosticsService]', ...args);
@@ -33,7 +32,8 @@ const supabaseAdmin = createClient(
 export async function getDiagnosticsData(userId) {
   try {
     // Get active ELD connection
-    const connection = await getActiveConnection(userId);
+    const connectionResult = await getConnection(userId, 'terminal');
+    const connection = connectionResult?.data;
 
     if (!connection) {
       return {
@@ -143,17 +143,17 @@ export async function syncFaultCodes(userId, connectionId) {
   try {
     log('Syncing fault codes for user:', userId);
 
-    // Get Terminal client
-    const terminalClient = await getTerminalClient(connectionId);
+    // Get ELD provider client
+    const client = await createProviderForConnection(connectionId);
 
-    if (!terminalClient) {
+    if (!client) {
       return {
         error: true,
-        errorMessage: 'Failed to get Terminal client'
+        errorMessage: 'Failed to get ELD provider client'
       };
     }
 
-    // Fetch fault codes from Terminal API
+    // Fetch fault codes from ELD provider
     let allFaults = [];
     let cursor = null;
     let hasMore = true;
@@ -162,7 +162,7 @@ export async function syncFaultCodes(userId, connectionId) {
       const params = { limit: 100 };
       if (cursor) params.cursor = cursor;
 
-      const response = await terminalClient.get('/safety/events', { params });
+      const response = await client.get('/safety/events', { params });
 
       if (response.data?.data) {
         allFaults = allFaults.concat(response.data.data);
@@ -180,11 +180,7 @@ export async function syncFaultCodes(userId, connectionId) {
     for (const fault of allFaults) {
       try {
         // Map external vehicle ID to local ID
-        const vehicleId = await mapExternalVehicleId(
-          userId,
-          fault.vehicle?.id,
-          connectionId
-        );
+        const vehicleId = await getLocalVehicleId(userId, fault.vehicle?.id);
 
         if (!vehicleId) {
           log('Skipping fault - no mapped vehicle:', fault.vehicle?.id);
