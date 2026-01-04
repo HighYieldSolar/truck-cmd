@@ -128,3 +128,126 @@ export async function createFileFromUrl(url, filename, options = {}) {
     throw error;
   }
 }
+
+/**
+ * Get file extension from content type or URL
+ * @param {string} contentType - MIME type
+ * @param {string} url - Optional URL to extract extension from
+ * @returns {string} - File extension without dot
+ */
+export function getFileExtension(contentType, url = '') {
+  // Try to get extension from content type first
+  const typeMap = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'application/pdf': 'pdf',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'text/plain': 'txt',
+    'text/csv': 'csv'
+  };
+
+  if (contentType && typeMap[contentType]) {
+    return typeMap[contentType];
+  }
+
+  // Try to extract from URL
+  if (url) {
+    const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+    if (match && match[1]) {
+      return match[1].toLowerCase();
+    }
+  }
+
+  // Default based on content type patterns
+  if (contentType) {
+    if (contentType.includes('image')) return 'jpg';
+    if (contentType.includes('pdf')) return 'pdf';
+  }
+
+  return 'file';
+}
+
+/**
+ * Sanitize a string for use in a filename
+ * @param {string} text - Text to sanitize
+ * @param {number} maxLength - Maximum length
+ * @returns {string} - Sanitized filename-safe string
+ */
+export function sanitizeFilename(text, maxLength = 50) {
+  if (!text) return 'document';
+  return text
+    .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .slice(0, maxLength) // Limit length
+    .replace(/_+$/, '') // Remove trailing underscores
+    .toLowerCase();
+}
+
+/**
+ * Download a file from a URL using blob fetch for instant download
+ * This avoids opening files in a new tab and forces a download
+ *
+ * @param {string} url - The URL of the file to download
+ * @param {Object} options - Download options
+ * @param {string} options.filename - Custom filename (without extension)
+ * @param {string} options.fallbackExtension - Extension to use if can't be determined
+ * @param {Function} options.onProgress - Progress callback (not implemented yet)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function downloadFile(url, options = {}) {
+  const {
+    filename = 'document',
+    fallbackExtension = 'pdf'
+  } = options;
+
+  // Validate URL
+  try {
+    new URL(url);
+  } catch (_) {
+    return { success: false, error: 'Invalid URL' };
+  }
+
+  try {
+    // Fetch the file as a blob
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Failed to fetch file`);
+    }
+
+    const blob = await response.blob();
+
+    // Determine file extension
+    const extension = getFileExtension(blob.type, url) || fallbackExtension;
+
+    // Sanitize filename and add extension
+    const sanitizedName = sanitizeFilename(filename);
+    const fullFilename = `${sanitizedName}.${extension}`;
+
+    // Create blob URL and trigger download
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fullFilename;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up blob URL
+    URL.revokeObjectURL(blobUrl);
+
+    return { success: true };
+  } catch (error) {
+    // Return error info - caller can decide to fallback to window.open
+    return {
+      success: false,
+      error: error.message || 'Download failed'
+    };
+  }
+}

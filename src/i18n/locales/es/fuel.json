@@ -160,7 +160,10 @@
     "switchToCalculateTotal": "Cambiar a calcular monto total",
     "iftaInfo": "Información de Reportes IFTA",
     "iftaDescription": "Esta compra de combustible será incluida en sus reportes trimestrales de IFTA. La información precisa del estado es crítica para el reporte correcto de impuestos.",
-    "failedToSave": "Error al guardar registro de combustible. Por favor intente de nuevo."
+    "failedToSave": "Error al guardar registro de combustible. Por favor intente de nuevo.",
+    "downloadReceipt": "Descargar recibo",
+    "viewFullSize": "Ver tamaño completo",
+    "clickToDownload": "Haga clic para descargar"
   },
   "validation": {
     "dateRequired": "La fecha es requerida",

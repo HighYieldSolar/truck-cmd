@@ -295,6 +295,7 @@
     "viewDocument": "View Document",
     "download": "Download",
     "downloading": "Downloading...",
+    "clickToDownload": "Click to download",
     "close": "Close",
     "currentDocumentOnFile": "Current document on file",
     "selectedFile": "Selected file"

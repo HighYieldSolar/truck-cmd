@@ -312,7 +312,11 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
                         </button>
                       </div>
                     </div>
-                    <div className="bg-gray-100 dark:bg-gray-800 flex justify-center">
+                    <div
+                      className="bg-gray-100 dark:bg-gray-800 flex justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={handleDownloadDocument}
+                      title={t('viewModal.clickToDownload')}
+                    >
                       <img
                         src={compliance.document_url}
                         alt="Document Preview"
@@ -328,31 +332,16 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
 
                 {/* Document Actions */}
                 <div className="flex flex-wrap gap-3">
-                  {isPdfDocument() ? (
-                    <a
-                      href={compliance.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <FileText size={16} className="mr-2" />
-                      {t('viewModal.viewPdf')}
-                    </a>
-                  ) : !isImageDocument() && (
-                    <a
-                      href={compliance.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <ExternalLink size={16} className="mr-2" />
-                      {t('viewModal.viewDocument')}
-                    </a>
+                  {(isPdfDocument() || !isImageDocument()) && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <FileText size={16} />
+                      <span>{getDocumentFileName()}</span>
+                    </div>
                   )}
                   <button
                     onClick={handleDownloadDocument}
                     disabled={isDownloading}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg shadow-sm text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50"
                   >
                     {isDownloading ? (
                       <Loader2 size={16} className="mr-2 animate-spin" />

@@ -353,6 +353,10 @@
     "viewPdf": "Ver PDF",
     "openInNewTab": "Abrir en nueva pestaña",
     "download": "Descargar",
+    "downloading": "Descargando...",
+    "downloadPdf": "Descargar PDF",
+    "downloadDocument": "Descargar Documento",
+    "clickToDownload": "Haga clic para descargar",
     "openDocument": "Abrir Documento",
     "unknownDocumentType": "Tipo de documento desconocido",
     "noDocumentsFound": "No se Encontraron Documentos",
@@ -407,7 +411,9 @@
     },
     "documentPreview": {
       "previewNotAvailable": "Vista previa no disponible para este tipo de archivo",
-      "downloadDocument": "Descargar Documento"
+      "downloadDocument": "Descargar Documento",
+      "clickToDownload": "Haga clic para descargar",
+      "downloading": "Descargando..."
     },
     "loading": "Cargando detalles de carga...",
     "loadNotFound": "Carga no encontrada",

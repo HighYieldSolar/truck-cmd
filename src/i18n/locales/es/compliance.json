@@ -297,7 +297,8 @@
     "downloading": "Descargando...",
     "close": "Cerrar",
     "currentDocumentOnFile": "Documento actual en archivo",
-    "selectedFile": "Archivo seleccionado"
+    "selectedFile": "Archivo seleccionado",
+    "clickToDownload": "Haga clic para descargar"
   },
   "deleteModal": {
     "title": "Confirmación de Eliminación",

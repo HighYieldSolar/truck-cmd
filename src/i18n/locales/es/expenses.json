@@ -289,10 +289,17 @@
     "paymentInformation": "Información de Pago",
     "vehicleInformation": "Información del Vehículo",
     "vehicleId": "ID del Vehículo",
+    "vehicle": "Vehículo",
+    "licensePlate": "Placa",
     "notes": "Notas",
     "noNotesAvailable": "No hay notas disponibles.",
     "downloadReceipt": "Descargar Recibo",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "clickToDownload": "Haga clic para descargar",
+    "downloadPdf": "Descargar PDF",
+    "documentStored": "Documento Guardado",
+    "clickToDownloadDocument": "Haga clic en el botón para descargar este documento.",
+    "downloadDocument": "Descargar Documento"
   },
   "card": {
     "date": "Fecha",

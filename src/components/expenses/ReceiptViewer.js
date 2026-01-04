@@ -1,19 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from "@/context/LanguageContext";
+import { supabase } from '@/lib/supabaseClient';
 import {
   X,
   Download,
   ZoomIn,
   ZoomOut,
   RotateCw,
-  AlertCircle,
   FileText,
   Calendar,
   Truck,
-  ExternalLink,
   Loader2
 } from 'lucide-react';
 
@@ -29,6 +28,48 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
   const [rotation, setRotation] = useState(0);
   const [error, setError] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [vehicleInfo, setVehicleInfo] = useState(null);
+  const [vehicleLoading, setVehicleLoading] = useState(false);
+
+  // Fetch vehicle info when modal opens with a vehicle_id
+  useEffect(() => {
+    async function fetchVehicleInfo() {
+      if (!isOpen || !receipt?.vehicle_id) {
+        setVehicleInfo(null);
+        return;
+      }
+
+      // Skip if it's not a valid UUID (e.g., it's already a name)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(receipt.vehicle_id)) {
+        // Not a UUID, might be a vehicle name already
+        setVehicleInfo({ name: receipt.vehicle_id, license_plate: null });
+        return;
+      }
+
+      setVehicleLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('vehicles')
+          .select('name, license_plate, make, model')
+          .eq('id', receipt.vehicle_id)
+          .single();
+
+        if (!error && data) {
+          setVehicleInfo(data);
+        } else {
+          setVehicleInfo(null);
+        }
+      } catch (err) {
+        console.error('Error fetching vehicle info:', err);
+        setVehicleInfo(null);
+      } finally {
+        setVehicleLoading(false);
+      }
+    }
+
+    fetchVehicleInfo();
+  }, [isOpen, receipt?.vehicle_id]);
 
   if (!isOpen || !receipt) return null;
 
@@ -133,6 +174,22 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
     return receipt.receipt_image.toLowerCase().endsWith('.pdf');
   };
 
+  // Format notes to replace vehicle UUID with vehicle name
+  const formatNotes = (notes) => {
+    if (!notes) return null;
+    if (!vehicleInfo || !receipt.vehicle_id) return notes;
+
+    // Replace the UUID pattern in notes with vehicle name
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+    // Build the display name
+    const displayName = vehicleInfo.license_plate
+      ? `${vehicleInfo.name} (${vehicleInfo.license_plate})`
+      : vehicleInfo.name;
+
+    return notes.replace(uuidRegex, displayName);
+  };
+
   // Get category style with dark mode
   const getCategoryStyle = () => {
     const styles = {
@@ -221,12 +278,16 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                         </button>
                       </div>
                     </div>
-                    {/* Image Container */}
-                    <div className="bg-gray-50 dark:bg-gray-900 flex justify-center p-6 min-h-[200px] overflow-hidden">
+                    {/* Image Container - Click to download */}
+                    <div
+                      className="bg-gray-50 dark:bg-gray-900 flex justify-center p-6 min-h-[200px] overflow-hidden cursor-pointer"
+                      onClick={handleDownload}
+                      title={t('receiptViewer.clickToDownload')}
+                    >
                       <img
                         src={receipt.receipt_image}
                         alt={`Receipt for ${receipt.description}`}
-                        className="max-h-[400px] w-auto object-contain transition-all duration-300"
+                        className="max-h-[400px] w-auto object-contain transition-all duration-300 hover:opacity-90"
                         style={{
                           transform: `scale(${zoomLevel}) rotate(${rotation}deg)`
                         }}
@@ -243,48 +304,40 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                     <p className="text-sm text-blue-600 dark:text-blue-300 mb-4">
                       {t('receiptViewer.pdfStored')}
                     </p>
-                    <div className="flex justify-center gap-4">
-                      <a
-                        href={receipt.receipt_image}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        {t('receiptViewer.viewPdf')}
-                      </a>
-                      <button
-                        onClick={handleDownload}
-                        disabled={isDownloading}
-                        className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-                      >
-                        {isDownloading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4 mr-2" />
-                        )}
-                        {isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isDownloading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.downloadPdf')}
+                    </button>
                   </div>
                 ) : (
-                  <div className="p-6 bg-red-50 dark:bg-red-900/20 text-center">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500 dark:text-red-400" />
-                    <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-                      {t('receiptViewer.unableToDisplay')}
+                  <div className="p-6 bg-amber-50 dark:bg-amber-900/20 text-center">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-amber-500 dark:text-amber-400" />
+                    <h3 className="text-lg font-medium text-amber-800 dark:text-amber-200 mb-2">
+                      {t('receiptViewer.documentStored')}
                     </h3>
-                    <p className="text-sm text-red-600 dark:text-red-300 mb-4">
-                      {t('receiptViewer.imageUnavailable')}
+                    <p className="text-sm text-amber-600 dark:text-amber-300 mb-4">
+                      {t('receiptViewer.clickToDownloadDocument')}
                     </p>
-                    <a
-                      href={receipt.receipt_image}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    <button
+                      onClick={handleDownload}
+                      disabled={isDownloading}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      {t('receiptViewer.openInNewTab')}
-                    </a>
+                      {isDownloading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      {isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.downloadDocument')}
+                    </button>
                   </div>
                 )}
               </div>
@@ -369,11 +422,42 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                     <Truck className="h-4 w-4 text-blue-500" />
                     {t('receiptViewer.vehicleInformation')}
                   </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('receiptViewer.vehicleId')}</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {receipt.vehicle_id}
-                    </p>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                    {vehicleLoading ? (
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Loading vehicle info...</span>
+                      </div>
+                    ) : vehicleInfo ? (
+                      <>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('receiptViewer.vehicle')}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {vehicleInfo.name}
+                            {vehicleInfo.make && vehicleInfo.model && (
+                              <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
+                                ({vehicleInfo.make} {vehicleInfo.model})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        {vehicleInfo.license_plate && (
+                          <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('receiptViewer.licensePlate')}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {vehicleInfo.license_plate}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('receiptViewer.vehicle')}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {receipt.vehicle_id}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -386,7 +470,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
                 </h3>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {receipt.notes || t('receiptViewer.noNotesAvailable')}
+                    {formatNotes(receipt.notes) || t('receiptViewer.noNotesAvailable')}
                   </p>
                 </div>
               </div>

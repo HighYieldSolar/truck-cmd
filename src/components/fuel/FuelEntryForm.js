@@ -2,12 +2,13 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
-import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard, Image } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Fuel, MapPin, DollarSign, Info, Maximize2, Calendar, CreditCard, Image, Download, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabaseClient";
 import { getUSStates } from "@/lib/services/fuelService";
 import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
+import { downloadFile } from "@/lib/utils/fileUtils";
 
 // Import the VehicleSelector component
 import VehicleSelector from "@/components/fuel/VehicleSelector";
@@ -67,6 +68,27 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
   const [calculationMode, setCalculationMode] = useState('total');
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
+
+  // Handle receipt download
+  const handleReceiptDownload = async () => {
+    if (!formData.receipt_preview || isDownloadingReceipt) return;
+
+    setIsDownloadingReceipt(true);
+
+    const date = formData.date || getCurrentDateLocal();
+    const location = formData.location || 'fuel_receipt';
+    const filename = `receipt_${date}_${location.replace(/\s+/g, '_')}`;
+
+    const result = await downloadFile(formData.receipt_preview, { filename });
+
+    if (!result.success) {
+      // Fallback to opening in new window if download fails
+      window.open(formData.receipt_preview, '_blank', 'width=800,height=600');
+    }
+
+    setIsDownloadingReceipt(false);
+  };
 
   useEffect(() => {
     if (!fuelEntry) {
@@ -659,15 +681,35 @@ if (!isOpen) return null;
                 <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
                   <div className="mb-2 flex justify-between items-center">
                     <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('form.receiptPreview')}</h3>
-                    <button
-                      type="button"
-                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      onClick={() => window.open(formData.receipt_preview, "_blank", "width=800,height=600")}
-                    >
-                      <Maximize2 size={16} />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 disabled:opacity-50"
+                        onClick={handleReceiptDownload}
+                        disabled={isDownloadingReceipt}
+                        title={t('form.downloadReceipt')}
+                      >
+                        {isDownloadingReceipt ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Download size={16} />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
+                        onClick={() => window.open(formData.receipt_preview, "_blank", "width=800,height=600")}
+                        title={t('form.viewFullSize')}
+                      >
+                        <Maximize2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="relative aspect-[3/4] max-h-64 sm:max-h-96 overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center">
+                  <div
+                    className="relative aspect-[3/4] max-h-64 sm:max-h-96 overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-md flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={handleReceiptDownload}
+                    title={t('form.clickToDownload')}
+                  >
                     <img
                       src={formData.receipt_preview}
                       alt="Receipt preview"

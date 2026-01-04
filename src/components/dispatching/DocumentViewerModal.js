@@ -1,8 +1,9 @@
 // src/components/dispatching/DocumentViewerModal.js
 import React, { useState, useEffect } from 'react';
-import { X, FileText, ExternalLink, Image as ImageIcon, Download } from 'lucide-react';
+import { X, FileText, ExternalLink, Image as ImageIcon, Download, Loader2 } from 'lucide-react';
 import { supabase } from "@/lib/supabaseClient";
 import { useTranslation } from "@/context/LanguageContext";
+import { downloadFile } from "@/lib/utils/fileUtils";
 
 // Helper to check if a URL points to an image
 const isImageUrl = (url) => {
@@ -22,6 +23,28 @@ export default function DocumentViewerModal({ loadId, onClose }) {
   const [loadDetails, setLoadDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingDoc, setDownloadingDoc] = useState(null);
+
+  // Handle document download with blob fetch for instant download
+  const handleDownload = async (doc, index) => {
+    if (!doc.url || downloadingDoc !== null) return;
+
+    setDownloadingDoc(index);
+
+    // Generate a meaningful filename
+    const loadNumber = loadDetails?.load_number || 'load';
+    const docName = doc.name || `document_${index + 1}`;
+    const filename = `${loadNumber}_${docName}`;
+
+    const result = await downloadFile(doc.url, { filename });
+
+    if (!result.success) {
+      // Fallback to opening in new tab if download fails
+      window.open(doc.url, '_blank');
+    }
+
+    setDownloadingDoc(null);
+  };
 
   // Fetch documents for the load when the modal opens
   useEffect(() => {
@@ -90,23 +113,18 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                       {doc.name || `${t('documentViewer.document')} ${index + 1}`}
                     </span>
                     <div className="flex space-x-2">
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-                        title={t('documentViewer.openInNewTab')}
+                      <button
+                        onClick={() => handleDownload(doc, index)}
+                        disabled={downloadingDoc !== null}
+                        className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 disabled:opacity-50"
+                        title={downloadingDoc === index ? t('documentViewer.downloading') : t('documentViewer.download')}
                       >
-                        <ExternalLink size={16} />
-                      </a>
-                      <a
-                        href={doc.url}
-                        download
-                        className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
-                        title={t('documentViewer.download')}
-                      >
-                        <Download size={16} />
-                      </a>
+                        {downloadingDoc === index ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Download size={16} />
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -116,36 +134,44 @@ export default function DocumentViewerModal({ loadId, onClose }) {
                         <img
                           src={doc.url}
                           alt={doc.name || `Document ${index + 1}`}
-                          className="max-h-96 max-w-full object-contain rounded"
+                          className="max-h-96 max-w-full object-contain rounded cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleDownload(doc, index)}
+                          title={t('documentViewer.clickToDownload')}
                         />
                       </div>
                     ) : isPdfUrl(doc.url) ? (
                       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-700/50 rounded">
                         <FileText size={48} className="text-red-500 dark:text-red-400 mb-4" />
                         <p className="text-gray-600 dark:text-gray-400 mb-4">{t('documentViewer.pdfDocument')}</p>
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center"
+                        <button
+                          onClick={() => handleDownload(doc, index)}
+                          disabled={downloadingDoc !== null}
+                          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center disabled:opacity-50"
                         >
-                          <ExternalLink size={16} className="mr-2" />
-                          {t('documentViewer.viewPdf')}
-                        </a>
+                          {downloadingDoc === index ? (
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                          ) : (
+                            <Download size={16} className="mr-2" />
+                          )}
+                          {downloadingDoc === index ? t('documentViewer.downloading') : t('documentViewer.downloadPdf')}
+                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-700/50 rounded">
                         <FileText size={48} className="text-gray-400 dark:text-gray-500 mb-4" />
                         <p className="text-gray-600 dark:text-gray-400 mb-4">{t('documentViewer.unknownDocumentType')}</p>
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center"
+                        <button
+                          onClick={() => handleDownload(doc, index)}
+                          disabled={downloadingDoc !== null}
+                          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-flex items-center disabled:opacity-50"
                         >
-                          <ExternalLink size={16} className="mr-2" />
-                          {t('documentViewer.openDocument')}
-                        </a>
+                          {downloadingDoc === index ? (
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                          ) : (
+                            <Download size={16} className="mr-2" />
+                          )}
+                          {downloadingDoc === index ? t('documentViewer.downloading') : t('documentViewer.downloadDocument')}
+                        </button>
                       </div>
                     )}
                   </div>

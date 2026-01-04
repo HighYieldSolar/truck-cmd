@@ -1,16 +1,17 @@
 // src/hooks/useFuel.js
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { 
-  fetchFuelEntries, 
-  getFuelEntryById, 
-  createFuelEntry, 
-  updateFuelEntry, 
+import {
+  fetchFuelEntries,
+  getFuelEntryById,
+  createFuelEntry,
+  updateFuelEntry,
   deleteFuelEntry as deleteFuelEntryService,
   getFuelStats,
   uploadReceiptImage,
   getVehiclesWithFuelRecords
 } from '@/lib/services/fuelService';
+import { getVehicleName } from '@/lib/services/expenseFuelIntegration';
 
 export default function useFuel(userId) {
   const [fuelEntries, setFuelEntries] = useState([]);
@@ -190,6 +191,9 @@ export default function useFuel(userId) {
       }
       
       // If no expense was automatically created, create one manually
+      // Get vehicle name for notes
+      const vehicleName = await getVehicleName(newFuelEntry.vehicle_id);
+
       // Create a corresponding expense record
       const expenseData = {
         user_id: userId,
@@ -198,7 +202,7 @@ export default function useFuel(userId) {
         date: newFuelEntry.date || new Date().toISOString().split('T')[0],
         category: 'Fuel',
         payment_method: 'Credit Card',
-        notes: `Vehicle: ${newFuelEntry.vehicle_id || ''}, ${newFuelEntry.gallons || 0} gallons at ${newFuelEntry.state || ''}`,
+        notes: `Vehicle: ${vehicleName || ''}, ${newFuelEntry.gallons || 0} gallons at ${newFuelEntry.state || ''}`,
         receipt_image: newFuelEntry.receipt_image,
         ...(newFuelEntry.vehicle_id ? { vehicle_id: newFuelEntry.vehicle_id } : {})
       };
@@ -283,6 +287,9 @@ export default function useFuel(userId) {
   // Update a linked expense when fuel entry is updated
   const updateLinkedExpense = async (expenseId, fuelEntry) => {
     try {
+      // Get vehicle name for notes
+      const vehicleName = await getVehicleName(fuelEntry.vehicle_id);
+
       // Update the expense with new fuel data
       const { error } = await supabase
         .from('expenses')
@@ -290,14 +297,14 @@ export default function useFuel(userId) {
           description: `Fuel - ${fuelEntry.location}`,
           amount: fuelEntry.total_amount,
           date: fuelEntry.date,
-          notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+          notes: `Vehicle: ${vehicleName}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
           receipt_image: fuelEntry.receipt_image,
           vehicle_id: fuelEntry.vehicle_id
         })
         .eq('id', expenseId);
-        
+
       if (error) throw error;
-      
+
       return true;
     } catch (error) {
       return false;
@@ -417,7 +424,10 @@ export default function useFuel(userId) {
         .single();
         
       if (entryError) throw entryError;
-      
+
+      // Get vehicle name for notes
+      const vehicleName = await getVehicleName(entry.vehicle_id);
+
       // Create expense data
       const expenseData = {
         user_id: userId,
@@ -426,7 +436,7 @@ export default function useFuel(userId) {
         date: entry.date,
         category: 'Fuel',
         payment_method: entry.payment_method || 'Credit Card',
-        notes: `Vehicle: ${entry.vehicle_id}, ${entry.gallons} gallons at ${entry.state}`,
+        notes: `Vehicle: ${vehicleName}, ${entry.gallons} gallons at ${entry.state}`,
         receipt_image: entry.receipt_image,
         vehicle_id: entry.vehicle_id,
         deductible: true

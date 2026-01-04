@@ -16,6 +16,7 @@ import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 import { recordFactoredEarnings } from "@/lib/services/earningsService";
 import { createInvoiceFromLoad } from "@/lib/services/loadInvoiceService";
+import { downloadFile } from "@/lib/utils/fileUtils";
 
 // Helper to persist form data to localStorage
 const saveFormToStorage = (formData, loadId) => {
@@ -193,10 +194,43 @@ const StepsProgress = ({ currentStep, totalSteps = 3, t }) => {
 
 // Document Preview Modal
 const DocumentPreviewModal = ({ file, isOpen, onClose, t }) => {
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
   if (!isOpen || !file) return null;
 
   const fileUrl = typeof file === 'string' ? file : URL.createObjectURL(file);
   const fileName = typeof file === 'string' ? file.split('/').pop() : file.name;
+
+  const handleDownload = async () => {
+    if (isDownloading) return;
+
+    setIsDownloading(true);
+
+    // If it's a File object, create a download link directly
+    if (typeof file !== 'string') {
+      const blobUrl = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      setIsDownloading(false);
+      return;
+    }
+
+    // For URL strings, use the downloadFile utility
+    const filenameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+    const result = await downloadFile(fileUrl, { filename: filenameWithoutExt });
+
+    if (!result.success) {
+      // Fallback to opening in new tab if download fails
+      window.open(fileUrl, '_blank');
+    }
+
+    setIsDownloading(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 dark:bg-black/85 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -219,27 +253,34 @@ const DocumentPreviewModal = ({ file, isOpen, onClose, t }) => {
             <img
               src={fileUrl}
               alt="Document Preview"
-              className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
+              className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={handleDownload}
+              title={t('completeLoadForm.documentPreview.clickToDownload')}
             />
           ) : file && typeof file === 'string' && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ? (
             <img
               src={fileUrl}
               alt="Document Preview"
-              className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg"
+              className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={handleDownload}
+              title={t('completeLoadForm.documentPreview.clickToDownload')}
             />
           ) : (
             <div className="text-center bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
               <FileText size={64} className="mx-auto text-gray-400 dark:text-gray-500 mb-4" />
               <p className="text-gray-700 dark:text-gray-300 mb-4">{t('completeLoadForm.documentPreview.previewNotAvailable')}</p>
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg inline-flex items-center hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg inline-flex items-center hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50"
               >
-                <Download className="mr-2" size={18} />
-                {t('completeLoadForm.documentPreview.downloadDocument')}
-              </a>
+                {isDownloading ? (
+                  <Loader2 className="mr-2 animate-spin" size={18} />
+                ) : (
+                  <Download className="mr-2" size={18} />
+                )}
+                {isDownloading ? t('completeLoadForm.documentPreview.downloading') : t('completeLoadForm.documentPreview.downloadDocument')}
+              </button>
             </div>
           )}
         </div>

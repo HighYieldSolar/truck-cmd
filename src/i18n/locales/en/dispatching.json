@@ -353,6 +353,10 @@
     "viewPdf": "View PDF",
     "openInNewTab": "Open in new tab",
     "download": "Download",
+    "downloading": "Downloading...",
+    "downloadPdf": "Download PDF",
+    "downloadDocument": "Download Document",
+    "clickToDownload": "Click to download",
     "openDocument": "Open Document",
     "unknownDocumentType": "Unknown document type",
     "noDocumentsFound": "No Documents Found",
@@ -407,7 +411,9 @@
     },
     "documentPreview": {
       "previewNotAvailable": "Preview not available for this file type",
-      "downloadDocument": "Download Document"
+      "downloadDocument": "Download Document",
+      "clickToDownload": "Click to download",
+      "downloading": "Downloading..."
     },
     "loading": "Loading load details...",
     "loadNotFound": "Load not found",

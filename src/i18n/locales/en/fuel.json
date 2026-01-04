@@ -160,7 +160,10 @@
     "switchToCalculateTotal": "Switch to calculate total amount",
     "iftaInfo": "IFTA Reporting Information",
     "iftaDescription": "This fuel purchase will be included in your IFTA quarterly reports. Accurate state information is critical for proper tax reporting.",
-    "failedToSave": "Failed to save fuel entry. Please try again."
+    "failedToSave": "Failed to save fuel entry. Please try again.",
+    "downloadReceipt": "Download receipt",
+    "viewFullSize": "View full size",
+    "clickToDownload": "Click to download"
   },
   "validation": {
     "dateRequired": "Date is required",

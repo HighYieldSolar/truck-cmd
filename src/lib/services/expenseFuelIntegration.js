@@ -3,6 +3,39 @@
 import { supabase } from "../supabaseClient";
 
 /**
+ * Helper function to get vehicle name from vehicle_id
+ * @param {string} vehicleId - The vehicle UUID
+ * @returns {Promise<string>} - The vehicle name or the original ID if not found
+ */
+export async function getVehicleName(vehicleId) {
+  if (!vehicleId) return '';
+
+  // Skip if it's not a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(vehicleId)) {
+    return vehicleId; // Already a name, not a UUID
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('name, license_plate')
+      .eq('id', vehicleId)
+      .single();
+
+    if (!error && data) {
+      // Return name with plate if available
+      return data.license_plate
+        ? `${data.name} (${data.license_plate})`
+        : data.name;
+    }
+    return vehicleId; // Fallback to ID if not found
+  } catch {
+    return vehicleId; // Fallback to ID on error
+  }
+}
+
+/**
  * Convert fuel entries to expense format and sync them
  * @param {string} userId - The authenticated user's ID
  * @returns {Promise<Object>} - Results of the sync operation
@@ -24,6 +57,9 @@ export async function syncFuelToExpenses(userId) {
     
     // 2. Convert each fuel entry to expense format and insert
     const expensePromises = fuelEntries.map(async (entry) => {
+      // Get vehicle name for notes
+      const vehicleName = await getVehicleName(entry.vehicle_id);
+
       // Create expense entry
       const expenseData = {
         user_id: userId,
@@ -32,7 +68,7 @@ export async function syncFuelToExpenses(userId) {
         date: entry.date,
         category: 'Fuel',
         payment_method: entry.payment_method || 'Credit Card',
-        notes: `Vehicle: ${entry.vehicle_id}, ${entry.gallons} gallons at ${entry.state}`,
+        notes: `Vehicle: ${vehicleName}, ${entry.gallons} gallons at ${entry.state}`,
         receipt_image: entry.receipt_image,
         vehicle_id: entry.vehicle_id,
         deductible: true // Fuel is typically deductible for business
@@ -123,6 +159,9 @@ export async function syncSingleFuelEntryToExpense(userId, fuelEntryId) {
       // The expense_id exists but expense doesn't - could clear the expense_id to allow re-sync
     }
     
+    // Get vehicle name for notes
+    const vehicleName = await getVehicleName(fuelEntry.vehicle_id);
+
     // Create expense entry
     const expenseData = {
       user_id: userId,
@@ -131,32 +170,32 @@ export async function syncSingleFuelEntryToExpense(userId, fuelEntryId) {
       date: fuelEntry.date,
       category: 'Fuel',
       payment_method: fuelEntry.payment_method || 'Credit Card',
-      notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+      notes: `Vehicle: ${vehicleName}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
       receipt_image: fuelEntry.receipt_image,
       vehicle_id: fuelEntry.vehicle_id,
       deductible: true // Fuel is typically deductible for business
     };
-    
+
     // Insert expense
     const { data: expense, error: expenseError } = await supabase
       .from('expenses')
       .insert([expenseData])
       .select();
-      
+
     if (expenseError) throw expenseError;
-    
+
     if (!expense || expense.length === 0) {
       throw new Error('Failed to create expense');
     }
-    
+
     // Update fuel entry with expense_id reference
     const { error: updateError } = await supabase
       .from('fuel_entries')
       .update({ expense_id: expense[0].id })
       .eq('id', fuelEntryId);
-      
+
     if (updateError) throw updateError;
-    
+
     return expense[0];
   } catch (error) {
     throw error;
@@ -215,7 +254,10 @@ export async function updateLinkedExpense(fuelEntryId) {
     if (!fuelEntry || !fuelEntry.expense_id) {
       return { success: false, message: "No linked expense found" };
     }
-    
+
+    // Get vehicle name for notes
+    const vehicleName = await getVehicleName(fuelEntry.vehicle_id);
+
     // Update the linked expense
     const { error: updateError } = await supabase
       .from('expenses')
@@ -224,7 +266,7 @@ export async function updateLinkedExpense(fuelEntryId) {
         amount: fuelEntry.total_amount,
         date: fuelEntry.date,
         payment_method: fuelEntry.payment_method || 'Credit Card',
-        notes: `Vehicle: ${fuelEntry.vehicle_id}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
+        notes: `Vehicle: ${vehicleName}, ${fuelEntry.gallons} gallons at ${fuelEntry.state}`,
         receipt_image: fuelEntry.receipt_image,
         vehicle_id: fuelEntry.vehicle_id
       })
