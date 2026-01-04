@@ -10,7 +10,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
-import TableActions from "@/components/shared/TableActions";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 // Invoice Filters Component
@@ -295,21 +295,20 @@ export default function InvoiceListComponent({
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <TableActions
-                          onView={() => handleViewInvoice(invoice.id)}
-                          onDelete={() => handleDeleteInvoice(invoice)}
-                          customActions={invoice.status !== 'paid' ? [
-                            {
-                              icon: DollarSign,
-                              onClick: () => handleMarkAsPaid(invoice.id),
-                              title: t('actions.markAsPaid'),
-                              color: "green"
-                            }
-                          ] : []}
-                          size="md"
-                        />
-                      </div>
+                      <TableActionsDropdown
+                        onView={() => handleViewInvoice(invoice.id)}
+                        onDelete={() => handleDeleteInvoice(invoice)}
+                        customActions={invoice.status !== 'paid' ? [
+                          {
+                            icon: DollarSign,
+                            onClick: () => handleMarkAsPaid(invoice.id),
+                            label: t('actions.markAsPaid'),
+                            color: "green"
+                          }
+                        ] : []}
+                        size="md"
+                        buttonStyle="dots"
+                      />
                     </td>
                   </tr>
                 ))

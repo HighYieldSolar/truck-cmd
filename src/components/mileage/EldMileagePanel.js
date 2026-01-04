@@ -1,54 +1,69 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabaseClient';
 import {
-  Navigation,
-  Zap,
-  FileText,
-  Layers,
+  Truck,
+  MapPin,
   RefreshCw,
-  CheckCircle,
-  AlertTriangle,
   Download,
+  AlertCircle,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
   Loader2,
-  Truck,
-  MapPin,
+  ArrowRight,
   BarChart2,
+  Calendar,
+  Navigation,
   Info,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 /**
- * ELDDataPanel - Shows ELD data source options for IFTA reporting
- * Styled to match EldMileagePanel component
- *
- * @param {string} quarter - Quarter in YYYY-Q# format (e.g., "2024-Q1")
- * @param {function} onDataSourceChange - Callback when data source is changed
- * @param {string} selectedSource - Current selected source: 'eld' | 'manual' | 'combined'
+ * EldMileagePanel - Shows ELD mileage data and allows importing to IFTA
+ * Displays comparison between ELD-tracked and manually entered mileage
  */
-export default function ELDDataPanel({
-  quarter,
-  onDataSourceChange,
-  selectedSource = 'eld',
-  className = ''
-}) {
+export default function EldMileagePanel({ className = '' }) {
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [summary, setSummary] = useState(null);
-  const [hasEldConnection, setHasEldConnection] = useState(false);
-  const [eldProvider, setEldProvider] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [hasEldConnection, setHasEldConnection] = useState(false);
+  const [eldProvider, setEldProvider] = useState(null);
+
+  // Quarter selection
+  const [selectedQuarter, setSelectedQuarter] = useState(() => {
+    const now = new Date();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    return `${now.getFullYear()}-Q${quarter}`;
+  });
+
+  // Mileage data
+  const [summaryData, setSummaryData] = useState(null);
 
   const { canAccess } = useFeatureAccess();
-  const hasAccess = canAccess('eldIftaSync');
+  const hasEldIftaAccess = canAccess('eldIftaSync');
+
+  // Generate quarter options (current + last 4 quarters)
+  const quarterOptions = useCallback(() => {
+    const options = [];
+    const now = new Date();
+
+    for (let i = 0; i < 5; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - (i * 3), 1);
+      const year = date.getFullYear();
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      options.push(`${year}-Q${quarter}`);
+    }
+
+    return [...new Set(options)]; // Remove duplicates
+  }, []);
 
   // Check ELD connection
   const checkEldConnection = useCallback(async () => {
@@ -71,29 +86,29 @@ export default function ELDDataPanel({
     }
   }, []);
 
-  // Load summary data
-  const loadSummary = useCallback(async () => {
+  // Load mileage summary
+  const loadMileageSummary = useCallback(async () => {
     if (!hasEldConnection) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/eld/ifta/summary?quarter=${quarter}`);
+      const response = await fetch(`/api/eld/ifta/summary?quarter=${selectedQuarter}`);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to load summary');
+        throw new Error(data.error || 'Failed to load mileage summary');
       }
 
-      setSummary(data);
+      setSummaryData(data);
     } catch (err) {
-      console.error('Failed to load ELD summary:', err);
+      console.error('Failed to load mileage summary:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [hasEldConnection, quarter]);
+  }, [hasEldConnection, selectedQuarter]);
 
   // Initial load
   useEffect(() => {
@@ -102,61 +117,65 @@ export default function ELDDataPanel({
 
   // Load data when connection is confirmed
   useEffect(() => {
-    if (hasEldConnection && hasAccess && quarter) {
-      loadSummary();
+    if (hasEldConnection && hasEldIftaAccess) {
+      loadMileageSummary();
     } else {
       setLoading(false);
     }
-  }, [hasEldConnection, hasAccess, quarter, loadSummary]);
+  }, [hasEldConnection, hasEldIftaAccess, loadMileageSummary]);
 
-  // Refresh data
-  const handleRefresh = async () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    await loadSummary();
-    setRefreshing(false);
-  };
-
-  // Import ELD data
-  const handleImportEldData = async () => {
+  // Import ELD mileage to IFTA
+  const handleImport = async () => {
     if (importing) return;
-    setImporting(true);
-    setError(null);
-    setSuccess(null);
 
     try {
+      setImporting(true);
+      setError(null);
+      setSuccess(null);
+
       const response = await fetch('/api/eld/ifta/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quarter })
+        body: JSON.stringify({ quarter: selectedQuarter })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Import failed');
+        throw new Error(data.error || 'Failed to import mileage data');
       }
 
-      setSuccess(`Successfully imported ${data.recordsImported} records (${data.totalMiles?.toLocaleString() || 0} miles across ${data.jurisdictions || 0} states)`);
-      await loadSummary();
+      setSuccess(`Successfully imported ${data.recordsImported} records (${data.totalMiles.toLocaleString()} miles across ${data.jurisdictions} states)`);
+
+      // Reload summary
+      await loadMileageSummary();
     } catch (err) {
+      console.error('Import failed:', err);
       setError(err.message);
     } finally {
       setImporting(false);
     }
   };
 
-  // Format number
+  // Refresh data
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await loadMileageSummary();
+    setRefreshing(false);
+  };
+
+  // Format number with commas
   const formatNumber = (num) => {
     if (!num && num !== 0) return '0';
     return Math.round(num).toLocaleString();
   };
 
-  // Get comparison status
+  // Calculate difference percentage
   const getDifferenceInfo = () => {
-    if (!summary?.comparison) return null;
+    if (!summaryData?.comparison) return null;
 
-    const { hasDifference, differencePercent } = summary.comparison;
+    const { hasDifference, differencePercent } = summaryData.comparison;
 
     if (!hasDifference) {
       return { type: 'success', message: 'ELD and manual mileage match' };
@@ -168,33 +187,6 @@ export default function ELDDataPanel({
 
     return { type: 'error', message: `${differencePercent > 0 ? '+' : ''}${differencePercent.toFixed(1)}% difference - review recommended` };
   };
-
-  const dataSourceOptions = [
-    {
-      id: 'eld',
-      name: 'ELD Data',
-      description: 'Mileage from your connected ELD',
-      icon: Zap,
-      recommended: true,
-      disabled: !hasEldConnection
-    },
-    {
-      id: 'manual',
-      name: 'Manual Entry',
-      description: 'State Mileage Tracker trips',
-      icon: FileText,
-      recommended: false,
-      disabled: false
-    },
-    {
-      id: 'combined',
-      name: 'Combined',
-      description: 'Merge ELD and manual data',
-      icon: Layers,
-      recommended: false,
-      disabled: !hasEldConnection
-    }
-  ];
 
   // Collapsed view
   if (!expanded) {
@@ -209,7 +201,7 @@ export default function ELDDataPanel({
               <Navigation size={20} className="text-teal-600 dark:text-teal-400" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Data Import</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Mileage Import</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {hasEldConnection ? `Connected to ${eldProvider || 'ELD'}` : 'Connect ELD to import mileage'}
               </p>
@@ -222,7 +214,7 @@ export default function ELDDataPanel({
   }
 
   // No ELD IFTA access
-  if (!hasAccess) {
+  if (!hasEldIftaAccess) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
         <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -230,7 +222,7 @@ export default function ELDDataPanel({
             <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
               <Navigation size={20} className="text-teal-600 dark:text-teal-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Data Import</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Mileage Import</h3>
           </div>
           <button
             onClick={() => setExpanded(false)}
@@ -244,7 +236,7 @@ export default function ELDDataPanel({
             <Truck size={32} className="text-gray-400" />
           </div>
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-            Automatic ELD Data Import
+            Automatic ELD Mileage Import
           </h4>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Import state-by-state mileage directly from your ELD. Requires Premium plan or higher.
@@ -269,7 +261,7 @@ export default function ELDDataPanel({
             <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
               <Navigation size={20} className="text-teal-600 dark:text-teal-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Data Import</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Mileage Import</h3>
           </div>
           <button
             onClick={() => setExpanded(false)}
@@ -311,14 +303,25 @@ export default function ELDDataPanel({
               <Navigation size={20} className="text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Data Import</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">ELD Mileage Import</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Connected to {eldProvider || 'ELD Provider'} • {quarter}
+                Connected to {eldProvider || 'ELD Provider'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Quarter Selector */}
+            <select
+              value={selectedQuarter}
+              onChange={(e) => setSelectedQuarter(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              {quarterOptions().map(q => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+
             {/* Refresh */}
             <button
               onClick={handleRefresh}
@@ -343,7 +346,7 @@ export default function ELDDataPanel({
       {/* Messages */}
       {error && (
         <div className="mx-5 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-          <AlertTriangle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+          <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
@@ -372,71 +375,7 @@ export default function ELDDataPanel({
         </div>
       ) : (
         <div className="p-5">
-          {/* Data Source Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Select Data Source
-            </label>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {dataSourceOptions.map((option) => {
-                const OptionIcon = option.icon;
-                const isSelected = selectedSource === option.id;
-
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => !option.disabled && onDataSourceChange?.(option.id)}
-                    disabled={option.disabled}
-                    className={`
-                      relative p-4 rounded-xl border-2 text-left transition-all
-                      ${isSelected
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }
-                      ${option.disabled
-                        ? 'opacity-50 cursor-not-allowed'
-                        : 'cursor-pointer'
-                      }
-                    `}
-                  >
-                    {option.recommended && !option.disabled && (
-                      <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full">
-                        Recommended
-                      </span>
-                    )}
-
-                    <div className="flex items-center gap-2 mb-2">
-                      <OptionIcon size={18} className={
-                        isSelected
-                          ? 'text-teal-600 dark:text-teal-400'
-                          : 'text-gray-500 dark:text-gray-400'
-                      } />
-                      <span className={`font-medium ${
-                        isSelected
-                          ? 'text-teal-700 dark:text-teal-300'
-                          : 'text-gray-900 dark:text-gray-100'
-                      }`}>
-                        {option.name}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {option.description}
-                    </p>
-
-                    {isSelected && (
-                      <div className="absolute top-3 right-3">
-                        <CheckCircle size={16} className="text-teal-500" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Mileage Comparison Cards */}
+          {/* Mileage Comparison */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {/* ELD Mileage */}
             <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-200 dark:border-teal-800">
@@ -445,10 +384,10 @@ export default function ELDDataPanel({
                 <span className="text-sm font-medium text-teal-700 dark:text-teal-300">ELD Mileage</span>
               </div>
               <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">
-                {formatNumber(summary?.eldMileage?.totalMiles)} mi
+                {formatNumber(summaryData?.eldMileage?.totalMiles)} mi
               </p>
               <p className="text-sm text-teal-600 dark:text-teal-400">
-                {summary?.eldMileage?.jurisdictionCount || 0} states
+                {summaryData?.eldMileage?.jurisdictionCount || 0} states
               </p>
             </div>
 
@@ -459,10 +398,10 @@ export default function ELDDataPanel({
                 <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Manual Entries</span>
               </div>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {formatNumber(summary?.manualMileage?.totalMiles)} mi
+                {formatNumber(summaryData?.manualMileage?.totalMiles)} mi
               </p>
               <p className="text-sm text-blue-600 dark:text-blue-400">
-                {summary?.manualMileage?.jurisdictionCount || 0} states
+                {summaryData?.manualMileage?.jurisdictionCount || 0} states
               </p>
             </div>
 
@@ -490,22 +429,22 @@ export default function ELDDataPanel({
               }`}>
                 {differenceInfo?.message || 'No data'}
               </p>
-              {summary?.lastImportedAt && (
+              {summaryData?.lastImportedAt && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Last import: {new Date(summary.lastImportedAt).toLocaleDateString()}
+                  Last import: {new Date(summaryData.lastImportedAt).toLocaleDateString()}
                 </p>
               )}
             </div>
           </div>
 
           {/* State Breakdown */}
-          {summary?.eldMileage?.jurisdictions?.length > 0 && (
+          {summaryData?.eldMileage?.jurisdictions?.length > 0 && (
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 ELD Mileage by State
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                {summary.eldMileage.jurisdictions.slice(0, 12).map((jurisdiction) => (
+                {summaryData.eldMileage.jurisdictions.slice(0, 12).map((jurisdiction) => (
                   <div
                     key={jurisdiction.state}
                     className="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2 text-center"
@@ -518,10 +457,10 @@ export default function ELDDataPanel({
                     </p>
                   </div>
                 ))}
-                {summary.eldMileage.jurisdictions.length > 12 && (
+                {summaryData.eldMileage.jurisdictions.length > 12 && (
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-2 text-center">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      +{summary.eldMileage.jurisdictions.length - 12} more
+                      +{summaryData.eldMileage.jurisdictions.length - 12} more
                     </p>
                   </div>
                 )}
@@ -534,13 +473,13 @@ export default function ELDDataPanel({
             <div className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
               <Info size={16} className="flex-shrink-0 mt-0.5" />
               <p>
-                Import ELD mileage to your IFTA records for {quarter}.
+                Import ELD mileage to your IFTA records for {selectedQuarter}.
                 This will create jurisdiction records for tax filing.
               </p>
             </div>
             <button
-              onClick={handleImportEldData}
-              disabled={importing || !summary?.eldMileage?.totalMiles}
+              onClick={handleImport}
+              disabled={importing || !summaryData?.eldMileage?.totalMiles}
               className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
             >
               {importing ? (

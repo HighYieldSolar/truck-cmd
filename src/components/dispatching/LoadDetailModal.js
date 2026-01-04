@@ -34,6 +34,17 @@ import {
 import StatusBadge from "./StatusBadge";
 import DocumentViewerModal from './DocumentViewerModal';
 import PODUploadModal from './PODUploadModal';
+import dynamic from 'next/dynamic';
+
+// Dynamically import LoadRouteMap to avoid SSR issues with Mapbox
+const LoadRouteMap = dynamic(() => import('./LoadRouteMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 h-48 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  )
+});
 import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -759,13 +770,13 @@ export default function LoadDetailModal({
               </div>
             </div>
 
-            {/* Map Placeholder */}
-            <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 h-48 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-              <div className="text-center">
-                <Map size={40} className="text-blue-500 dark:text-blue-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">{t('loadDetailModal.routeMap')}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('loadDetailModal.mapComingSoon')}</p>
-              </div>
+            {/* Route Map */}
+            <div className="mt-6">
+              <LoadRouteMap
+                origin={load.origin}
+                destination={load.destination}
+                height={200}
+              />
             </div>
           </div>
 

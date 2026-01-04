@@ -4,11 +4,14 @@
 import Link from 'next/link';
 import {
   MapPin,
-  CheckCircle
+  CheckCircle,
+  Navigation,
+  Phone,
+  MessageSquare
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
-import TableActions from "@/components/shared/TableActions";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
@@ -34,39 +37,59 @@ export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  const loadNumber = load.loadNumber || load.load_number || '';
+  const customer = load.customer || '';
+  const origin = load.origin || '';
+  const destination = load.destination || '';
+  const driver = load.driver || '';
+
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-      {/* Load Number & Customer - Stacked */}
-      <td className="px-3 py-3">
-        <div className="space-y-0.5">
+      {/* Load Number & Customer - Stacked (18% width) */}
+      <td className="px-3 py-3 max-w-0">
+        <div className="space-y-0.5 overflow-hidden">
           <button
             onClick={() => onSelect(load)}
-            className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+            className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline block truncate max-w-full"
+            title={`#${loadNumber}`}
           >
-            #{load.loadNumber || load.load_number}
+            #{loadNumber || '-'}
           </button>
-          <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">
-            {load.customer || '-'}
+          <p
+            className="text-sm text-gray-600 dark:text-gray-400 truncate"
+            title={customer}
+          >
+            {customer || '-'}
           </p>
         </div>
       </td>
 
-      {/* Route - Stacked Origin/Destination */}
-      <td className="px-3 py-3">
-        <div className="space-y-1">
-          <div className="flex items-center text-sm">
+      {/* Route - Stacked Origin/Destination (20% width) */}
+      <td className="px-3 py-3 max-w-0">
+        <div className="space-y-1 overflow-hidden">
+          <div className="flex items-center text-sm min-w-0">
             <MapPin size={12} className="text-emerald-500 dark:text-emerald-400 flex-shrink-0 mr-1.5" />
-            <span className="text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{load.origin || '-'}</span>
+            <span
+              className="text-gray-700 dark:text-gray-300 truncate"
+              title={origin}
+            >
+              {origin || '-'}
+            </span>
           </div>
-          <div className="flex items-center text-sm">
+          <div className="flex items-center text-sm min-w-0">
             <MapPin size={12} className="text-red-500 dark:text-red-400 flex-shrink-0 mr-1.5" />
-            <span className="text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{load.destination || '-'}</span>
+            <span
+              className="text-gray-700 dark:text-gray-300 truncate"
+              title={destination}
+            >
+              {destination || '-'}
+            </span>
           </div>
         </div>
       </td>
 
-      {/* Dates - Stacked Pickup/Delivery */}
-      <td className="px-3 py-3">
+      {/* Dates - Stacked Pickup/Delivery (15% width) */}
+      <td className="px-3 py-3 whitespace-nowrap">
         <div className="space-y-1 text-sm">
           <div className="text-gray-700 dark:text-gray-300">
             <span className="text-gray-400 dark:text-gray-500 text-xs mr-1">P:</span>
@@ -79,44 +102,59 @@ export default function LoadTableRow({ load, onSelect, onEdit, onDelete }) {
         </div>
       </td>
 
-      {/* Driver */}
-      <td className="px-3 py-3">
-        <span className={`text-sm block truncate max-w-[100px] ${load.driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}>
-          {load.driver || t('loadCard.unassigned')}
+      {/* Driver (14% width) */}
+      <td className="px-3 py-3 max-w-0">
+        <span
+          className={`text-sm block truncate ${driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}
+          title={driver || t('loadCard.unassigned')}
+        >
+          {driver || t('loadCard.unassigned')}
         </span>
       </td>
 
-      {/* Rate */}
+      {/* Rate (10% width) */}
       <td className="px-3 py-3 whitespace-nowrap">
         <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
           {formatCurrency(load.rate)}
         </span>
       </td>
 
-      {/* Status */}
+      {/* Status (11% width) */}
       <td className="px-3 py-3 whitespace-nowrap">
         <StatusBadge status={load.status} size="sm" />
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-3 whitespace-nowrap">
-        <div className="flex items-center space-x-1">
-          {load.status !== "Completed" && load.status !== "Cancelled" && (
-            <Link
-              href={`/dashboard/dispatching/complete/${load.id}`}
-              className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
-              title={t('loadCard.markComplete')}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CheckCircle size={16} />
-            </Link>
-          )}
-          <TableActions
-            onView={() => onSelect(load)}
-            onDelete={() => onDelete(load)}
-            size="md"
-          />
-        </div>
+      <td className="px-3 py-3 whitespace-nowrap text-center">
+        <TableActionsDropdown
+          onView={() => onSelect(load)}
+          onComplete={
+            load.status !== "Completed" && load.status !== "Cancelled"
+              ? () => {
+                  window.location.href = `/dashboard/dispatching/complete/${load.id}`;
+                }
+              : undefined
+          }
+          onDelete={() => onDelete(load)}
+          customActions={[
+            {
+              icon: Navigation,
+              label: "Get Directions",
+              onClick: () => {
+                const address = load.destination || load.origin;
+                if (address) {
+                  window.open(
+                    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`,
+                    "_blank"
+                  );
+                }
+              },
+              color: "blue"
+            }
+          ]}
+          size="md"
+          buttonStyle="dots"
+        />
       </td>
     </tr>
   );

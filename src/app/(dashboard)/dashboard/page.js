@@ -17,6 +17,7 @@ import BusinessOverview from "@/components/dashboard/(dashboard)/BusinessOvervie
 import ActivityPanel from "@/components/dashboard/(dashboard)/ActivityPanel";
 import FuelSummary from "@/components/dashboard/(dashboard)/FuelSummary";
 import QuickActions from "@/components/dashboard/(dashboard)/QuickActions";
+import FleetStatusWidget from "@/components/dashboard/(dashboard)/FleetStatusWidget";
 import FailedPaymentBanner from "@/components/billing/FailedPaymentBanner";
 import SetupChecklist from "@/components/onboarding/SetupChecklist";
 import TutorialCard from "@/components/shared/TutorialCard";
@@ -428,10 +429,11 @@ export default function Dashboard() {
               isLoading={dataLoading}
             />
             
-            {/* Right Sidebar with Fuel Stats and Deliveries */}
+            {/* Right Sidebar with Fleet Status, Fuel Stats and Deliveries */}
             <div className="space-y-6">
+              <FleetStatusWidget />
               <FuelSummary stats={fuelStats} />
-              <UpcomingDeliveries 
+              <UpcomingDeliveries
                 deliveries={upcomingDeliveries}
                 isLoading={dataLoading}
               />

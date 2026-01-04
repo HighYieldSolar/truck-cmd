@@ -15,12 +15,13 @@ import {
   CheckCircle,
   RefreshCw,
   ArrowRight,
-  Edit,
-  Eye,
-  Trash2,
   Shield,
-  X
+  X,
+  Eye,
+  Edit,
+  Trash2
 } from "lucide-react";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import {
   fetchComplianceItems,
@@ -882,7 +883,7 @@ export default function CompliancePage() {
               </div>
 
               {/* Compliance Table */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">{t('page.table.title')}</h3>
                   <button
@@ -894,8 +895,8 @@ export default function CompliancePage() {
                   </button>
                 </div>
 
-                {/* Desktop Table View */}
-                <div className="hidden md:block">
+                {/* Desktop Table View - Only show on lg+ screens */}
+                <div className="hidden lg:block">
                   <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
@@ -958,53 +959,42 @@ export default function CompliancePage() {
 
                           return (
                             <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 max-w-0">
                                 <button
                                   onClick={() => handleOpenViewModal(item)}
-                                  className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate block max-w-full text-left"
+                                  className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline truncate block max-w-full text-left text-sm"
                                   title={item.title}
                                 >
-                                  {item.title}
+                                  {item.title || '-'}
                                 </button>
                               </td>
-                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3">
-                                <span className="truncate block" title={item.entity_name}>{item.entity_name}</span>
+                              <td className="px-4 py-3 max-w-0">
+                                <span
+                                  className="text-sm text-gray-900 dark:text-gray-100 truncate block"
+                                  title={item.entity_name}
+                                >
+                                  {item.entity_name || '-'}
+                                </span>
                               </td>
-                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                 {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}
                               </td>
-                              <td className="text-gray-900 dark:text-gray-100 px-4 py-3 text-sm">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                 {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(displayStatus)}`}>
                                   {displayStatus}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-center">
-                                <div className="flex justify-center space-x-1">
-                                  <button
-                                    onClick={() => handleOpenViewModal(item)}
-                                    className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                                    title="View"
-                                  >
-                                    <Eye size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenFormModal(item)}
-                                    className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                                    title="Edit"
-                                  >
-                                    <Edit size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenDeleteModal(item)}
-                                    className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
+                              <td className="px-4 py-3 whitespace-nowrap text-center">
+                                <TableActionsDropdown
+                                  onView={() => handleOpenViewModal(item)}
+                                  onEdit={() => handleOpenFormModal(item)}
+                                  onDelete={() => handleOpenDeleteModal(item)}
+                                  size="md"
+                                  buttonStyle="dots"
+                                />
                               </td>
                             </tr>
                           );
@@ -1014,8 +1004,8 @@ export default function CompliancePage() {
                   </table>
                 </div>
 
-                {/* Mobile Card View */}
-                <div className="md:hidden p-4 space-y-4">
+                {/* Mobile/Tablet Card View - Show on screens smaller than lg */}
+                <div className="lg:hidden p-4 space-y-4">
                   {paginatedData.length === 0 ? (
                     complianceItems.length === 0 ? (
                       <EmptyState
@@ -1047,43 +1037,80 @@ export default function CompliancePage() {
                       return (
                         <div
                           key={item.id}
-                          className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
                         >
-                          <div className="flex justify-between items-start mb-3">
-                            <button
-                              onClick={() => handleOpenViewModal(item)}
-                              className="font-medium text-blue-600 dark:text-blue-400 hover:underline text-left"
-                            >
-                              {item.title}
-                            </button>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(displayStatus)}`}>
-                              {displayStatus}
-                            </span>
+                          {/* Card Header */}
+                          <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center flex-1 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
+                                  <Shield size={18} className="text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="ml-3 min-w-0 flex-1">
+                                  <button
+                                    onClick={() => handleOpenViewModal(item)}
+                                    className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate block max-w-full text-left"
+                                    title={item.title}
+                                  >
+                                    {item.title || '-'}
+                                  </button>
+                                  <p
+                                    className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                                    title={item.entity_name}
+                                  >
+                                    {item.entity_name || '-'}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${getStatusBadge(displayStatus)}`}>
+                                {displayStatus}
+                              </span>
+                            </div>
                           </div>
-                          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                            <p><span className="font-medium">{t('page.mobile.entity')}:</span> {item.entity_name}</p>
-                            <p><span className="font-medium">{t('page.mobile.issue')}:</span> {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}</p>
-                            <p><span className="font-medium">{t('page.mobile.expires')}:</span> {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}</p>
+
+                          {/* Card Body */}
+                          <div className="px-4 py-3">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{t('page.mobile.issue')}</p>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">
+                                  {item.issue_date ? formatDateForDisplayMMDDYYYY(item.issue_date) : '-'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{t('page.mobile.expires')}</p>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">
+                                  {item.expiration_date ? formatDateForDisplayMMDDYYYY(item.expiration_date) : '-'}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
-                            <button
-                              onClick={() => handleOpenViewModal(item)}
-                              className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleOpenFormModal(item)}
-                              className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleOpenDeleteModal(item)}
-                              className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
-                            >
-                              <Trash2 size={18} />
-                            </button>
+
+                          {/* Card Footer - Actions */}
+                          <div className="px-4 py-3 flex items-center justify-end border-t border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleOpenViewModal(item)}
+                                className="p-2 rounded-lg transition-colors text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                                title={t('page.table.view')}
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleOpenFormModal(item)}
+                                className="p-2 rounded-lg transition-colors text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/40"
+                                title={t('page.table.edit')}
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleOpenDeleteModal(item)}
+                                className="p-2 rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40"
+                                title={t('page.table.delete')}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Fuel,
   Wrench,
@@ -8,7 +9,9 @@ import {
   Briefcase,
   FileCheck,
   Coffee,
-  Tag
+  Tag,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -16,7 +19,7 @@ import { useTranslation } from "@/context/LanguageContext";
  * Expense Categories Sidebar Widget
  *
  * Displays expense categories with amounts and allows filtering.
- * Supports dark mode.
+ * Supports dark mode. Shows top 5 by default with expand option.
  */
 export default function ExpenseCategories({
   categories,
@@ -24,6 +27,8 @@ export default function ExpenseCategories({
   selectedCategory
 }) {
   const { t } = useTranslation('expenses');
+  const [showAll, setShowAll] = useState(false);
+  const MAX_VISIBLE = 5;
 
   // Format currency
   const formatCurrency = (value) => {
@@ -73,10 +78,18 @@ export default function ExpenseCategories({
   // Total amount
   const totalAmount = Object.values(categories || {}).reduce((sum, amount) => sum + amount, 0);
 
+  // Determine which categories to display
+  const visibleCategories = showAll
+    ? activeCategories
+    : activeCategories.slice(0, MAX_VISIBLE);
+
+  const hasMoreCategories = activeCategories.length > MAX_VISIBLE;
+  const hiddenCount = activeCategories.length - MAX_VISIBLE;
+
   return (
     <div className="space-y-2">
       {/* Category Items */}
-      {activeCategories.map(([category, amount]) => (
+      {visibleCategories.map(([category, amount]) => (
         <button
           key={category}
           onClick={() => onCategorySelect(category)}
@@ -97,6 +110,26 @@ export default function ExpenseCategories({
           </span>
         </button>
       ))}
+
+      {/* Show More/Less Button */}
+      {hasMoreCategories && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center justify-center gap-1 transition-colors"
+        >
+          {showAll ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              {t('categoryWidget.showLess')}
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              {t('categoryWidget.showMore', { count: hiddenCount })}
+            </>
+          )}
+        </button>
+      )}
 
       {/* All Categories Option */}
       <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">

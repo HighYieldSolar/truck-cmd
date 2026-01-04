@@ -601,7 +601,7 @@ export default function ExpensesPage() {
               />
 
               {/* Expense Records Table */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-500" />
@@ -639,8 +639,8 @@ export default function ExpensesPage() {
                 ) : (
                   <>
                     {/* Mobile Card View */}
-                    <div className="lg:hidden p-4 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="lg:hidden p-4 space-y-4 overflow-visible">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
                         {paginatedData.map((expense) => (
                           <ExpenseCard
                             key={expense.id}
@@ -664,8 +664,8 @@ export default function ExpensesPage() {
                     </div>
 
                     {/* Desktop Table View */}
-                    <div className="hidden lg:block">
-                      <div className="overflow-x-auto">
+                    <div className="hidden lg:block overflow-visible">
+                      <div className="overflow-visible">
                         <table className="w-full">
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>

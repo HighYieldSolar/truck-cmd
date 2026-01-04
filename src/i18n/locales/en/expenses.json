@@ -228,7 +228,9 @@
   },
   "categoryWidget": {
     "noCategoriesYet": "No expense categories yet",
-    "allCategories": "All Categories"
+    "allCategories": "All Categories",
+    "showMore": "Show {{count}} more",
+    "showLess": "Show less"
   },
   "topExpensesWidget": {
     "noExpensesYet": "No expenses yet",

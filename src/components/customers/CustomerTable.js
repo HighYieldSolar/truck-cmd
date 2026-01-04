@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/hooks/usePagination";
-import TableActions from "@/components/shared/TableActions";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 /**
@@ -108,7 +108,7 @@ export default function CustomerTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible transition-colors duration-200">
       {/* Desktop Table View */}
       <div className="hidden lg:block">
         <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
@@ -206,11 +206,12 @@ export default function CustomerTable({
                   </span>
                 </td>
                 <td className="px-4 py-4 text-center">
-                  <TableActions
+                  <TableActionsDropdown
                     onView={() => onView(customer)}
                     onEdit={() => onEdit(customer)}
                     onDelete={() => onDelete(customer)}
                     size="md"
+                    buttonStyle="dots"
                   />
                 </td>
               </tr>

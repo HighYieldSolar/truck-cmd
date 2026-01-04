@@ -577,7 +577,7 @@ export default function FuelTrackerPage() {
               </div>
               
               {/* Fuel Entries Records */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
                 <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 dark:text-gray-200 flex items-center">
                     <FileText size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
@@ -641,7 +641,7 @@ export default function FuelTrackerPage() {
 
                     {/* Desktop Table View */}
                     <div className="hidden lg:block">
-                      <div className="overflow-x-auto">
+                      <div>
                         <table className="w-full">
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
@@ -654,7 +654,7 @@ export default function FuelTrackerPage() {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.gallons')}
                               </th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.amount')}
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -663,7 +663,7 @@ export default function FuelTrackerPage() {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.receipt')}
                               </th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.actions')}
                               </th>
                             </tr>

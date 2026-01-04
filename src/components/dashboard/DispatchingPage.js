@@ -39,6 +39,7 @@ import LoadDetailModal from "@/components/dispatching/LoadDetailModal";
 import NewLoadModal from "@/components/dispatching/NewLoadModal";
 import DeleteLoadModal from "@/components/dispatching/DeleteLoadModal";
 import ExportReportModal from "@/components/common/ExportReportModal";
+import DispatchingMap from "@/components/dispatching/DispatchingMap";
 
 // Fetch drivers from the database
 const fetchDrivers = async (userId) => {
@@ -798,6 +799,23 @@ export default function DispatchingPage() {
             period="All Time"
           />
 
+          {/* Fleet Map - Live vehicle locations */}
+          <div className="mb-6">
+            <DispatchingMap
+              loads={loads}
+              onVehicleSelect={(vehicle) => {
+                // Could filter loads by this vehicle's driver
+                console.log('Selected vehicle:', vehicle);
+              }}
+              onLoadSelect={(load) => {
+                const foundLoad = loads.find(l => l.id === load.id);
+                if (foundLoad) {
+                  handleSelectLoad(foundLoad);
+                }
+              }}
+            />
+          </div>
+
           {/* Main Content - 4 Column Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar - Column 1 */}
@@ -914,7 +932,7 @@ export default function DispatchingPage() {
                               <th className="w-[14%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.driver')}</th>
                               <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.rate')}</th>
                               <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.status')}</th>
-                              <th className="w-[12%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.actions')}</th>
+                              <th className="w-[12%] px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('page.tableHeaders.actions')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

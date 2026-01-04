@@ -1,7 +1,7 @@
 'use client';
 
 import { Pencil, Trash2, Eye, Receipt, CheckCircle } from 'lucide-react';
-import TableActions from '@/components/shared/TableActions';
+import { TableActionsDropdown } from '@/components/shared/TableActions';
 import { useTranslation } from "@/context/LanguageContext";
 
 /**
@@ -50,7 +50,7 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible transition-colors duration-200">
       {/* Card Header */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate flex-1 mr-2">
@@ -111,11 +111,12 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
         </div>
 
         {/* Action Buttons */}
-        <TableActions
+        <TableActionsDropdown
           onView={expense.receipt_image ? () => onViewReceipt(expense) : undefined}
           onEdit={() => onEdit(expense)}
           onDelete={() => onDelete(expense)}
           size="md"
+          buttonStyle="dots"
         />
       </div>
     </div>

@@ -11,10 +11,12 @@ import {
   DollarSign,
   Truck,
   FileImage,
-  CheckCircle
+  CheckCircle,
+  Eye,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
-import TableActions from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
@@ -82,13 +84,18 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
             <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
               <Fuel size={18} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="ml-3 min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                {fuelEntry.location}
+            <div className="ml-3 min-w-0 flex-1">
+              <h3
+                className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
+                title={fuelEntry.location || ''}
+              >
+                {fuelEntry.location || '-'}
               </h3>
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 <MapPin size={12} className="mr-1 flex-shrink-0" />
-                <span className="truncate">{fuelEntry.state_name} ({fuelEntry.state})</span>
+                <span className="truncate" title={`${fuelEntry.state_name || ''} (${fuelEntry.state || ''})`}>
+                  {fuelEntry.state_name || fuelEntry.state || '-'} ({fuelEntry.state || ''})
+                </span>
               </div>
             </div>
           </div>
@@ -145,26 +152,35 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
       </div>
 
       {/* Card Footer - Actions */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center">
-          {fuelEntry.expense_id ? (
-            <span className="inline-flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-1 rounded-full">
-              <CheckCircle size={12} className="mr-1" />
-              {t('fuelCard.syncedToExpenses')}
-            </span>
-          ) : (
-            <span className="inline-flex items-center text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/40 px-2 py-1 rounded-full">
-              {t('fuelCard.pending')}
-            </span>
+      <div className="px-4 py-3 flex items-center justify-end border-t border-gray-100 dark:border-gray-700">
+        <div className="flex items-center space-x-1">
+          {/* View Receipt */}
+          {fuelEntry.receipt_image && (
+            <button
+              onClick={handleViewReceipt}
+              className="p-2 rounded-lg transition-colors text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+              title={t('fuelCard.viewReceipt')}
+            >
+              <Eye size={16} />
+            </button>
           )}
+          {/* Edit */}
+          <button
+            onClick={() => onEdit(fuelEntry)}
+            className="p-2 rounded-lg transition-colors text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+            title={t('fuelCard.edit')}
+          >
+            <Edit size={16} />
+          </button>
+          {/* Delete */}
+          <button
+            onClick={() => onDelete(fuelEntry)}
+            className="p-2 rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+            title={t('fuelCard.delete')}
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
-
-        <TableActions
-          onView={fuelEntry.receipt_image ? handleViewReceipt : undefined}
-          onEdit={() => onEdit(fuelEntry)}
-          onDelete={() => onDelete(fuelEntry)}
-          size="lg"
-        />
       </div>
     </div>
   );

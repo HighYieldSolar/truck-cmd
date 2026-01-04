@@ -15,14 +15,12 @@ import {
   CheckCircle,
   RefreshCw,
   ArrowRight,
-  Edit,
-  Eye,
-  Trash2,
   DollarSign,
   AlertCircle,
   X,
   Lock
 } from "lucide-react";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import {
   fetchInvoices,
   updateInvoiceStatus,
@@ -1051,7 +1049,7 @@ export default function Page() {
               </div>
 
               {/* Invoice Table */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-visible border border-gray-200 dark:border-gray-700">
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">{t('list.invoiceRecords')}</h3>
                   {isAtInvoiceLimit ? (
@@ -1171,31 +1169,20 @@ export default function Page() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <div className="flex justify-center space-x-1">
-                                <button
-                                  onClick={() => handleViewInvoice(invoice.id)}
-                                  className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                                  title={t('page.view')}
-                                >
-                                  <Eye size={16} />
-                                </button>
-                                {invoice.status?.toLowerCase() !== 'paid' && (
-                                  <button
-                                    onClick={() => handleMarkAsPaid(invoice.id)}
-                                    className="p-1.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                                    title={t('page.markAsPaid')}
-                                  >
-                                    <DollarSign size={16} />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleDeleteInvoice(invoice)}
-                                  className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                                  title={t('page.delete')}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
+                              <TableActionsDropdown
+                                onView={() => handleViewInvoice(invoice.id)}
+                                onDelete={() => handleDeleteInvoice(invoice)}
+                                customActions={invoice.status?.toLowerCase() !== 'paid' ? [
+                                  {
+                                    icon: DollarSign,
+                                    onClick: () => handleMarkAsPaid(invoice.id),
+                                    label: t('page.markAsPaid'),
+                                    color: "green"
+                                  }
+                                ] : []}
+                                size="md"
+                                buttonStyle="dots"
+                              />
                             </td>
                           </tr>
                         ))
@@ -1266,27 +1253,21 @@ export default function Page() {
                           <p><span className="font-medium">{t('list.invoiceDate')}:</span> {invoice.invoice_date ? formatDateForDisplayMMDDYYYY(invoice.invoice_date) : '-'}</p>
                           <p><span className="font-medium">{t('list.dueDate')}:</span> {invoice.due_date ? formatDateForDisplayMMDDYYYY(invoice.due_date) : '-'}</p>
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleViewInvoice(invoice.id)}
-                            className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          {invoice.status?.toLowerCase() !== 'paid' && (
-                            <button
-                              onClick={() => handleMarkAsPaid(invoice.id)}
-                              className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50"
-                            >
-                              <DollarSign size={18} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteInvoice(invoice)}
-                            className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-end">
+                          <TableActionsDropdown
+                            onView={() => handleViewInvoice(invoice.id)}
+                            onDelete={() => handleDeleteInvoice(invoice)}
+                            customActions={invoice.status?.toLowerCase() !== 'paid' ? [
+                              {
+                                icon: DollarSign,
+                                onClick: () => handleMarkAsPaid(invoice.id),
+                                label: t('page.markAsPaid'),
+                                color: "green"
+                              }
+                            ] : []}
+                            size="md"
+                            buttonStyle="dots"
+                          />
                         </div>
                       </div>
                     ))

@@ -25,10 +25,12 @@
     "jspdf-autotable": "^5.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.476.0",
+    "mapbox-gl": "^3.17.0",
     "next": "16.0.7",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-i18next": "^16.5.0",
+    "react-map-gl": "^7.1.9",
     "recharts": "^2.15.3",
     "stripe": "^20.1.0",
     "uuid": "^11.1.0"

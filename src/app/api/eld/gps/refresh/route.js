@@ -70,7 +70,7 @@ async function getAuthenticatedUser(request) {
  */
 export async function POST(request) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await getAuthenticatedUser(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

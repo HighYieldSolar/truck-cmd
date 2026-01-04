@@ -9,6 +9,7 @@ import { UpgradePrompt } from '@/components/billing/UpgradePrompt';
 import { supabase } from '@/lib/supabaseClient';
 import TutorialCard from '@/components/shared/TutorialCard';
 import { useTranslation } from '@/context/LanguageContext';
+import EldMileagePanel from '@/components/mileage/EldMileagePanel';
 
 // Dynamically import the StateMileageLogger component
 const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMileageLogger'), {
@@ -227,6 +228,11 @@ export default function DriverMileagePage() {
                 {t('featureCards.iftaMileageReports.description')}
               </p>
             </div>
+          </div>
+
+          {/* ELD Mileage Import Panel */}
+          <div className="mb-6">
+            <EldMileagePanel />
           </div>
 
           {/* Main Content */}

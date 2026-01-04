@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import {
   MapPin,
   Truck,
@@ -10,10 +12,13 @@ import {
   Loader2,
   Navigation,
   Clock,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 /**
  * GPSTrackingMap - Real-time vehicle location tracking
@@ -107,6 +112,13 @@ export default function GPSTrackingMap({
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
+  };
+
+  const getHeadingDirection = (heading) => {
+    if (heading === null || heading === undefined) return '';
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const index = Math.round(heading / 45) % 8;
+    return directions[index];
   };
 
   // Feature gate check
@@ -282,67 +294,145 @@ export default function GPSTrackingMap({
         </div>
       </div>
 
-      {/* Map Placeholder - Integrate with actual map library */}
-      <div className="relative h-96 bg-gray-100 dark:bg-gray-700">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin size={48} className="mx-auto text-gray-400 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">
-              Map view will be rendered here
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              Integrate with Google Maps, Mapbox, or Leaflet
-            </p>
+      {/* Real Mapbox Map */}
+      <div className="relative h-96">
+        {!MAPBOX_TOKEN ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+            <div className="text-center">
+              <AlertCircle size={48} className="mx-auto text-amber-500 mb-3" />
+              <p className="text-gray-600 dark:text-gray-400">
+                Map configuration required
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                Add NEXT_PUBLIC_MAPBOX_TOKEN to environment
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <Map
+            mapboxAccessToken={MAPBOX_TOKEN}
+            initialViewState={{
+              longitude: mapBounds?.center?.lng || -98.5795,
+              latitude: mapBounds?.center?.lat || 39.8283,
+              zoom: mapBounds?.zoom || 4
+            }}
+            style={{ width: '100%', height: '100%' }}
+            mapStyle="mapbox://styles/mapbox/streets-v12"
+            attributionControl={false}
+          >
+            <NavigationControl position="top-right" />
+            <FullscreenControl position="top-right" />
 
-        {/* Vehicle markers overlay - for demo */}
-        <div className="absolute inset-4 pointer-events-none">
-          {vehicles.slice(0, 6).map((vehicle, index) => {
-            // Position markers randomly for demo
-            const top = 20 + (index % 3) * 30;
-            const left = 15 + Math.floor(index / 3) * 40;
+            {/* Vehicle Markers */}
+            {vehicles.map((vehicle) => {
+              const lat = vehicle.location?.latitude;
+              const lng = vehicle.location?.longitude;
 
-            return (
-              <div
-                key={vehicle.externalVehicleId}
-                className="absolute pointer-events-auto cursor-pointer"
-                style={{ top: `${top}%`, left: `${left}%` }}
-                onClick={() => handleVehicleClick(vehicle)}
+              if (!lat || !lng) return null;
+
+              return (
+                <Marker
+                  key={vehicle.externalVehicleId}
+                  longitude={lng}
+                  latitude={lat}
+                  anchor="center"
+                  onClick={(e) => {
+                    e.originalEvent.stopPropagation();
+                    handleVehicleClick(vehicle);
+                  }}
+                >
+                  <div
+                    className={`
+                      p-2 rounded-full shadow-lg cursor-pointer transform hover:scale-110 transition-transform
+                      ${vehicle.isMoving
+                        ? 'bg-green-500 vehicle-marker-moving'
+                        : vehicle.isStale
+                          ? 'bg-amber-500'
+                          : 'bg-gray-500'
+                      }
+                    `}
+                    title={vehicle.vehicleName}
+                  >
+                    <Truck size={16} className="text-white" />
+                  </div>
+                </Marker>
+              );
+            })}
+
+            {/* Vehicle Popup */}
+            {selectedVehicle && selectedVehicle.location?.latitude && selectedVehicle.location?.longitude && (
+              <Popup
+                longitude={selectedVehicle.location.longitude}
+                latitude={selectedVehicle.location.latitude}
+                anchor="bottom"
+                onClose={() => setSelectedVehicle(null)}
+                closeButton={false}
+                className="vehicle-popup"
               >
-                <div className={`
-                  p-2 rounded-full shadow-lg transform hover:scale-110 transition-transform
-                  ${vehicle.isMoving
-                    ? 'bg-green-500'
-                    : vehicle.isStale
-                      ? 'bg-amber-500'
-                      : 'bg-gray-500'
-                  }
-                `}>
-                  <Truck size={16} className="text-white" />
-                </div>
-                {selectedVehicle?.externalVehicleId === vehicle.externalVehicleId && (
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-3 min-w-48 z-10">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                      {vehicle.vehicleName}
-                    </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {vehicle.location?.address || 'Unknown location'}
-                    </p>
-                    <div className="flex items-center gap-3 mt-2 text-xs">
-                      <span className={vehicle.isMoving ? 'text-green-600' : 'text-gray-500'}>
-                        {vehicle.isMoving ? formatSpeed(vehicle.location?.speedMph) : 'Stopped'}
-                      </span>
-                      <span className="text-gray-400">
-                        {formatAge(vehicle.ageMinutes)}
-                      </span>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 min-w-56 shadow-xl">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`
+                        p-2 rounded-lg
+                        ${selectedVehicle.isMoving
+                          ? 'bg-green-100 dark:bg-green-900/30'
+                          : 'bg-gray-100 dark:bg-gray-700'
+                        }
+                      `}>
+                        <Truck size={16} className={selectedVehicle.isMoving ? 'text-green-600' : 'text-gray-500'} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                          {selectedVehicle.vehicleName}
+                        </h4>
+                        <p className={`text-xs font-medium ${selectedVehicle.isMoving ? 'text-green-600' : 'text-gray-500'}`}>
+                          {selectedVehicle.isMoving ? 'Moving' : 'Stopped'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedVehicle(null)}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    >
+                      <X size={14} className="text-gray-400" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <MapPin size={14} />
+                      <span className="truncate">{selectedVehicle.location?.address || 'Unknown location'}</span>
+                    </div>
+
+                    {selectedVehicle.isMoving && (
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <Navigation size={14} />
+                        <span>{formatSpeed(selectedVehicle.location?.speedMph)}</span>
+                        {selectedVehicle.location?.heading && (
+                          <span className="text-xs">({getHeadingDirection(selectedVehicle.location.heading)})</span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-500">
+                      <Clock size={14} />
+                      <span>Updated {formatAge(selectedVehicle.ageMinutes)}</span>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  {selectedVehicle.driverName && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Driver</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {selectedVehicle.driverName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            )}
+          </Map>
+        )}
       </div>
 
       {/* Vehicle List */}

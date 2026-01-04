@@ -18,7 +18,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import TableActions from '@/components/shared/TableActions';
+import { TableActionsDropdown } from '@/components/shared/TableActions';
 import { formatDateForDisplayMMDDYYYY } from '@/lib/utils/dateUtils';
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -191,12 +191,13 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3 whitespace-nowrap text-right">
-        <TableActions
+      <td className="px-4 py-3 whitespace-nowrap text-center">
+        <TableActionsDropdown
           onView={expense.receipt_image ? () => onViewReceipt(expense) : undefined}
           onEdit={() => onEdit(expense)}
           onDelete={() => onDelete(expense)}
           size="md"
+          buttonStyle="dots"
         />
       </td>
     </tr>

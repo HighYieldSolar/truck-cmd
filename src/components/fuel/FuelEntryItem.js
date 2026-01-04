@@ -5,7 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { Fuel, MapPin, Calendar, DollarSign, Truck, FileImage, Edit, Trash2, CheckCircle, ExternalLink, Calculator } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
-import TableActions from "@/components/shared/TableActions";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
@@ -96,18 +96,22 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
     onViewReceipt(fuelEntry, vehicleInfo);
   };
   
+  const location = fuelEntry.location || '';
+
   return (
     <tr className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors duration-150">
       {/* Location */}
-      <td className="px-4 py-3 whitespace-nowrap">
+      <td className="px-4 py-3">
         <div className="flex items-center">
-          <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/50 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
-            <Fuel size={16} className="text-blue-600 dark:text-blue-400" />
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/50 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
+            <Fuel size={14} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div className="ml-2.5">
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 max-w-[160px] truncate">{fuelEntry.location}</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {location || '-'}
+            </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-0.5">
-              <MapPin size={10} className="text-gray-400 dark:text-gray-500 mr-0.5" />
+              <MapPin size={10} className="text-gray-400 dark:text-gray-500 mr-0.5 flex-shrink-0" />
               {fuelEntry.state}
             </div>
           </div>
@@ -116,69 +120,54 @@ export default function FuelEntryItem({ fuelEntry, onEdit, onDelete, onViewRecei
 
       {/* Date */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatDate(fuelEntry.date)}</div>
-        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{fuelEntry.fuel_type || 'Diesel'}</div>
+        <div className="text-sm text-gray-900 dark:text-gray-100">{formatDate(fuelEntry.date)}</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{fuelEntry.fuel_type || 'Diesel'}</div>
       </td>
 
       {/* Gallons & Price */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{fuelEntry.gallons.toFixed(2)} gal</div>
-        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">${formatPrice(fuelEntry.price_per_gallon)}/gal</div>
+        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{fuelEntry.gallons.toFixed(2)} gal</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${formatPrice(fuelEntry.price_per_gallon)}/gal</div>
       </td>
 
       {/* Amount */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm font-bold text-gray-900 dark:text-gray-100">${formatAmount(fuelEntry.total_amount)}</div>
+        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">${formatAmount(fuelEntry.total_amount)}</div>
       </td>
 
       {/* Vehicle */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-7 h-7 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center mr-2">
-            <Truck size={12} className="text-gray-500 dark:text-gray-400" />
-          </div>
-          <div className="max-w-[100px]">
-            {formatVehicleDisplay()}
-          </div>
+        <div className="text-sm text-gray-900 dark:text-gray-100">
+          {vehicleInfo?.name || 'N/A'}
         </div>
+        {vehicleInfo?.license_plate && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{vehicleInfo.license_plate}</div>
+        )}
       </td>
 
-      {/* Receipt & Status Combined */}
+      {/* Receipt */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="flex items-center space-x-1.5">
-          {fuelEntry.receipt_image ? (
-            <button
-              onClick={handleViewReceipt}
-              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
-            >
-              <FileImage size={12} className="mr-1" />
-              {t('entryItem.viewReceipt')}
-            </button>
-          ) : (
-            <span className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md">
-              <FileImage size={12} className="mr-1 opacity-50" />
-              {t('entryItem.notAvailable')}
-            </span>
-          )}
-          {fuelEntry.expense_id ? (
-            <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 rounded-full">
-              <CheckCircle size={10} className="mr-0.5" />
-              {t('entryItem.synced')}
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/40 rounded-full">
-              {t('entryItem.pending')}
-            </span>
-          )}
-        </div>
+        {fuelEntry.receipt_image ? (
+          <button
+            onClick={handleViewReceipt}
+            className="inline-flex items-center px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+          >
+            <FileImage size={12} className="mr-1" />
+            {t('entryItem.viewReceipt')}
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+        )}
       </td>
 
-      {/* Actions - Always visible */}
-      <td className="px-4 py-3 whitespace-nowrap text-right">
-        <TableActions
+      {/* Actions */}
+      <td className="px-4 py-3 whitespace-nowrap text-center">
+        <TableActionsDropdown
+          onView={fuelEntry.receipt_image ? handleViewReceipt : undefined}
           onEdit={() => onEdit(fuelEntry)}
           onDelete={() => onDelete(fuelEntry)}
           size="md"
+          buttonStyle="dots"
         />
       </td>
     </tr>

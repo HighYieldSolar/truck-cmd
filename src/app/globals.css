@@ -1,6 +1,60 @@
+/* Mapbox GL CSS - must be first */
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Mapbox overrides */
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 18px;
+  padding: 4px 8px;
+  color: #6b7280;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+}
+
+.dark .mapboxgl-popup-content {
+  background-color: #1f2937 !important;
+}
+
+.dark .mapboxgl-popup-close-button {
+  color: #9ca3af;
+}
+
+.dark .mapboxgl-popup-close-button:hover {
+  color: #f3f4f6;
+  background-color: #374151;
+}
+
+.mapboxgl-ctrl-group {
+  border-radius: 0.5rem !important;
+}
+
+/* Vehicle marker pulse animation */
+@keyframes vehicle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.vehicle-marker-moving {
+  animation: vehicle-pulse 2s ease-in-out infinite;
+}
 
 :root {
   --background: #ffffff;

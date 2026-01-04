@@ -111,15 +111,19 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
             <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
               <Package size={18} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="ml-3 min-w-0">
+            <div className="ml-3 min-w-0 flex-1">
               <button
                 onClick={() => onSelect(load)}
-                className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate block"
+                className="text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 truncate block max-w-full text-left"
+                title={`#${load.loadNumber || load.load_number}`}
               >
                 #{load.loadNumber || load.load_number}
               </button>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                {load.customer}
+              <div
+                className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate"
+                title={load.customer || ''}
+              >
+                {load.customer || '-'}
               </div>
             </div>
           </div>
@@ -129,12 +133,12 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
 
       {/* Route Information */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 min-w-0">
           <MapPin size={14} className="text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
-          <span className="ml-1 flex-1 truncate">{load.origin}</span>
-          <ArrowRight size={14} className="mx-2 text-gray-400 dark:text-gray-500" />
+          <span className="ml-1 flex-1 truncate" title={load.origin || ''}>{load.origin || '-'}</span>
+          <ArrowRight size={14} className="mx-2 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           <MapPin size={14} className="text-red-500 dark:text-red-400 flex-shrink-0" />
-          <span className="ml-1 flex-1 truncate text-right">{load.destination}</span>
+          <span className="ml-1 flex-1 truncate text-right" title={load.destination || ''}>{load.destination || '-'}</span>
         </div>
       </div>
 
@@ -164,11 +168,14 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
           </div>
 
           {/* Driver */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0">
             <Users size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="text-xs text-gray-500 dark:text-gray-400">{t('loadCard.driver')}</div>
-              <div className={`text-sm font-medium ${load.driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}>
+              <div
+                className={`text-sm font-medium truncate ${load.driver ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500 italic'}`}
+                title={load.driver || t('loadCard.unassigned')}
+              >
                 {load.driver || t('loadCard.unassigned')}
               </div>
             </div>
@@ -188,9 +195,9 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
 
         {/* Truck Info */}
         {(load.truckInfo || load.truck_info) && (
-          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 flex items-center">
-            <Truck size={14} className="text-gray-400 dark:text-gray-500 mr-2" />
-            <span className="truncate">{load.truckInfo || load.truck_info}</span>
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 flex items-center min-w-0">
+            <Truck size={14} className="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0" />
+            <span className="truncate" title={load.truckInfo || load.truck_info}>{load.truckInfo || load.truck_info}</span>
           </div>
         )}
 
@@ -212,30 +219,22 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
       </div>
 
       {/* Card Footer - Actions */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center">
-          {load.status === "Completed" ? (
-            <span className="inline-flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-1 rounded-full">
-              <CheckCircle size={12} className="mr-1" />
-              {t('statusLabels.completed')}
-            </span>
-          ) : load.status === "Cancelled" ? (
-            <span className="inline-flex items-center text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 px-2 py-1 rounded-full">
-              {t('statusLabels.cancelled')}
-            </span>
-          ) : (
-            <Link
-              href={`/dashboard/dispatching/complete/${load.id}`}
-              className="inline-flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CheckCircle size={14} className="mr-1" />
-              {t('loadCard.markComplete')}
-            </Link>
-          )}
-        </div>
-
+      <div className="px-4 py-3 flex items-center justify-end border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-1">
+          {/* Mark Complete - only show if not completed/cancelled */}
+          {load.status !== "Completed" && load.status !== "Cancelled" && (
+            <>
+              <Link
+                href={`/dashboard/dispatching/complete/${load.id}`}
+                className="p-2 rounded-lg transition-colors text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/40"
+                onClick={(e) => e.stopPropagation()}
+                title={t('loadCard.markComplete')}
+              >
+                <CheckCircle size={16} />
+              </Link>
+              <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-1"></div>
+            </>
+          )}
           {/* Quick Actions */}
           <button
             onClick={handleCall}
