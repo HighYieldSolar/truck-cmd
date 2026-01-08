@@ -43,7 +43,7 @@ export default function FilterBar({ filters, setFilters }) {
 
   return (
     <div className="p-6">
-      <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+      <div className="flex flex-col xl:flex-row xl:items-center space-y-4 xl:space-y-0 xl:space-x-4">
         {/* Search */}
         <div className="flex-1">
           <div className="relative">

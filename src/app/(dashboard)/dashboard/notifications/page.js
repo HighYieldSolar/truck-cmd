@@ -422,8 +422,8 @@ export default function NotificationsPage() {
 
   return (
     <DashboardLayout pageTitle="Notifications">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
 
           {/* Header with gradient background */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
@@ -484,7 +484,7 @@ export default function NotificationsPage() {
           />
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard
               icon={Bell}
               iconBgClass="bg-blue-100 dark:bg-blue-900/30"
@@ -520,7 +520,7 @@ export default function NotificationsPage() {
           </div>
 
           {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Categories Filter */}
@@ -580,10 +580,10 @@ export default function NotificationsPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className="xl:col-span-3 space-y-6">
               {/* Filter Bar */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex flex-col xl:flex-row gap-4">
                   {/* Search Input */}
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />

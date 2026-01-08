@@ -975,7 +975,7 @@ export default function InvoiceDetail({ invoiceId }) {
   const isPaid = invoice.status.toLowerCase() === 'paid';
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto">
       {/* Header with Blue Gradient */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
         <div className="flex flex-wrap items-center justify-between">

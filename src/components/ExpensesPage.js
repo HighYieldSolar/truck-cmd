@@ -454,8 +454,8 @@ export default function ExpensesPage() {
 
   return (
     <DashboardLayout activePage="expenses">
-      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -644,9 +644,9 @@ export default function ExpensesPage() {
                   />
                 ) : (
                   <>
-                    {/* Mobile Card View */}
-                    <div className="lg:hidden p-4 space-y-4 overflow-visible">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
+                    {/* Mobile/Tablet Card View */}
+                    <div className="xl:hidden p-4 space-y-4 overflow-visible">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
                         {paginatedData.map((expense) => (
                           <ExpenseCard
                             key={expense.id}
@@ -670,7 +670,7 @@ export default function ExpensesPage() {
                     </div>
 
                     {/* Desktop Table View */}
-                    <div className="hidden lg:block overflow-visible">
+                    <div className="hidden xl:block overflow-visible">
                       <div className="overflow-visible">
                         <table className="w-full">
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -725,9 +725,9 @@ export default function ExpensesPage() {
                   </>
                 )}
 
-                {/* Total Summary */}
+                {/* Total Summary - Mobile/Tablet */}
                 {filteredExpenses.length > 0 && (
-                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between lg:hidden">
+                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between xl:hidden">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {totalItems} {t('page.expensesSuffix')}
                     </span>

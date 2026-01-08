@@ -652,8 +652,8 @@ export default function DispatchingPage() {
   if (loading) {
     return (
       <DashboardLayout activePage="dispatching">
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto">
             {/* Header Skeleton */}
             <div className="mb-6 h-32 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse"></div>
             {/* Stats Skeleton */}
@@ -672,8 +672,8 @@ export default function DispatchingPage() {
 
   return (
     <DashboardLayout activePage="dispatching">
-      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
           <div className="mb-6">
             <div className="relative rounded-xl overflow-hidden shadow-sm">
@@ -869,7 +869,7 @@ export default function DispatchingPage() {
                   {dataLoading && loads.length === 0 ? (
                     <>
                       {/* Desktop Table Skeleton */}
-                      <div className="hidden lg:block">
+                      <div className="hidden xl:block">
                         <table className="w-full table-fixed">
                           <thead>
                             <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -895,8 +895,8 @@ export default function DispatchingPage() {
                           </tbody>
                         </table>
                       </div>
-                      {/* Mobile Card Skeleton */}
-                      <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Mobile/Tablet Card Skeleton */}
+                      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[1, 2, 3, 4].map((i) => (
                           <LoadCardSkeleton key={i} />
                         ))}
@@ -922,7 +922,7 @@ export default function DispatchingPage() {
                   ) : (
                     <>
                       {/* Desktop Table View */}
-                      <div className="hidden lg:block">
+                      <div className="hidden xl:block">
                         <table className="w-full table-fixed">
                           <thead>
                             <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -949,8 +949,8 @@ export default function DispatchingPage() {
                         </table>
                       </div>
 
-                      {/* Mobile Card View */}
-                      <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Mobile/Tablet Card View */}
+                      <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                         {paginatedLoads.map(load => (
                           <LoadCard
                             key={load.id}

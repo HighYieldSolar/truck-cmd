@@ -528,7 +528,7 @@ export default function BillingSettings() {
 
             {/* Active/Canceled Subscription State */}
             {(subscriptionStatus === 'active' || subscriptionStatus === 'canceled') && (
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4">
+              <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center mb-1 flex-wrap gap-2">
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{planDetails.name}</h4>
@@ -580,7 +580,7 @@ export default function BillingSettings() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-4 lg:mt-0 lg:ml-4 flex flex-col space-y-2 lg:items-end">
+                <div className="mt-4 xl:mt-0 xl:ml-4 flex flex-col space-y-2 xl:items-end">
                   {subscriptionStatus === 'active' && (
                     <>
                       <Link

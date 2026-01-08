@@ -462,7 +462,7 @@ export default function MaintenancePage() {
             </div>
 
             {/* Stats skeleton */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2 animate-pulse"></div>
@@ -646,7 +646,7 @@ export default function MaintenancePage() {
           />
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
             {/* Total Records */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-blue-500 p-4 border-t border-r border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
@@ -717,7 +717,7 @@ export default function MaintenancePage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Inline Filter Bar */}
             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                 <div className="flex items-center">
                   <Wrench size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">
@@ -837,7 +837,7 @@ export default function MaintenancePage() {
             ) : (
               <>
                 {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden xl:block overflow-x-auto">
                   <table className="w-full table-fixed">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
@@ -933,7 +933,7 @@ export default function MaintenancePage() {
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="xl:hidden divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map(record => {
                     const statusColors = getStatusColors(record.status, record.due_date);
                     const overdue = isOverdue(record);

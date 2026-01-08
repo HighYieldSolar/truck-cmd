@@ -396,7 +396,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:flex lg:flex-col lg:w-64 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 left-0 h-screen z-20 transition-all duration-300">
+        <div className="hidden xl:flex xl:flex-col xl:w-56 bg-white dark:bg-gray-800 shadow-md fixed inset-y-0 left-0 h-screen z-20 transition-all duration-300">
           <div className="flex items-center justify-center h-16 px-4 border-b border-gray-100 dark:border-gray-700">
             <Link href="/dashboard" className="flex items-center">
               <Image
@@ -513,7 +513,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         {/* Mobile Menu Overlay - Only render after mount to prevent hydration issues */}
         {mounted && (
           <div
-            className={`fixed inset-0 bg-gray-700 z-40 lg:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-60' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 bg-gray-700 z-40 xl:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-60' : 'opacity-0 pointer-events-none'}`}
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden={!mobileMenuOpen}
           />
@@ -523,7 +523,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         {mounted && (
           <div
             ref={mobileMenuRef}
-            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out xl:hidden overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
             style={{ visibility: mobileMenuOpen ? 'visible' : 'hidden' }}
             aria-hidden={!mobileMenuOpen}
           >
@@ -684,14 +684,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
         )}
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
+        <div className="flex-1 flex flex-col min-w-0 xl:pl-56">
           {/* Top Header */}
           <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 transition-all border-b border-gray-200 dark:border-gray-700">
             <div className="flex h-16 items-center justify-between px-4">
               {/* Left side: Mobile menu button and page title */}
               <div className="flex items-center space-x-3">
                 <button
-                  className="lg:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none mobile-menu-button touch-manipulation"
+                  className="xl:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none mobile-menu-button touch-manipulation"
                   onClick={() => setMobileMenuOpen(true)}
                   aria-label="Open menu"
                   aria-expanded={mobileMenuOpen}
@@ -723,7 +723,7 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
                     aria-label="Search"
                   >
                     <Search size={16} className="mr-2" />
-                    <span className="hidden lg:inline">Search...</span>
+                    <span className="hidden xl:inline">Search...</span>
                   </button>
                 </div>
 

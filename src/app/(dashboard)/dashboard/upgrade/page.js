@@ -359,8 +359,8 @@ export default function UpgradePage() {
 
   return (
     <DashboardLayout activePage="upgrade">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
           {/* Header with gradient background */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

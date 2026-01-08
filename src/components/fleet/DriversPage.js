@@ -41,7 +41,7 @@ function LoadingSkeleton() {
   return (
     <div className="animate-pulse">
       {/* Stats skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2"></div>
@@ -552,7 +552,7 @@ export default function DriversPage() {
           )}
 
           {/* Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             {statCards.map((card, index) => {
               const Icon = card.icon;
               return (
@@ -636,7 +636,7 @@ export default function DriversPage() {
 
           {/* Inline Filter Bar */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-            <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex flex-col xl:flex-row gap-4">
               {/* Search Input */}
               <div className="flex-1 relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -724,7 +724,7 @@ export default function DriversPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block">
+            <div className="hidden xl:block">
               <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
@@ -850,7 +850,7 @@ export default function DriversPage() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden p-4 space-y-4">
+            <div className="xl:hidden p-4 space-y-4">
               {paginatedData.length === 0 ? (
                 drivers.length === 0 ? (
                   (() => {

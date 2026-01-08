@@ -589,7 +589,7 @@ export default function TrucksPage() {
           )}
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             {statCards.map((card, index) => {
               const Icon = card.icon;
               return (
@@ -675,7 +675,7 @@ export default function TrucksPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Inline Filter Bar */}
             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                 <div className="flex items-center">
                   <Truck size={18} className="mr-2 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-medium text-gray-700 dark:text-gray-200">
@@ -800,7 +800,7 @@ export default function TrucksPage() {
             ) : (
               <>
                 {/* Desktop Table */}
-                <div className="hidden md:block">
+                <div className="hidden xl:block">
                   <table className="w-full table-fixed">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                       <tr>
@@ -882,7 +882,7 @@ export default function TrucksPage() {
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="xl:hidden divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map(truck => {
                     const statusColors = getStatusColors(truck.status);
                     return (

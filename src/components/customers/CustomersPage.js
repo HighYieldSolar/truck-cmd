@@ -380,8 +380,8 @@ export default function CustomersPage() {
 
   return (
     <DashboardLayout activePage="customers">
-      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-xl shadow-lg p-6 mb-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

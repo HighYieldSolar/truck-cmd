@@ -59,8 +59,8 @@ function LoadingSkeleton() {
       </div>
 
       {/* Content skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mb-6">
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
             {[...Array(3)].map((_, i) => (
@@ -68,7 +68,7 @@ function LoadingSkeleton() {
             ))}
           </div>
         </div>
-        <div className="lg:col-span-3">
+        <div className="xl:col-span-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
             <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
             {[...Array(5)].map((_, i) => (
@@ -762,9 +762,9 @@ export default function Page() {
           <InvoiceStatsComponent stats={stats} formatCurrency={formatCurrency} />
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Left Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="xl:col-span-1">
               {/* Payments Due Soon Card */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
                 <div className="bg-orange-500 dark:bg-orange-600 px-5 py-4 text-white">
@@ -963,10 +963,10 @@ export default function Page() {
             </div>
 
             {/* Main Content */}
-            <div className="lg:col-span-3">
+            <div className="xl:col-span-3">
               {/* Filters */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-                <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex flex-col xl:flex-row gap-4">
                   {/* Search Input */}
                   <div className="flex-1 relative">
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

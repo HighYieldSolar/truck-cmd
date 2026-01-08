@@ -110,7 +110,7 @@ export default function CustomerTable({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible transition-colors duration-200">
       {/* Desktop Table View */}
-      <div className="hidden lg:block">
+      <div className="hidden xl:block">
         <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
           <thead className="bg-gray-50 dark:bg-gray-900/50">
             <tr>
@@ -221,7 +221,7 @@ export default function CustomerTable({
       </div>
 
       {/* Mobile Card View */}
-      <div className="lg:hidden divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="xl:hidden divide-y divide-gray-200 dark:divide-gray-700">
         {customers.map((customer) => (
           <div key={customer.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
             <div className="flex justify-between items-start mb-3">

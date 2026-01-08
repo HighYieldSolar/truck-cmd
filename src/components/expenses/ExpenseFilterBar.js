@@ -46,7 +46,7 @@ export default function ExpenseFilterBar({ filters, setFilters, onReset }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 transition-colors duration-200">
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col xl:flex-row gap-4">
         {/* Search Input */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />

@@ -42,7 +42,7 @@ export default function Navigation() {
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth <= 1024;
+      const mobile = window.innerWidth <= 1280;
       setIsMobile(mobile);
       if (!mobile) {
         setMenuOpen(false);
@@ -147,7 +147,7 @@ export default function Navigation() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 lg:h-18">
+          <div className="flex justify-between items-center h-16 xl:h-18">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
@@ -164,7 +164,7 @@ export default function Navigation() {
 
             {/* Desktop Navigation */}
             {mounted && !isMobile && (
-              <div className="hidden lg:flex items-center space-x-1">
+              <div className="hidden xl:flex items-center space-x-1">
                 {/* Features Dropdown */}
                 <div
                   ref={featuresRef}

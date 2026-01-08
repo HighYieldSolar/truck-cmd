@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Flag } from "lucide-react";
+import { Download, Flag, Fuel, DollarSign, Hash } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function StateSummary({ fuelData = [], onExportForIFTA }) {
@@ -16,17 +16,25 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
         purchases: 0
       };
     }
-    
+
     acc[entry.state].gallons += entry.gallons;
     acc[entry.state].amount += entry.total_amount;
     acc[entry.state].purchases += 1;
-    
+
     return acc;
   }, {});
-  
+
   // Convert to array and sort by gallons (descending)
   const stateArray = Object.values(stateData).sort((a, b) => b.gallons - a.gallons);
-  
+
+  // Calculate totals for mobile view
+  const totals = {
+    gallons: stateArray.reduce((sum, state) => sum + state.gallons, 0),
+    amount: stateArray.reduce((sum, state) => sum + state.amount, 0),
+    purchases: stateArray.reduce((sum, state) => sum + state.purchases, 0)
+  };
+  totals.avgPrice = totals.gallons > 0 ? totals.amount / totals.gallons : 0;
+
   if (stateArray.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
@@ -41,8 +49,8 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('stateSummaryTable.title')}</h3>
+      <div className="px-4 xl:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h3 className="text-base xl:text-lg font-medium text-gray-900 dark:text-gray-100">{t('stateSummaryTable.title')}</h3>
         {onExportForIFTA && (
           <button
             onClick={onExportForIFTA}
@@ -53,7 +61,90 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
           </button>
         )}
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Mobile/Tablet Card View */}
+      <div className="xl:hidden p-4 space-y-3">
+        {stateArray.map((state) => (
+          <div
+            key={state.state}
+            className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
+          >
+            {/* State Name Header */}
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
+              <Flag size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0" />
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {state.state_name} ({state.state})
+              </span>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('stateSummaryTable.gallons')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {state.gallons.toFixed(3)} gal
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('stateSummaryTable.amount')}</p>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  ${state.amount.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('stateSummaryTable.purchases')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {state.purchases}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('stateSummaryTable.avgPricePerGal')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  ${(state.amount / state.gallons).toFixed(3)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Mobile Totals Card */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-200 dark:border-blue-700">
+            <span className="font-semibold text-blue-900 dark:text-blue-100">
+              {t('stateSummaryTable.total')} ({stateArray.length} {stateArray.length === 1 ? 'state' : 'states'})
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-0.5">{t('stateSummaryTable.gallons')}</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                {totals.gallons.toFixed(3)} gal
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-0.5">{t('stateSummaryTable.amount')}</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                ${totals.amount.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-0.5">{t('stateSummaryTable.purchases')}</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                {totals.purchases}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-0.5">{t('stateSummaryTable.avgPricePerGal')}</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                ${totals.avgPrice.toFixed(3)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden xl:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
@@ -108,20 +199,16 @@ export default function StateSummary({ fuelData = [], onExportForIFTA }) {
                 {t('stateSummaryTable.total')} ({t('stateSummaryTable.statesCount', { count: stateArray.length })})
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                {stateArray.reduce((sum, state) => sum + state.gallons, 0).toFixed(3)} gal
+                {totals.gallons.toFixed(3)} gal
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                ${stateArray.reduce((sum, state) => sum + state.amount, 0).toFixed(2)}
+                ${totals.amount.toFixed(2)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                {stateArray.reduce((sum, state) => sum + state.purchases, 0)}
+                {totals.purchases}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                $
-                {(
-                  stateArray.reduce((sum, state) => sum + state.amount, 0) /
-                  stateArray.reduce((sum, state) => sum + state.gallons, 0)
-                ).toFixed(3)}
+                ${totals.avgPrice.toFixed(3)}
               </td>
             </tr>
           </tfoot>

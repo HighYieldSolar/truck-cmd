@@ -614,9 +614,9 @@ export default function FuelTrackerPage() {
                   />
                 ) : (
                   <>
-                    {/* Mobile Card View */}
-                    <div className="lg:hidden p-4 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Mobile/Tablet Card View */}
+                    <div className="xl:hidden p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {paginatedData.map(entry => (
                           <FuelEntryCard
                             key={entry.id}
@@ -640,7 +640,7 @@ export default function FuelTrackerPage() {
                     </div>
 
                     {/* Desktop Table View */}
-                    <div className="hidden lg:block">
+                    <div className="hidden xl:block">
                       <div>
                         <table className="w-full">
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -698,9 +698,9 @@ export default function FuelTrackerPage() {
                   </>
                 )}
 
-                {/* Total Summary - Mobile Only */}
+                {/* Total Summary - Mobile/Tablet Only */}
                 {filteredFuelEntries.length > 0 && (
-                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between lg:hidden">
+                  <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between xl:hidden">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {t('page.fuelEntriesCount', { count: totalItems })}
                     </span>
