@@ -648,54 +648,105 @@ export default function ReceiptDirectory({
                                       return (
                                         <div
                                           key={expense.id}
-                                          className={`flex items-center justify-between px-3 py-2 pl-14 border-t border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-colors ${
+                                          className={`px-3 py-2.5 sm:py-2 pl-6 sm:pl-14 border-t border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 transition-colors ${
                                             isSelected ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
                                           }`}
                                         >
-                                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <button
-                                              onClick={() => toggleReceiptSelection(expense.id)}
-                                              className="flex-shrink-0"
-                                            >
-                                              {isSelected ? (
-                                                <CheckSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                              ) : (
-                                                <Square className="h-4 w-4 text-gray-400" />
-                                              )}
-                                            </button>
-                                            <FileImage className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                            <div className="min-w-0 flex-1">
-                                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                                                {expense.description || t('receiptDirectoryWidget.untitledReceipt')}
-                                              </p>
-                                              <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                  {new Date(expense.date).toLocaleDateString()}
-                                                </span>
-                                                <span className={`text-xs px-1.5 py-0.5 rounded ${getCategoryColor(expense.category)}`}>
-                                                  {expense.category}
-                                                </span>
+                                          {/* Mobile: Stacked Layout */}
+                                          <div className="flex sm:hidden flex-col gap-2">
+                                            <div className="flex items-start gap-2">
+                                              <button
+                                                onClick={() => toggleReceiptSelection(expense.id)}
+                                                className="flex-shrink-0 mt-0.5"
+                                              >
+                                                {isSelected ? (
+                                                  <CheckSquare className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                                ) : (
+                                                  <Square className="h-5 w-5 text-gray-400" />
+                                                )}
+                                              </button>
+                                              <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-2">
+                                                  {expense.description || t('receiptDirectoryWidget.untitledReceipt')}
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {new Date(expense.date).toLocaleDateString()}
+                                                  </span>
+                                                  <span className={`text-xs px-1.5 py-0.5 rounded ${getCategoryColor(expense.category)}`}>
+                                                    {expense.category}
+                                                  </span>
+                                                  <span className="text-sm font-semibold text-green-600 dark:text-green-400 ml-auto">
+                                                    {formatCurrency(expense.amount)}
+                                                  </span>
+                                                </div>
                                               </div>
                                             </div>
+                                            <div className="flex items-center justify-end gap-1 pl-7">
+                                              <button
+                                                onClick={() => onViewReceipt && onViewReceipt(expense)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                              >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                View
+                                              </button>
+                                              <button
+                                                onClick={() => downloadSingleReceipt(expense)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                                              >
+                                                <Download className="h-3.5 w-3.5" />
+                                                Download
+                                              </button>
+                                            </div>
                                           </div>
-                                          <div className="flex items-center gap-2 ml-2">
-                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                              {formatCurrency(expense.amount)}
-                                            </span>
-                                            <button
-                                              onClick={() => onViewReceipt && onViewReceipt(expense)}
-                                              className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                              title={t('receiptDirectoryWidget.viewReceipt')}
-                                            >
-                                              <Eye className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                              onClick={() => downloadSingleReceipt(expense)}
-                                              className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
-                                              title={t('receiptDirectoryWidget.downloadReceipt')}
-                                            >
-                                              <Download className="h-4 w-4" />
-                                            </button>
+
+                                          {/* Desktop: Row Layout */}
+                                          <div className="hidden sm:flex items-center justify-between">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                              <button
+                                                onClick={() => toggleReceiptSelection(expense.id)}
+                                                className="flex-shrink-0"
+                                              >
+                                                {isSelected ? (
+                                                  <CheckSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                ) : (
+                                                  <Square className="h-4 w-4 text-gray-400" />
+                                                )}
+                                              </button>
+                                              <FileImage className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                              <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                                  {expense.description || t('receiptDirectoryWidget.untitledReceipt')}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {new Date(expense.date).toLocaleDateString()}
+                                                  </span>
+                                                  <span className={`text-xs px-1.5 py-0.5 rounded ${getCategoryColor(expense.category)}`}>
+                                                    {expense.category}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 ml-2">
+                                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                {formatCurrency(expense.amount)}
+                                              </span>
+                                              <button
+                                                onClick={() => onViewReceipt && onViewReceipt(expense)}
+                                                className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                                title={t('receiptDirectoryWidget.viewReceipt')}
+                                              >
+                                                <Eye className="h-4 w-4" />
+                                              </button>
+                                              <button
+                                                onClick={() => downloadSingleReceipt(expense)}
+                                                className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
+                                                title={t('receiptDirectoryWidget.downloadReceipt')}
+                                              >
+                                                <Download className="h-4 w-4" />
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
                                       );

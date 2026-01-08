@@ -185,70 +185,69 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
   };
 
   return (
-    <div className={`fixed inset-0 bg-gray-900/95 dark:bg-black/95 flex items-center justify-center z-50 ${fullScreen ? 'p-0' : 'p-4'}`}>
-      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col ${fullScreen ? 'w-full h-full rounded-none' : 'max-w-5xl w-full max-h-[90vh]'}`}>
+    <div className={`fixed inset-0 bg-gray-900/95 dark:bg-black/95 flex items-center justify-center z-50 ${fullScreen ? 'p-0' : 'p-2 sm:p-4'}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col ${fullScreen ? 'w-full h-full rounded-none' : 'max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh]'}`}>
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-bold text-xl text-gray-900 dark:text-gray-100 flex items-center">
-            <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
-            {t('receiptViewer.title')} - {receipt.location}
+        <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-gray-100 flex items-center min-w-0">
+            <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2 flex-shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">{t('receiptViewer.title')} - </span>
+              {receipt.location}
+            </span>
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex-shrink-0 ml-2"
             aria-label="Close"
           >
-            <X size={24} />
+            <X size={22} />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="bg-gray-100 dark:bg-gray-700/50 p-2 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-end">
-          <div className="flex items-center space-x-1">
+        <div className="bg-gray-100 dark:bg-gray-700/50 px-3 sm:px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-end">
+          <div className="flex items-center gap-1">
             <button
               onClick={handleDownload}
-              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper disabled:opacity-50"
+              className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 disabled:opacity-50 transition-colors"
               title={isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}
               disabled={isDownloading}
             >
               {isDownloading ? (
-                <Loader2 size={20} className="animate-spin" />
+                <Loader2 size={22} className="sm:w-5 sm:h-5 animate-spin" />
               ) : (
-                <Download size={20} />
+                <Download size={22} className="sm:w-5 sm:h-5" />
               )}
-              <span className="tooltip">{isDownloading ? t('receiptViewer.downloading') : t('receiptViewer.download')}</span>
             </button>
             <button
               onClick={handlePrint}
-              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
+              className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-colors hidden sm:block"
               title={t('receiptViewer.print')}
             >
               <Printer size={20} />
-              <span className="tooltip">{t('receiptViewer.print')}</span>
             </button>
             <button
               onClick={handleShare}
-              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
+              className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-colors"
               title={t('receiptViewer.share')}
             >
-              <Share2 size={20} />
-              <span className="tooltip">{t('receiptViewer.share')}</span>
+              <Share2 size={22} className="sm:w-5 sm:h-5" />
             </button>
             <button
               onClick={toggleFullScreen}
-              className="p-2 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 tooltip-wrapper"
+              className="p-2.5 sm:p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition-colors hidden sm:block"
               title={t('receiptViewer.fullscreen')}
             >
               <Maximize2 size={20} />
-              <span className="tooltip">{t('receiptViewer.fullscreen')}</span>
             </button>
           </div>
         </div>
-        
+
         {/* Image Viewer */}
-        <div className="flex-1 overflow-auto bg-gray-900 dark:bg-gray-900 flex items-center justify-center">
+        <div className="flex-1 overflow-auto bg-gray-900 dark:bg-gray-900 flex items-center justify-center min-h-0">
           {receipt.receipt_image ? (
-            <div className="flex items-center justify-center" style={{ height: '60vh' }}>
+            <div className="flex items-center justify-center p-2 sm:p-4 w-full" style={{ height: 'clamp(200px, 40vh, 400px)' }}>
               <SupabaseImage
                 src={receipt.receipt_image}
                 alt="Fuel receipt"
@@ -262,59 +261,59 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
               />
             </div>
           ) : (
-            <div className="w-full aspect-[3/4] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
+            <div className="w-full aspect-[3/4] max-h-[300px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
               {t('receiptViewer.noReceiptImage')}
             </div>
           )}
         </div>
 
         {/* Receipt Details */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                <Calendar size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                {t('receiptViewer.date')}
+        <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+            <div className="bg-white dark:bg-gray-700 p-2.5 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                <Calendar size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{t('receiptViewer.date')}</span>
               </div>
-              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                <MapPin size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                {t('receiptViewer.state')}
+            <div className="bg-white dark:bg-gray-700 p-2.5 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                <MapPin size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{t('receiptViewer.state')}</span>
               </div>
-              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.state_name} ({receipt.state})</div>
+              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold truncate">{receipt.state_name} ({receipt.state})</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                <Fuel size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                {t('receiptViewer.gallons')}
+            <div className="bg-white dark:bg-gray-700 p-2.5 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                <Fuel size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{t('receiptViewer.gallons')}</span>
               </div>
-              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">{receipt.gallons.toFixed(3)}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold">{receipt.gallons.toFixed(3)}</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
-                {t('receiptViewer.total')}
+            <div className="bg-white dark:bg-gray-700 p-2.5 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                <DollarSign size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{t('receiptViewer.total')}</span>
               </div>
-              <div className="text-gray-900 dark:text-gray-100 text-lg font-semibold">${receipt.total_amount.toFixed(2)}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold text-green-600 dark:text-green-400">${receipt.total_amount.toFixed(2)}</div>
             </div>
           </div>
           
           {/* Additional details if available */}
           {(vehicleInfo || receipt.vehicle_id || receipt.odometer || receipt.notes) && (
-            <div className="mt-4 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-              <div className="flex flex-wrap gap-4">
+            <div className="mt-3 sm:mt-4 bg-white dark:bg-gray-700 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 {(vehicleInfo || receipt.vehicle_id) && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                      <Truck size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  <div>
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                      <Truck size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
                       {t('receiptViewer.vehicle')}
                     </div>
-                    <div className="text-gray-900 dark:text-gray-100">
+                    <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
                       {vehicleInfo ? (
                         <>
                           {vehicleInfo.name && <span className="font-medium">{vehicleInfo.name}</span>}
@@ -327,33 +326,33 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                 )}
 
                 {receipt.odometer && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                      <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  <div>
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                      <Info size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
                       {t('receiptViewer.odometer')}
                     </div>
-                    <div className="text-gray-900 dark:text-gray-100">{receipt.odometer.toLocaleString()} mi</div>
+                    <div className="text-sm text-gray-900 dark:text-gray-100">{receipt.odometer.toLocaleString()} mi</div>
                   </div>
                 )}
 
                 {receipt.price_per_gallon && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                      <DollarSign size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  <div>
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                      <DollarSign size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
                       {t('receiptViewer.pricePerGallon')}
                     </div>
-                    <div className="text-gray-900 dark:text-gray-100">${receipt.price_per_gallon.toFixed(3)}</div>
+                    <div className="text-sm text-gray-900 dark:text-gray-100">${receipt.price_per_gallon.toFixed(3)}</div>
                   </div>
                 )}
               </div>
 
               {receipt.notes && (
                 <div className="mt-3">
-                  <div className="flex items-center text-gray-700 dark:text-gray-300 mb-1 text-sm font-medium">
-                    <Info size={16} className="text-blue-600 dark:text-blue-400 mr-2" />
+                  <div className="flex items-center text-gray-700 dark:text-gray-300 mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium">
+                    <Info size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
                     {t('receiptViewer.notes')}
                   </div>
-                  <div className="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-600 p-2 rounded border border-gray-100 dark:border-gray-500">
+                  <div className="text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-600 p-2 rounded border border-gray-100 dark:border-gray-500 break-words">
                     {receipt.notes}
                   </div>
                 </div>
@@ -361,13 +360,14 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
             </div>
           )}
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium sm:float-right"
             >
               {t('receiptViewer.close')}
             </button>
+            <div className="clear-both"></div>
           </div>
         </div>
       </div>
