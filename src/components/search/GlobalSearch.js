@@ -301,9 +301,9 @@ export default function GlobalSearch({ isOpen, onClose, isMobile = false }) {
       {/* Search Modal */}
       <div className={`${isMobile
         ? 'w-full'
-        : 'fixed top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl mx-auto px-4'
+        : 'fixed top-[5%] sm:top-[10%] left-0 right-0 sm:left-1/2 sm:-translate-x-1/2 w-full max-w-2xl mx-auto px-3 sm:px-4'
       }`}>
-        <div className={`bg-white dark:bg-gray-800 ${isMobile ? '' : 'rounded-xl shadow-2xl'} border border-gray-200 dark:border-gray-700 overflow-hidden`}>
+        <div className={`bg-white dark:bg-gray-800 ${isMobile ? '' : 'rounded-xl shadow-2xl'} border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] flex flex-col`}>
           {/* Search Input */}
           <div className="flex items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <Search size={20} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />

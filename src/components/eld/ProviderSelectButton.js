@@ -14,7 +14,7 @@ const PROVIDERS = [
     name: 'Motive',
     subtitle: '(KeepTruckin)',
     description: 'The #1 ELD provider with dedicated IFTA endpoints',
-    logo: '/images/eld/motive-logo.svg',
+    logo: '/images/eld/motive.webp',
     color: 'bg-green-500',
     features: ['IFTA Mileage', 'HOS Logs', 'GPS Tracking', 'Fuel Data', 'Diagnostics']
   },
@@ -23,7 +23,7 @@ const PROVIDERS = [
     name: 'Samsara',
     subtitle: '',
     description: 'Leading fleet management with real-time GPS',
-    logo: '/images/eld/samsara-logo.svg',
+    logo: '/images/eld/samsara.webp',
     color: 'bg-blue-500',
     features: ['IFTA Mileage', 'HOS Logs', 'GPS Tracking', 'Real-time Feed', 'Diagnostics']
   }
@@ -154,7 +154,7 @@ export default function ProviderSelectButton({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-[5] overflow-hidden">
+        <div className="absolute right-0 sm:right-0 left-0 sm:left-auto top-full mt-2 w-auto sm:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-[50] overflow-hidden">
           <div className="p-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <h4 className="font-medium text-gray-900 dark:text-gray-100">Select ELD Provider</h4>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

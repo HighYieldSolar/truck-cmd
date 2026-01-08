@@ -20,6 +20,7 @@ import {
   Upload
 } from 'lucide-react';
 import TutorialCard from "@/components/shared/TutorialCard";
+import QuickBooksIntegration from '@/components/expenses/QuickBooksIntegration';
 import { useTranslation } from '@/context/LanguageContext';
 
 // Import services
@@ -532,6 +533,11 @@ export default function ExpensesPage() {
               tips={t('tutorial.tips', { returnObjects: true }) || []}
             />
           )}
+
+          {/* QuickBooks Integration Panel */}
+          <div className="mb-6">
+            <QuickBooksIntegration onSyncComplete={loadExpenses} />
+          </div>
 
           {/* Statistics Row */}
           <ExpenseStats

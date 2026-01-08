@@ -342,8 +342,8 @@ export default function ProfileSettings() {
 
       <form onSubmit={saveProfile}>
         {/* Profile Image */}
-        <div className="flex items-center mb-8">
-          <div className="relative mr-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8">
+          <div className="relative flex-shrink-0">
             <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-gray-300 dark:border-gray-600">
               {uploadingImage ? (
                 <RefreshCw size={24} className="animate-spin text-blue-500" />
@@ -373,7 +373,7 @@ export default function ProfileSettings() {
               className="hidden"
             />
           </div>
-          <div>
+          <div className="text-center sm:text-left">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('profile.profilePicture')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('profile.photoHelp')}</p>
             {profileImage && (
@@ -381,7 +381,7 @@ export default function ProfileSettings() {
                 type="button"
                 onClick={handleRemoveImage}
                 disabled={uploadingImage}
-                className="mt-1 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
+                className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
               >
                 {t('profile.removePhoto')}
               </button>

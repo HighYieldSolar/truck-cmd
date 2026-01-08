@@ -438,7 +438,7 @@ export default function NotificationsSettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bell className="h-5 w-5 text-blue-500" />
@@ -448,11 +448,11 @@ export default function NotificationsSettings() {
             {t('notifications.subtitle')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 self-end sm:self-auto">
           <button
             onClick={loadPreferences}
             disabled={isSaving}
-            className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
             title={t('common:buttons.refresh')}
           >
             <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -461,7 +461,7 @@ export default function NotificationsSettings() {
             onClick={savePreferences}
             disabled={isSaving || !hasChanges}
             className={`
-              inline-flex items-center px-4 py-2 rounded-lg font-medium transition-colors
+              inline-flex items-center px-4 py-2.5 rounded-lg font-medium transition-colors
               ${hasChanges
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
@@ -474,7 +474,8 @@ export default function NotificationsSettings() {
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {t('notifications.saveChanges')}
+            <span className="hidden sm:inline">{t('notifications.saveChanges')}</span>
+            <span className="sm:hidden">Save</span>
           </button>
         </div>
       </div>
@@ -496,15 +497,15 @@ export default function NotificationsSettings() {
             {t('notifications.deliveryChannels.description')}
           </p>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {/* Email Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
                 <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
                   {t('notifications.channels.email')}
                   {!hasEmailNotifications && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
@@ -516,46 +517,50 @@ export default function NotificationsSettings() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.emailDescription')}</p>
               </div>
             </div>
-            {hasEmailNotifications ? (
-              <Toggle
-                enabled={preferences.email_enabled}
-                onChange={(v) => updateMasterToggle('email_enabled', v)}
-              />
-            ) : (
-              <Link
-                href="/dashboard/upgrade"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-              >
-                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
-              </Link>
-            )}
+            <div className="flex-shrink-0 pl-11 sm:pl-0">
+              {hasEmailNotifications ? (
+                <Toggle
+                  enabled={preferences.email_enabled}
+                  onChange={(v) => updateMasterToggle('email_enabled', v)}
+                />
+              ) : (
+                <Link
+                  href="/dashboard/upgrade"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Push Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg flex-shrink-0">
                 <Monitor className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.channels.inApp')}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.inAppDescription')}</p>
               </div>
             </div>
-            <Toggle
-              enabled={preferences.push_enabled}
-              onChange={(v) => updateMasterToggle('push_enabled', v)}
-            />
+            <div className="flex-shrink-0 pl-11 sm:pl-0">
+              <Toggle
+                enabled={preferences.push_enabled}
+                onChange={(v) => updateMasterToggle('push_enabled', v)}
+              />
+            </div>
           </div>
 
           {/* SMS Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
                 <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
                   {t('notifications.channels.sms')}
                   {!hasSMSNotifications && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
@@ -567,19 +572,21 @@ export default function NotificationsSettings() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.smsDescription')}</p>
               </div>
             </div>
-            {hasSMSNotifications ? (
-              <Toggle
-                enabled={preferences.sms_enabled}
-                onChange={(v) => updateMasterToggle('sms_enabled', v)}
-              />
-            ) : (
-              <Link
-                href="/dashboard/upgrade"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-              >
-                {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
-              </Link>
-            )}
+            <div className="flex-shrink-0 pl-11 sm:pl-0">
+              {hasSMSNotifications ? (
+                <Toggle
+                  enabled={preferences.sms_enabled}
+                  onChange={(v) => updateMasterToggle('sms_enabled', v)}
+                />
+              ) : (
+                <Link
+                  href="/dashboard/upgrade"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -732,12 +739,12 @@ export default function NotificationsSettings() {
           </div>
         ) : (
           <div className="p-6 bg-gray-50 dark:bg-gray-700/30">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex-shrink-0">
                   <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.upgrade.upgradeToFleet')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('notifications.upgrade.quietHoursFleet')}
@@ -746,7 +753,7 @@ export default function NotificationsSettings() {
               </div>
               <Link
                 href="/dashboard/upgrade"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2 w-full sm:w-auto flex-shrink-0"
               >
                 {t('notifications.upgrade.upgrade')} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -824,12 +831,12 @@ export default function NotificationsSettings() {
           </div>
         ) : (
           <div className="p-6 bg-gray-50 dark:bg-gray-700/30">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex-shrink-0">
                   <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.upgrade.upgradeToPremium')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('notifications.upgrade.digestPremium')}
@@ -838,7 +845,7 @@ export default function NotificationsSettings() {
               </div>
               <Link
                 href="/dashboard/upgrade"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2 w-full sm:w-auto flex-shrink-0"
               >
                 {t('notifications.upgrade.upgrade')} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -861,19 +868,19 @@ export default function NotificationsSettings() {
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Test Email */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
                   <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testEmail')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                     {user?.email || t('notifications.test.noEmailFound')}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 {testResults.email === 'success' && (
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 )}
@@ -884,7 +891,7 @@ export default function NotificationsSettings() {
                   onClick={testEmailNotification}
                   disabled={testingEmail || !preferences.email_enabled}
                   className={`
-                    px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                    px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
                     ${preferences.email_enabled
                       ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
                       : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
@@ -892,7 +899,7 @@ export default function NotificationsSettings() {
                   `}
                 >
                   {testingEmail ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
                   ) : (
                     t('notifications.test.sendTest')
                   )}
@@ -901,19 +908,19 @@ export default function NotificationsSettings() {
             </div>
 
             {/* Test SMS */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
                   <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testSMS')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {userPhone ? `+1${userPhone}` : t('notifications.test.noPhoneFound')}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 {testResults.sms === 'success' && (
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 )}
@@ -925,7 +932,7 @@ export default function NotificationsSettings() {
                     onClick={testSMSNotification}
                     disabled={testingSMS || !preferences.sms_enabled || !userPhone}
                     className={`
-                      px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                      px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
                       ${preferences.sms_enabled && userPhone
                         ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
                         : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
@@ -933,7 +940,7 @@ export default function NotificationsSettings() {
                     `}
                   >
                     {testingSMS ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
                     ) : (
                       t('notifications.test.sendTest')
                     )}

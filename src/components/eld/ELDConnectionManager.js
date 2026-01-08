@@ -24,12 +24,12 @@ import { OperationMessage } from '@/components/ui/OperationMessage';
 
 // ELD Provider info for display
 const PROVIDER_INFO = {
-  motive: { name: 'Motive (KeepTruckin)', color: 'bg-green-500', shortName: 'Motive' },
-  samsara: { name: 'Samsara', color: 'bg-blue-500', shortName: 'Samsara' },
-  keeptruckin: { name: 'Motive (KeepTruckin)', color: 'bg-green-500', shortName: 'Motive' },
-  geotab: { name: 'Geotab', color: 'bg-purple-500', shortName: 'Geotab' },
-  omnitracs: { name: 'Omnitracs', color: 'bg-orange-500', shortName: 'Omnitracs' },
-  other: { name: 'Other Provider', color: 'bg-gray-500', shortName: 'Other' }
+  motive: { name: 'Motive (KeepTruckin)', color: 'bg-green-500', shortName: 'Motive', logo: '/images/eld/motive.webp' },
+  samsara: { name: 'Samsara', color: 'bg-blue-500', shortName: 'Samsara', logo: '/images/eld/samsara.webp' },
+  keeptruckin: { name: 'Motive (KeepTruckin)', color: 'bg-green-500', shortName: 'Motive', logo: '/images/eld/motive.webp' },
+  geotab: { name: 'Geotab', color: 'bg-purple-500', shortName: 'Geotab', logo: null },
+  omnitracs: { name: 'Omnitracs', color: 'bg-orange-500', shortName: 'Omnitracs', logo: null },
+  other: { name: 'Other Provider', color: 'bg-gray-500', shortName: 'Other', logo: null }
 };
 
 // Status display configuration
@@ -264,15 +264,15 @@ export default function ELDConnectionManager({ onConnectionChange }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-5 rounded-t-xl">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-4 sm:p-5 rounded-t-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
+            <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
               <Zap size={20} className="text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-lg font-semibold text-white">ELD Integration</h3>
-              <p className="text-sm text-blue-100">Connect your ELD provider for automated data sync</p>
+              <p className="text-sm text-blue-100 hidden sm:block">Connect your ELD provider for automated data sync</p>
             </div>
           </div>
           <ProviderSelectButton
@@ -280,7 +280,7 @@ export default function ELDConnectionManager({ onConnectionChange }) {
             onError={handleConnectionError}
             existingProviders={connectedProviders}
             variant="secondary"
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+            className="bg-white/20 hover:bg-white/30 text-white border-white/30 w-full sm:w-auto justify-center"
           >
             <span>{connections.length > 0 ? 'Add Provider' : 'Connect ELD'}</span>
           </ProviderSelectButton>
@@ -326,64 +326,68 @@ export default function ELDConnectionManager({ onConnectionChange }) {
                 >
                   {/* Connection Header */}
                   <div
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     onClick={() => setExpandedConnection(isExpanded ? null : connection.id)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${providerInfo.color} rounded-lg flex items-center justify-center`}>
-                        <span className="text-white font-bold text-sm">
-                          {providerInfo.shortName.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                          {providerInfo.name}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className={`flex items-center gap-1 ${statusConfig.color}`}>
-                            <StatusIcon size={14} />
-                            {statusConfig.label}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`w-10 h-10 ${providerInfo.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-white font-bold text-sm">
+                            {providerInfo.shortName.charAt(0)}
                           </span>
-                          {connection.company_name && (
-                            <span className="text-gray-400">
-                              · {connection.company_name}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {providerInfo.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm flex-wrap">
+                            <span className={`flex items-center gap-1 ${statusConfig.color}`}>
+                              <StatusIcon size={14} />
+                              {statusConfig.label}
                             </span>
-                          )}
+                            {connection.company_name && (
+                              <span className="text-gray-400 truncate hidden sm:inline">
+                                · {connection.company_name}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      {needsReconnect && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReconnect(connection);
-                          }}
-                          disabled={reconnecting === connection.id}
-                          className="px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700
-                            text-white rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {reconnecting === connection.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            'Reconnect'
-                          )}
-                        </button>
-                      )}
-                      {!needsReconnect && (
-                        <ELDSyncStatus
-                          connectionId={connection.id}
-                          lastSyncAt={connection.last_sync_at}
-                          status={connection.status}
-                          compact
-                        />
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp size={20} className="text-gray-400" />
-                      ) : (
-                        <ChevronDown size={20} className="text-gray-400" />
-                      )}
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                        {needsReconnect && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReconnect(connection);
+                            }}
+                            disabled={reconnecting === connection.id}
+                            className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium bg-blue-600 hover:bg-blue-700
+                              text-white rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {reconnecting === connection.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              'Reconnect'
+                            )}
+                          </button>
+                        )}
+                        {!needsReconnect && (
+                          <div className="hidden sm:block">
+                            <ELDSyncStatus
+                              connectionId={connection.id}
+                              lastSyncAt={connection.last_sync_at}
+                              status={connection.status}
+                              compact
+                            />
+                          </div>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp size={20} className="text-gray-400" />
+                        ) : (
+                          <ChevronDown size={20} className="text-gray-400" />
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -443,28 +447,29 @@ export default function ELDConnectionManager({ onConnectionChange }) {
                       )}
 
                       {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                           onClick={() => handleAutoMatch(connection.id)}
                           disabled={autoMatching === connection.id || connection.status !== 'active'}
-                          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium
+                          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium
                             text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20
-                            rounded-lg transition-colors disabled:opacity-50"
+                            rounded-lg transition-colors disabled:opacity-50 w-full sm:w-auto"
                         >
                           {autoMatching === connection.id ? (
                             <Loader2 size={16} className="animate-spin" />
                           ) : (
                             <Settings size={16} />
                           )}
-                          Auto-Match Vehicles & Drivers
+                          <span className="hidden sm:inline">Auto-Match Vehicles & Drivers</span>
+                          <span className="sm:hidden">Auto-Match</span>
                         </button>
 
                         <button
                           onClick={() => handleDisconnect(connection.id)}
                           disabled={disconnecting === connection.id}
-                          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium
+                          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium
                             text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
-                            rounded-lg transition-colors disabled:opacity-50 ml-auto"
+                            rounded-lg transition-colors disabled:opacity-50 w-full sm:w-auto sm:ml-auto"
                         >
                           {disconnecting === connection.id ? (
                             <Loader2 size={16} className="animate-spin" />

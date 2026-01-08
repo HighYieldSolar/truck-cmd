@@ -118,6 +118,10 @@ export const TIER_FEATURES = {
     eldDiagnostics: false, // Fleet+ only
     eldMultipleProviders: false, // Enterprise only
 
+    // QuickBooks Integration (Premium+ feature)
+    quickbooksIntegration: true,
+    quickbooksAutoSync: true,
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -194,6 +198,10 @@ export const TIER_FEATURES = {
     eldGpsTracking: false,
     eldDiagnostics: false,
     eldMultipleProviders: false,
+
+    // QuickBooks Integration (Premium+ only)
+    quickbooksIntegration: false,
+    quickbooksAutoSync: false,
 
     // Notifications
     notificationsInApp: true,
@@ -272,6 +280,10 @@ export const TIER_FEATURES = {
     eldDiagnostics: false, // Fleet+ only
     eldMultipleProviders: false, // Enterprise only
 
+    // QuickBooks Integration (Premium+ feature)
+    quickbooksIntegration: true,
+    quickbooksAutoSync: true,
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -349,6 +361,10 @@ export const TIER_FEATURES = {
     eldDiagnostics: true, // Fleet+ feature
     eldMultipleProviders: false, // Enterprise only
 
+    // QuickBooks Integration (Premium+ feature)
+    quickbooksIntegration: true,
+    quickbooksAutoSync: true,
+
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -408,6 +424,9 @@ export const TIER_FEATURES = {
     eldGpsTracking: true,
     eldDiagnostics: true,
     eldMultipleProviders: true, // Enterprise exclusive
+    // QuickBooks Integration
+    quickbooksIntegration: true,
+    quickbooksAutoSync: true,
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
@@ -521,6 +540,17 @@ export const FEATURE_DESCRIPTIONS = {
     name: 'Multiple ELD Providers',
     description: 'Connect multiple ELD providers for mixed fleet management',
     requiredTier: 'enterprise'
+  },
+  // QuickBooks Integration Features
+  quickbooksIntegration: {
+    name: 'QuickBooks Integration',
+    description: 'Sync expenses and invoices to QuickBooks Online',
+    requiredTier: 'premium'
+  },
+  quickbooksAutoSync: {
+    name: 'Auto-Sync to QuickBooks',
+    description: 'Automatically sync new expenses and invoices to QuickBooks',
+    requiredTier: 'premium'
   }
 };
 

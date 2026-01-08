@@ -320,22 +320,27 @@ export default function AccountSettings() {
           <h3 className="text-lg font-medium text-white">{t('account.changeEmail')}</h3>
         </div>
 
-        <div className="bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-6">
+        <div className="bg-white dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600 p-4 sm:p-6">
           {!showEmailChange ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {t('account.currentEmail')} <strong className="text-gray-900 dark:text-white">{user?.email}</strong>
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {t('account.clickToChangeEmail')}
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                  <Mail size={20} className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('account.currentEmail')}
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white truncate">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowEmailChange(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                <Edit2 size={18} className="mr-2" />
+                <Edit2 size={16} className="mr-2" />
                 {t('account.changeEmail')}
               </button>
             </div>
@@ -346,7 +351,9 @@ export default function AccountSettings() {
                 <div>
                   <h4 className="font-medium text-green-800 dark:text-green-300">{t('account.confirmationSent')}</h4>
                   <p className="text-green-700 dark:text-green-400 mt-1 text-sm">
-                    {t('account.checkInbox')} <strong>{newEmail}</strong>.
+                    {t('account.checkInbox')} <strong className="break-all">{newEmail}</strong>.
+                  </p>
+                  <p className="text-green-700 dark:text-green-400 mt-1 text-sm">
                     {t('account.checkInboxInstructions')}
                   </p>
                 </div>
@@ -354,6 +361,12 @@ export default function AccountSettings() {
             </div>
           ) : (
             <form onSubmit={handleEmailChange}>
+              {/* Current email display */}
+              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('account.currentEmail')}</p>
+                <p className="font-medium text-gray-900 dark:text-white text-sm break-all">{user?.email}</p>
+              </div>
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="newEmail">
                   {t('account.newEmailAddress')}
@@ -364,38 +377,38 @@ export default function AccountSettings() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder={t('account.enterNewEmail')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base"
                   required
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {t('account.verifyNewEmail')}
                 </p>
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowEmailChange(false);
                     setNewEmail('');
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                 >
                   {t('common:buttons.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={emailChangeLoading || !newEmail}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {emailChangeLoading ? (
                     <>
-                      <RefreshCw size={18} className="animate-spin mr-2" />
+                      <RefreshCw size={16} className="animate-spin mr-2" />
                       {t('account.sendingConfirmation')}
                     </>
                   ) : (
                     <>
-                      <Mail size={18} className="mr-2" />
+                      <Mail size={16} className="mr-2" />
                       {t('account.sendConfirmation')}
                     </>
                   )}

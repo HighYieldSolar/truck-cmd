@@ -477,6 +477,7 @@
       "amount": "Amount",
       "status": "Status",
       "invoice": "Invoice",
+      "viewInvoice": "View Invoice",
       "servicePeriod": "Service period",
       "showLess": "Show less",
       "showAll": "Show all",

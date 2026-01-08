@@ -477,6 +477,7 @@
       "amount": "Monto",
       "status": "Estado",
       "invoice": "Factura",
+      "viewInvoice": "Ver Factura",
       "servicePeriod": "Período de servicio",
       "showLess": "Mostrar menos",
       "showAll": "Mostrar todas",

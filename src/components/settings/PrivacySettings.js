@@ -636,11 +636,11 @@ export default function PrivacySettings() {
               </div>
 
               {/* Modal Actions */}
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowExportModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   {t('common:buttons.cancel')}
                 </button>
@@ -648,7 +648,7 @@ export default function PrivacySettings() {
                   type="button"
                   onClick={handleDataExport}
                   disabled={exportingData || (exportFormat === 'encrypted' && (!exportPassword || exportPassword.length < 8 || exportPassword !== confirmExportPassword))}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {exportingData ? (
                     <>

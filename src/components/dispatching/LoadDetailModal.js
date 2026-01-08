@@ -914,16 +914,18 @@ export default function LoadDetailModal({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-xl">
-          <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Load #{load.load_number || load.loadNumber}
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-xl gap-3">
+          <div className="flex items-center min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">
+              <span className="hidden sm:inline">Load #</span>
+              <span className="sm:hidden">#</span>
+              {load.load_number || load.loadNumber}
             </h2>
-            <StatusBadge status={editMode ? updatedLoad.status : load.status} className="ml-3" />
+            <StatusBadge status={editMode ? updatedLoad.status : load.status} className="ml-2 sm:ml-3 flex-shrink-0" />
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-lg transition-colors flex-shrink-0"
             disabled={isSubmitting}
           >
             <X size={20} />

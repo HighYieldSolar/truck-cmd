@@ -354,51 +354,93 @@ export default function Dashboard() {
           )}
 
           {/* Date Range Selector */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dateRange.label')}:</div>
-              <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
-                <button
-                  onClick={() => handleDateRangeChange('month')}
-                  className={`px-3 py-1.5 text-sm rounded-l-lg ${dateRange === 'month' ?
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
-                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  {t('dateRange.thisMonth')}
-                </button>
-                <button
-                  onClick={() => handleDateRangeChange('lastMonth')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'lastMonth' ?
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
-                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  {t('dateRange.lastMonth')}
-                </button>
-                <button
-                  onClick={() => handleDateRangeChange('quarter')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'quarter' ?
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
-                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  {t('dateRange.thisQuarter')}
-                </button>
-                <button
-                  onClick={() => handleDateRangeChange('year')}
-                  className={`px-3 py-1.5 text-sm ${dateRange === 'year' ?
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
-                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  {t('dateRange.thisYear')}
-                </button>
-                <button
-                  onClick={() => handleDateRangeChange('all')}
-                  className={`px-3 py-1.5 text-sm rounded-r-lg ${dateRange === 'all' ?
-                    'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
-                    'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-                >
-                  {t('dateRange.allTime')}
-                </button>
-              </div>
+          <div className="mb-6">
+            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dateRange.label')}</div>
+            {/* Mobile: 3x2 Grid */}
+            <div className="grid grid-cols-3 gap-2 sm:hidden">
+              <button
+                onClick={() => handleDateRangeChange('month')}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${dateRange === 'month' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-blue-300 dark:border-blue-700' :
+                  'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                This Month
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('lastMonth')}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${dateRange === 'lastMonth' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-blue-300 dark:border-blue-700' :
+                  'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                Last Month
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('quarter')}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${dateRange === 'quarter' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-blue-300 dark:border-blue-700' :
+                  'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                Quarter
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('year')}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${dateRange === 'year' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-blue-300 dark:border-blue-700' :
+                  'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                This Year
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('all')}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors col-span-2 ${dateRange === 'all' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-blue-300 dark:border-blue-700' :
+                  'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                All Time
+              </button>
+            </div>
+            {/* Desktop: Inline buttons */}
+            <div className="hidden sm:inline-flex bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => handleDateRangeChange('month')}
+                className={`px-3 py-1.5 text-sm rounded-l-lg border-r border-gray-200 dark:border-gray-700 ${dateRange === 'month' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
+                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {t('dateRange.thisMonth')}
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('lastMonth')}
+                className={`px-3 py-1.5 text-sm border-r border-gray-200 dark:border-gray-700 ${dateRange === 'lastMonth' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
+                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {t('dateRange.lastMonth')}
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('quarter')}
+                className={`px-3 py-1.5 text-sm border-r border-gray-200 dark:border-gray-700 ${dateRange === 'quarter' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
+                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {t('dateRange.thisQuarter')}
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('year')}
+                className={`px-3 py-1.5 text-sm border-r border-gray-200 dark:border-gray-700 ${dateRange === 'year' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
+                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {t('dateRange.thisYear')}
+              </button>
+              <button
+                onClick={() => handleDateRangeChange('all')}
+                className={`px-3 py-1.5 text-sm rounded-r-lg ${dateRange === 'all' ?
+                  'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' :
+                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                {t('dateRange.allTime')}
+              </button>
             </div>
           </div>
 
@@ -442,11 +484,6 @@ export default function Dashboard() {
           
           {/* Quick Actions Grid */}
           <QuickActions />
-          
-          {/* Admin Tools (conditional) */}
-          {(stats.factoredEarnings > 0 || error) && (
-            <AdminTools />
-          )}
         </div>
       </main>
     </DashboardLayout>
@@ -543,25 +580,3 @@ function DeliveryItem({ delivery }) {
   );
 }
 
-/**
- * Admin Tools Component
- * Shows admin links when relevant (factoring, errors)
- */
-function AdminTools() {
-  const { t } = useTranslation('dashboard');
-
-  return (
-    <div className="text-center mb-6">
-      <Link
-        href="/dashboard/admin/fix-earnings"
-        className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-      >
-        <RefreshCw size={14} className="mr-1" />
-        {t('adminTools.fixEarningsRecords')}
-      </Link>
-      <p className="text-xs text-gray-500 mt-1">
-        {t('adminTools.fixEarningsDescription')}
-      </p>
-    </div>
-  );
-}

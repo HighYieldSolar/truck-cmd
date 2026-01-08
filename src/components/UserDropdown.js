@@ -144,7 +144,8 @@ export default function UserDropdown() {
       
       {isOpen && (
         <>
-          <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
+          {/* Main dropdown - hidden on mobile when submenu is open */}
+          <div className={`absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg overflow-hidden z-50 border border-gray-200 dark:border-gray-700 ${(showLanguageMenu || showLearnMoreMenu) ? 'hidden sm:block' : ''}`}>
           {/* User info section */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="text-sm text-gray-700 dark:text-gray-200 truncate mb-1">{user.email}</div>
@@ -243,107 +244,227 @@ export default function UserDropdown() {
           </div>
         </div>
         
-        {/* Language Submenu - Separate floating menu */}
+        {/* Language Submenu - Desktop: floating left, Mobile: inline */}
         {showLanguageMenu && (
-          <div
-            className="absolute right-[256px] top-[120px] w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700"
-            onMouseEnter={handleLanguageMenuEnter}
-            onMouseLeave={handleLanguageMenuLeave}
-          >
-            {Object.values(SUPPORTED_LANGUAGES).map((lang, index) => (
-              <div key={lang.code}>
-                {index > 0 && <div className="border-t border-gray-200 dark:border-gray-700"></div>}
+          <>
+            {/* Desktop floating menu */}
+            <div
+              className="hidden sm:block absolute right-[256px] top-[120px] w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700"
+              onMouseEnter={handleLanguageMenuEnter}
+              onMouseLeave={handleLanguageMenuLeave}
+            >
+              {Object.values(SUPPORTED_LANGUAGES).map((lang, index) => (
+                <div key={lang.code}>
+                  {index > 0 && <div className="border-t border-gray-200 dark:border-gray-700"></div>}
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                      setLanguageMenuClicked(false);
+                    }}
+                  >
+                    <span>{lang.nativeName}</span>
+                    {currentLanguage === lang.code && <Check size={16} className="text-green-600 dark:text-green-400" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+            {/* Mobile inline menu - replaces main dropdown */}
+            <div className="sm:hidden absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700">
+              <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 flex items-center bg-gray-50 dark:bg-gray-700/50">
                 <button
-                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
                   onClick={() => {
-                    setLanguage(lang.code);
                     setShowLanguageMenu(false);
                     setLanguageMenuClicked(false);
                   }}
+                  className="mr-2 p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 >
-                  <span>{lang.nativeName}</span>
-                  {currentLanguage === lang.code && <Check size={16} className="text-green-600 dark:text-green-400" />}
+                  <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
                 </button>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{t('userDropdown.language')}</span>
               </div>
-            ))}
-          </div>
+              {Object.values(SUPPORTED_LANGUAGES).map((lang, index) => (
+                <div key={lang.code}>
+                  {index > 0 && <div className="border-t border-gray-200 dark:border-gray-700"></div>}
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setShowLanguageMenu(false);
+                      setLanguageMenuClicked(false);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <span>{lang.nativeName}</span>
+                    {currentLanguage === lang.code && <Check size={16} className="text-green-600 dark:text-green-400" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
-        {/* Learn More Submenu - Separate floating menu */}
+        {/* Learn More Submenu - Desktop: floating left, Mobile: inline */}
         {showLearnMoreMenu && (
-          <div
-            className="absolute right-[256px] top-[240px] w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700"
-            onMouseEnter={handleLearnMoreMenuEnter}
-            onMouseLeave={handleLearnMoreMenuLeave}
-          >
-            <Link
-              href="/about"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
+          <>
+            {/* Desktop floating menu */}
+            <div
+              className="hidden sm:block absolute right-[256px] top-[240px] w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700"
+              onMouseEnter={handleLearnMoreMenuEnter}
+              onMouseLeave={handleLearnMoreMenuLeave}
             >
-              {t('userDropdown.aboutUs')}
-            </Link>
-            <Link
-              href="/feedback"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
-            >
-              {t('userDropdown.feedback')}
-            </Link>
-            <div className="border-t border-gray-200 dark:border-gray-700"></div>
-            <Link
-              href="/terms"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
-            >
-              {t('userDropdown.termsOfService')}
-            </Link>
-            <Link
-              href="/privacy"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
-            >
-              {t('userDropdown.privacyPolicy')}
-            </Link>
-            <Link
-              href="/cookies"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
-            >
-              {t('userDropdown.cookiePolicy')}
-            </Link>
-            <Link
-              href="/acceptable-use"
-              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
-              onClick={() => {
-                setIsOpen(false);
-                setShowLearnMoreMenu(false);
-                setLearnMoreMenuClicked(false);
-              }}
-            >
-              {t('userDropdown.acceptableUse')}
-            </Link>
-          </div>
+              <Link
+                href="/about"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.aboutUs')}
+              </Link>
+              <Link
+                href="/feedback"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.feedback')}
+              </Link>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <Link
+                href="/terms"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.termsOfService')}
+              </Link>
+              <Link
+                href="/privacy"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.privacyPolicy')}
+              </Link>
+              <Link
+                href="/cookies"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.cookiePolicy')}
+              </Link>
+              <Link
+                href="/acceptable-use"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.acceptableUse')}
+              </Link>
+            </div>
+            {/* Mobile inline menu - replaces main dropdown */}
+            <div className="sm:hidden absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg z-[60] border border-gray-200 dark:border-gray-700">
+              <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 flex items-center bg-gray-50 dark:bg-gray-700/50">
+                <button
+                  onClick={() => {
+                    setShowLearnMoreMenu(false);
+                    setLearnMoreMenuClicked(false);
+                  }}
+                  className="mr-2 p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+                </button>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{t('userDropdown.learnMore')}</span>
+              </div>
+              <Link
+                href="/about"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.aboutUs')}
+              </Link>
+              <Link
+                href="/feedback"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.feedback')}
+              </Link>
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+              <Link
+                href="/terms"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.termsOfService')}
+              </Link>
+              <Link
+                href="/privacy"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.privacyPolicy')}
+              </Link>
+              <Link
+                href="/cookies"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.cookiePolicy')}
+              </Link>
+              <Link
+                href="/acceptable-use"
+                className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 ease-in-out"
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLearnMoreMenu(false);
+                  setLearnMoreMenuClicked(false);
+                }}
+              >
+                {t('userDropdown.acceptableUse')}
+              </Link>
+            </div>
+          </>
         )}
         </>
       )}

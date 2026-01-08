@@ -877,24 +877,79 @@ export default function NewLoadForm({
           </div>
 
           {/* Progress indicator - separated with its own container */}
-          <div className="px-5 pb-5">
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/40 shadow-xl">
-              <div className="flex items-center justify-between">
+          <div className="px-3 sm:px-5 pb-4 sm:pb-5">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 sm:p-5 border border-white/40 shadow-xl">
+              {/* Mobile: Centered steps */}
+              <div className="flex sm:hidden items-center justify-center gap-3">
                 {steps.map((step, index) => {
                   const Icon = step.icon;
                   const isActive = currentStep === step.number;
                   const isCompleted = currentStep > step.number;
-                  
+
+                  return (
+                    <div key={step.number} className="flex items-center">
+                      <div className="flex flex-col items-center">
+                        {/* Step circle with icon */}
+                        <div className={`
+                          w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-xl
+                          ${isActive
+                            ? 'bg-white text-blue-600 scale-110 ring-2 ring-white/60'
+                            : isCompleted
+                              ? 'bg-green-500 text-white ring-2 ring-green-400/50'
+                              : 'bg-blue-800/50 text-white/70 border-2 border-white/30'
+                          }
+                        `}>
+                          {isCompleted ? (
+                            <Check size={18} />
+                          ) : (
+                            <Icon size={18} className={isActive ? 'animate-pulse' : ''} />
+                          )}
+                        </div>
+
+                        {/* Step name below icon */}
+                        <div className={`mt-1.5 text-[10px] font-semibold text-center transition-all max-w-[60px] leading-tight ${
+                          isActive
+                            ? 'text-white'
+                            : isCompleted
+                              ? 'text-white/90'
+                              : 'text-white/70'
+                        }`}>
+                          {step.title}
+                        </div>
+                      </div>
+
+                      {/* Progress line between steps */}
+                      {index < steps.length - 1 && (
+                        <div className="w-6 h-1 mx-1 bg-blue-800/30 rounded-full overflow-hidden self-start mt-5">
+                          <div className={`h-full transition-all duration-700 ${
+                            isCompleted
+                              ? 'bg-green-400 w-full'
+                              : 'bg-blue-400/40 w-0'
+                          }`} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Original layout */}
+              <div className="hidden sm:flex items-center justify-between">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isActive = currentStep === step.number;
+                  const isCompleted = currentStep > step.number;
+
                   return (
                     <div key={step.number} className="flex items-center flex-1">
-                      <div className="flex items-center relative">
+                      <div className="flex flex-row items-center relative">
                         {/* Step circle with icon */}
                         <div className={`
                           w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-xl
-                          ${isActive 
-                            ? 'bg-white text-blue-600 scale-110 ring-4 ring-white/60' 
-                            : isCompleted 
-                              ? 'bg-green-500 text-white ring-2 ring-green-400/50' 
+                          ${isActive
+                            ? 'bg-white text-blue-600 scale-110 ring-4 ring-white/60'
+                            : isCompleted
+                              ? 'bg-green-500 text-white ring-2 ring-green-400/50'
                               : 'bg-blue-800/50 text-white/70 border-2 border-white/30'
                           }
                         `}>
@@ -904,9 +959,9 @@ export default function NewLoadForm({
                             <Icon size={24} className={isActive ? 'animate-pulse' : ''} />
                           )}
                         </div>
-                        
+
                         {/* Step details */}
-                        <div className="ml-3">
+                        <div className="ml-3 text-left">
                           <div className={`text-xs font-medium transition-all ${
                             isActive
                               ? 'text-white/90'
@@ -917,8 +972,8 @@ export default function NewLoadForm({
                             {t('wizard.step')} {step.number}
                           </div>
                           <div className={`text-sm font-semibold transition-all ${
-                            isActive 
-                              ? 'text-white' 
+                            isActive
+                              ? 'text-white'
                               : isCompleted
                                 ? 'text-white/90'
                                 : 'text-white/70'
@@ -927,15 +982,15 @@ export default function NewLoadForm({
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Progress bar between steps */}
                       {index < steps.length - 1 && (
                         <div className="flex-1 mx-4">
                           <div className="h-3 bg-blue-800/30 rounded-full overflow-hidden relative">
                             <div className="absolute inset-0 bg-white/10"></div>
                             <div className={`h-full transition-all duration-700 ease-out relative ${
-                              isCompleted 
-                                ? 'bg-gradient-to-r from-green-400 to-green-500' 
+                              isCompleted
+                                ? 'bg-gradient-to-r from-green-400 to-green-500'
                                 : 'bg-gradient-to-r from-blue-400/40 to-blue-500/40'
                             }`} style={{
                               width: isCompleted ? '100%' : isActive ? '50%' : '0%'

@@ -15,14 +15,11 @@ import {
   AlertCircle,
   Calendar,
   Clock,
-  Download,
-  DollarSign,
   ArrowRight,
   FileText,
   Shield,
   CreditCard as CardIcon,
   Zap,
-  X,
   ExternalLink,
   ChevronRight,
   ChevronUp,
@@ -154,12 +151,12 @@ export default function BillingSettings() {
 
         setUser(user);
 
-        // Load additional billing data if user has active subscription
+        // Load billing history for any user (shows past invoices even after cancellation)
+        // Only load payment method if subscription is active
+        await loadBillingHistory(user.id);
+
         if (subscription?.status === 'active') {
-          await Promise.all([
-            loadBillingHistory(user.id),
-            loadPaymentMethod(user.id)
-          ]);
+          await loadPaymentMethod(user.id);
         }
 
       } catch (error) {
@@ -304,11 +301,12 @@ export default function BillingSettings() {
   const handleRefreshSubscription = async () => {
     refreshSubscription();
 
+    // Always refresh billing history (shows past invoices even after cancellation)
+    await loadBillingHistory(user.id);
+
+    // Only refresh payment method if subscription is active
     if (subscription?.status === 'active') {
-      await Promise.all([
-        loadBillingHistory(user.id),
-        loadPaymentMethod(user.id)
-      ]);
+      await loadPaymentMethod(user.id);
     }
 
     setSuccessMessage(t('billing.messages.refreshSuccess'));
@@ -907,7 +905,61 @@ export default function BillingSettings() {
               </div>
             ) : billingHistory.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-3">
+                  {billingHistory.slice(0, showAllHistory ? billingHistory.length : 5).map((invoice) => (
+                    <div
+                      key={invoice.id}
+                      className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                    >
+                      {/* Top row: Amount and Status */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(invoice.amount_paid || invoice.total)}
+                        </span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          invoice.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400' :
+                          invoice.status === 'open' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400' :
+                          invoice.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
+                          'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400'
+                        }`}>
+                          {invoice.status?.charAt(0).toUpperCase() + invoice.status?.slice(1) || 'Paid'}
+                        </span>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        {invoice.description || `${planDetails.name} - ${subscription?.billing_cycle || 'monthly'}`}
+                      </p>
+
+                      {/* Date */}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        {formatDate(invoice.created)}
+                        {invoice.period_start && invoice.period_end && (
+                          <span className="block mt-0.5">
+                            {t('billing.history.servicePeriod')}: {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
+                          </span>
+                        )}
+                      </p>
+
+                      {/* Invoice Link */}
+                      {invoice.hosted_invoice_url && (
+                        <a
+                          href={invoice.hosted_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors"
+                        >
+                          {t('billing.history.viewInvoice') || 'View Invoice'}
+                          <ExternalLink size={14} className="ml-1" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-600">
@@ -955,15 +1007,14 @@ export default function BillingSettings() {
                             </span>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            {invoice.invoice_pdf && (
+                            {invoice.hosted_invoice_url && (
                               <a
-                                href={invoice.invoice_pdf}
+                                href={invoice.hosted_invoice_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors p-1"
-                                title="Download invoice PDF"
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors"
                               >
-                                <Download size={16} />
+                                {t('billing.history.invoice')}
                               </a>
                             )}
                           </td>
