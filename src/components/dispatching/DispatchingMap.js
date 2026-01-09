@@ -16,10 +16,11 @@ import {
   Loader2,
   X,
   Eye,
-  EyeOff
+  EyeOff,
+  Clock,
+  Bell
 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
-import Link from 'next/link';
 
 // Dynamically import FleetMap to avoid SSR issues with Mapbox
 const FleetMap = dynamic(() => import('@/components/maps/FleetMap'), {
@@ -41,7 +42,7 @@ export default function DispatchingMap({
   onLoadSelect,
   className = ''
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [vehicles, setVehicles] = useState([]);
@@ -172,9 +173,20 @@ export default function DispatchingMap({
               <MapIcon size={20} className="text-green-600 dark:text-green-400" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+                {!hasEldConnection && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                    <Clock size={10} />
+                    Coming Soon
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {vehicles.length} vehicles | {movingCount} moving | {activeLoadsCount} active loads
+                {hasEldConnection
+                  ? `${vehicles.length} vehicles | ${movingCount} moving | ${activeLoadsCount} active loads`
+                  : 'Real-time GPS tracking with ELD integration'
+                }
               </p>
             </div>
           </div>
@@ -184,7 +196,7 @@ export default function DispatchingMap({
     );
   }
 
-  // No GPS access
+  // No GPS access - Show Coming Soon (ELD integration not ready yet)
   if (!hasGpsAccess) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
@@ -193,7 +205,13 @@ export default function DispatchingMap({
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <MapIcon size={20} className="text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                <Clock size={10} />
+                Coming Soon
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setExpanded(false)}
@@ -203,27 +221,26 @@ export default function DispatchingMap({
           </button>
         </div>
         <div className="p-8 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center mb-4">
-            <Navigation size={32} className="text-gray-400" />
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4">
+            <Navigation size={28} className="text-amber-600 dark:text-amber-400" />
           </div>
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-            Live Fleet Tracking
+            Live Fleet Tracking Coming Soon
           </h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            See your trucks in real-time on the map. Requires Fleet plan or higher.
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-sm mx-auto">
+            We're building real-time GPS tracking integration with Motive and Samsara ELD devices.
+            See your trucks on the map and track active loads in real-time.
           </p>
-          <Link
-            href="/dashboard/upgrade"
-            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-          >
-            Upgrade to Fleet
-          </Link>
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <Bell size={12} />
+            <span>We'll notify you when this feature is available</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  // No ELD connection
+  // ELD Integration Coming Soon
   if (!hasEldConnection && !loading) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
@@ -232,7 +249,13 @@ export default function DispatchingMap({
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <MapIcon size={20} className="text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Fleet Map</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                <Clock size={10} />
+                Coming Soon
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setExpanded(false)}
@@ -242,21 +265,20 @@ export default function DispatchingMap({
           </button>
         </div>
         <div className="p-8 text-center">
-          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full mx-auto flex items-center justify-center mb-4">
-            <Truck size={32} className="text-amber-600" />
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-2xl mx-auto flex items-center justify-center mb-4">
+            <Navigation size={28} className="text-amber-600 dark:text-amber-400" />
           </div>
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-            Connect Your ELD
+            Live Fleet Tracking Coming Soon
           </h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Connect your ELD provider to see real-time vehicle locations on the map.
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 max-w-sm mx-auto">
+            We're building real-time GPS tracking integration with Motive and Samsara ELD devices.
+            See your trucks on the map and track active loads in real-time.
           </p>
-          <Link
-            href="/dashboard/settings/eld"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            Connect ELD
-          </Link>
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <Bell size={12} />
+            <span>We'll notify you when this feature is available</span>
+          </div>
         </div>
       </div>
     );

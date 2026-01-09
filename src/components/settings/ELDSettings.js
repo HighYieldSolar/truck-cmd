@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from 'react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
 import ELDConnectionManager from '@/components/eld/ELDConnectionManager';
@@ -10,24 +9,17 @@ import {
   MapPin,
   Wrench,
   FileText,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
-  XCircle,
   Lock
 } from 'lucide-react';
 import Link from 'next/link';
 
 /**
  * ELDSettings - Settings panel for ELD integration configuration
+ * Shows Coming Soon state as the feature is under development
  */
 export default function ELDSettings() {
   const { canAccess, currentTier } = useFeatureAccess();
   const hasEldAccess = canAccess('eldIntegration');
-  const hasGpsAccess = canAccess('eldGpsTracking');
-  const hasDiagnosticsAccess = canAccess('eldDiagnostics');
-
-  const [expandedSection, setExpandedSection] = useState(null);
 
   // ELD feature list with tier info
   const features = [
@@ -75,7 +67,13 @@ export default function ELDSettings() {
                 <Zap size={24} className="text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">ELD Integration</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-white">ELD Integration</h2>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-400/90 text-amber-900 text-xs font-semibold rounded-full">
+                    <Clock size={10} />
+                    Coming Soon
+                  </span>
+                </div>
                 <p className="text-blue-100">Automate your fleet data with Motive & Samsara</p>
               </div>
             </div>
@@ -91,15 +89,21 @@ export default function ELDSettings() {
 
   return (
     <div className="space-y-6">
-      {/* ELD Connection Manager */}
+      {/* ELD Connection Manager - Shows Coming Soon */}
       <ELDConnectionManager />
 
-      {/* Feature Status */}
+      {/* Feature Status - Shows what will be available */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600">
-          <h3 className="font-medium text-gray-700 dark:text-gray-200">ELD Features</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-gray-700 dark:text-gray-200">ELD Features</h3>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+              <Clock size={10} />
+              Coming Soon
+            </span>
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Features available with your {currentTier} plan
+            Features that will be available with your {currentTier} plan
           </p>
         </div>
 
@@ -111,7 +115,7 @@ export default function ELDSettings() {
             return (
               <div
                 key={feature.id}
-                className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                className="p-4 opacity-75"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
@@ -146,9 +150,9 @@ export default function ELDSettings() {
 
                   <div className="flex-shrink-0 pl-11 sm:pl-0">
                     {hasAccess ? (
-                      <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                        <CheckCircle size={18} />
-                        <span className="text-sm">Enabled</span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
+                        <Clock size={12} />
+                        Coming Soon
                       </span>
                     ) : (
                       <Link
@@ -166,134 +170,6 @@ export default function ELDSettings() {
         </div>
       </div>
 
-      {/* Sync Settings */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div
-          className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between cursor-pointer"
-          onClick={() => setExpandedSection(expandedSection === 'sync' ? null : 'sync')}
-        >
-          <div>
-            <h3 className="font-medium text-gray-700 dark:text-gray-200">Sync Settings</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Configure automatic data synchronization
-            </p>
-          </div>
-          {expandedSection === 'sync' ? (
-            <ChevronUp size={20} className="text-gray-400" />
-          ) : (
-            <ChevronDown size={20} className="text-gray-400" />
-          )}
-        </div>
-
-        {expandedSection === 'sync' && (
-          <div className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                  Automatic Hourly Sync
-                </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Data is automatically synced every hour
-                </p>
-              </div>
-              <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-full">
-                Active
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                  Real-time Webhooks
-                </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Receive instant updates for critical events
-                </p>
-              </div>
-              <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-full">
-                Enabled
-              </span>
-            </div>
-
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Sync settings are optimized for your plan. Contact support for custom sync intervals.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Data Source Preferences */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div
-          className="bg-gray-50 dark:bg-gray-700/50 px-5 py-4 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between cursor-pointer"
-          onClick={() => setExpandedSection(expandedSection === 'data' ? null : 'data')}
-        >
-          <div>
-            <h3 className="font-medium text-gray-700 dark:text-gray-200">Data Source Preferences</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Choose primary data sources for IFTA reporting
-            </p>
-          </div>
-          {expandedSection === 'data' ? (
-            <ChevronUp size={20} className="text-gray-400" />
-          ) : (
-            <ChevronDown size={20} className="text-gray-400" />
-          )}
-        </div>
-
-        {expandedSection === 'data' && (
-          <div className="p-5 space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              You can choose your preferred data source when generating IFTA reports:
-            </p>
-
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded">
-                  <Zap size={16} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">ELD Data (Recommended)</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Automatically imported from your connected ELD provider
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700">
-                <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded">
-                  <FileText size={16} className="text-gray-600 dark:text-gray-400" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Manual Entry</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Trips and mileage entered via State Mileage Tracker
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700">
-                <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded">
-                  <CheckCircle size={16} className="text-gray-600 dark:text-gray-400" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Combined</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Merge ELD and manual data for complete coverage
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500 dark:text-gray-400 pt-2">
-              Data source can be selected per report in the IFTA Calculator.
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Help Section */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-5">
         <div className="flex items-start gap-3">
@@ -302,31 +178,14 @@ export default function ELDSettings() {
           </div>
           <div>
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-              Need Help with ELD Integration?
+              ELD Integration Coming Soon
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Connect your Motive or Samsara ELD device for automatic data synchronization.
-              Connection uses secure OAuth and typically takes less than 2 minutes.
+              We're working on integrating with Motive and Samsara ELD devices for automatic
+              data synchronization. You'll be able to connect your ELD using secure OAuth
+              and automatically sync your mileage, HOS logs, and more.
             </p>
             <div className="flex flex-wrap gap-2">
-              <a
-                href="https://developer.gomotive.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Motive API Docs
-              </a>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
-              <a
-                href="https://developers.samsara.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Samsara API Docs
-              </a>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
               <Link
                 href="/dashboard/support"
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline"

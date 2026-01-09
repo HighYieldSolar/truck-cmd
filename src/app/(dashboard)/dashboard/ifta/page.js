@@ -35,7 +35,6 @@ import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal
 import VehicleSelector from "@/components/ifta/VehicleSelector";
 import SimplifiedExportModal from "@/components/ifta/SimplifiedExportModal";
 import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
-import ELDDataPanel from "@/components/ifta/ELDDataPanel";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
@@ -46,7 +45,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 // Import tutorial component
 import TutorialCard from "@/components/shared/TutorialCard";
-import { FileText, MapPinned, DollarSign } from "lucide-react";
+import { FileText, MapPinned, DollarSign, Zap, Bell, Clock } from "lucide-react";
 
 // State name mapping
 const STATE_NAMES = {
@@ -94,9 +93,6 @@ export default function IFTACalculatorPage() {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 10;
-
-  // ELD data source state (eld, manual, or combined)
-  const [dataSource, setDataSource] = useState('eld');
 
   // Messages
   const [error, setError] = useState(null);
@@ -636,13 +632,29 @@ export default function IFTACalculatorPage() {
             </div>
           </div>
 
-          {/* ELD Data Import Panel */}
-          <div className="mb-6">
-            <ELDDataPanel
-              quarter={activeQuarter}
-              onDataSourceChange={setDataSource}
-              selectedSource={dataSource}
-            />
+          {/* ELD Data Import - Coming Soon */}
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Zap size={16} className="text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="font-medium text-gray-900 dark:text-gray-100">ELD Data Import</span>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                <Clock size={10} />
+                Coming Soon
+              </span>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                Automatically import mileage and fuel data from your connected ELD device for accurate IFTA calculations.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                <Bell size={12} />
+                <span>We'll notify you when this feature is available</span>
+              </div>
+            </div>
           </div>
 
           {/* Stats Row */}

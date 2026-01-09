@@ -149,6 +149,12 @@ export default function SignupForm() {
   }, [router, searchParams]);
 
   const handleGoogleSignUp = async () => {
+    // Coming Soon - Signups temporarily disabled
+    setError("🚀 Truck Command is launching very soon! Sign-ups will be available shortly. Check back soon!");
+    return;
+
+    // Original code - will be re-enabled after launch
+    /*
     setGoogleLoading(true);
     setError(null);
 
@@ -165,6 +171,7 @@ export default function SignupForm() {
       setError(error.message || "Failed to sign up with Google");
       setGoogleLoading(false);
     }
+    */
   };
 
   const validateStep1 = () => {
@@ -202,6 +209,13 @@ export default function SignupForm() {
 
   const handleStep1Submit = async (e) => {
     e.preventDefault();
+
+    // Coming Soon - Signups temporarily disabled
+    setError("🚀 Truck Command is launching very soon! Sign-ups will be available shortly. Check back soon!");
+    return;
+
+    // Original code - will be re-enabled after launch
+    /*
     setError(null);
 
     if (!validateStep1()) {
@@ -224,6 +238,7 @@ export default function SignupForm() {
     setCheckingEmail(false);
 
     setStep(2);
+    */
   };
 
   const handleSignup = async (e) => {

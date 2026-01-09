@@ -1052,37 +1052,40 @@ export default function StateMileageLogger() {
         </div>
       )}
 
-      <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-sm inline-flex mb-6">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center ${activeTab === 'active'
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
-            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
-            }`}
-        >
-          <Truck className="h-4 w-4 mr-2" />
-          {t('tabs.activeTrips')}
-        </button>
-        <button
-          onClick={() => setActiveTab('past')}
-          className={`px-5 py-2.5 mx-2 rounded-lg font-medium transition-all duration-200 flex items-center ${activeTab === 'past'
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
-            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
-            }`}
-        >
-          <History className="h-4 w-4 mr-2" />
-          {t('tabs.pastTrips')}
-        </button>
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center ${activeTab === 'summary'
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
-            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
-            }`}
-        >
-          <BarChart2 className="h-4 w-4 mr-2" />
-          {t('tabs.summary')}
-        </button>
+      {/* Tab Navigation - Mobile Responsive */}
+      <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-sm mb-6 w-full sm:w-auto sm:inline-flex">
+        <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-0 w-full sm:w-auto">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center sm:justify-start ${activeTab === 'active'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
+              }`}
+          >
+            <Truck className="h-4 w-4 mr-2" />
+            {t('tabs.activeTrips')}
+          </button>
+          <button
+            onClick={() => setActiveTab('past')}
+            className={`px-4 sm:px-5 py-2.5 sm:mx-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center sm:justify-start ${activeTab === 'past'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
+              }`}
+          >
+            <History className="h-4 w-4 mr-2" />
+            {t('tabs.pastTrips')}
+          </button>
+          <button
+            onClick={() => setActiveTab('summary')}
+            className={`px-4 sm:px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center sm:justify-start ${activeTab === 'summary'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-600'
+              }`}
+          >
+            <BarChart2 className="h-4 w-4 mr-2" />
+            {t('tabs.summary')}
+          </button>
+        </div>
       </div>
 
       {activeTab === 'active' && (
