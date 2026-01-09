@@ -353,7 +353,6 @@ export default function CookiesPolicyPage() {
                 <li><strong>Company:</strong> Truck Command LLC</li>
                 <li><strong>Location:</strong> San Bernardino County, California, USA</li>
                 <li><strong>Email:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
-                <li><strong>Phone:</strong> (951) 505-1147</li>
               </ul>
             </div>
           </div>

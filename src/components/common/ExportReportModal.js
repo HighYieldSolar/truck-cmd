@@ -89,7 +89,6 @@ export default function ExportReportModal({
   // Default company info
   const company = pdfConfig.companyInfo || {
     name: 'Truck Command',
-    phone: '(951) 505-1147',
     email: 'support@truckcommand.com',
     website: 'www.truckcommand.com'
   };

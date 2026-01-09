@@ -54,7 +54,6 @@ export default function SimplifiedExportModal({
   // Default company info if not provided
   const company = companyInfo || {
     name: 'Truck Command',
-    phone: '(951) 505-1147',
     email: 'support@truckcommand.com',
     website: 'www.truckcommand.com',
     logo: '/images/tc-name-tp-bg.png'

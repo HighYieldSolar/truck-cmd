@@ -395,7 +395,6 @@ export default function PrivacyPolicyPage() {
             </p>
             <ul className="list-disc pl-8 text-gray-700 space-y-2 mb-4">
               <li><strong>Email:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
-              <li><strong>Phone:</strong> (951) 505-1147</li>
               <li><strong>Online:</strong> Through your account settings dashboard</li>
             </ul>
             <p className="text-gray-700 mb-4">
@@ -583,13 +582,12 @@ export default function PrivacyPolicyPage() {
                 <li><strong>Location:</strong> San Bernardino County, California, USA</li>
                 <li><strong>Privacy Inquiries:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
                 <li><strong>General Support:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
-                <li><strong>Phone:</strong> (951) 505-1147</li>
               </ul>
             </div>
 
             <h3 className="text-xl font-semibold mb-3 text-gray-800">California Residents</h3>
             <p className="text-gray-700 mb-4">
-              For CCPA/CPRA requests specifically, please email <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a> with the subject line &quot;CCPA Request&quot; or call (951) 505-1147.
+              For CCPA/CPRA requests specifically, please email <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a> with the subject line &quot;CCPA Request&quot;.
             </p>
           </div>
 

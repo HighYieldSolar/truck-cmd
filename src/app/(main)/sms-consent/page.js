@@ -136,7 +136,7 @@ export default function SmsConsentPage() {
 
                 {/* Additional Disclosure */}
                 <div className="text-center text-xs text-gray-500 space-y-1">
-                  <p>Truck Command LLC | Phone: (951) 505-1147 | Email: support@truckcommand.com</p>
+                  <p>Truck Command LLC | Email: support@truckcommand.com</p>
                   <p>Standard message and data rates may apply. Check with your carrier for details.</p>
                 </div>
               </form>
@@ -436,7 +436,6 @@ export default function SmsConsentPage() {
             <div className="bg-gray-50 p-4 rounded">
               <ul className="text-gray-700 space-y-2">
                 <li><strong>Email:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
-                <li><strong>Phone:</strong> (951) 505-1147</li>
                 <li><strong>Website:</strong> <a href="https://truckcommand.com" className="text-blue-600 hover:underline">truckcommand.com</a></li>
               </ul>
             </div>

@@ -175,13 +175,6 @@ export default function ContactPage() {
       note: "We respond within 24 hours"
     },
     {
-      icon: <Phone size={24} />,
-      title: "Phone Support",
-      description: "Talk to our team",
-      contact: "(951) 505-1147",
-      note: "Mon-Fri: 8am-8pm PST"
-    },
-    {
       icon: <Clock size={24} />,
       title: "Business Hours",
       description: "When we're available",

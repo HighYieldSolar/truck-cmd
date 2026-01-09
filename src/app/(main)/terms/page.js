@@ -199,8 +199,7 @@ export default function TermsOfServicePage() {
             </p>
             <ul className="list-disc pl-8 text-gray-700 space-y-2 mb-4">
               <li>Accessing your Account settings and clicking &quot;Cancel Subscription&quot;;</li>
-              <li>Emailing us at <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a>;</li>
-              <li>Contacting us at (951) 505-1147.</li>
+              <li>Emailing us at <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a>.</li>
             </ul>
             <p className="text-gray-700 mb-4">
               Upon cancellation:
@@ -625,7 +624,6 @@ export default function TermsOfServicePage() {
                 <li><strong>Email:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
                 <li><strong>Legal Inquiries:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
                 <li><strong>Billing Inquiries:</strong> <a href="mailto:support@truckcommand.com" className="text-blue-600 hover:underline">support@truckcommand.com</a></li>
-                <li><strong>Phone:</strong> (951) 505-1147</li>
               </ul>
             </div>
           </div>

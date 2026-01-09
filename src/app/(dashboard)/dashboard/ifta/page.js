@@ -1036,7 +1036,6 @@ export default function IFTACalculatorPage() {
             selectedVehicle={selectedVehicle}
             companyInfo={{
               name: 'Truck Command',
-              phone: '(951) 505-1147',
               email: 'support@truckcommand.com',
               website: 'www.truckcommand.com',
               logo: '/images/tc-name-tp-bg.png'

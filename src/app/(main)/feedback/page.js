@@ -364,10 +364,6 @@ export default function FeedbackPage() {
                     <Mail size={18} className="text-blue-200" />
                     <span>support@truckcommand.com</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Phone size={18} className="text-blue-200" />
-                    <span>(951) 505-1147</span>
-                  </div>
                 </div>
                 <Link
                   href="/contact"

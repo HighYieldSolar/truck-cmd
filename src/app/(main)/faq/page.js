@@ -293,12 +293,12 @@ export default function FAQPage() {
 
             <div className="bg-white rounded-2xl p-8 text-center border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mx-auto mb-4">
-                <Phone size={24} />
+                <Mail size={24} />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Phone Support</h3>
-              <p className="text-gray-600 text-sm mb-3">Talk to our team</p>
-              <p className="font-medium text-gray-900">(951) 505-1147</p>
-              <p className="text-gray-500 text-xs mt-1">Mon-Fri: 8am-8pm PST</p>
+              <h3 className="font-semibold text-gray-900 mb-2">Email Support</h3>
+              <p className="text-gray-600 text-sm mb-3">Send us a message</p>
+              <p className="font-medium text-gray-900">support@truckcommand.com</p>
+              <p className="text-gray-500 text-xs mt-1">We respond within 24 hours</p>
             </div>
 
             <Link
