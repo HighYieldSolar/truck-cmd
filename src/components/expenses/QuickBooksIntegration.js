@@ -20,7 +20,15 @@ import {
   FileText,
   Settings,
   AlertTriangle,
-  Zap
+  Zap,
+  History,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Clock,
+  CheckCircle2,
+  XOctagon,
+  AlertOctagon
 } from 'lucide-react';
 
 /**
@@ -49,6 +57,11 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [showMappingModal, setShowMappingModal] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [syncHistory, setSyncHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [expandedHistoryItem, setExpandedHistoryItem] = useState(null);
 
   /**
    * Fetch authenticated user on mount
@@ -241,6 +254,92 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
       setUpdatingSettings(false);
     }
   };
+
+  /**
+   * Fetch sync history
+   */
+  const fetchSyncHistory = useCallback(async () => {
+    try {
+      setLoadingHistory(true);
+      setError(null);
+
+      const token = await getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await fetch('/api/quickbooks/sync?limit=20', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch history');
+      }
+
+      setSyncHistory(data.history || []);
+    } catch (err) {
+      console.error('Error fetching sync history:', err);
+      setError(err.message);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [getAuthToken]);
+
+  /**
+   * Retry failed syncs
+   */
+  const handleRetryFailed = async () => {
+    try {
+      setRetrying(true);
+      setError(null);
+
+      const token = await getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await fetch('/api/quickbooks/sync', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'retry-failed' })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to retry syncs');
+      }
+
+      // Refresh status and history after retry
+      await fetchConnectionStatus();
+      await fetchSyncHistory();
+
+      if (onSyncComplete) {
+        onSyncComplete();
+      }
+    } catch (err) {
+      console.error('Error retrying failed syncs:', err);
+      setError(err.message);
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  // Fetch history when history panel is opened
+  useEffect(() => {
+    if (showHistory && connectionStatus?.connected) {
+      fetchSyncHistory();
+    }
+  }, [showHistory, connectionStatus?.connected, fetchSyncHistory]);
 
   // Fetch status on mount and when user changes
   useEffect(() => {
@@ -574,6 +673,226 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
                   <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
                     <RefreshCw className="h-3 w-3 animate-spin" />
                     Updating settings...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sync History Section */}
+            {connection?.status === 'active' && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl overflow-hidden">
+                {/* History Header - Clickable to expand */}
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Sync History
+                    </span>
+                    {connectionStatus?.sync?.failedSyncs > 0 && (
+                      <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded">
+                        {connectionStatus.sync.failedSyncs} failed
+                      </span>
+                    )}
+                  </div>
+                  {showHistory ? (
+                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+
+                {/* Expanded History Panel */}
+                {showHistory && (
+                  <div className="border-t border-gray-200 dark:border-gray-600">
+                    {/* Retry Failed Button */}
+                    {connectionStatus?.sync?.failedSyncs > 0 && (
+                      <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <AlertOctagon className="h-4 w-4 text-red-500" />
+                            <span className="text-sm text-red-700 dark:text-red-400">
+                              {connectionStatus.sync.failedSyncs} items failed to sync
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleRetryFailed}
+                            disabled={retrying}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                          >
+                            {retrying ? (
+                              <>
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                                Retrying...
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw className="h-3 w-3" />
+                                Retry Failed
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* History List */}
+                    <div className="max-h-64 overflow-y-auto">
+                      {loadingHistory ? (
+                        <div className="px-4 py-6 flex items-center justify-center">
+                          <RefreshCw className="h-5 w-5 text-gray-400 animate-spin" />
+                        </div>
+                      ) : syncHistory.length === 0 ? (
+                        <div className="px-4 py-6 text-center">
+                          <Clock className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            No sync history yet
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            Sync records will appear here after your first sync
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-100 dark:divide-gray-600">
+                          {syncHistory.map((item) => {
+                            const isExpanded = expandedHistoryItem === item.id;
+                            const statusIcon = item.status === 'completed' ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : item.status === 'partial' ? (
+                              <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            ) : item.status === 'failed' ? (
+                              <XOctagon className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-blue-500" />
+                            );
+
+                            const statusColor = item.status === 'completed'
+                              ? 'text-green-600 dark:text-green-400'
+                              : item.status === 'partial'
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : item.status === 'failed'
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : 'text-blue-600 dark:text-blue-400';
+
+                            return (
+                              <div key={item.id} className="px-4 py-3">
+                                <button
+                                  onClick={() => setExpandedHistoryItem(isExpanded ? null : item.id)}
+                                  className="w-full text-left"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                      {statusIcon}
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className={`text-sm font-medium capitalize ${statusColor}`}>
+                                            {item.status || 'Unknown'}
+                                          </span>
+                                          <span className="text-xs text-gray-400">
+                                            {item.sync_type === 'bulk' ? 'Bulk Sync' :
+                                             item.sync_type === 'single' ? 'Single Sync' :
+                                             item.sync_type === 'auto' ? 'Auto Sync' :
+                                             item.sync_type || 'Sync'}
+                                          </span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                          {item.started_at
+                                            ? new Date(item.started_at).toLocaleString()
+                                            : 'Unknown time'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                      {/* Synced count */}
+                                      {item.records_synced > 0 && (
+                                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                          {item.records_synced} synced
+                                        </span>
+                                      )}
+                                      {/* Failed count */}
+                                      {item.records_failed > 0 && (
+                                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                                          {item.records_failed} failed
+                                        </span>
+                                      )}
+                                      {isExpanded ? (
+                                        <ChevronUp className="h-4 w-4 text-gray-400" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Expanded Details */}
+                                {isExpanded && (
+                                  <div className="mt-3 pl-6 space-y-2">
+                                    {/* Entity types */}
+                                    {item.entity_types && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Types:</span>
+                                        <div className="flex gap-1">
+                                          {(Array.isArray(item.entity_types) ? item.entity_types : [item.entity_types]).map((type, i) => (
+                                            <span
+                                              key={i}
+                                              className="px-2 py-0.5 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs rounded capitalize"
+                                            >
+                                              {type}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Duration */}
+                                    {item.completed_at && item.started_at && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        Duration: {Math.round((new Date(item.completed_at) - new Date(item.started_at)) / 1000)}s
+                                      </div>
+                                    )}
+
+                                    {/* Error message if failed */}
+                                    {item.status === 'failed' && item.error_message && (
+                                      <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <p className="text-xs text-red-600 dark:text-red-400">
+                                          {item.error_message}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* Detailed results if available */}
+                                    {item.results && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className="font-medium mb-1">Details:</p>
+                                        <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto text-xs">
+                                          {JSON.stringify(item.results, null, 2)}
+                                        </pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Refresh History Button */}
+                    {syncHistory.length > 0 && (
+                      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={fetchSyncHistory}
+                          disabled={loadingHistory}
+                          className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center gap-1"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${loadingHistory ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
