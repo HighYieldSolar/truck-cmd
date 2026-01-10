@@ -167,6 +167,45 @@ export async function GET(request) {
       }
     }
 
+    // Calculate token health
+    const now = new Date();
+    const tokenExpiresAt = connection.token_expires_at ? new Date(connection.token_expires_at) : null;
+    const refreshTokenExpiresAt = connection.refresh_token_expires_at
+      ? new Date(connection.refresh_token_expires_at)
+      : null;
+
+    // Calculate days until token expires
+    const accessTokenExpiresInMs = tokenExpiresAt ? tokenExpiresAt - now : null;
+    const accessTokenExpiresInHours = accessTokenExpiresInMs
+      ? Math.floor(accessTokenExpiresInMs / (1000 * 60 * 60))
+      : null;
+
+    // Refresh token expires in ~100 days from last refresh
+    // If we don't have refresh_token_expires_at, estimate from created/updated date
+    const refreshTokenCreatedAt = connection.updated_at || connection.created_at;
+    const estimatedRefreshExpiry = new Date(new Date(refreshTokenCreatedAt).getTime() + 100 * 24 * 60 * 60 * 1000);
+    const effectiveRefreshExpiry = refreshTokenExpiresAt || estimatedRefreshExpiry;
+    const refreshTokenExpiresInMs = effectiveRefreshExpiry - now;
+    const refreshTokenExpiresInDays = Math.floor(refreshTokenExpiresInMs / (1000 * 60 * 60 * 24));
+
+    // Determine health status
+    let healthStatus = 'healthy';
+    let healthWarning = null;
+
+    if (connection.status === 'token_expired') {
+      healthStatus = 'expired';
+      healthWarning = 'Connection expired. Please reconnect.';
+    } else if (refreshTokenExpiresInDays <= 0) {
+      healthStatus = 'expired';
+      healthWarning = 'Refresh token expired. Please reconnect.';
+    } else if (refreshTokenExpiresInDays <= 7) {
+      healthStatus = 'warning';
+      healthWarning = `Refresh token expires in ${refreshTokenExpiresInDays} days. Refresh connection soon.`;
+    } else if (accessTokenExpiresInHours !== null && accessTokenExpiresInHours < 0) {
+      healthStatus = 'needs_refresh';
+      healthWarning = 'Access token expired. Will refresh automatically on next sync.';
+    }
+
     // Format response
     const response = {
       connected: connection.status === 'active',
@@ -180,8 +219,18 @@ export async function GET(request) {
         autoSyncExpenses: connection.auto_sync_expenses,
         autoSyncInvoices: connection.auto_sync_invoices,
         lastSyncAt: connection.last_sync_at,
+        lastVerifiedAt: connection.last_verified_at,
         createdAt: connection.created_at,
-        errorMessage: connection.error_message
+        errorMessage: connection.error_message,
+        // Token health info
+        tokenHealth: {
+          status: healthStatus,
+          warning: healthWarning,
+          accessTokenExpiresInHours,
+          refreshTokenExpiresInDays,
+          tokenExpiresAt: tokenExpiresAt?.toISOString(),
+          refreshTokenExpiresAt: effectiveRefreshExpiry?.toISOString()
+        }
       },
       mapping: mappingStatus ? {
         totalCategories: mappingStatus.totalCategories,

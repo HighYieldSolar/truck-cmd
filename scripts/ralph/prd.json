@@ -129,7 +129,7 @@
       "id": "QB-007",
       "title": "Add Sync Status Indicators to Expense/Invoice Lists",
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Add QB sync status badge to expense rows (synced, pending, failed, not synced)",
         "Add QB sync status badge to invoice rows",
@@ -148,7 +148,7 @@
       "id": "QB-008",
       "title": "Add Token Refresh Health Check",
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Display connection health status in QuickBooksIntegration UI",
         "Show warning if token expires within 7 days",
@@ -166,9 +166,10 @@
   ],
   "metadata": {
     "totalStories": 8,
-    "completedStories": 6,
-    "remainingStories": 2,
+    "completedStories": 8,
+    "remainingStories": 0,
     "estimatedIterations": 30,
-    "criticalPath": ["QB-001", "QB-002", "QB-003"]
+    "criticalPath": ["QB-001", "QB-002", "QB-003"],
+    "completedAt": "2026-01-09"
   }
 }

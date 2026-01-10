@@ -28,7 +28,11 @@ import {
   Clock,
   CheckCircle2,
   XOctagon,
-  AlertOctagon
+  AlertOctagon,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldX
 } from 'lucide-react';
 
 /**
@@ -62,6 +66,7 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [expandedHistoryItem, setExpandedHistoryItem] = useState(null);
+  const [refreshingToken, setRefreshingToken] = useState(false);
 
   /**
    * Fetch authenticated user on mount
@@ -334,12 +339,64 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
     }
   };
 
+  /**
+   * Refresh the QuickBooks access token
+   */
+  const handleRefreshToken = async () => {
+    try {
+      setRefreshingToken(true);
+      setError(null);
+
+      const token = await getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await fetch('/api/quickbooks/refresh', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ verify: true })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to refresh token');
+      }
+
+      // Refresh connection status to update health info
+      await fetchConnectionStatus();
+    } catch (err) {
+      console.error('Error refreshing token:', err);
+      setError(err.message);
+    } finally {
+      setRefreshingToken(false);
+    }
+  };
+
   // Fetch history when history panel is opened
   useEffect(() => {
     if (showHistory && connectionStatus?.connected) {
       fetchSyncHistory();
     }
   }, [showHistory, connectionStatus?.connected, fetchSyncHistory]);
+
+  // Auto-refresh token in background when it's close to expiring
+  useEffect(() => {
+    const tokenHealth = connectionStatus?.connection?.tokenHealth;
+    if (!connectionStatus?.connected || !tokenHealth) return;
+
+    const { accessTokenExpiresInHours, status } = tokenHealth;
+
+    // If access token expires in less than 30 minutes, refresh in background
+    if (accessTokenExpiresInHours !== null && accessTokenExpiresInHours < 0.5 && status !== 'expired') {
+      handleRefreshToken();
+    }
+  }, [connectionStatus?.connected, connectionStatus?.connection?.tokenHealth]);
 
   // Fetch status on mount and when user changes
   useEffect(() => {
@@ -570,6 +627,159 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
                   </p>
                   <p className="text-xs text-red-700 dark:text-red-500">Failed</p>
                 </div>
+              </div>
+            )}
+
+            {/* Connection Health Status */}
+            {connection?.tokenHealth && (
+              <div className={`rounded-xl p-4 border ${
+                connection.tokenHealth.status === 'healthy'
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30'
+                  : connection.tokenHealth.status === 'warning'
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30'
+                    : connection.tokenHealth.status === 'needs_refresh'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30'
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    {/* Health Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      connection.tokenHealth.status === 'healthy'
+                        ? 'bg-green-100 dark:bg-green-800/30'
+                        : connection.tokenHealth.status === 'warning'
+                          ? 'bg-amber-100 dark:bg-amber-800/30'
+                          : connection.tokenHealth.status === 'needs_refresh'
+                            ? 'bg-blue-100 dark:bg-blue-800/30'
+                            : 'bg-red-100 dark:bg-red-800/30'
+                    }`}>
+                      {connection.tokenHealth.status === 'healthy' ? (
+                        <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      ) : connection.tokenHealth.status === 'warning' ? (
+                        <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      ) : connection.tokenHealth.status === 'needs_refresh' ? (
+                        <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ShieldX className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      )}
+                    </div>
+
+                    <div>
+                      <h5 className={`text-sm font-medium ${
+                        connection.tokenHealth.status === 'healthy'
+                          ? 'text-green-700 dark:text-green-400'
+                          : connection.tokenHealth.status === 'warning'
+                            ? 'text-amber-700 dark:text-amber-400'
+                            : connection.tokenHealth.status === 'needs_refresh'
+                              ? 'text-blue-700 dark:text-blue-400'
+                              : 'text-red-700 dark:text-red-400'
+                      }`}>
+                        Connection Health: {
+                          connection.tokenHealth.status === 'healthy' ? 'Healthy' :
+                          connection.tokenHealth.status === 'warning' ? 'Warning' :
+                          connection.tokenHealth.status === 'needs_refresh' ? 'Needs Refresh' :
+                          'Expired'
+                        }
+                      </h5>
+
+                      {/* Warning Message */}
+                      {connection.tokenHealth.warning && (
+                        <p className={`text-xs mt-1 ${
+                          connection.tokenHealth.status === 'healthy'
+                            ? 'text-green-600 dark:text-green-500'
+                            : connection.tokenHealth.status === 'warning'
+                              ? 'text-amber-600 dark:text-amber-500'
+                              : connection.tokenHealth.status === 'needs_refresh'
+                                ? 'text-blue-600 dark:text-blue-500'
+                                : 'text-red-600 dark:text-red-500'
+                        }`}>
+                          {connection.tokenHealth.warning}
+                        </p>
+                      )}
+
+                      {/* Token Expiry Info */}
+                      <div className="flex flex-wrap items-center gap-3 mt-2">
+                        {connection.tokenHealth.accessTokenExpiresInHours !== null && (
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            Access token: {connection.tokenHealth.accessTokenExpiresInHours > 0
+                              ? `${connection.tokenHealth.accessTokenExpiresInHours}h remaining`
+                              : 'Expired'}
+                          </span>
+                        )}
+                        {connection.tokenHealth.refreshTokenExpiresInDays !== null && (
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            Refresh token: {connection.tokenHealth.refreshTokenExpiresInDays > 0
+                              ? `${connection.tokenHealth.refreshTokenExpiresInDays} days remaining`
+                              : 'Expired'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Last Verified Timestamp */}
+                      {connection.lastVerifiedAt && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Last verified: {new Date(connection.lastVerifiedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Refresh Button */}
+                  <button
+                    onClick={handleRefreshToken}
+                    disabled={refreshingToken || connection.tokenHealth.status === 'expired'}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex-shrink-0 ${
+                      connection.tokenHealth.status === 'expired'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : connection.tokenHealth.status === 'warning' || connection.tokenHealth.status === 'needs_refresh'
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                    } disabled:opacity-50`}
+                    title={connection.tokenHealth.status === 'expired'
+                      ? 'Connection expired - please reconnect'
+                      : 'Refresh the QuickBooks connection'}
+                  >
+                    {refreshingToken ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : connection.tokenHealth.status === 'expired' ? (
+                      <>
+                        <Link2 className="h-3.5 w-3.5" />
+                        Reconnect
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Refresh
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Reconnect Prompt for Expired */}
+                {connection.tokenHealth.status === 'expired' && (
+                  <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800/30">
+                    <button
+                      onClick={handleConnect}
+                      disabled={connecting}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {connecting ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Reconnecting...
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="h-4 w-4" />
+                          Reconnect to QuickBooks
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
