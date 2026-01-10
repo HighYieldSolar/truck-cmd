@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
+import QuickBooksBulkSyncModal from './QuickBooksBulkSyncModal';
 import {
   Link2,
   Unlink,
@@ -13,7 +14,10 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
-  XCircle
+  XCircle,
+  Upload,
+  Receipt,
+  FileText
 } from 'lucide-react';
 
 /**
@@ -39,6 +43,7 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [error, setError] = useState(null);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   /**
    * Get the auth token for API calls
@@ -367,6 +372,53 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
               </div>
             </div>
 
+            {/* Sync Statistics */}
+            {connectionStatus?.sync && (
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                    {connectionStatus.sync.totalExpensesSynced || 0}
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-500 flex items-center justify-center gap-1">
+                    <Receipt className="h-3 w-3" />
+                    Expenses
+                  </p>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {connectionStatus.sync.totalInvoicesSynced || 0}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-500 flex items-center justify-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Invoices
+                  </p>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                    {connectionStatus.sync.pendingSyncs || 0}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-500">Pending</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-2 text-center">
+                  <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {connectionStatus.sync.failedSyncs || 0}
+                  </p>
+                  <p className="text-xs text-red-700 dark:text-red-500">Failed</p>
+                </div>
+              </div>
+            )}
+
+            {/* Sync Now Button */}
+            {connection?.status === 'active' && (
+              <button
+                onClick={() => setShowSyncModal(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2CA01C] hover:bg-[#238516] text-white font-medium rounded-lg transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Sync Now
+              </button>
+            )}
+
             {/* Token Expired Warning */}
             {connection?.status === 'token_expired' && (
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
@@ -496,6 +548,19 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
           </div>
         )}
       </div>
+
+      {/* Bulk Sync Modal */}
+      <QuickBooksBulkSyncModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+        onSyncComplete={() => {
+          setShowSyncModal(false);
+          fetchConnectionStatus();
+          if (onSyncComplete) {
+            onSyncComplete();
+          }
+        }}
+      />
     </div>
   );
 }
