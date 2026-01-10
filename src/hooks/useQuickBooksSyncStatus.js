@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 /**
@@ -23,6 +23,12 @@ export function useQuickBooksSyncStatus(entityType, entityIds = []) {
   // Track last fetched IDs to avoid unnecessary refetches
   const lastFetchedRef = useRef(null);
 
+  // Stable key for entityIds to prevent unnecessary effect runs
+  const entityIdsKey = useMemo(() => {
+    if (!entityIds || entityIds.length === 0) return '';
+    return [...entityIds].sort().join(',');
+  }, [entityIds]);
+
   /**
    * Get auth token
    */
@@ -34,14 +40,14 @@ export function useQuickBooksSyncStatus(entityType, entityIds = []) {
   /**
    * Fetch sync records for the given entity IDs
    */
-  const fetchSyncRecords = useCallback(async (ids) => {
+  const fetchSyncRecords = useCallback(async (ids, idsKey) => {
     if (!ids || ids.length === 0) {
       return;
     }
 
-    // Check if we already fetched these IDs
-    const idsKey = ids.sort().join(',');
-    if (lastFetchedRef.current === idsKey) {
+    // Check if we already fetched these IDs (use pre-computed key if provided)
+    const cacheKey = idsKey || [...ids].sort().join(',');
+    if (lastFetchedRef.current === cacheKey) {
       return;
     }
 
@@ -74,7 +80,7 @@ export function useQuickBooksSyncStatus(entityType, entityIds = []) {
           ...prev,
           ...data.records
         }));
-        lastFetchedRef.current = idsKey;
+        lastFetchedRef.current = cacheKey;
       }
     } catch (error) {
       console.error('Error fetching sync records:', error);
@@ -168,12 +174,12 @@ export function useQuickBooksSyncStatus(entityType, entityIds = []) {
     return syncingIds.has(entityId);
   }, [syncingIds]);
 
-  // Fetch records when entity IDs change
+  // Fetch records when entity IDs change (using stable key to prevent loops)
   useEffect(() => {
-    if (entityIds.length > 0) {
-      fetchSyncRecords(entityIds);
+    if (entityIdsKey && entityIds.length > 0) {
+      fetchSyncRecords(entityIds, entityIdsKey);
     }
-  }, [entityIds, fetchSyncRecords]);
+  }, [entityIdsKey]); // Only depend on stable key, not the array or function
 
   return {
     syncRecords,
@@ -185,7 +191,7 @@ export function useQuickBooksSyncStatus(entityType, entityIds = []) {
     isSyncing,
     refetch: () => {
       lastFetchedRef.current = null;
-      fetchSyncRecords(entityIds);
+      fetchSyncRecords(entityIds, entityIdsKey);
     }
   };
 }
