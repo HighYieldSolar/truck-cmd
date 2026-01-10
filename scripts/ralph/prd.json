@@ -89,7 +89,7 @@
       "id": "QB-005",
       "title": "Implement Auto-Sync on Invoice Creation",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Add auto_sync_invoices toggle to QuickBooks connection settings UI",
         "When auto-sync is enabled and user creates an invoice, trigger sync automatically",
@@ -166,8 +166,8 @@
   ],
   "metadata": {
     "totalStories": 8,
-    "completedStories": 4,
-    "remainingStories": 4,
+    "completedStories": 5,
+    "remainingStories": 3,
     "estimatedIterations": 30,
     "criticalPath": ["QB-001", "QB-002", "QB-003"]
   }
