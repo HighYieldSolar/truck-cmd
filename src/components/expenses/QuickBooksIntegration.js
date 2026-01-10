@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
 import QuickBooksBulkSyncModal from './QuickBooksBulkSyncModal';
+import QuickBooksCategoryMappingModal from './QuickBooksCategoryMappingModal';
 import {
   Link2,
   Unlink,
@@ -17,7 +18,9 @@ import {
   XCircle,
   Upload,
   Receipt,
-  FileText
+  FileText,
+  Settings,
+  AlertTriangle
 } from 'lucide-react';
 
 /**
@@ -44,6 +47,7 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [error, setError] = useState(null);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [showMappingModal, setShowMappingModal] = useState(false);
 
   /**
    * Get the auth token for API calls
@@ -408,15 +412,65 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
               </div>
             )}
 
-            {/* Sync Now Button */}
+            {/* Category Mapping Status */}
+            {connectionStatus?.mapping && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Category Mappings
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowMappingModal(true)}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Configure
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      {connectionStatus.mapping.mappedCount || 0} mapped
+                    </span>
+                  </div>
+                  {connectionStatus.mapping.unmappedCount > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs text-amber-600 dark:text-amber-400">
+                        {connectionStatus.mapping.unmappedCount} unmapped
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {connectionStatus.mapping.unmappedCount > 0 && (
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                    Map all categories to enable accurate expense syncing
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
             {connection?.status === 'active' && (
-              <button
-                onClick={() => setShowSyncModal(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2CA01C] hover:bg-[#238516] text-white font-medium rounded-lg transition-colors"
-              >
-                <Upload className="h-4 w-4" />
-                Sync Now
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowMappingModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  Mappings
+                </button>
+                <button
+                  onClick={() => setShowSyncModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#2CA01C] hover:bg-[#238516] text-white font-medium rounded-lg transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Sync Now
+                </button>
+              </div>
             )}
 
             {/* Token Expired Warning */}
@@ -559,6 +613,16 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
           if (onSyncComplete) {
             onSyncComplete();
           }
+        }}
+      />
+
+      {/* Category Mapping Modal */}
+      <QuickBooksCategoryMappingModal
+        isOpen={showMappingModal}
+        onClose={() => setShowMappingModal(false)}
+        onSave={() => {
+          setShowMappingModal(false);
+          fetchConnectionStatus();
         }}
       />
     </div>
