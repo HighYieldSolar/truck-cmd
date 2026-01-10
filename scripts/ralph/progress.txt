@@ -1,0 +1,91 @@
+# Truck Command - Ralph Progress Log
+# ===================================
+# This file tracks learnings and patterns discovered during autonomous development.
+# Ralph reads this at the start of each iteration to avoid repeating mistakes.
+
+## Codebase Patterns (IMPORTANT - Read First)
+-------------------------------------------
+
+### Database & Supabase
+- All tables have `user_id` column for multi-tenant data isolation
+- Use `formatError()` from `src/lib/supabaseClient.js` for consistent error messages
+- RLS policies are enabled - queries automatically filter by authenticated user
+- Always include `.eq('user_id', userId)` in manual queries
+- Use `.select().single()` when expecting one result after insert/update
+
+### Service Layer (`src/lib/services/`)
+- Services export object with async methods
+- Pattern: `{ getAll, getById, create, update, delete }`
+- Always wrap Supabase calls in try/catch
+- Return data directly, throw errors for handling by components
+
+### React Components
+- Use 'use client' directive for client components
+- Get user from `useAuth()` hook: `const { user } = useAuth()`
+- Standard state pattern: `[loading, setLoading]`, `[data, setData]`, `[error, setError]`
+- Fetch data in `useEffect` when user is available
+- Always show loading spinner: `<div className="loading loading-spinner loading-lg"></div>`
+- Always show error state: `<div className="alert alert-error">{error}</div>`
+
+### Styling (DaisyUI + Tailwind)
+- Primary button: `btn btn-primary`
+- Secondary button: `btn btn-secondary`
+- Card container: `card bg-base-100 shadow-xl`
+- Card body: `card-body`
+- Form input: `input input-bordered w-full`
+- Select dropdown: `select select-bordered w-full`
+- Table: `table table-zebra w-full`
+- Alert success: `alert alert-success`
+- Alert error: `alert alert-error`
+- Loading: `loading loading-spinner loading-lg`
+
+### PDF Generation (jsPDF v4.0.0)
+- Import: `import jsPDF from 'jspdf'` and `import 'jspdf-autotable'`
+- Create doc: `const doc = new jsPDF()`
+- Add table: `doc.autoTable({ ... })`
+- Save: `doc.save('filename.pdf')`
+- Reference: `src/components/invoices/` for existing PDF patterns
+- NOTE: Upgraded to v4.0.0 for security - check migration guide if issues
+
+### Charts (Recharts)
+- Import components: `import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'`
+- Wrap in ResponsiveContainer for responsive sizing
+- Use consistent color palette from design system
+
+### File Uploads
+- Use Supabase Storage for file uploads
+- Pattern in `src/components/fuel/` and `src/components/compliance/`
+- Generate unique filenames with timestamp
+
+### Git Commit Convention
+- Prefix: `[Ralph] TC-XXX: Description`
+- Example: `[Ralph] TC-001: Add bulk fuel upload component`
+- Keep commits atomic - one feature per commit
+
+## Key Files Reference
+----------------------
+- `src/lib/supabaseClient.js` - Database client, formatError utility
+- `src/lib/protectedRoute.js` - Auth protection HOC
+- `src/context/AuthContext.js` - Authentication context
+- `src/context/SubscriptionContext.js` - Subscription state
+- `CLAUDE.md` - Full project documentation
+
+## Common Issues & Solutions
+----------------------------
+
+### Issue: "user is undefined"
+Solution: Ensure component uses `useAuth()` and checks `if (user)` before data fetch
+
+### Issue: Supabase query returns empty
+Solution: Check RLS policies, ensure user_id filter is applied
+
+### Issue: Component not updating after data change
+Solution: Call the fetch function again after mutation, or use optimistic updates
+
+### Issue: TypeScript/ESLint errors
+Solution: Run `npm run lint` and fix before committing. Check CLAUDE.md for patterns.
+
+## Session Log
+--------------
+# Entries added automatically by Ralph during iterations
+

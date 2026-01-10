@@ -1,0 +1,27 @@
+{
+  "projectName": "Truck Command Feature Sprint",
+  "description": "Autonomous development sprint for Truck Command SaaS",
+  "branchName": "feature/ralph-sprint",
+  "createdAt": "2026-01-09",
+  "stories": [
+    {
+      "id": "TC-EXAMPLE-001",
+      "title": "Example Story - Delete After Review",
+      "priority": 999,
+      "passes": true,
+      "acceptanceCriteria": [
+        "This is an example story to show the format",
+        "Delete this story and add your own",
+        "Set passes: false for stories that need work",
+        "Set passes: true for completed stories"
+      ],
+      "notes": "This is a placeholder. Replace with your actual development tasks.",
+      "files": []
+    }
+  ],
+  "metadata": {
+    "totalStories": 1,
+    "completedStories": 1,
+    "remainingStories": 0
+  }
+}

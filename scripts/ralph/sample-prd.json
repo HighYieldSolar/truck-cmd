@@ -1,0 +1,116 @@
+{
+  "projectName": "Truck Command Feature Sprint",
+  "description": "Example PRD showing proper story structure - Copy to prd.json and customize",
+  "branchName": "feature/ralph-sprint",
+  "createdAt": "2026-01-09",
+  "stories": [
+    {
+      "id": "TC-001",
+      "title": "Add Bulk Fuel Entry CSV Upload",
+      "priority": 1,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create BulkFuelUpload component in src/components/fuel/",
+        "Support CSV file upload with drag-and-drop",
+        "Parse CSV with columns: date, gallons, price_per_gallon, state, truck_id",
+        "Validate data before inserting (required fields, valid dates, positive numbers)",
+        "Show preview table before confirming import",
+        "Display success/error summary after import",
+        "Auto-sync imported fuel entries to expenses via expenseFuelIntegration",
+        "Add 'Import CSV' button to fuel dashboard"
+      ],
+      "notes": "Reference existing FuelEntryForm in src/components/fuel/ for patterns. Use Papa Parse for CSV parsing (already in dependencies).",
+      "files": [
+        "src/components/fuel/BulkFuelUpload.jsx",
+        "src/app/(dashboard)/fuel/page.js"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "title": "IFTA Quarterly Report PDF Export",
+      "priority": 2,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create IFTAReportPDF component using jsPDF",
+        "Match official IFTA quarterly report format",
+        "Include company information header",
+        "Show state-by-state mileage breakdown table",
+        "Calculate fuel tax owed/credit per state",
+        "Include summary totals section",
+        "Add 'Export PDF' button to IFTA dashboard",
+        "PDF filename should include quarter and year (e.g., IFTA_Q1_2026.pdf)"
+      ],
+      "notes": "Use existing jsPDF patterns from invoice PDF generation. Reference iftaService.js for calculations.",
+      "files": [
+        "src/components/ifta/IFTAReportPDF.jsx",
+        "src/app/(dashboard)/ifta/page.js"
+      ]
+    },
+    {
+      "id": "TC-003",
+      "title": "Driver Document Expiration Dashboard Widget",
+      "priority": 3,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create ExpiringDocumentsWidget component",
+        "Query all driver documents expiring in next 30 days",
+        "Display as card widget on main dashboard",
+        "Show document type, driver name, expiration date",
+        "Color-code: red (<7 days), yellow (7-14 days), orange (15-30 days)",
+        "Link to driver's document management page on click",
+        "Show empty state if no documents expiring soon"
+      ],
+      "notes": "Reference complianceService.js for document queries. Add to dashboard layout.",
+      "files": [
+        "src/components/dashboard/ExpiringDocumentsWidget.jsx",
+        "src/app/(dashboard)/dashboard/page.js"
+      ]
+    },
+    {
+      "id": "TC-004",
+      "title": "Expense Category Analytics Chart",
+      "priority": 4,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create ExpenseCategoryChart component using Recharts",
+        "Show pie/donut chart of expenses by category",
+        "Include date range filter (this month, last 3 months, this year)",
+        "Display category breakdown with amounts and percentages",
+        "Click on category to filter expense list",
+        "Add to expenses dashboard page",
+        "Handle empty state gracefully"
+      ],
+      "notes": "Use Recharts (already installed). Reference dashboardService.js for expense aggregation patterns.",
+      "files": [
+        "src/components/expenses/ExpenseCategoryChart.jsx",
+        "src/app/(dashboard)/expenses/page.js"
+      ]
+    },
+    {
+      "id": "TC-005",
+      "title": "Quick Add Load Modal",
+      "priority": 5,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Create QuickAddLoadModal component",
+        "Minimal form: customer, pickup location, delivery location, rate",
+        "Auto-fill customer details from dropdown",
+        "Validate required fields before submit",
+        "Add floating action button to dashboard for quick access",
+        "Success toast notification after creation",
+        "Redirect to full load details page after creation"
+      ],
+      "notes": "Use existing loadService.js for creation. Reference LoadForm component for field patterns.",
+      "files": [
+        "src/components/dispatching/QuickAddLoadModal.jsx",
+        "src/components/dashboard/QuickActions.jsx"
+      ]
+    }
+  ],
+  "metadata": {
+    "totalStories": 5,
+    "completedStories": 0,
+    "remainingStories": 5,
+    "estimatedIterations": 25
+  }
+}
