@@ -174,10 +174,10 @@ export async function GET(request) {
       ? new Date(connection.refresh_token_expires_at)
       : null;
 
-    // Calculate days until token expires
+    // Calculate time until token expires (use decimal hours for precision)
     const accessTokenExpiresInMs = tokenExpiresAt ? tokenExpiresAt - now : null;
-    const accessTokenExpiresInHours = accessTokenExpiresInMs
-      ? Math.floor(accessTokenExpiresInMs / (1000 * 60 * 60))
+    const accessTokenExpiresInHours = accessTokenExpiresInMs !== null
+      ? Math.round((accessTokenExpiresInMs / (1000 * 60 * 60)) * 10) / 10  // Round to 1 decimal
       : null;
 
     // Refresh token expires in ~100 days from last refresh

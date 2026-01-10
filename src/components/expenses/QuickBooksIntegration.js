@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -67,6 +67,9 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [retrying, setRetrying] = useState(false);
   const [expandedHistoryItem, setExpandedHistoryItem] = useState(null);
   const [refreshingToken, setRefreshingToken] = useState(false);
+
+  // Ref to track last auto-refresh time to prevent loops
+  const lastAutoRefreshRef = useRef(0);
 
   /**
    * Fetch authenticated user on mount
@@ -386,17 +389,9 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   }, [showHistory, connectionStatus?.connected, fetchSyncHistory]);
 
   // Auto-refresh token in background when it's close to expiring
-  useEffect(() => {
-    const tokenHealth = connectionStatus?.connection?.tokenHealth;
-    if (!connectionStatus?.connected || !tokenHealth) return;
-
-    const { accessTokenExpiresInHours, status } = tokenHealth;
-
-    // If access token expires in less than 30 minutes, refresh in background
-    if (accessTokenExpiresInHours !== null && accessTokenExpiresInHours < 0.5 && status !== 'expired') {
-      handleRefreshToken();
-    }
-  }, [connectionStatus?.connected, connectionStatus?.connection?.tokenHealth]);
+  // Disabled: Manual refresh is available via the Refresh button
+  // Auto-refresh was causing infinite loops due to state updates
+  // Users can manually refresh via the Connection Health section
 
   // Fetch status on mount and when user changes
   useEffect(() => {
