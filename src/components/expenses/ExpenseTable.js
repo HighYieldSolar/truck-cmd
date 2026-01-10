@@ -1,6 +1,7 @@
 // src/components/expenses/ExpenseTable.js
 "use client";
 
+import { useMemo } from 'react';
 import {
   FileText,
   Image,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import ExpenseItem from "./ExpenseItem";
 import { useTranslation } from "@/context/LanguageContext";
+import { useQuickBooksSyncStatus } from '@/hooks/useQuickBooksSyncStatus';
 
 export default function ExpenseTable({
   expenses,
@@ -19,6 +21,19 @@ export default function ExpenseTable({
   onDelete,
   onAddNew
 }) {
+  // Get expense IDs for sync status lookup
+  const expenseIds = useMemo(
+    () => expenses.map(e => e.id),
+    [expenses]
+  );
+
+  // QuickBooks sync status hook
+  const {
+    isConnected: isQBConnected,
+    getSyncRecord,
+    syncEntity,
+    isSyncing
+  } = useQuickBooksSyncStatus('expense', expenseIds);
   const { t } = useTranslation('expenses');
 
   // Format currency
@@ -78,6 +93,11 @@ export default function ExpenseTable({
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               {t('table.paymentMethod')}
             </th>
+            {isQBConnected && (
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                QuickBooks
+              </th>
+            )}
             <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
               {t('table.actions')}
             </th>
@@ -85,12 +105,16 @@ export default function ExpenseTable({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {expenses.map(expense => (
-            <ExpenseItem 
+            <ExpenseItem
               key={expense.id}
               expense={expense}
               onEdit={onEdit}
               onDelete={onDelete}
               onViewReceipt={onViewReceipt}
+              syncRecord={getSyncRecord(expense.id)}
+              isQBConnected={isQBConnected}
+              onQBSync={syncEntity}
+              isSyncing={isSyncing(expense.id)}
             />
           ))}
         </tbody>

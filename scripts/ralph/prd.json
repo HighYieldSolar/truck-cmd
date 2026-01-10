@@ -109,7 +109,7 @@
       "id": "QB-006",
       "title": "Add Sync History View",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "Add 'View History' button/tab to QuickBooksIntegration component",
         "Display recent sync operations with timestamps",
@@ -166,8 +166,8 @@
   ],
   "metadata": {
     "totalStories": 8,
-    "completedStories": 5,
-    "remainingStories": 3,
+    "completedStories": 6,
+    "remainingStories": 2,
     "estimatedIterations": 30,
     "criticalPath": ["QB-001", "QB-002", "QB-003"]
   }

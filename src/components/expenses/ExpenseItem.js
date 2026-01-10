@@ -15,12 +15,14 @@ import {
   Coffee,
   Tag,
   Truck,
-  CheckCircle
+  CheckCircle,
+  Upload
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { TableActionsDropdown } from '@/components/shared/TableActions';
 import { formatDateForDisplayMMDDYYYY } from '@/lib/utils/dateUtils';
 import { useTranslation } from "@/context/LanguageContext";
+import QuickBooksSyncBadge from './QuickBooksSyncBadge';
 
 /**
  * Expense Table Row Item (Desktop View)
@@ -28,7 +30,16 @@ import { useTranslation } from "@/context/LanguageContext";
  * Displays expense data in a table row format for desktop.
  * Follows the design spec table pattern with dark mode support.
  */
-export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }) {
+export default function ExpenseItem({
+  expense,
+  onEdit,
+  onDelete,
+  onViewReceipt,
+  syncRecord = null,
+  isQBConnected = false,
+  onQBSync = null,
+  isSyncing = false
+}) {
   const { t } = useTranslation('expenses');
   const [vehicleInfo, setVehicleInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -189,6 +200,21 @@ export default function ExpenseItem({ expense, onEdit, onDelete, onViewReceipt }
           {expense.payment_method || 'N/A'}
         </span>
       </td>
+
+      {/* QuickBooks Sync Status */}
+      {isQBConnected && (
+        <td className="px-4 py-3 whitespace-nowrap">
+          <QuickBooksSyncBadge
+            syncRecord={syncRecord}
+            isConnected={isQBConnected}
+            entityType="expense"
+            entityId={expense.id}
+            onSync={onQBSync}
+            syncing={isSyncing}
+            compact={false}
+          />
+        </td>
+      )}
 
       {/* Actions */}
       <td className="px-4 py-3 whitespace-nowrap text-center">

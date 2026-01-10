@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -12,6 +13,8 @@ import {
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
+import QuickBooksSyncBadge from "@/components/expenses/QuickBooksSyncBadge";
+import { useQuickBooksSyncStatus } from "@/hooks/useQuickBooksSyncStatus";
 
 // Invoice Filters Component
 const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
@@ -182,6 +185,20 @@ export default function InvoiceListComponent({
 }) {
   const { t } = useTranslation('invoices');
 
+  // Get invoice IDs for sync status lookup
+  const invoiceIds = useMemo(
+    () => invoices.map(inv => inv.id),
+    [invoices]
+  );
+
+  // QuickBooks sync status
+  const {
+    isConnected: isQBConnected,
+    getSyncRecord,
+    syncEntity: syncInvoiceToQB,
+    isSyncing: isInvoiceSyncing
+  } = useQuickBooksSyncStatus('invoice', invoiceIds);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -232,6 +249,11 @@ export default function InvoiceListComponent({
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('list.status')}
                 </th>
+                {isQBConnected && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    QuickBooks
+                  </th>
+                )}
                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('list.actions')}
                 </th>
@@ -240,14 +262,14 @@ export default function InvoiceListComponent({
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-10 text-center">
+                  <td colSpan={isQBConnected ? 8 : 7} className="px-6 py-10 text-center">
                     <RefreshCw size={32} className="mx-auto text-blue-500 animate-spin" />
                     <p className="mt-2 text-gray-500">{t('list.loadingInvoices')}</p>
                   </td>
                 </tr>
               ) : invoices.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
+                  <td colSpan={isQBConnected ? 8 : 7} className="px-6 py-12 text-center">
                     <div className="max-w-sm mx-auto">
                       <FileText size={48} className="mx-auto text-gray-300 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-1">{t('list.noInvoicesFound')}</h3>
@@ -293,6 +315,20 @@ export default function InvoiceListComponent({
                     <td className="px-6 py-4">
                       <InvoiceStatusBadge status={invoice.status} />
                     </td>
+
+                    {isQBConnected && (
+                      <td className="px-6 py-4">
+                        <QuickBooksSyncBadge
+                          syncRecord={getSyncRecord(invoice.id)}
+                          isConnected={isQBConnected}
+                          entityType="invoice"
+                          entityId={invoice.id}
+                          onSync={syncInvoiceToQB}
+                          syncing={isInvoiceSyncing(invoice.id)}
+                          compact={false}
+                        />
+                      </td>
+                    )}
 
                     <td className="px-6 py-4 text-center">
                       <TableActionsDropdown

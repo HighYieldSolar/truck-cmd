@@ -3,6 +3,7 @@
 import { Pencil, Trash2, Eye, Receipt, CheckCircle } from 'lucide-react';
 import { TableActionsDropdown } from '@/components/shared/TableActions';
 import { useTranslation } from "@/context/LanguageContext";
+import QuickBooksSyncBadge from './QuickBooksSyncBadge';
 
 /**
  * Expense Card Component (Mobile View)
@@ -10,7 +11,16 @@ import { useTranslation } from "@/context/LanguageContext";
  * Displays expense data in a card format for mobile devices.
  * Follows the design spec mobile card pattern.
  */
-export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }) {
+export default function ExpenseCard({
+  expense,
+  onEdit,
+  onDelete,
+  onViewReceipt,
+  syncRecord = null,
+  isQBConnected = false,
+  onQBSync = null,
+  isSyncing = false
+}) {
   const { t } = useTranslation('expenses');
 
   // Format currency
@@ -98,7 +108,7 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
 
       {/* Card Footer */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        {/* Receipt Indicator */}
+        {/* Receipt & Sync Indicators */}
         <div className="flex items-center gap-2">
           {expense.receipt_image ? (
             <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
@@ -107,6 +117,19 @@ export default function ExpenseCard({ expense, onEdit, onDelete, onViewReceipt }
             </span>
           ) : (
             <span className="text-xs text-gray-400 dark:text-gray-500">{t('card.noReceipt')}</span>
+          )}
+
+          {/* QuickBooks Sync Badge */}
+          {isQBConnected && (
+            <QuickBooksSyncBadge
+              syncRecord={syncRecord}
+              isConnected={isQBConnected}
+              entityType="expense"
+              entityId={expense.id}
+              onSync={onQBSync}
+              syncing={isSyncing}
+              compact={true}
+            />
           )}
         </div>
 

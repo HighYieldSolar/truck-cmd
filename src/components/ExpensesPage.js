@@ -32,6 +32,7 @@ import {
 // Import utilities
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 import { usePagination, Pagination, SimplePagination } from '@/hooks/usePagination';
+import { useQuickBooksSyncStatus } from '@/hooks/useQuickBooksSyncStatus';
 
 // Import components
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -130,6 +131,20 @@ export default function ExpensesPage() {
     pageNumbers,
     totalItems
   } = usePagination(filteredExpenses, { itemsPerPage: 10 });
+
+  // Get expense IDs for sync status lookup (only for paginated/visible expenses)
+  const visibleExpenseIds = useMemo(
+    () => paginatedData.map(e => e.id),
+    [paginatedData]
+  );
+
+  // QuickBooks sync status for visible expenses
+  const {
+    isConnected: isQBConnected,
+    getSyncRecord,
+    syncEntity: syncExpenseToQB,
+    isSyncing: isExpenseSyncing
+  } = useQuickBooksSyncStatus('expense', visibleExpenseIds);
 
   // Check authentication
   useEffect(() => {
@@ -654,6 +669,10 @@ export default function ExpensesPage() {
                             onEdit={handleEditExpense}
                             onDelete={handleDeleteExpense}
                             onViewReceipt={handleViewReceipt}
+                            syncRecord={getSyncRecord(expense.id)}
+                            isQBConnected={isQBConnected}
+                            onQBSync={syncExpenseToQB}
+                            isSyncing={isExpenseSyncing(expense.id)}
                           />
                         ))}
                       </div>
@@ -690,6 +709,11 @@ export default function ExpensesPage() {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.paymentMethod')}
                               </th>
+                              {isQBConnected && (
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                                  QuickBooks
+                                </th>
+                              )}
                               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.actions')}
                               </th>
@@ -703,6 +727,10 @@ export default function ExpensesPage() {
                                 onEdit={handleEditExpense}
                                 onDelete={handleDeleteExpense}
                                 onViewReceipt={handleViewReceipt}
+                                syncRecord={getSyncRecord(expense.id)}
+                                isQBConnected={isQBConnected}
+                                onQBSync={syncExpenseToQB}
+                                isSyncing={isExpenseSyncing(expense.id)}
                               />
                             ))}
                           </tbody>
