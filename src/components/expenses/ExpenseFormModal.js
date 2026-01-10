@@ -17,6 +17,7 @@ import { useTranslation } from "@/context/LanguageContext";
 import { createExpense, updateExpense, uploadReceiptImage } from '@/lib/services/expenseService';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
 import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from '@/lib/utils/dateUtils';
+import { useQuickBooksAutoSync } from '@/hooks/useQuickBooksAutoSync';
 
 // LocalStorage helpers
 const getFormDataFromLocalStorage = (formKey) => {
@@ -52,9 +53,17 @@ const clearFormDataFromLocalStorage = (formKey) => {
  *
  * Modal for creating and editing expenses with dark mode support.
  * Follows the design spec modal pattern.
+ *
+ * @param {boolean} isOpen - Whether the modal is open
+ * @param {function} onClose - Callback when modal is closed
+ * @param {object} expense - Existing expense to edit (null for new)
+ * @param {function} onSave - Callback with saved expense data
+ * @param {function} onQuickBooksSync - Optional callback for QuickBooks auto-sync result
+ *   Called with { synced: boolean, error?: string, skipped?: boolean }
  */
-export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
+export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQuickBooksSync }) {
   const { t } = useTranslation('expenses');
+  const { autoSyncExpense } = useQuickBooksAutoSync();
 
   // Initial form state
   const initialFormData = {
@@ -287,6 +296,8 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       }
 
       let result;
+      const isNewExpense = !expense;
+
       if (expense) {
         result = await updateExpense(expense.id, expenseData);
       } else {
@@ -294,6 +305,23 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave }) {
       }
 
       clearFormDataFromLocalStorage(formKey);
+
+      // Trigger auto-sync for new expenses (non-blocking)
+      if (isNewExpense && result?.id) {
+        // Don't await - fire and forget to not block the user
+        autoSyncExpense(result.id).then((syncResult) => {
+          // Call the callback if provided so parent can show toast
+          if (onQuickBooksSync) {
+            onQuickBooksSync(syncResult);
+          }
+        }).catch((err) => {
+          // Silently ignore auto-sync errors but notify parent if callback exists
+          if (onQuickBooksSync) {
+            onQuickBooksSync({ synced: false, error: err.message });
+          }
+        });
+      }
+
       onSave(result);
     } catch (err) {
       setError(getUserFriendlyError(err));

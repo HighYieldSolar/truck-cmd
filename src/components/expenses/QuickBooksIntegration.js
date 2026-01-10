@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
@@ -20,7 +19,8 @@ import {
   Receipt,
   FileText,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 
 /**
@@ -35,7 +35,7 @@ import {
  * Gated to Premium+ tier.
  */
 export default function QuickBooksIntegration({ onSyncComplete }) {
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
   const { canAccess } = useFeatureAccess();
   const hasAccess = canAccess('quickbooksIntegration');
 
@@ -48,6 +48,18 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [showMappingModal, setShowMappingModal] = useState(false);
+  const [updatingSettings, setUpdatingSettings] = useState(false);
+
+  /**
+   * Fetch authenticated user on mount
+   */
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    getUser();
+  }, []);
 
   /**
    * Get the auth token for API calls
@@ -177,6 +189,56 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
       setError(err.message);
     } finally {
       setDisconnecting(false);
+    }
+  };
+
+  /**
+   * Update auto-sync settings
+   */
+  const handleUpdateAutoSync = async (type, enabled) => {
+    try {
+      setUpdatingSettings(true);
+      setError(null);
+
+      const token = await getAuthToken();
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const body = type === 'expenses'
+        ? { autoSyncExpenses: enabled }
+        : { autoSyncInvoices: enabled };
+
+      const response = await fetch('/api/quickbooks/settings', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update settings');
+      }
+
+      // Update local state
+      setConnectionStatus(prev => ({
+        ...prev,
+        connection: {
+          ...prev?.connection,
+          autoSyncExpenses: data.settings.autoSyncExpenses,
+          autoSyncInvoices: data.settings.autoSyncInvoices
+        }
+      }));
+    } catch (err) {
+      console.error('Error updating auto-sync:', err);
+      setError(err.message);
+    } finally {
+      setUpdatingSettings(false);
     }
   };
 
@@ -449,6 +511,70 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
                   <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
                     Map all categories to enable accurate expense syncing
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* Auto-Sync Settings */}
+            {connection?.status === 'active' && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Auto-Sync Settings
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                  Automatically sync new records to QuickBooks when created
+                </p>
+
+                <div className="space-y-3">
+                  {/* Auto-sync Expenses Toggle */}
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Auto-sync expenses
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={connection?.autoSyncExpenses || false}
+                        onChange={(e) => handleUpdateAutoSync('expenses', e.target.checked)}
+                        disabled={updatingSettings}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 peer-disabled:opacity-50"></div>
+                    </div>
+                  </label>
+
+                  {/* Auto-sync Invoices Toggle */}
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Auto-sync invoices
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={connection?.autoSyncInvoices || false}
+                        onChange={(e) => handleUpdateAutoSync('invoices', e.target.checked)}
+                        disabled={updatingSettings}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 peer-disabled:opacity-50"></div>
+                    </div>
+                  </label>
+                </div>
+
+                {updatingSettings && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Updating settings...
+                  </div>
                 )}
               </div>
             )}

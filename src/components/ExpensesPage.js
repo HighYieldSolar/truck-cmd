@@ -776,6 +776,20 @@ export default function ExpensesPage() {
         }}
         expense={currentExpense}
         onSave={handleSaveExpense}
+        onQuickBooksSync={(result) => {
+          if (result.synced) {
+            setOperationMessage({
+              type: 'success',
+              text: 'Expense synced to QuickBooks'
+            });
+          } else if (result.error) {
+            setOperationMessage({
+              type: 'warning',
+              text: `QuickBooks sync failed: ${result.error}`
+            });
+          }
+          // If skipped (auto-sync not enabled), don't show anything
+        }}
       />
 
       <ExpenseDeletionModal

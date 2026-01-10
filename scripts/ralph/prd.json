@@ -1,27 +1,174 @@
 {
-  "projectName": "Truck Command Feature Sprint",
-  "description": "Autonomous development sprint for Truck Command SaaS",
-  "branchName": "feature/ralph-sprint",
+  "projectName": "QuickBooks Integration Completion Sprint",
+  "description": "Complete the QuickBooks Online integration for Truck Command. The backend services are largely built - this sprint focuses on enabling the UI, adding auto-sync, and completing the user experience.",
+  "branchName": "feature/quickbooks-completion",
   "createdAt": "2026-01-09",
+  "targetAudience": "Owner-operators and small fleets who need seamless QuickBooks sync",
   "stories": [
     {
-      "id": "TC-EXAMPLE-001",
-      "title": "Example Story - Delete After Review",
-      "priority": 999,
+      "id": "QB-001",
+      "title": "Enable QuickBooks Connection UI",
+      "priority": 1,
       "passes": true,
       "acceptanceCriteria": [
-        "This is an example story to show the format",
-        "Delete this story and add your own",
-        "Set passes: false for stories that need work",
-        "Set passes: true for completed stories"
+        "Update QuickBooksIntegration.js to show real connection UI instead of 'Coming Soon'",
+        "Show 'Connect to QuickBooks' button when not connected",
+        "Display company name and connection status when connected",
+        "Include 'Disconnect' button with confirmation dialog",
+        "Show last sync timestamp if available",
+        "Handle loading and error states properly"
       ],
-      "notes": "This is a placeholder. Replace with your actual development tasks.",
-      "files": []
+      "notes": "The backend connection service exists at src/lib/services/quickbooks/quickbooksConnectionService.js. Use existing QuickBooksSyncStatus.js as reference for status display. API routes exist at /api/quickbooks/connect and /api/quickbooks/disconnect.",
+      "files": [
+        "src/components/expenses/QuickBooksIntegration.js",
+        "src/components/expenses/QuickBooksSyncStatus.js",
+        "src/lib/services/quickbooks/quickbooksConnectionService.js"
+      ]
+    },
+    {
+      "id": "QB-002",
+      "title": "Add Manual Sync Now Button with Progress",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Add 'Sync Now' button to QuickBooksIntegration component when connected",
+        "Show real-time progress during sync (e.g., 'Syncing 5 of 12 expenses...')",
+        "Display success summary after sync completes (X synced, Y failed)",
+        "Show expandable error details if any items failed",
+        "Button should be disabled during sync with loading spinner",
+        "Call onSyncComplete callback after successful sync"
+      ],
+      "notes": "Use the bulkSyncExpenses and bulkSyncInvoices functions from quickbooksSyncService.js. The API route is at /api/quickbooks/sync. Reference QuickBooksBulkSyncModal.js for existing sync UI patterns.",
+      "files": [
+        "src/components/expenses/QuickBooksIntegration.js",
+        "src/components/expenses/QuickBooksBulkSyncModal.js",
+        "src/app/api/quickbooks/sync/route.js"
+      ]
+    },
+    {
+      "id": "QB-003",
+      "title": "Add Category Mapping Configuration UI",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Add 'Configure Mappings' button to QuickBooksIntegration component",
+        "Integrate QuickBooksCategoryMappingModal for mapping TC categories to QB accounts",
+        "Show count of mapped vs unmapped categories",
+        "Alert user if they try to sync with unmapped categories",
+        "Fetch QB accounts list from /api/quickbooks/accounts",
+        "Save mappings via /api/quickbooks/mappings"
+      ],
+      "notes": "QuickBooksCategoryMappingModal.js exists but needs integration into main component. The mapping service is at quickbooksMappingService.js.",
+      "files": [
+        "src/components/expenses/QuickBooksIntegration.js",
+        "src/components/expenses/QuickBooksCategoryMappingModal.js",
+        "src/lib/services/quickbooks/quickbooksMappingService.js"
+      ]
+    },
+    {
+      "id": "QB-004",
+      "title": "Implement Auto-Sync on Expense Creation",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Add auto_sync_expenses toggle to QuickBooks connection settings UI",
+        "When auto-sync is enabled and user creates/updates an expense, trigger sync automatically",
+        "Add sync to expenseService.js create/update functions",
+        "Only auto-sync if user has active QB connection with auto_sync_expenses=true",
+        "Show toast notification on successful auto-sync",
+        "Handle errors gracefully (don't block expense creation if sync fails)"
+      ],
+      "notes": "The quickbooks_connections table already has auto_sync_expenses column. Check connection status before triggering. Use the syncExpense function for individual expense sync.",
+      "files": [
+        "src/lib/services/expenseService.js",
+        "src/lib/services/quickbooks/quickbooksSyncService.js",
+        "src/components/expenses/QuickBooksIntegration.js"
+      ]
+    },
+    {
+      "id": "QB-005",
+      "title": "Implement Auto-Sync on Invoice Creation",
+      "priority": 5,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Add auto_sync_invoices toggle to QuickBooks connection settings UI",
+        "When auto-sync is enabled and user creates an invoice, trigger sync automatically",
+        "Add sync to invoiceService.js create function",
+        "Only auto-sync if user has active QB connection with auto_sync_invoices=true",
+        "Show toast notification on successful auto-sync",
+        "Handle errors gracefully (don't block invoice creation if sync fails)"
+      ],
+      "notes": "Similar pattern to expense auto-sync. The syncInvoice function handles individual invoice sync including customer creation in QB.",
+      "files": [
+        "src/lib/services/invoiceService.js",
+        "src/lib/services/quickbooks/quickbooksSyncService.js",
+        "src/components/expenses/QuickBooksIntegration.js"
+      ]
+    },
+    {
+      "id": "QB-006",
+      "title": "Add Sync History View",
+      "priority": 6,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Add 'View History' button/tab to QuickBooksIntegration component",
+        "Display recent sync operations with timestamps",
+        "Show status (completed, partial, failed) for each sync",
+        "Display records synced and failed counts",
+        "Allow expanding failed items to see error messages",
+        "Implement 'Retry Failed' button that calls retryFailedSyncs"
+      ],
+      "notes": "Use getSyncHistory from quickbooksSyncService.js. The API route /api/quickbooks/status already returns sync stats.",
+      "files": [
+        "src/components/expenses/QuickBooksIntegration.js",
+        "src/lib/services/quickbooks/quickbooksSyncService.js",
+        "src/app/api/quickbooks/status/route.js"
+      ]
+    },
+    {
+      "id": "QB-007",
+      "title": "Add Sync Status Indicators to Expense/Invoice Lists",
+      "priority": 7,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Add QB sync status badge to expense rows (synced, pending, failed, not synced)",
+        "Add QB sync status badge to invoice rows",
+        "Show 'Sync to QB' quick action for unsynced items",
+        "Color code: green for synced, yellow for pending, red for failed, gray for not synced",
+        "Clicking badge shows sync details (QB ID, last sync time, error if any)"
+      ],
+      "notes": "Use getSyncRecord from quickbooksSyncService to check individual item sync status. Add to ExpenseListItem and InvoiceListItem components.",
+      "files": [
+        "src/components/expenses/ExpenseListItem.js",
+        "src/components/invoices/InvoiceListItem.js",
+        "src/lib/services/quickbooks/quickbooksSyncService.js"
+      ]
+    },
+    {
+      "id": "QB-008",
+      "title": "Add Token Refresh Health Check",
+      "priority": 8,
+      "passes": false,
+      "acceptanceCriteria": [
+        "Display connection health status in QuickBooksIntegration UI",
+        "Show warning if token expires within 7 days",
+        "Add 'Refresh Connection' button for users to manually refresh",
+        "Auto-refresh token in background when it's close to expiring",
+        "Show clear error and 'Reconnect' button if token refresh fails",
+        "Display last successful API call timestamp"
+      ],
+      "notes": "Token refresh logic exists in quickbooksConnectionService.js. QB refresh tokens expire after 100 days, access tokens after 1 hour. Add health check to verifyConnection function.",
+      "files": [
+        "src/components/expenses/QuickBooksIntegration.js",
+        "src/lib/services/quickbooks/quickbooksConnectionService.js"
+      ]
     }
   ],
   "metadata": {
-    "totalStories": 1,
-    "completedStories": 1,
-    "remainingStories": 0
+    "totalStories": 8,
+    "completedStories": 4,
+    "remainingStories": 4,
+    "estimatedIterations": 30,
+    "criticalPath": ["QB-001", "QB-002", "QB-003"]
   }
 }

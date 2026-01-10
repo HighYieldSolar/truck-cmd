@@ -3,6 +3,10 @@
 # This file tracks learnings and patterns discovered during autonomous development.
 # Ralph reads this at the start of each iteration to avoid repeating mistakes.
 
+## Current Sprint: QuickBooks Integration Completion
+## Started: 2026-01-09
+## Objective: Enable the QuickBooks UI (backend is built, UI shows "Coming Soon")
+
 ## Codebase Patterns (IMPORTANT - Read First)
 -------------------------------------------
 
@@ -39,28 +43,60 @@
 - Alert error: `alert alert-error`
 - Loading: `loading loading-spinner loading-lg`
 
-### PDF Generation (jsPDF v4.0.0)
-- Import: `import jsPDF from 'jspdf'` and `import 'jspdf-autotable'`
-- Create doc: `const doc = new jsPDF()`
-- Add table: `doc.autoTable({ ... })`
-- Save: `doc.save('filename.pdf')`
-- Reference: `src/components/invoices/` for existing PDF patterns
-- NOTE: Upgraded to v4.0.0 for security - check migration guide if issues
-
-### Charts (Recharts)
-- Import components: `import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'`
-- Wrap in ResponsiveContainer for responsive sizing
-- Use consistent color palette from design system
-
-### File Uploads
-- Use Supabase Storage for file uploads
-- Pattern in `src/components/fuel/` and `src/components/compliance/`
-- Generate unique filenames with timestamp
-
 ### Git Commit Convention
-- Prefix: `[Ralph] TC-XXX: Description`
-- Example: `[Ralph] TC-001: Add bulk fuel upload component`
+- Prefix: `[Ralph] QB-XXX: Description`
+- Example: `[Ralph] QB-001: Enable QuickBooks connection UI`
 - Keep commits atomic - one feature per commit
+
+## QuickBooks Integration Architecture (CRITICAL)
+-------------------------------------------------
+
+### Existing Services - DO NOT RECREATE, USE THESE:
+- `src/lib/services/quickbooks/quickbooksConnectionService.js`
+  - getAuthorizationUrl(userId, redirectUri, options)
+  - handleOAuthCallback(code, stateParam, realmId, redirectUri)
+  - getConnection(userId)
+  - refreshTokens(connectionId)
+  - disconnectConnection(userId)
+  - verifyConnection(connectionId)
+  - getConnectionStatus(userId)
+
+- `src/lib/services/quickbooks/quickbooksSyncService.js`
+  - syncExpense(connectionId, expense)
+  - syncInvoice(connectionId, invoice)
+  - bulkSyncExpenses(connectionId, userId, options)
+  - bulkSyncInvoices(connectionId, userId, options)
+  - getSyncStatus(userId)
+  - getSyncHistory(connectionId, limit)
+  - getSyncRecord(connectionId, entityType, localEntityId)
+  - retryFailedSyncs(connectionId)
+
+- `src/lib/services/quickbooks/quickbooksMappingService.js`
+  - getMappings(connectionId)
+  - getMappingForCategory(connectionId, category)
+  - createMapping(connectionId, mapping)
+  - updateMapping(mappingId, updates)
+  - deleteMapping(mappingId)
+
+### Existing API Routes - USE THESE:
+- GET/POST `/api/quickbooks/connect` - Initiates OAuth, returns authUrl
+- GET `/api/quickbooks/callback` - OAuth callback handler
+- POST `/api/quickbooks/disconnect` - Disconnects QB
+- POST `/api/quickbooks/sync` - Bulk sync endpoint
+- GET `/api/quickbooks/status` - Connection and sync status
+- GET `/api/quickbooks/accounts` - List QB chart of accounts
+- GET/POST/DELETE `/api/quickbooks/mappings` - Category mapping CRUD
+
+### Existing UI Components - INTEGRATE THESE:
+- `QuickBooksSyncStatus.js` - Shows sync stats
+- `QuickBooksBulkSyncModal.js` - Bulk sync with progress
+- `QuickBooksCategoryMappingModal.js` - Category to QB account mapping
+
+### QuickBooks Database Tables:
+- `quickbooks_connections` - Connection record (tokens, company_name, auto_sync flags)
+- `quickbooks_category_mappings` - TC category -> QB account ID mappings
+- `quickbooks_sync_records` - Per-entity sync status (synced, pending, failed)
+- `quickbooks_sync_history` - Bulk operation history with stats
 
 ## Key Files Reference
 ----------------------
@@ -70,22 +106,43 @@
 - `src/context/SubscriptionContext.js` - Subscription state
 - `CLAUDE.md` - Full project documentation
 
+## UI Design Patterns for QuickBooks
+------------------------------------
+- QuickBooks brand color: `#2CA01C` (green) - use for QB-specific accents
+- Use Lucide React icons: RefreshCw, Check, X, AlertCircle, Settings, Clock, Link
+- Connection status badges:
+  - Connected: `badge badge-success` with green dot
+  - Disconnected: `badge badge-warning`
+  - Error: `badge badge-error`
+- Sync status indicators:
+  - Synced: Green check icon
+  - Pending: Yellow clock icon
+  - Failed: Red X icon
+  - Not synced: Gray dash
+
 ## Common Issues & Solutions
 ----------------------------
 
 ### Issue: "user is undefined"
 Solution: Ensure component uses `useAuth()` and checks `if (user)` before data fetch
 
-### Issue: Supabase query returns empty
-Solution: Check RLS policies, ensure user_id filter is applied
+### Issue: QuickBooks API returns 401
+Solution: Token may be expired. Call refreshTokens() first, retry the operation.
 
-### Issue: Component not updating after data change
-Solution: Call the fetch function again after mutation, or use optimistic updates
+### Issue: Sync fails with "No mapping for category"
+Solution: User needs to map TC categories to QB accounts first. Show mapping UI.
 
-### Issue: TypeScript/ESLint errors
-Solution: Run `npm run lint` and fix before committing. Check CLAUDE.md for patterns.
+### Issue: Component not updating after sync
+Solution: Call onSyncComplete callback, or refetch status after sync completes.
 
 ## Session Log
 --------------
 # Entries added automatically by Ralph during iterations
+
+### [2026-01-09] Sprint Initialization
+- Created prd.json with 8 stories for QuickBooks completion
+- Backend services are complete - focus is on enabling UI
+- Critical path: QB-001 (connection UI) -> QB-002 (sync button) -> QB-003 (mapping UI)
+- Main file to update: src/components/expenses/QuickBooksIntegration.js
+- Current state: Shows "Coming Soon" - needs to show real connection/sync UI
 
