@@ -159,13 +159,13 @@ export default function ExpenseItem({
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
       {/* Description */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 overflow-hidden">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
             {getCategoryIcon()}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={expense.description}>
               {expense.description || t('item.noDescription')}
             </p>
             {getVehicleDisplay()}
@@ -174,36 +174,36 @@ export default function ExpenseItem({
       </td>
 
       {/* Date */}
-      <td className="px-4 py-3 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap overflow-hidden">
         <span className="text-sm text-gray-600 dark:text-gray-400">
           {formatDate(expense.date)}
         </span>
       </td>
 
       {/* Category */}
-      <td className="px-4 py-3 whitespace-nowrap">
+      <td className="px-4 py-3 whitespace-nowrap overflow-hidden">
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryBadgeClass()}`}>
           {expense.category || 'Other'}
         </span>
       </td>
 
       {/* Amount */}
-      <td className="px-4 py-3 whitespace-nowrap text-right">
+      <td className="px-4 py-3 whitespace-nowrap overflow-hidden text-right">
         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {formatCurrency(expense.amount)}
         </span>
       </td>
 
       {/* Payment Method */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <span className="text-sm text-gray-600 dark:text-gray-400">
+      <td className="px-4 py-3 whitespace-nowrap overflow-hidden">
+        <span className="text-sm text-gray-600 dark:text-gray-400 truncate block" title={expense.payment_method}>
           {expense.payment_method || 'N/A'}
         </span>
       </td>
 
       {/* QuickBooks Sync Status */}
       {isQBConnected && (
-        <td className="px-4 py-3 whitespace-nowrap">
+        <td className="px-4 py-3 whitespace-nowrap overflow-hidden">
           <QuickBooksSyncBadge
             syncRecord={syncRecord}
             isConnected={isQBConnected}
@@ -217,7 +217,7 @@ export default function ExpenseItem({
       )}
 
       {/* Actions */}
-      <td className="px-4 py-3 whitespace-nowrap text-center">
+      <td className="px-4 py-3 whitespace-nowrap text-right">
         <TableActionsDropdown
           onView={expense.receipt_image ? () => onViewReceipt(expense) : undefined}
           onEdit={() => onEdit(expense)}

@@ -660,8 +660,8 @@ export default function ExpensesPage() {
                 ) : (
                   <>
                     {/* Mobile/Tablet Card View */}
-                    <div className="xl:hidden p-4 space-y-4 overflow-visible">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
+                    <div className="xl:hidden p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {paginatedData.map((expense) => (
                           <ExpenseCard
                             key={expense.id}
@@ -689,32 +689,32 @@ export default function ExpensesPage() {
                     </div>
 
                     {/* Desktop Table View */}
-                    <div className="hidden xl:block overflow-visible">
-                      <div className="overflow-visible">
-                        <table className="w-full">
+                    <div className="hidden xl:block overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full table-fixed">
                           <thead className="bg-gray-50 dark:bg-gray-700/50">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[30%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.description')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.date')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.category')}
                               </th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[10%] px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.amount')}
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.paymentMethod')}
                               </th>
                               {isQBConnected && (
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                   QuickBooks
                                 </th>
                               )}
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                              <th className="w-[10%] px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                 {t('table.actions')}
                               </th>
                             </tr>
