@@ -414,3 +414,32 @@ body:not(.dashboard-theme) select option {
 .dark input[type="number"]::-webkit-outer-spin-button:hover {
   opacity: 1 !important;
 }
+
+/* ===========================================
+   Dark Mode Select/Option Dropdowns - Global
+   Applies to modals rendered outside dashboard-theme
+   =========================================== */
+
+/* Dark mode select styling for modals and dialogs */
+.dark select {
+  color: #e5e7eb !important;
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+/* Dark mode dropdown options - must use !important to override browser defaults */
+.dark select option {
+  color: #e5e7eb !important;
+  background-color: #1f2937 !important;
+}
+
+/* Ensure placeholder/default option is visible in dark mode */
+.dark select option:first-child {
+  color: #9ca3af !important;
+}
+
+/* Selected option highlight in dark mode */
+.dark select option:checked {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
