@@ -63,7 +63,19 @@ export async function POST(request) {
 
     // Parse the payload
     const payload = JSON.parse(rawBody);
-    const eventType = payload.event_type || payload.type;
+
+    // Handle Motive test/validation requests
+    // Motive sends '[vehicle_location_updated]' or similar array during URL validation
+    if (Array.isArray(payload)) {
+      console.log('[MotiveWebhook] Received test/validation request:', payload);
+      return NextResponse.json({
+        success: true,
+        message: 'Webhook URL validated successfully',
+        test: true
+      });
+    }
+
+    const eventType = payload.event_type || payload.type || payload.action;
 
     console.log(`[MotiveWebhook] Received event: ${eventType}`);
 

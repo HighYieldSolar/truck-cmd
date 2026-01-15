@@ -24,6 +24,19 @@ const log = (...args) => DEBUG && console.log('[WebhookSignature]', ...args);
  * @returns {boolean} - Whether signature is valid
  */
 export function validateMotiveSignature(body, signature, secret) {
+  // Check if this is a Motive test/validation request
+  // Motive sends '[vehicle_location_updated]' or '["vehicle_location_updated"]' as test payload
+  const isMotiveTestPayload = body && (
+    body.includes('[vehicle_location_updated]') ||
+    body.includes('["vehicle_location_updated"]') ||
+    body.includes("['vehicle_location_updated']")
+  );
+
+  if (isMotiveTestPayload) {
+    log('Detected Motive test/validation request - allowing');
+    return true;
+  }
+
   if (!secret) {
     log('Warning: Motive webhook secret not configured');
     // In development, allow unsigned webhooks for testing
@@ -34,8 +47,9 @@ export function validateMotiveSignature(body, signature, secret) {
     // These are typically empty body or ping events
     try {
       const parsed = JSON.parse(body);
-      if (!parsed.event_type && !parsed.type) {
-        log('Allowing verification request (no event_type)');
+      // Handle array payloads (Motive test requests) or objects without event_type
+      if (Array.isArray(parsed) || (!parsed.event_type && !parsed.type)) {
+        log('Allowing verification request (array or no event_type)');
         return true;
       }
     } catch {
@@ -53,6 +67,11 @@ export function validateMotiveSignature(body, signature, secret) {
     // Allow verification/ping requests without signature
     try {
       const parsed = JSON.parse(body);
+      // Handle array payloads (Motive test requests)
+      if (Array.isArray(parsed)) {
+        log('Allowing test request (array payload) without signature');
+        return true;
+      }
       if (parsed.event_type === 'ping' || parsed.type === 'ping' || parsed.event_type === 'test') {
         log('Allowing ping/test request without signature');
         return true;
