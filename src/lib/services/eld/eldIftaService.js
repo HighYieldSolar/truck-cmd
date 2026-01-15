@@ -6,6 +6,7 @@
  *
  * Data source options:
  * - 'eld': Use jurisdiction mileage from ELD provider (recommended)
+ * - 'automated': Use GPS-based automated jurisdiction tracking (Phase 3)
  * - 'manual': Use State Mileage Tracker entries (existing behavior)
  * - 'combined': Merge both sources, flag overlaps for review
  */
@@ -13,6 +14,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { getConnection } from './eldConnectionService';
 import { hasFeature } from '@/config/tierConfig';
+import {
+  getAutomatedMileageSummary,
+  getIFTASummaryWithAutomated,
+  importAutomatedToIFTA
+} from '@/lib/services/ifta/gpsProcessingService';
 
 // Initialize Supabase admin client
 const supabaseAdmin = createClient(
@@ -496,6 +502,47 @@ export async function importEldMileageToIfta(userId, quarter) {
 }
 
 /**
+ * Get automated GPS-based IFTA mileage for a quarter
+ * @param {string} userId - User ID
+ * @param {string} quarter - Quarter in YYYY-QN format
+ * @returns {Promise<object>} - Automated mileage data by jurisdiction
+ */
+export async function getAutomatedMileageForQuarter(userId, quarter) {
+  try {
+    const automatedData = await getAutomatedMileageSummary(userId, quarter);
+
+    if (!automatedData || automatedData.totalMiles === 0) {
+      return {
+        error: false,
+        hasAutomated: false,
+        data: [],
+        message: 'No automated GPS mileage data for this quarter'
+      };
+    }
+
+    // Format data to match other sources
+    const jurisdictionData = automatedData.jurisdictions.map(j => ({
+      jurisdiction: j.jurisdiction,
+      stateName: getStateName(j.jurisdiction),
+      miles: j.miles,
+      source: 'automated',
+      vehicleCount: j.vehicles?.length || 0
+    }));
+
+    return {
+      error: false,
+      hasAutomated: true,
+      data: jurisdictionData,
+      totalMiles: automatedData.totalMiles,
+      quarter
+    };
+
+  } catch (error) {
+    return { error: true, errorMessage: error.message };
+  }
+}
+
+/**
  * Get ELD mileage summary for IFTA dashboard
  * @param {string} userId - User ID
  * @param {string} quarter - Quarter in YYYY-QN format
@@ -503,34 +550,70 @@ export async function importEldMileageToIfta(userId, quarter) {
  */
 export async function getEldMileageSummary(userId, quarter) {
   try {
-    const [eldResult, manualResult] = await Promise.all([
+    const [eldResult, manualResult, automatedResult] = await Promise.all([
       getEldMileageForQuarter(userId, quarter),
-      getManualMileageForQuarter(userId, quarter)
+      getManualMileageForQuarter(userId, quarter),
+      getAutomatedMileageForQuarter(userId, quarter)
     ]);
 
     const eldTotal = eldResult.data?.reduce((sum, j) => sum + j.miles, 0) || 0;
     const manualTotal = manualResult.data?.reduce((sum, j) => sum + j.miles, 0) || 0;
+    const automatedTotal = automatedResult.data?.reduce((sum, j) => sum + j.miles, 0) || 0;
+
+    // Use automated data if available, otherwise fall back to ELD provider data
+    const primaryEldTotal = automatedTotal > 0 ? automatedTotal : eldTotal;
+    const primaryEldData = automatedTotal > 0 ? automatedResult.data : eldResult.data;
+    const hasEldData = automatedResult.hasAutomated || eldResult.hasEld;
 
     const jurisdictionCount = new Set([
       ...(eldResult.data?.map(j => j.jurisdiction) || []),
-      ...(manualResult.data?.map(j => j.jurisdiction) || [])
+      ...(manualResult.data?.map(j => j.jurisdiction) || []),
+      ...(automatedResult.data?.map(j => j.jurisdiction) || [])
     ]).size;
+
+    // Get last import date
+    const { data: lastImport } = await supabaseAdmin
+      .from('ifta_trip_records')
+      .select('created_at')
+      .eq('user_id', userId)
+      .eq('quarter', quarter)
+      .or('is_eld_data.eq.true,source.eq.eld_automated')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
     return {
       quarter,
-      hasEld: eldResult.hasEld,
+      hasEld: hasEldData,
       hasManual: manualResult.hasManual,
-      eldMiles: Math.round(eldTotal),
-      manualMiles: Math.round(manualTotal),
-      difference: Math.round(eldTotal - manualTotal),
-      differencePercent: manualTotal > 0
-        ? Math.round(((eldTotal - manualTotal) / manualTotal) * 100)
-        : 0,
-      jurisdictionCount,
-      eldJurisdictions: eldResult.data?.length || 0,
-      manualJurisdictions: manualResult.data?.length || 0,
-      lastEldSync: eldResult.lastSyncAt,
-      recommendation: getRecommendation(eldResult, manualResult)
+      hasAutomated: automatedResult.hasAutomated,
+      eldMileage: {
+        totalMiles: Math.round(primaryEldTotal),
+        jurisdictionCount: primaryEldData?.length || 0,
+        jurisdictions: primaryEldData?.map(j => ({
+          state: j.jurisdiction,
+          miles: Math.round(j.miles)
+        })) || []
+      },
+      manualMileage: {
+        totalMiles: Math.round(manualTotal),
+        jurisdictionCount: manualResult.data?.length || 0,
+        jurisdictions: manualResult.data?.map(j => ({
+          state: j.jurisdiction,
+          miles: Math.round(j.miles)
+        })) || []
+      },
+      comparison: {
+        hasDifference: Math.abs(primaryEldTotal - manualTotal) > 10,
+        differencePercent: manualTotal > 0
+          ? ((primaryEldTotal - manualTotal) / manualTotal) * 100
+          : 0
+      },
+      lastImportedAt: lastImport?.created_at,
+      recommendation: getRecommendation(
+        automatedResult.hasAutomated ? automatedResult : eldResult,
+        manualResult
+      )
     };
 
   } catch (error) {
@@ -601,6 +684,7 @@ function getStateName(jurisdiction) {
 export default {
   getEldMileageForQuarter,
   getManualMileageForQuarter,
+  getAutomatedMileageForQuarter,
   getJurisdictionMileage,
   importEldMileageToIfta,
   getEldMileageSummary

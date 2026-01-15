@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Map, { Marker, Popup, NavigationControl, FullscreenControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -8,20 +8,25 @@ import {
   MapPin,
   Truck,
   RefreshCw,
-  Maximize2,
   Loader2,
   Navigation,
   Clock,
   AlertCircle,
-  X
+  X,
+  Wifi
 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
+import { useRealtimeVehicleLocations } from '@/hooks/useELDRealtime';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
+// Stale threshold in minutes (15 minutes)
+const STALE_THRESHOLD_MINUTES = 15;
+
 /**
  * GPSTrackingMap - Real-time vehicle location tracking
+ * Uses Supabase Realtime subscriptions for live updates.
  * Requires Fleet+ subscription tier
  *
  * @param {function} onVehicleSelect - Callback when a vehicle marker is clicked
@@ -33,65 +38,101 @@ export default function GPSTrackingMap({
   compact = false,
   className = ''
 }) {
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [error, setError] = useState(null);
-  const [mapBounds, setMapBounds] = useState(null);
 
   const { canAccess } = useFeatureAccess();
   const hasAccess = canAccess('eldGpsTracking');
 
+  // Get user on mount
   useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
     if (hasAccess) {
-      loadVehicleLocations();
-    } else {
-      setLoading(false);
+      getUser();
     }
   }, [hasAccess]);
 
-  const loadVehicleLocations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Use real-time subscription hook
+  const {
+    locations: realtimeLocations,
+    loading,
+    error,
+    refresh
+  } = useRealtimeVehicleLocations(user?.id);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  // Transform realtime data to component format
+  const vehicles = useMemo(() => {
+    if (!realtimeLocations?.length) return [];
 
-      // Fetch GPS dashboard data
-      const response = await fetch('/api/eld/gps/dashboard');
-      const data = await response.json();
+    return realtimeLocations.map(loc => {
+      const now = new Date();
+      const recordedAt = new Date(loc.recorded_at || loc.updated_at);
+      const ageMinutes = Math.floor((now - recordedAt) / 60000);
+      const isStale = ageMinutes > STALE_THRESHOLD_MINUTES;
+      const isMoving = (loc.speed_mph || 0) > 0;
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load GPS data');
-      }
+      return {
+        id: loc.id,
+        externalVehicleId: loc.eld_vehicle_id,
+        vehicleId: loc.vehicle_id,
+        vehicleName: loc.eld_vehicle_id, // Will use vehicle name mapping when available
+        eldProvider: loc.eld_provider,
+        location: {
+          latitude: parseFloat(loc.latitude),
+          longitude: parseFloat(loc.longitude),
+          speedMph: loc.speed_mph,
+          heading: loc.heading,
+          address: loc.address || loc.jurisdiction,
+          odometerMiles: loc.odometer_miles,
+          engineHours: loc.engine_hours
+        },
+        isMoving,
+        isStale,
+        ageMinutes,
+        recordedAt: loc.recorded_at,
+        updatedAt: loc.updated_at
+      };
+    });
+  }, [realtimeLocations]);
 
-      setVehicles(data.vehicles || []);
-      setMapBounds(data.bounds);
-    } catch (err) {
-      console.error('Failed to load GPS data:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Calculate map bounds from vehicle positions
+  const mapBounds = useMemo(() => {
+    if (!vehicles.length) return null;
+
+    const validVehicles = vehicles.filter(v => v.location?.latitude && v.location?.longitude);
+    if (!validVehicles.length) return null;
+
+    const lats = validVehicles.map(v => v.location.latitude);
+    const lngs = validVehicles.map(v => v.location.longitude);
+
+    const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+    const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+
+    // Calculate zoom based on spread
+    const latSpread = Math.max(...lats) - Math.min(...lats);
+    const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+    const maxSpread = Math.max(latSpread, lngSpread);
+    let zoom = 4;
+    if (maxSpread < 0.5) zoom = 12;
+    else if (maxSpread < 2) zoom = 10;
+    else if (maxSpread < 5) zoom = 8;
+    else if (maxSpread < 15) zoom = 6;
+
+    return {
+      center: { lat: centerLat, lng: centerLng },
+      zoom
+    };
+  }, [vehicles]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-
-    try {
-      // Trigger location refresh from ELD provider
-      const response = await fetch('/api/eld/gps/refresh', { method: 'POST' });
-      if (response.ok) {
-        await loadVehicleLocations();
-      }
-    } catch (err) {
-      console.error('Refresh failed:', err);
-    } finally {
-      setRefreshing(false);
-    }
+    await refresh();
+    setRefreshing(false);
   };
 
   const handleVehicleClick = useCallback((vehicle) => {
@@ -490,6 +531,18 @@ export default function GPSTrackingMap({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Real-time Status Footer */}
+      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <Wifi size={12} className="text-green-500" />
+            Real-time
+          </span>
+        </div>
+        <span>{vehicles.length} vehicles tracked</span>
       </div>
     </div>
   );

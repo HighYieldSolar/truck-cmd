@@ -1,15 +1,14 @@
 "use client";
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { MapPin, Truck, BarChart2, Calculator, Route, FileDown, Clock, Play, History } from 'lucide-react';
+import { MapPin, Truck, BarChart2, Calculator, Route, FileDown, Clock, Play, History, Zap, CheckCircle, AlertCircle, RefreshCw, Settings, ArrowRight, Loader2 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from '@/components/billing/UpgradePrompt';
 import { supabase } from '@/lib/supabaseClient';
 import TutorialCard from '@/components/shared/TutorialCard';
 import { useTranslation } from '@/context/LanguageContext';
-import { Zap, Bell } from 'lucide-react';
 
 // Dynamically import the StateMileageLogger component
 const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMileageLogger'), {
@@ -20,6 +19,280 @@ const StateMileageLogger = dynamic(() => import('@/components/drivers/StateMilea
     </div>
   ),
 });
+
+/**
+ * ELD Mileage Import Panel
+ * Shows ELD connection status and allows importing automated mileage data
+ */
+function ELDMileageImportPanel() {
+  const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [automatedData, setAutomatedData] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const { canAccess } = useFeatureAccess();
+  const hasEldAccess = canAccess('eldIntegration');
+
+  // Get current quarter
+  const getCurrentQuarter = () => {
+    const now = new Date();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    return `${now.getFullYear()}-Q${quarter}`;
+  };
+
+  const loadData = useCallback(async () => {
+    if (!hasEldAccess) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      // Load ELD connection status
+      const connectionResponse = await fetch('/api/eld/connections', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+
+      if (connectionResponse.ok) {
+        const connData = await connectionResponse.json();
+        setConnectionStatus(connData);
+
+        // If connected, load automated IFTA data
+        if (connData.connected) {
+          const quarter = getCurrentQuarter();
+          const iftaResponse = await fetch(`/api/ifta/automated?quarter=${quarter}`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          if (iftaResponse.ok) {
+            const iftaData = await iftaResponse.json();
+            setAutomatedData(iftaData);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error loading ELD data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [hasEldAccess]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleImport = async () => {
+    try {
+      setImporting(true);
+      setError(null);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const quarter = getCurrentQuarter();
+      const response = await fetch('/api/eld/ifta/import', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ quarter })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Import failed');
+      }
+
+      setSuccess(`Successfully imported ${data.imported || 0} mileage records`);
+      setTimeout(() => setSuccess(null), 5000);
+      await loadData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Not on a plan with ELD access
+  if (!hasEldAccess) {
+    return (
+      <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Zap size={16} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="font-medium text-gray-900 dark:text-gray-100">ELD Mileage Import</span>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
+            Premium
+          </span>
+        </div>
+        <div className="p-4 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Upgrade to Premium to automatically import mileage from your ELD device.
+          </p>
+          <Link
+            href="/dashboard/upgrade"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+          >
+            Upgrade Now
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+          <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <Zap size={16} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <span className="font-medium text-gray-900 dark:text-gray-100">ELD Mileage Import</span>
+        </div>
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 size={24} className="animate-spin text-blue-500" />
+        </div>
+      </div>
+    );
+  }
+
+  const isConnected = connectionStatus?.connected;
+  const hasAutomatedData = automatedData?.hasData && automatedData?.totalMiles > 0;
+
+  return (
+    <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-lg ${
+            isConnected
+              ? 'bg-green-100 dark:bg-green-900/30'
+              : 'bg-gray-100 dark:bg-gray-700'
+          }`}>
+            <Zap size={16} className={
+              isConnected
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-gray-500 dark:text-gray-400'
+            } />
+          </div>
+          <span className="font-medium text-gray-900 dark:text-gray-100">ELD Mileage Import</span>
+          {isConnected && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+              <CheckCircle size={10} />
+              Connected
+            </span>
+          )}
+        </div>
+        {isConnected && hasAutomatedData && (
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm rounded-lg transition-colors"
+          >
+            {importing ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <FileDown size={14} />
+                Import to Mileage Log
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mx-4 mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+          <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+          <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="mx-4 mt-3 p-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+          <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+          <p className="text-xs text-green-700 dark:text-green-300">{success}</p>
+        </div>
+      )}
+
+      <div className="p-4">
+        {!isConnected ? (
+          <div className="text-center py-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Connect your ELD device to automatically import jurisdiction mileage.
+            </p>
+            <Link
+              href="/dashboard/settings/eld"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Settings size={14} />
+              Connect ELD
+            </Link>
+          </div>
+        ) : hasAutomatedData ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Current Quarter</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{getCurrentQuarter()}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                  {Math.round(automatedData.totalMiles).toLocaleString()}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Total Miles</p>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-green-900 dark:text-green-100">
+                  {automatedData.jurisdictionCount || 0}
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">States</p>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
+                  {automatedData.breadcrumbCount?.toLocaleString() || '0'}
+                </p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">GPS Points</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              Click "Import to Mileage Log" to add ELD mileage to your state records
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              No automated mileage data available for this quarter yet.
+            </p>
+            <button
+              onClick={loadData}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-600 dark:text-blue-400 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            >
+              <RefreshCw size={14} />
+              Refresh Data
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // Note: DashboardLayout is provided by mileage/layout.js - do not duplicate here
 export default function DriverMileagePage() {
@@ -230,30 +503,8 @@ export default function DriverMileagePage() {
             </div>
           </div>
 
-          {/* ELD Mileage Import - Coming Soon */}
-          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Zap size={16} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <span className="font-medium text-gray-900 dark:text-gray-100">ELD Mileage Import</span>
-              </div>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                <Clock size={10} />
-                Coming Soon
-              </span>
-            </div>
-            <div className="p-4 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Automatically import mileage data from your connected ELD device.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                <Bell size={12} />
-                <span>We'll notify you when this feature is available</span>
-              </div>
-            </div>
-          </div>
+          {/* ELD Mileage Import Panel */}
+          <ELDMileageImportPanel />
 
           {/* Main Content */}
           <StateMileageLogger />

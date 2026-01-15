@@ -35,6 +35,7 @@ import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal
 import VehicleSelector from "@/components/ifta/VehicleSelector";
 import SimplifiedExportModal from "@/components/ifta/SimplifiedExportModal";
 import { UpgradePrompt } from "@/components/billing/UpgradePrompt";
+import AutomatedIFTAPanel from "@/components/ifta/AutomatedIFTAPanel";
 
 // Import services
 import { fetchFuelEntries } from "@/lib/services/fuelService";
@@ -45,7 +46,7 @@ import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 // Import tutorial component
 import TutorialCard from "@/components/shared/TutorialCard";
-import { FileText, MapPinned, DollarSign, Zap, Bell, Clock } from "lucide-react";
+import { FileText, MapPinned, DollarSign, Zap, Sparkles } from "lucide-react";
 
 // State name mapping
 const STATE_NAMES = {
@@ -85,6 +86,7 @@ export default function IFTACalculatorPage() {
   const [trips, setTrips] = useState([]);
   const [fuelData, setFuelData] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState("all");
+  const [automatedData, setAutomatedData] = useState(null);
 
   // UI state
   const [showTripDetails, setShowTripDetails] = useState(false);
@@ -203,6 +205,7 @@ export default function IFTACalculatorPage() {
   }, [trips, fuelData]);
 
   // Calculate jurisdiction summary (THE MAIN IFTA DATA)
+  // Priority: Automated GPS data > Manual trip entries
   const getJurisdictionSummary = useCallback(() => {
     const jurisdictionData = {};
 
@@ -215,35 +218,54 @@ export default function IFTACalculatorPage() {
       ? fuelData
       : fuelData.filter(f => f.vehicle_id === selectedVehicle);
 
-    // Add miles from trips
+    // FIRST: Add automated GPS-based mileage (highest priority - most accurate)
+    if (automatedData?.jurisdictions?.length > 0) {
+      automatedData.jurisdictions.forEach(j => {
+        if (!jurisdictionData[j.code]) {
+          jurisdictionData[j.code] = { miles: 0, gallons: 0, source: 'automated' };
+        }
+        jurisdictionData[j.code].miles += j.miles || 0;
+        jurisdictionData[j.code].source = 'automated';
+      });
+    }
+
+    // SECOND: Add miles from manual trips (only if no automated data for that jurisdiction)
     filteredTrips.forEach(trip => {
       const miles = parseFloat(trip.total_miles) || 0;
 
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         if (!jurisdictionData[trip.start_jurisdiction]) {
-          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0 };
+          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0, source: 'manual' };
         }
-        jurisdictionData[trip.start_jurisdiction].miles += miles;
+        // Only add manual miles if no automated data exists for this jurisdiction
+        if (jurisdictionData[trip.start_jurisdiction].source !== 'automated') {
+          jurisdictionData[trip.start_jurisdiction].miles += miles;
+        }
       } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
         const halfMiles = miles / 2;
 
         if (!jurisdictionData[trip.start_jurisdiction]) {
-          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0 };
+          jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0, source: 'manual' };
         }
         if (!jurisdictionData[trip.end_jurisdiction]) {
-          jurisdictionData[trip.end_jurisdiction] = { miles: 0, gallons: 0 };
+          jurisdictionData[trip.end_jurisdiction] = { miles: 0, gallons: 0, source: 'manual' };
         }
 
-        jurisdictionData[trip.start_jurisdiction].miles += halfMiles;
-        jurisdictionData[trip.end_jurisdiction].miles += halfMiles;
+        // Only add manual miles if no automated data exists
+        if (jurisdictionData[trip.start_jurisdiction].source !== 'automated') {
+          jurisdictionData[trip.start_jurisdiction].miles += halfMiles;
+        }
+        if (jurisdictionData[trip.end_jurisdiction].source !== 'automated') {
+          jurisdictionData[trip.end_jurisdiction].miles += halfMiles;
+        }
       }
     });
 
-    // Add fuel from fuel tracker
+    // ALWAYS add fuel from fuel tracker (fuel purchases are independent of mileage source)
     filteredFuel.forEach(entry => {
       if (entry.state) {
         if (!jurisdictionData[entry.state]) {
-          jurisdictionData[entry.state] = { miles: 0, gallons: 0 };
+          jurisdictionData[entry.state] = { miles: 0, gallons: 0, source: 'fuel' };
         }
         jurisdictionData[entry.state].gallons += parseFloat(entry.gallons) || 0;
       }
@@ -256,10 +278,11 @@ export default function IFTACalculatorPage() {
         code,
         name: STATE_NAMES[code] || code,
         miles: data.miles,
-        gallons: data.gallons
+        gallons: data.gallons,
+        source: data.source || 'manual'
       }))
       .sort((a, b) => b.miles - a.miles);
-  }, [trips, fuelData, selectedVehicle]);
+  }, [trips, fuelData, selectedVehicle, automatedData]);
 
   // Calculate summary stats
   const getStats = useCallback(() => {
@@ -267,13 +290,17 @@ export default function IFTACalculatorPage() {
     const totalMiles = summary.reduce((sum, j) => sum + j.miles, 0);
     const totalGallons = summary.reduce((sum, j) => sum + j.gallons, 0);
     const avgMpg = totalGallons > 0 ? totalMiles / totalGallons : 0;
+    const automatedCount = summary.filter(j => j.source === 'automated').length;
+    const hasAutomatedData = automatedCount > 0;
 
     return {
       totalTrips: trips.length,
       totalMiles,
       totalGallons,
       avgMpg,
-      jurisdictionCount: summary.length
+      jurisdictionCount: summary.length,
+      automatedCount,
+      hasAutomatedData
     };
   }, [trips, getJurisdictionSummary]);
 
@@ -632,30 +659,13 @@ export default function IFTACalculatorPage() {
             </div>
           </div>
 
-          {/* ELD Data Import - Coming Soon */}
-          <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Zap size={16} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                <span className="font-medium text-gray-900 dark:text-gray-100">ELD Data Import</span>
-              </div>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                <Clock size={10} />
-                Coming Soon
-              </span>
-            </div>
-            <div className="p-4 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Automatically import mileage and fuel data from your connected ELD device for accurate IFTA calculations.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-                <Bell size={12} />
-                <span>We'll notify you when this feature is available</span>
-              </div>
-            </div>
-          </div>
+          {/* Automated IFTA Tracking - Real-time GPS-based mileage */}
+          <AutomatedIFTAPanel
+            quarter={activeQuarter}
+            selectedVehicle={selectedVehicle}
+            onDataLoaded={setAutomatedData}
+            className="mb-6"
+          />
 
           {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -779,10 +789,26 @@ export default function IFTACalculatorPage() {
                         <tr key={j.code} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/30'}>
                           <td className="px-5 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-600/20 flex items-center justify-center mr-3">
-                                <span className="text-xs font-bold text-blue-600 dark:text-blue-300">{j.code}</span>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                                j.source === 'automated'
+                                  ? 'bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40'
+                                  : 'bg-blue-100 dark:bg-blue-600/20'
+                              }`}>
+                                <span className={`text-xs font-bold ${
+                                  j.source === 'automated'
+                                    ? 'text-purple-600 dark:text-purple-300'
+                                    : 'text-blue-600 dark:text-blue-300'
+                                }`}>{j.code}</span>
                               </div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">{j.name}</span>
+                              <div>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{j.name}</span>
+                                {j.source === 'automated' && (
+                                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded">
+                                    <Sparkles size={10} className="mr-1" />
+                                    GPS
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-5 py-4 whitespace-nowrap text-right">
@@ -817,13 +843,33 @@ export default function IFTACalculatorPage() {
                 {/* Mobile Cards */}
                 <div className="md:hidden p-4 space-y-3">
                   {jurisdictionSummary.map((j) => (
-                    <div key={j.code} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                    <div key={j.code} className={`rounded-xl p-4 ${
+                      j.source === 'automated'
+                        ? 'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20'
+                        : 'bg-gray-50 dark:bg-gray-700/50'
+                    }`}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-600/20 flex items-center justify-center mr-3">
-                            <span className="text-sm font-bold text-blue-600 dark:text-blue-300">{j.code}</span>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${
+                            j.source === 'automated'
+                              ? 'bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800/40 dark:to-purple-800/40'
+                              : 'bg-blue-100 dark:bg-blue-600/20'
+                          }`}>
+                            <span className={`text-sm font-bold ${
+                              j.source === 'automated'
+                                ? 'text-purple-600 dark:text-purple-300'
+                                : 'text-blue-600 dark:text-blue-300'
+                            }`}>{j.code}</span>
                           </div>
-                          <span className="font-semibold text-gray-900 dark:text-gray-100">{j.name}</span>
+                          <div>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">{j.name}</span>
+                            {j.source === 'automated' && (
+                              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded">
+                                <Sparkles size={10} className="mr-1" />
+                                GPS
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import {
   Clock,
@@ -12,10 +12,13 @@ import {
   User,
   RefreshCw,
   ChevronRight,
-  Loader2
+  Loader2,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
+import { useRealtimeDriverHOS } from '@/hooks/useELDRealtime';
 
 // HOS Status colors and icons
 const HOS_STATUS_CONFIG = {
@@ -63,62 +66,89 @@ const HOS_STATUS_CONFIG = {
   }
 };
 
+// Map database duty_status to component status keys
+const DUTY_STATUS_MAP = {
+  'driving': 'DRIVING',
+  'on_duty': 'ON_DUTY',
+  'off_duty': 'OFF_DUTY',
+  'sleeper': 'SLEEPER',
+  'unknown': 'OFF_DUTY'
+};
+
 /**
- * HOSDashboard - Shows HOS compliance status for all drivers
+ * HOSDashboard - Shows HOS compliance status for all drivers (Real-time)
+ *
+ * Uses Supabase Realtime subscriptions for live updates.
  *
  * @param {function} onDriverSelect - Callback when a driver is clicked
  * @param {boolean} compact - Use compact mode for sidebar widget
  */
 export default function HOSDashboard({ onDriverSelect, compact = false }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [hosData, setHosData] = useState(null);
-  const [error, setError] = useState(null);
 
   const { canAccess } = useFeatureAccess();
   const hasAccess = canAccess('eldHosTracking');
 
+  // Get user on mount
   useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
     if (hasAccess) {
-      loadHosData();
-    } else {
-      setLoading(false);
+      getUser();
     }
   }, [hasAccess]);
 
-  const loadHosData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Use real-time subscription hook
+  const {
+    drivers: realtimeDrivers,
+    driversWithViolations,
+    driversByStatus,
+    loading,
+    error,
+    refresh
+  } = useRealtimeDriverHOS(user?.id);
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) return;
+  // Transform realtime data to component format
+  const hosData = useMemo(() => {
+    if (!realtimeDrivers?.length) return null;
 
-      setUser(user);
+    const transformedDrivers = realtimeDrivers.map(driver => ({
+      id: driver.id,
+      eldDriverId: driver.eld_driver_id,
+      name: driver.eld_driver_id, // Will use driver mapping when available
+      status: DUTY_STATUS_MAP[driver.duty_status] || 'OFF_DUTY',
+      driveTimeRemaining: driver.drive_time_remaining_ms ? Math.floor(driver.drive_time_remaining_ms / 60000) : null,
+      shiftTimeRemaining: driver.shift_time_remaining_ms ? Math.floor(driver.shift_time_remaining_ms / 60000) : null,
+      cycleTimeRemaining: driver.cycle_time_remaining_ms ? Math.floor(driver.cycle_time_remaining_ms / 60000) : null,
+      breakTimeRemaining: driver.break_time_remaining_ms ? Math.floor(driver.break_time_remaining_ms / 60000) : null,
+      hasViolation: driver.has_violation,
+      location: driver.location_description,
+      vehicleId: driver.vehicle_id,
+      statusStartedAt: driver.status_started_at,
+      updatedAt: driver.updated_at
+    }));
 
-      // Call HOS dashboard API
-      const response = await fetch('/api/eld/hos/dashboard');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load HOS data');
-      }
-
-      setHosData(data);
-    } catch (err) {
-      console.error('Failed to load HOS data:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return {
+      drivers: transformedDrivers,
+      summary: {
+        totalDrivers: realtimeDrivers.length,
+        driving: driversByStatus.driving?.length || 0,
+        onDuty: driversByStatus.on_duty?.length || 0,
+        offDuty: driversByStatus.off_duty?.length || 0,
+        sleeper: driversByStatus.sleeper?.length || 0,
+        violations: driversWithViolations?.length || 0
+      },
+      lastUpdated: realtimeDrivers[0]?.updated_at || new Date().toISOString()
+    };
+  }, [realtimeDrivers, driversByStatus, driversWithViolations]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    await loadHosData();
+    await refresh();
     setRefreshing(false);
   };
 
@@ -359,12 +389,19 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
         })}
       </div>
 
-      {/* Last Updated */}
-      {hosData.lastUpdated && (
-        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 text-center text-xs text-gray-500 dark:text-gray-400">
-          Last updated: {new Date(hosData.lastUpdated).toLocaleString()}
+      {/* Real-time Status Footer */}
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <Wifi size={12} className="text-green-500" />
+            Real-time
+          </span>
         </div>
-      )}
+        {hosData.lastUpdated && (
+          <span>Last update: {new Date(hosData.lastUpdated).toLocaleTimeString()}</span>
+        )}
+      </div>
     </div>
   );
 }

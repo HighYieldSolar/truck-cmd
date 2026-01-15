@@ -22,3 +22,9 @@ export { default as GPSTrackingMap } from './GPSTrackingMap';
 
 // Vehicle Diagnostics (Fleet+ tier)
 export { default as VehicleDiagnostics } from './VehicleDiagnostics';
+
+// Real-time Dashboard Components (Phase 2)
+export { default as ELDDashboardPage } from './ELDDashboardPage';
+export { default as HOSStatusCard } from './HOSStatusCard';
+export { default as HOSViolationAlert } from './HOSViolationAlert';
+export { default as ELDAlertBanner } from './ELDAlertBanner';
