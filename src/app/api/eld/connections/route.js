@@ -235,10 +235,8 @@ export async function POST(request) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const redirectUri = `${baseUrl}/api/eld/callback`;
 
-        const result = getAuthorizationUrl(provider, user.id, redirectUri, {
-          reconnect,
-          connectionId
-        });
+        // Note: getAuthorizationUrl expects (userId, providerId, redirectUri)
+        const result = await getAuthorizationUrl(user.id, provider, redirectUri);
 
         if (result.error) {
           return NextResponse.json(
