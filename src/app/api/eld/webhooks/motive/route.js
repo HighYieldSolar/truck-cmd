@@ -167,6 +167,20 @@ export async function POST(request) {
 }
 
 /**
+ * HEAD /api/eld/webhooks/motive
+ *
+ * HEAD request for webhook URL verification
+ */
+export async function HEAD() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'X-Webhook-Status': 'active'
+    }
+  });
+}
+
+/**
  * GET /api/eld/webhooks/motive
  *
  * Health check endpoint for webhook verification
@@ -176,5 +190,21 @@ export async function GET() {
     status: 'ok',
     provider: 'motive',
     timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * OPTIONS /api/eld/webhooks/motive
+ *
+ * CORS preflight for webhook verification
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-KT-Webhook-Signature'
+    }
   });
 }

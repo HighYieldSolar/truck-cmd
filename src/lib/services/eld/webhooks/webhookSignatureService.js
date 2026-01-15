@@ -27,11 +27,42 @@ export function validateMotiveSignature(body, signature, secret) {
   if (!secret) {
     log('Warning: Motive webhook secret not configured');
     // In development, allow unsigned webhooks for testing
-    return process.env.NODE_ENV === 'development';
+    // Also allow verification requests (empty or minimal body)
+    if (process.env.NODE_ENV === 'development') return true;
+
+    // Allow verification requests when no secret is configured
+    // These are typically empty body or ping events
+    try {
+      const parsed = JSON.parse(body);
+      if (!parsed.event_type && !parsed.type) {
+        log('Allowing verification request (no event_type)');
+        return true;
+      }
+    } catch {
+      // If body isn't valid JSON, might be a simple ping
+      if (!body || body.length < 10) {
+        log('Allowing verification request (minimal body)');
+        return true;
+      }
+    }
+    return false;
   }
 
   if (!signature) {
     log('Missing X-KT-Webhook-Signature header');
+    // Allow verification/ping requests without signature
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed.event_type === 'ping' || parsed.type === 'ping' || parsed.event_type === 'test') {
+        log('Allowing ping/test request without signature');
+        return true;
+      }
+    } catch {
+      // If body isn't valid JSON and is minimal, allow it
+      if (!body || body.length < 10) {
+        return true;
+      }
+    }
     return false;
   }
 
