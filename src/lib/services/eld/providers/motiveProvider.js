@@ -48,11 +48,26 @@ export class MotiveProvider extends BaseELDProvider {
    * Get authorization URL for OAuth flow
    */
   async getAuthorizationUrl(redirectUri, state) {
+    // Motive OAuth scopes - see https://developer-docs.gomotive.com/docs/oauth-scopes
+    const scopes = [
+      'companies.read',                    // Company details (recommended)
+      'vehicles.read',                     // Vehicle data
+      'users.read',                        // Drivers and fleet managers
+      'hos_logs.read',                     // HOS logs
+      'hos_logs.hours_of_service',         // Hours of service summary
+      'ifta_reports.trips',                // IFTA trip reports
+      'ifta_reports.summary',              // IFTA mileage summary
+      'locations.vehicle_locations_list',  // Current vehicle locations
+      'locations.vehicle_locations_single', // Vehicle location history
+      'fault_codes.read',                  // Vehicle fault codes
+      'fuel_purchases.read'                // Fuel purchases
+    ].join(' ');
+
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'vehicles.read drivers.read hos.read ifta.read locations.read fault_codes.read fuel_purchases.read',
+      scope: scopes,
       state: state
     });
 
