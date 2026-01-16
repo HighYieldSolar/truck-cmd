@@ -87,14 +87,15 @@ export async function GET(request) {
     }
 
     const state = decodeState(stateParam);
-    if (!state || !state.userId || !state.provider) {
+    if (!state || !state.userId || !state.providerId) {
       log('Invalid state data:', state);
       return NextResponse.redirect(
         `${baseUrl}/dashboard/settings?tab=eld&error=${encodeURIComponent('Invalid callback state')}`
       );
     }
 
-    const { userId, provider, reconnect, connectionId } = state;
+    const { userId, providerId, reconnect, connectionId } = state;
+    const provider = providerId; // Alias for clarity
     log(`Processing OAuth callback for ${provider}, user: ${userId}`);
 
     // Verify user exists
