@@ -150,13 +150,23 @@ export class MotiveProvider extends BaseELDProvider {
 
   /**
    * Verify connection is valid
+   * Uses /users endpoint with per_page=1 to verify token works
    */
   async verifyConnection() {
     try {
-      const response = await this.request(`${this.baseUrl}/users/me`);
+      // Motive doesn't have a /users/me endpoint
+      // Use /users with per_page=1 to verify the token works
+      const response = await this.request(`${this.baseUrl}/users?per_page=1&role=admin`);
+
+      // Extract company info from the first admin user if available
+      const firstUser = response.users?.[0]?.user;
+      const companyName = firstUser?.carrier_name || 'Unknown';
+
+      log('Connection verified successfully, company:', companyName);
+
       return {
         valid: true,
-        companyName: response.user?.company?.name || 'Unknown',
+        companyName,
         eldProvider: 'Motive'
       };
     } catch (error) {
