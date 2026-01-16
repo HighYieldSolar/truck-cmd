@@ -10,8 +10,10 @@
 import { BaseELDProvider, normalizeDutyStatus, ELDAuthError, ELDAPIError } from './baseProvider';
 
 const MOTIVE_API_BASE = 'https://api.gomotive.com/v1';
-const MOTIVE_AUTH_URL = 'https://api.gomotive.com/oauth/authorize';
-const MOTIVE_TOKEN_URL = 'https://api.gomotive.com/oauth/token';
+// OAuth endpoints are on main domain, NOT api subdomain
+// See: https://developer-docs.gomotive.com/docs/oauth-20
+const MOTIVE_AUTH_URL = 'https://gomotive.com/oauth/authorize';
+const MOTIVE_TOKEN_URL = 'https://gomotive.com/oauth/token';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[MotiveProvider]', ...args);
