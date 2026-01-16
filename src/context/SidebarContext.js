@@ -13,9 +13,10 @@ export const DEFAULT_MENU_ITEMS = [
   { id: 'expenses', name: 'Expenses', visible: true, order: 4 },
   { id: 'customers', name: 'Customers', visible: true, order: 5 },
   { id: 'fleet', name: 'Fleet', visible: true, order: 6 },
-  { id: 'compliance', name: 'Compliance', visible: true, order: 7 },
-  { id: 'ifta', name: 'IFTA Calculator', visible: true, order: 8 },
-  { id: 'fuel', name: 'Fuel Tracker', visible: true, order: 9 },
+  { id: 'eld', name: 'ELD Tracking', visible: true, order: 7 },
+  { id: 'compliance', name: 'Compliance', visible: true, order: 8 },
+  { id: 'ifta', name: 'IFTA Calculator', visible: true, order: 9 },
+  { id: 'fuel', name: 'Fuel Tracker', visible: true, order: 10 },
 ];
 
 const SIDEBAR_SETTINGS_KEY = 'sidebar_preferences';

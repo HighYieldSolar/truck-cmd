@@ -9,7 +9,7 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard, Truck, FileText, Wallet, Users, Package, CheckCircle,
   Calculator, Fuel, Settings, LogOut, Search, Menu, X,
-  User, MapPin, Home
+  User, MapPin, Home, Satellite
 } from "lucide-react";
 import TrialBanner from "@/components/subscriptions/TrialBanner";
 import EmailVerificationBanner from "@/components/onboarding/EmailVerificationBanner";
@@ -259,6 +259,14 @@ export default function DashboardLayout({ activePage = "dashboard", children, pa
       href: '/dashboard/fleet',
       icon: <Package size={20} />,
       active: currentActivePage === 'fleet' && !pageTitle,
+      protected: true
+    },
+    eld: {
+      id: 'eld',
+      name: t('navigation.eld') || 'ELD Tracking',
+      href: '/dashboard/eld',
+      icon: <Satellite size={20} />,
+      active: currentActivePage === 'eld' && !pageTitle,
       protected: true
     },
     compliance: {

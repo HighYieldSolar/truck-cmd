@@ -393,5 +393,31 @@
       "milesRequired": "Miles must be greater than 0",
       "failedToAdd": "Failed to add trip"
     }
+  },
+  "automated": {
+    "title": "Automated IFTA Tracking",
+    "subtitle": "Real-time GPS-based mileage tracking",
+    "status": "Live",
+    "totalMiles": "Total Miles",
+    "gpsPoints": "GPS Points",
+    "states": "States",
+    "status": "Status",
+    "active": "Active",
+    "waiting": "Waiting",
+    "mileageByJurisdiction": "Automated Mileage by Jurisdiction",
+    "noDataYet": "No Data Yet",
+    "noDataDescription": "Mileage will appear here as your trucks drive and cross state lines.",
+    "howItWorks": "How Automated Tracking Works",
+    "howItWorksPoints": [
+      "GPS coordinates from your ELD are collected in real-time",
+      "Our system detects when trucks cross state/province borders",
+      "Mileage is automatically calculated and assigned to each jurisdiction",
+      "Data updates continuously as your fleet operates"
+    ],
+    "gpsSource": "GPS",
+    "connectEld": "Connect ELD",
+    "connectEldDescription": "Connect your ELD provider to enable automatic GPS-based IFTA mileage tracking.",
+    "requiresPremium": "GPS-based jurisdiction detection automatically calculates your state-by-state mileage. Requires Premium plan.",
+    "upgradePrompt": "Upgrade to Premium"
   }
 }
