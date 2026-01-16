@@ -163,12 +163,15 @@ export class MotiveProvider extends BaseELDProvider {
       // Extract company info from the first admin user if available
       const firstUser = response.users?.[0]?.user;
       const companyName = firstUser?.carrier_name || 'Unknown';
+      // Extract company_id for webhook matching
+      const companyId = firstUser?.carrier_company_id || firstUser?.company_id || firstUser?.id;
 
-      log('Connection verified successfully, company:', companyName);
+      log('Connection verified successfully, company:', companyName, 'companyId:', companyId);
 
       return {
         valid: true,
         companyName,
+        companyId: companyId?.toString(),
         eldProvider: 'Motive'
       };
     } catch (error) {

@@ -119,19 +119,21 @@ async function findConnectionFromPayload(payload) {
 
 /**
  * Log webhook event for debugging and replay
+ * Note: Table uses raw_payload (not payload), error (not error_message), organization_id (not user_id)
  */
 async function logWebhookEvent({ provider, eventType, rawPayload, status, error, connectionId, userId }) {
   try {
     const { data } = await supabase
       .from('eld_webhook_events')
       .insert({
-        user_id: userId || null,
-        connection_id: connectionId || null,
+        // Note: table uses organization_id but we store user_id in it for now
+        // A proper migration would add user_id column
+        organization_id: userId || null,
         provider: provider,
         event_type: eventType,
-        payload: typeof rawPayload === 'string' ? { raw: rawPayload } : rawPayload,
+        raw_payload: typeof rawPayload === 'string' ? { raw: rawPayload } : rawPayload,
         status: status,
-        error_message: error || null,
+        error: error || null,
         created_at: new Date().toISOString()
       })
       .select('id')
@@ -292,7 +294,7 @@ export async function POST(request) {
           .from('eld_webhook_events')
           .update({
             status: 'error',
-            error_message: handlerError.message,
+            error: handlerError.message,
             processing_time_ms: Date.now() - startTime
           })
           .eq('id', webhookLog.id);

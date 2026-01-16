@@ -118,6 +118,7 @@ export async function handleOAuthCallback(code, state, redirectUri) {
       refreshToken: tokens.refreshToken,
       expiresIn: tokens.expiresIn,
       companyName: verification.companyName,
+      companyId: verification.companyId,
       eldProviderName: verification.eldProvider
     });
 
@@ -173,6 +174,7 @@ export async function handleOAuthCallback(code, state, redirectUri) {
  * @param {string} tokenData.refreshToken - OAuth refresh token
  * @param {number} tokenData.expiresIn - Token expiration in seconds
  * @param {string} tokenData.companyName - Company name from provider
+ * @param {string} tokenData.companyId - Company ID for webhook matching
  * @param {string} tokenData.eldProviderName - ELD provider name
  * @returns {Promise<object>} - Created connection record
  */
@@ -197,6 +199,7 @@ export async function createConnection(userId, providerId, tokenData) {
           refresh_token: tokenData.refreshToken,
           token_expires_at: expiresAt,
           company_name: tokenData.companyName,
+          external_connection_id: tokenData.companyId || null,
           eld_provider_name: tokenData.eldProviderName,
           status: 'active',
           error_message: null,
@@ -227,6 +230,7 @@ export async function createConnection(userId, providerId, tokenData) {
         refresh_token: tokenData.refreshToken,
         token_expires_at: expiresAt,
         company_name: tokenData.companyName,
+        external_connection_id: tokenData.companyId || null,
         eld_provider_name: tokenData.eldProviderName,
         status: 'active',
         sync_frequency_minutes: 60,
