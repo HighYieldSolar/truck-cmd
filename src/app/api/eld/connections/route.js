@@ -232,7 +232,10 @@ export async function POST(request) {
         }
 
         // Get OAuth authorization URL
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        // Use NEXT_PUBLIC_URL for local development, NEXT_PUBLIC_APP_URL for production
+        const baseUrl = process.env.NODE_ENV === 'development'
+          ? (process.env.NEXT_PUBLIC_URL || 'http://localhost:3000')
+          : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
         const redirectUri = `${baseUrl}/api/eld/callback`;
 
         // Note: getAuthorizationUrl expects (userId, providerId, redirectUri)

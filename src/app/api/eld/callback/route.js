@@ -60,7 +60,10 @@ export async function GET(request) {
     const errorDescription = searchParams.get('error_description');
 
     // Get the base URL for redirects
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Use NEXT_PUBLIC_URL for local development, NEXT_PUBLIC_APP_URL for production
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? (process.env.NEXT_PUBLIC_URL || 'http://localhost:3000')
+      : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
 
     // Handle OAuth errors from provider
     if (error) {
@@ -157,7 +160,9 @@ export async function GET(request) {
 
   } catch (error) {
     log('Callback error:', error);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NODE_ENV === 'development'
+      ? (process.env.NEXT_PUBLIC_URL || 'http://localhost:3000')
+      : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
     return NextResponse.redirect(
       `${baseUrl}/dashboard/settings?tab=eld&error=${encodeURIComponent('Connection failed. Please try again.')}`
     );
