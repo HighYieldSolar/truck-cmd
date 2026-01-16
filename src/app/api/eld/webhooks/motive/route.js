@@ -18,16 +18,131 @@ import { validateWebhook } from '@/lib/services/eld/webhooks/webhookSignatureSer
 import {
   handleMotiveLocationUpdated,
   handleMotiveHosUpdate,
-  handleMotiveFaultCode,
-  logWebhookEvent
+  handleMotiveFaultCode
 } from '@/lib/services/eld/webhooks/webhookEventHandlers';
 import { createClient } from '@supabase/supabase-js';
+
+const DEBUG = process.env.NODE_ENV === 'development';
+const log = (...args) => DEBUG && console.log('[MotiveWebhook]', ...args);
 
 // Use service role for webhook processing (no user context)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+/**
+ * Look up connection from webhook payload
+ * Motive webhooks include company_id or we can match by vehicle/driver
+ */
+async function findConnectionFromPayload(payload) {
+  try {
+    // Try to find by company_id if present
+    if (payload.company_id) {
+      const { data } = await supabase
+        .from('eld_connections')
+        .select('id, user_id, metadata')
+        .eq('provider', 'motive')
+        .eq('external_connection_id', payload.company_id.toString())
+        .eq('status', 'active')
+        .single();
+
+      if (data) {
+        return { connectionId: data.id, userId: data.user_id, webhookSecret: data.metadata?.webhook_secret };
+      }
+    }
+
+    // Try to find by vehicle_id from entity mappings
+    if (payload.vehicle_id || payload.vehicle?.id) {
+      const vehicleId = (payload.vehicle_id || payload.vehicle?.id).toString();
+      const { data: mapping } = await supabase
+        .from('eld_entity_mappings')
+        .select('connection_id, user_id')
+        .eq('external_id', vehicleId)
+        .eq('entity_type', 'vehicle')
+        .eq('provider', 'motive')
+        .single();
+
+      if (mapping) {
+        // Get webhook secret from connection metadata
+        const { data: conn } = await supabase
+          .from('eld_connections')
+          .select('metadata')
+          .eq('id', mapping.connection_id)
+          .single();
+        return { connectionId: mapping.connection_id, userId: mapping.user_id, webhookSecret: conn?.metadata?.webhook_secret };
+      }
+    }
+
+    // Try to find by driver id from entity mappings
+    if (payload.driver?.id || payload.id) {
+      const driverId = (payload.driver?.id || payload.id).toString();
+      const { data: mapping } = await supabase
+        .from('eld_entity_mappings')
+        .select('connection_id, user_id')
+        .eq('external_id', driverId)
+        .eq('entity_type', 'driver')
+        .eq('provider', 'motive')
+        .single();
+
+      if (mapping) {
+        // Get webhook secret from connection metadata
+        const { data: conn } = await supabase
+          .from('eld_connections')
+          .select('metadata')
+          .eq('id', mapping.connection_id)
+          .single();
+        return { connectionId: mapping.connection_id, userId: mapping.user_id, webhookSecret: conn?.metadata?.webhook_secret };
+      }
+    }
+
+    // Fall back to finding any active Motive connection (for initial setup)
+    // This allows webhooks to work before entity mappings are created
+    const { data: connections } = await supabase
+      .from('eld_connections')
+      .select('id, user_id, metadata')
+      .eq('provider', 'motive')
+      .eq('status', 'active')
+      .limit(1);
+
+    if (connections && connections.length > 0) {
+      log('Using fallback connection lookup');
+      return { connectionId: connections[0].id, userId: connections[0].user_id, webhookSecret: connections[0].metadata?.webhook_secret };
+    }
+
+    return null;
+  } catch (error) {
+    log('Error finding connection from payload:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Log webhook event for debugging and replay
+ */
+async function logWebhookEvent({ provider, eventType, rawPayload, status, error, connectionId, userId }) {
+  try {
+    const { data } = await supabase
+      .from('eld_webhook_events')
+      .insert({
+        user_id: userId || null,
+        connection_id: connectionId || null,
+        provider: provider,
+        event_type: eventType,
+        payload: typeof rawPayload === 'string' ? { raw: rawPayload } : rawPayload,
+        status: status,
+        error_message: error || null,
+        created_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    return data;
+  } catch (err) {
+    log('Error logging webhook event:', err.message);
+    return null;
+  }
+}
 
 /**
  * POST /api/eld/webhooks/motive
@@ -46,7 +161,7 @@ export async function POST(request) {
     const validation = validateWebhook('motive', rawBody, headers);
 
     if (!validation.valid) {
-      console.error('[MotiveWebhook] Signature validation failed:', validation.error);
+      log('Signature validation failed:', validation.error);
       await logWebhookEvent({
         provider: 'motive',
         eventType: 'signature_failed',
@@ -67,7 +182,7 @@ export async function POST(request) {
     // Handle Motive test/validation requests
     // Motive sends '[vehicle_location_updated]' or similar array during URL validation
     if (Array.isArray(payload)) {
-      console.log('[MotiveWebhook] Received test/validation request:', payload);
+      log('Received test/validation request:', payload);
       return NextResponse.json({
         success: true,
         message: 'Webhook URL validated successfully',
@@ -77,14 +192,41 @@ export async function POST(request) {
 
     const eventType = payload.event_type || payload.type || payload.action;
 
-    console.log(`[MotiveWebhook] Received event: ${eventType}`);
+    log(`Received event: ${eventType}`);
 
-    // Log the webhook event
+    // Look up connection from payload to get connectionId and userId
+    const connectionInfo = await findConnectionFromPayload(payload);
+
+    if (!connectionInfo) {
+      log('No connection found for webhook payload, storing for later processing');
+      // Still log the event even if we can't find a connection
+      await logWebhookEvent({
+        provider: 'motive',
+        eventType,
+        rawPayload: payload,
+        status: 'pending',
+        error: 'No matching connection found'
+      });
+
+      // Return 200 to acknowledge receipt (can be reprocessed later)
+      return NextResponse.json({
+        success: true,
+        event: eventType,
+        pending: true,
+        message: 'Event stored for later processing'
+      });
+    }
+
+    const { connectionId, userId } = connectionInfo;
+
+    // Log the webhook event with connection info
     const webhookLog = await logWebhookEvent({
       provider: 'motive',
       eventType,
       rawPayload: payload,
-      status: 'processing'
+      status: 'processing',
+      connectionId,
+      userId
     });
 
     // Route to appropriate handler based on event type
@@ -93,20 +235,20 @@ export async function POST(request) {
       switch (eventType) {
         case 'vehicle_location_updated':
         case 'vehicle_location_received':
-          result = await handleMotiveLocationUpdated(payload);
+          result = await handleMotiveLocationUpdated(connectionId, userId, payload);
           break;
 
         case 'user_duty_status_updated':
         case 'hos_violation_upserted':
         case 'hos_log_created':
         case 'hos_log_updated':
-          result = await handleMotiveHosUpdate(payload);
+          result = await handleMotiveHosUpdate(connectionId, userId, payload);
           break;
 
         case 'fault_code_opened':
         case 'fault_code_closed':
         case 'vehicle_fault_code':
-          result = await handleMotiveFaultCode(payload);
+          result = await handleMotiveFaultCode(connectionId, userId, payload, eventType);
           break;
 
         case 'vehicle_geofence_event':
@@ -125,7 +267,7 @@ export async function POST(request) {
           break;
 
         default:
-          console.log(`[MotiveWebhook] Unhandled event type: ${eventType}`);
+          log(`Unhandled event type: ${eventType}`);
           result = { processed: false, reason: 'unhandled_event_type' };
       }
 
@@ -142,7 +284,7 @@ export async function POST(request) {
       }
 
     } catch (handlerError) {
-      console.error(`[MotiveWebhook] Handler error for ${eventType}:`, handlerError);
+      log(`Handler error for ${eventType}:`, handlerError);
 
       // Update webhook log with error
       if (webhookLog?.id) {
@@ -150,7 +292,7 @@ export async function POST(request) {
           .from('eld_webhook_events')
           .update({
             status: 'error',
-            error: handlerError.message,
+            error_message: handlerError.message,
             processing_time_ms: Date.now() - startTime
           })
           .eq('id', webhookLog.id);
@@ -168,7 +310,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[MotiveWebhook] Fatal error:', error);
+    log('Fatal error:', error);
 
     // Return 500 for parsing/fatal errors (will trigger retry)
     return NextResponse.json(

@@ -16,6 +16,7 @@ import {
   ELDError,
   ELDAuthError
 } from './providers';
+import { registerWebhooksForConnection } from './webhooks/webhookRegistrationService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[ELDConnectionService]', ...args);
@@ -112,13 +113,46 @@ export async function handleOAuthCallback(code, state, redirectUri) {
     }
 
     // Store connection in database
-    return await createConnection(userId, providerId, {
+    const connectionResult = await createConnection(userId, providerId, {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresIn: tokens.expiresIn,
       companyName: verification.companyName,
       eldProviderName: verification.eldProvider
     });
+
+    // Register webhooks after successful connection
+    if (!connectionResult.error) {
+      try {
+        log(`Registering webhooks for ${providerId}...`);
+        const webhookResult = await registerWebhooksForConnection(userId, providerId, tokens.accessToken);
+        log(`Webhook registration result:`, webhookResult);
+
+        // Store webhook secret if returned (Motive returns this)
+        if (webhookResult.secret && connectionResult.data?.id) {
+          // Store webhook secret in metadata JSONB field
+          const existingMetadata = connectionResult.data.metadata || {};
+          await supabaseAdmin
+            .from('eld_connections')
+            .update({
+              metadata: {
+                ...existingMetadata,
+                webhook_secret: webhookResult.secret,
+                webhook_registered: true,
+                webhook_registered_at: new Date().toISOString()
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', connectionResult.data.id);
+        }
+      } catch (webhookError) {
+        // Log but don't fail the connection if webhook registration fails
+        // Webhooks can be registered manually or retried later
+        log('Webhook registration failed (non-fatal):', webhookError.message);
+      }
+    }
+
+    return connectionResult;
   } catch (error) {
     log('OAuth callback error:', error);
     return {
