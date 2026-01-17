@@ -12,6 +12,48 @@ import { createProviderForConnection, updateConnectionStatus, updateLastSync } f
 import { getProviderInfo, providerSupportsFeature } from './providers';
 import { mapVehicle, mapDriver, getLocalVehicleId, getLocalDriverId, autoMatchVehicles, autoMatchDrivers } from './eldMappingService';
 
+/**
+ * Get entity mapping ID for a vehicle
+ * @param {string} connectionId - Connection UUID
+ * @param {string} externalVehicleId - External vehicle ID
+ * @returns {Promise<string|null>} - Mapping UUID or null
+ */
+async function getVehicleMappingId(connectionId, externalVehicleId) {
+  try {
+    const { data } = await supabaseAdmin
+      .from('eld_entity_mappings')
+      .select('id')
+      .eq('connection_id', connectionId)
+      .eq('entity_type', 'vehicle')
+      .eq('external_id', externalVehicleId)
+      .single();
+    return data?.id || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Get entity mapping ID for a driver
+ * @param {string} connectionId - Connection UUID
+ * @param {string} externalDriverId - External driver ID
+ * @returns {Promise<string|null>} - Mapping UUID or null
+ */
+async function getDriverMappingId(connectionId, externalDriverId) {
+  try {
+    const { data } = await supabaseAdmin
+      .from('eld_entity_mappings')
+      .select('id')
+      .eq('connection_id', connectionId)
+      .eq('entity_type', 'driver')
+      .eq('external_id', externalDriverId)
+      .single();
+    return data?.id || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[ELDSyncService]', ...args);
 
@@ -391,9 +433,9 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
     for (const vehicleData of iftaData) {
       const externalVehicleId = vehicleData.vehicleId;
 
-      // Get local vehicle ID
-      const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
-      if (!localVehicleId) {
+      // Get vehicle mapping ID
+      const vehicleMappingId = await getVehicleMappingId(connectionId, externalVehicleId);
+      if (!vehicleMappingId) {
         log(`Skipping unmapped vehicle: ${externalVehicleId}`);
         continue;
       }
@@ -402,38 +444,47 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
       for (const [jurisdiction, miles] of Object.entries(vehicleData.jurisdictionsMiles || {})) {
         if (!jurisdiction || !miles) continue;
 
-        // Calculate which month(s) this data belongs to
-        // For simplicity, spread evenly across quarter months
-        const monthlyMiles = miles / 3;
+        // Check if record already exists
+        const { data: existing } = await supabaseAdmin
+          .from('eld_ifta_mileage')
+          .select('id')
+          .eq('vehicle_mapping_id', vehicleMappingId)
+          .eq('jurisdiction', jurisdiction.toUpperCase())
+          .eq('quarter', quarter)
+          .single();
 
-        for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
-          const recordMonth = startMonth + monthOffset + 1;
-
-          // Upsert IFTA mileage record
+        if (existing) {
+          // Update existing record
+          await supabaseAdmin
+            .from('eld_ifta_mileage')
+            .update({
+              miles: miles,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existing.id);
+          recordsInserted++;
+        } else {
+          // Insert IFTA mileage record (matching actual DB schema)
           const { error } = await supabaseAdmin
             .from('eld_ifta_mileage')
-            .upsert({
+            .insert({
               user_id: userId,
               connection_id: connectionId,
-              vehicle_id: localVehicleId,
-              external_vehicle_id: externalVehicleId,
+              vehicle_mapping_id: vehicleMappingId,
+              eld_vehicle_id: externalVehicleId,
               jurisdiction: jurisdiction.toUpperCase(),
-              year: parseInt(year),
-              month: recordMonth,
+              miles: miles,
+              start_date: startDateStr,
+              end_date: endDateStr,
               quarter: quarter,
-              total_miles: monthlyMiles,
-              fuel_gallons: vehicleData.metadata?.fuelConsumedGallons
-                ? vehicleData.metadata.fuelConsumedGallons / 3
-                : null,
-              source: 'eld',
-              provider: provider.getName(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'vehicle_id,jurisdiction,year,month'
+              year: parseInt(year),
+              raw_data: vehicleData.metadata || {}
             });
 
           if (!error) {
             recordsInserted++;
+          } else {
+            log(`Error inserting IFTA mileage: ${error.message}`);
           }
         }
       }
@@ -489,65 +540,26 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
     let recordsInserted = 0;
     const driverDailyTotals = {};
 
-    // Process each HOS log entry
-    for (const log of hosLogs) {
+    // Process each HOS log entry and aggregate by driver/date
+    for (const hosLog of hosLogs) {
       const {
         driverId: externalDriverId,
-        vehicleId: externalVehicleId,
         dutyStatus,
-        startTime,
-        endTime,
         durationMinutes,
-        location,
-        latitude,
-        longitude,
-        annotations,
         logDate
-      } = log;
+      } = hosLog;
 
-      // Get local driver ID
-      const localDriverId = await getLocalDriverId(userId, externalDriverId);
-      if (!localDriverId) {
+      // Get driver mapping ID
+      const driverMappingId = await getDriverMappingId(connectionId, externalDriverId);
+      if (!driverMappingId) {
         continue; // Skip unmapped drivers
       }
 
-      // Get local vehicle ID if available
-      const localVehicleId = externalVehicleId
-        ? await getLocalVehicleId(userId, externalVehicleId)
-        : null;
-
-      // Insert HOS log entry
-      const { error } = await supabaseAdmin
-        .from('eld_hos_logs')
-        .insert({
-          user_id: userId,
-          connection_id: connectionId,
-          driver_id: localDriverId,
-          external_driver_id: externalDriverId,
-          vehicle_id: localVehicleId,
-          external_vehicle_id: externalVehicleId,
-          duty_status: dutyStatus,
-          start_time: startTime,
-          end_time: endTime,
-          duration_minutes: durationMinutes,
-          location_name: location,
-          latitude,
-          longitude,
-          annotations,
-          log_date: logDate,
-          provider: provider.getName(),
-          created_at: new Date().toISOString()
-        });
-
-      if (!error) {
-        recordsInserted++;
-      }
-
       // Aggregate daily totals for driver summary
-      const driverDateKey = `${localDriverId}_${logDate}`;
+      const driverDateKey = `${driverMappingId}_${logDate}`;
       if (!driverDailyTotals[driverDateKey]) {
         driverDailyTotals[driverDateKey] = {
-          driverId: localDriverId,
+          driverMappingId,
           externalDriverId,
           logDate,
           drivingMinutes: 0,
@@ -574,24 +586,51 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
       }
     }
 
-    // Upsert daily summaries
+    // Insert daily summaries into eld_hos_logs (matching actual DB schema)
     for (const summary of Object.values(driverDailyTotals)) {
-      await supabaseAdmin
-        .from('eld_hos_daily_logs')
-        .upsert({
-          user_id: userId,
-          connection_id: connectionId,
-          driver_id: summary.driverId,
-          external_driver_id: summary.externalDriverId,
-          log_date: summary.logDate,
-          driving_minutes: summary.drivingMinutes,
-          on_duty_minutes: summary.onDutyMinutes,
-          sleeper_minutes: summary.sleeperMinutes,
-          off_duty_minutes: summary.offDutyMinutes,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'driver_id,log_date'
-        });
+      // Check if record already exists
+      const { data: existing } = await supabaseAdmin
+        .from('eld_hos_logs')
+        .select('id')
+        .eq('driver_mapping_id', summary.driverMappingId)
+        .eq('log_date', summary.logDate)
+        .single();
+
+      if (existing) {
+        // Update existing record
+        await supabaseAdmin
+          .from('eld_hos_logs')
+          .update({
+            driving_hours: summary.drivingMinutes / 60,
+            on_duty_hours: summary.onDutyMinutes / 60,
+            off_duty_hours: summary.offDutyMinutes / 60,
+            sleeper_hours: summary.sleeperMinutes / 60,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        recordsInserted++;
+      } else {
+        // Insert new record
+        const { error } = await supabaseAdmin
+          .from('eld_hos_logs')
+          .insert({
+            user_id: userId,
+            connection_id: connectionId,
+            driver_mapping_id: summary.driverMappingId,
+            eld_driver_id: summary.externalDriverId,
+            log_date: summary.logDate,
+            driving_hours: summary.drivingMinutes / 60,
+            on_duty_hours: summary.onDutyMinutes / 60,
+            off_duty_hours: summary.offDutyMinutes / 60,
+            sleeper_hours: summary.sleeperMinutes / 60
+          });
+
+        if (!error) {
+          recordsInserted++;
+        } else {
+          log(`Error inserting HOS log: ${error.message}`);
+        }
+      }
     }
 
     return {
@@ -652,51 +691,56 @@ export async function syncVehicleLocations(userId, connectionId) {
         recordedAt
       } = loc;
 
-      // Get local vehicle ID
-      const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
-      if (!localVehicleId) {
-        continue; // Skip unmapped vehicles
+      // Get vehicle mapping ID
+      const vehicleMappingId = await getVehicleMappingId(connectionId, externalVehicleId);
+      if (!vehicleMappingId) {
+        log(`Skipping unmapped vehicle: ${externalVehicleId}`);
+        continue;
       }
 
-      // Insert location record
+      // Insert location record (matching actual DB schema)
       const { error } = await supabaseAdmin
         .from('eld_vehicle_locations')
         .insert({
           user_id: userId,
           connection_id: connectionId,
-          vehicle_id: localVehicleId,
-          external_vehicle_id: externalVehicleId,
+          vehicle_mapping_id: vehicleMappingId,
+          eld_vehicle_id: externalVehicleId,
           latitude,
           longitude,
           speed_mph: speedMph,
           heading,
-          odometer_miles: odometerMiles,
+          odometer: odometerMiles,
           engine_hours: engineHours,
           address,
-          recorded_at: recordedAt,
-          provider: provider.getName()
+          location_time: recordedAt
         });
 
-      if (!error) {
+      if (error) {
+        log(`Error inserting location: ${error.message}`);
+      } else {
         recordsInserted++;
       }
 
       // Update vehicle's last known location
-      await supabaseAdmin
-        .from('vehicles')
-        .update({
-          last_known_location: {
-            lat: latitude,
-            lng: longitude,
-            speed: speedMph,
-            heading,
-            address
-          },
-          last_location_at: recordedAt,
-          odometer_miles: odometerMiles,
-          engine_hours: engineHours
-        })
-        .eq('id', localVehicleId);
+      const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
+      if (localVehicleId) {
+        await supabaseAdmin
+          .from('vehicles')
+          .update({
+            last_known_location: {
+              lat: latitude,
+              lng: longitude,
+              speed: speedMph,
+              heading,
+              address
+            },
+            last_location_at: recordedAt,
+            odometer_miles: odometerMiles,
+            engine_hours: engineHours
+          })
+          .eq('id', localVehicleId);
+      }
     }
 
     log(`Location sync completed: ${recordsInserted} records`);
@@ -758,18 +802,18 @@ export async function syncFaultCodes(userId, connectionId) {
         metadata
       } = fault;
 
-      // Get local vehicle ID
-      const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
-      if (!localVehicleId) {
+      // Get vehicle mapping ID
+      const vehicleMappingId = await getVehicleMappingId(connectionId, externalVehicleId);
+      if (!vehicleMappingId) {
         continue; // Skip unmapped vehicles
       }
 
-      // Check if this fault code already exists
+      // Check if this fault code already exists (matching actual DB schema)
       const { data: existing } = await supabaseAdmin
         .from('eld_fault_codes')
-        .select('id, occurrence_count')
-        .eq('vehicle_id', localVehicleId)
-        .eq('fault_code', code)
+        .select('id')
+        .eq('vehicle_mapping_id', vehicleMappingId)
+        .eq('code', code)
         .is('resolved_at', null)
         .single();
 
@@ -779,33 +823,32 @@ export async function syncFaultCodes(userId, connectionId) {
           .from('eld_fault_codes')
           .update({
             last_observed_at: lastObservedAt,
-            occurrence_count: (existing.occurrence_count || 1) + 1,
-            is_active: isActive
+            is_active: isActive,
+            updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
       } else {
-        // Insert new fault code
+        // Insert new fault code (matching actual DB schema)
         const { error } = await supabaseAdmin
           .from('eld_fault_codes')
           .insert({
             user_id: userId,
             connection_id: connectionId,
-            vehicle_id: localVehicleId,
-            external_vehicle_id: externalVehicleId,
-            fault_code: code,
+            vehicle_mapping_id: vehicleMappingId,
+            eld_vehicle_id: externalVehicleId,
+            code: code,
             description,
             severity: severity || 'info',
-            source: source || 'engine',
-            spn: metadata?.spn,
-            fmi: metadata?.fmi,
             first_observed_at: firstObservedAt,
             last_observed_at: lastObservedAt,
             is_active: isActive,
-            provider: provider.getName()
+            raw_data: { source, ...metadata }
           });
 
         if (!error) {
           recordsInserted++;
+        } else {
+          log(`Error inserting fault code: ${error.message}`);
         }
       }
     }
