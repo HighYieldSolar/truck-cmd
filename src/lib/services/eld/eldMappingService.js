@@ -28,9 +28,10 @@ const supabaseAdmin = createClient(
  * @param {string} userId - User ID
  * @param {string} connectionId - ELD connection ID
  * @param {object} externalVehicle - Vehicle data from ELD provider
+ * @param {string} providerName - ELD provider name (e.g., 'motive', 'samsara')
  * @returns {Promise<object>} - Mapping result
  */
-export async function mapVehicle(userId, connectionId, externalVehicle) {
+export async function mapVehicle(userId, connectionId, externalVehicle, providerName = 'motive') {
   try {
     const { id: externalId, vin, licensePlate, name, make, model, year, odometerMiles, engineHours } = externalVehicle;
 
@@ -48,12 +49,15 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
       if (existingMapping.local_id) {
         const { data: localVehicle } = await supabaseAdmin
           .from('vehicles')
-          .select('id, vin, license_plate, make, model, year')
+          .select('id, vin, license_plate, make, model, year, eld_provider')
           .eq('id', existingMapping.local_id)
           .single();
 
         if (localVehicle) {
           const updateData = {};
+          // Always ensure eld_external_id and eld_provider are set correctly
+          updateData.eld_external_id = externalId;
+          updateData.eld_provider = providerName;
           // Fill in missing fields from ELD data
           if (vin && !localVehicle.vin) updateData.vin = vin.toUpperCase();
           if (licensePlate && !localVehicle.license_plate) updateData.license_plate = licensePlate;
@@ -63,13 +67,11 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
           if (odometerMiles) updateData.odometer_miles = odometerMiles;
           if (engineHours) updateData.engine_hours = engineHours;
 
-          if (Object.keys(updateData).length > 0) {
-            await supabaseAdmin
-              .from('vehicles')
-              .update(updateData)
-              .eq('id', existingMapping.local_id);
-            console.log('[ELDMapping] Updated existing vehicle with ELD data:', existingMapping.local_id, updateData);
-          }
+          await supabaseAdmin
+            .from('vehicles')
+            .update(updateData)
+            .eq('id', existingMapping.local_id);
+          console.log('[ELDMapping] Updated existing vehicle with ELD data:', existingMapping.local_id, updateData);
         }
       }
       return { data: existingMapping, existing: true };
@@ -143,7 +145,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
           entity_type: 'vehicle',
           local_id: localVehicle.id,
           external_id: externalId,
-          provider: 'terminal',
+          provider: providerName,
           external_name: name,
           auto_matched: autoMatched,
           match_confidence: matchConfidence,
@@ -166,7 +168,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
       // Update vehicle with ELD data - sync all available fields
       const updateData = {
         eld_external_id: externalId,
-        eld_provider: 'motive'
+        eld_provider: providerName
       };
 
       // Fill in missing fields from ELD data
@@ -202,7 +204,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
           odometer_miles: odometerMiles || null,
           engine_hours: engineHours || null,
           eld_external_id: externalId,
-          eld_provider: 'motive',
+          eld_provider: providerName,
           status: 'active',
           created_at: new Date().toISOString()
         })
@@ -226,7 +228,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
           entity_type: 'vehicle',
           local_id: newVehicle.id,
           external_id: externalId,
-          provider: 'motive',
+          provider: providerName,
           external_name: name,
           auto_matched: true,
           match_confidence: 1.0,
@@ -356,9 +358,10 @@ export async function manualMapVehicle(userId, connectionId, externalId, localId
  * @param {string} userId - User ID
  * @param {string} connectionId - ELD connection ID
  * @param {object} externalDriver - Driver data from ELD provider
+ * @param {string} providerName - ELD provider name (e.g., 'motive', 'samsara')
  * @returns {Promise<object>} - Mapping result
  */
-export async function mapDriver(userId, connectionId, externalDriver) {
+export async function mapDriver(userId, connectionId, externalDriver, providerName = 'motive') {
   try {
     const { id: externalId, firstName, lastName, name, licenseNumber, email, phone } = externalDriver;
     const fullName = name || `${firstName || ''} ${lastName || ''}`.trim();
@@ -467,7 +470,7 @@ export async function mapDriver(userId, connectionId, externalDriver) {
           entity_type: 'driver',
           local_id: localDriver.id,
           external_id: externalId,
-          provider: 'terminal',
+          provider: providerName,
           external_name: fullName,
           auto_matched: autoMatched,
           match_confidence: matchConfidence,
@@ -494,7 +497,7 @@ export async function mapDriver(userId, connectionId, externalDriver) {
         .from('drivers')
         .update({
           eld_external_id: externalId,
-          eld_provider: 'terminal'
+          eld_provider: providerName
         })
         .eq('id', localDriver.id);
 
@@ -513,7 +516,7 @@ export async function mapDriver(userId, connectionId, externalDriver) {
           email: email || null,
           phone: phone || null,
           eld_external_id: externalId,
-          eld_provider: 'motive',
+          eld_provider: providerName,
           status: 'active',
           created_at: new Date().toISOString()
         })
@@ -537,7 +540,7 @@ export async function mapDriver(userId, connectionId, externalDriver) {
           entity_type: 'driver',
           local_id: newDriver.id,
           external_id: externalId,
-          provider: 'motive',
+          provider: providerName,
           external_name: fullName,
           auto_matched: true,
           match_confidence: 1.0,
@@ -853,9 +856,10 @@ export async function deleteMapping(userId, mappingId) {
  * @param {string} userId - User ID
  * @param {string} connectionId - Connection ID
  * @param {array} externalVehicles - Array of external vehicles
+ * @param {string} providerName - ELD provider name (e.g., 'motive', 'samsara')
  * @returns {Promise<object>} - Match results
  */
-export async function autoMatchVehicles(userId, connectionId, externalVehicles) {
+export async function autoMatchVehicles(userId, connectionId, externalVehicles, providerName = 'motive') {
   const results = {
     matched: [],
     created: [],
@@ -864,7 +868,7 @@ export async function autoMatchVehicles(userId, connectionId, externalVehicles) 
   };
 
   for (const vehicle of externalVehicles) {
-    const result = await mapVehicle(userId, connectionId, vehicle);
+    const result = await mapVehicle(userId, connectionId, vehicle, providerName);
 
     if (result.error) {
       results.errors.push({ vehicle, error: result.errorMessage });
@@ -894,9 +898,10 @@ export async function autoMatchVehicles(userId, connectionId, externalVehicles) 
  * @param {string} userId - User ID
  * @param {string} connectionId - Connection ID
  * @param {array} externalDrivers - Array of external drivers
+ * @param {string} providerName - ELD provider name (e.g., 'motive', 'samsara')
  * @returns {Promise<object>} - Match results
  */
-export async function autoMatchDrivers(userId, connectionId, externalDrivers) {
+export async function autoMatchDrivers(userId, connectionId, externalDrivers, providerName = 'motive') {
   const results = {
     matched: [],
     created: [],
@@ -905,7 +910,7 @@ export async function autoMatchDrivers(userId, connectionId, externalDrivers) {
   };
 
   for (const driver of externalDrivers) {
-    const result = await mapDriver(userId, connectionId, driver);
+    const result = await mapDriver(userId, connectionId, driver, providerName);
 
     if (result.error) {
       results.errors.push({ driver, error: result.errorMessage });

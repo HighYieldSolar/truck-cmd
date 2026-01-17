@@ -270,7 +270,8 @@ export async function syncVehicles(userId, connectionId) {
       return { error: true, errorMessage: 'Invalid connection' };
     }
 
-    log(`Syncing vehicles from ${provider.getName()}`);
+    const providerName = provider.getName();
+    log(`Syncing vehicles from ${providerName}`);
 
     // Fetch all vehicles from provider (normalized format)
     const vehicles = await provider.fetchVehicles();
@@ -281,7 +282,7 @@ export async function syncVehicles(userId, connectionId) {
     log(`Fetched ${vehicles.length} vehicles from provider`);
 
     // Auto-match vehicles to local records (or auto-create if no match)
-    const matchResults = await autoMatchVehicles(userId, connectionId, vehicles);
+    const matchResults = await autoMatchVehicles(userId, connectionId, vehicles, providerName);
 
     return {
       success: true,
@@ -314,7 +315,8 @@ export async function syncDrivers(userId, connectionId) {
       return { error: true, errorMessage: 'Invalid connection' };
     }
 
-    log(`Syncing drivers from ${provider.getName()}`);
+    const providerName = provider.getName();
+    log(`Syncing drivers from ${providerName}`);
 
     // Fetch all drivers from provider (normalized format)
     const drivers = await provider.fetchDrivers();
@@ -325,7 +327,7 @@ export async function syncDrivers(userId, connectionId) {
     log(`Fetched ${drivers.length} drivers from provider`);
 
     // Auto-match drivers to local records (or auto-create if no match)
-    const matchResults = await autoMatchDrivers(userId, connectionId, drivers);
+    const matchResults = await autoMatchDrivers(userId, connectionId, drivers, providerName);
 
     return {
       success: true,
