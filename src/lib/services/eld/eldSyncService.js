@@ -447,13 +447,14 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
         if (!jurisdiction || !miles) continue;
 
         // Check if record already exists
+        // Use .maybeSingle() instead of .single() to return null instead of erroring when no record exists
         const { data: existing } = await supabaseAdmin
           .from('eld_ifta_mileage')
           .select('id')
           .eq('vehicle_mapping_id', vehicleMappingId)
           .eq('jurisdiction', jurisdiction.toUpperCase())
           .eq('quarter', quarter)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           // Update existing record
@@ -591,12 +592,13 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
     // Insert daily summaries into eld_hos_logs (matching actual DB schema)
     for (const summary of Object.values(driverDailyTotals)) {
       // Check if record already exists
+      // Use .maybeSingle() instead of .single() to return null instead of erroring when no record exists
       const { data: existing } = await supabaseAdmin
         .from('eld_hos_logs')
         .select('id')
         .eq('driver_mapping_id', summary.driverMappingId)
         .eq('log_date', summary.logDate)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Update existing record
@@ -811,13 +813,14 @@ export async function syncFaultCodes(userId, connectionId) {
       }
 
       // Check if this fault code already exists (matching actual DB schema)
+      // Use .maybeSingle() instead of .single() to return null instead of erroring when no record exists
       const { data: existing } = await supabaseAdmin
         .from('eld_fault_codes')
         .select('id')
         .eq('vehicle_mapping_id', vehicleMappingId)
         .eq('code', code)
         .is('resolved_at', null)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Update existing record

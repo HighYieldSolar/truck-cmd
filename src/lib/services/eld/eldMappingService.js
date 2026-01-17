@@ -20,6 +20,112 @@ const supabaseAdmin = createClient(
 );
 
 // ==========================================
+// Helper: Sync to separate mapping tables
+// The ELD data tables have FK constraints to eld_vehicle_mappings and eld_driver_mappings
+// We need to keep these in sync with eld_entity_mappings
+// ==========================================
+
+/**
+ * Sync a vehicle mapping to eld_vehicle_mappings table
+ * This is needed because eld_fault_codes, eld_vehicle_locations, eld_ifta_mileage
+ * have FK constraints referencing eld_vehicle_mappings
+ */
+async function syncToVehicleMappingsTable(mappingId, userId, connectionId, externalVehicle, localVehicleId) {
+  try {
+    const { id: externalId, vin, name } = externalVehicle;
+
+    // Check if already exists
+    const { data: existing } = await supabaseAdmin
+      .from('eld_vehicle_mappings')
+      .select('id')
+      .eq('id', mappingId)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing
+      await supabaseAdmin
+        .from('eld_vehicle_mappings')
+        .update({
+          local_vehicle_id: localVehicleId,
+          eld_vehicle_name: name,
+          eld_vehicle_vin: vin,
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', mappingId);
+    } else {
+      // Insert new with same ID as entity mapping
+      await supabaseAdmin
+        .from('eld_vehicle_mappings')
+        .insert({
+          id: mappingId,
+          connection_id: connectionId,
+          user_id: userId,
+          eld_vehicle_id: externalId,
+          eld_vehicle_name: name,
+          eld_vehicle_vin: vin,
+          local_vehicle_id: localVehicleId,
+          is_active: true,
+          last_synced_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+    }
+  } catch (error) {
+    console.log('[ELDMapping] Error syncing to eld_vehicle_mappings:', error.message);
+  }
+}
+
+/**
+ * Sync a driver mapping to eld_driver_mappings table
+ * This is needed because eld_hos_logs has FK constraint referencing eld_driver_mappings
+ */
+async function syncToDriverMappingsTable(mappingId, userId, connectionId, externalDriver, localDriverId) {
+  try {
+    const { id: externalId, firstName, lastName, name, email } = externalDriver;
+    const fullName = name || `${firstName || ''} ${lastName || ''}`.trim();
+
+    // Check if already exists
+    const { data: existing } = await supabaseAdmin
+      .from('eld_driver_mappings')
+      .select('id')
+      .eq('id', mappingId)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing
+      await supabaseAdmin
+        .from('eld_driver_mappings')
+        .update({
+          local_driver_id: localDriverId,
+          eld_driver_name: fullName,
+          eld_driver_email: email,
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', mappingId);
+    } else {
+      // Insert new with same ID as entity mapping
+      await supabaseAdmin
+        .from('eld_driver_mappings')
+        .insert({
+          id: mappingId,
+          connection_id: connectionId,
+          user_id: userId,
+          eld_driver_id: externalId,
+          eld_driver_name: fullName,
+          eld_driver_email: email,
+          local_driver_id: localDriverId,
+          is_active: true,
+          last_synced_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+    }
+  } catch (error) {
+    console.log('[ELDMapping] Error syncing to eld_driver_mappings:', error.message);
+  }
+}
+
+// ==========================================
 // Vehicle Mapping
 // ==========================================
 
@@ -74,6 +180,8 @@ export async function mapVehicle(userId, connectionId, externalVehicle, provider
           console.log('[ELDMapping] Updated existing vehicle with ELD data:', existingMapping.local_id, updateData);
         }
       }
+      // Ensure separate eld_vehicle_mappings table is synced for FK constraints
+      await syncToVehicleMappingsTable(existingMapping.id, userId, connectionId, externalVehicle, existingMapping.local_id);
       return { data: existingMapping, existing: true };
     }
 
@@ -186,6 +294,10 @@ export async function mapVehicle(userId, connectionId, externalVehicle, provider
         .eq('id', localVehicle.id);
 
       console.log('[ELDMapping] Updated vehicle with ELD data:', localVehicle.id, updateData);
+
+      // Sync to separate eld_vehicle_mappings table for FK constraints
+      await syncToVehicleMappingsTable(data.id, userId, connectionId, externalVehicle, localVehicle.id);
+
       return { data, autoMatched: true, confidence: matchConfidence };
     }
 
@@ -244,6 +356,9 @@ export async function mapVehicle(userId, connectionId, externalVehicle, provider
 
       if (mapError) {
         console.log('[ELDMapping] Failed to create mapping for auto-created vehicle:', mapError.message);
+      } else {
+        // Sync to separate eld_vehicle_mappings table for FK constraints
+        await syncToVehicleMappingsTable(mapping.id, userId, connectionId, externalVehicle, newVehicle.id);
       }
 
       console.log('[ELDMapping] Auto-created vehicle from ELD:', name || externalId);
@@ -376,6 +491,8 @@ export async function mapDriver(userId, connectionId, externalDriver, providerNa
       .single();
 
     if (existingMapping) {
+      // Ensure separate eld_driver_mappings table is synced for FK constraints
+      await syncToDriverMappingsTable(existingMapping.id, userId, connectionId, externalDriver, existingMapping.local_id);
       return { data: existingMapping, existing: true };
     }
 
@@ -501,6 +618,9 @@ export async function mapDriver(userId, connectionId, externalDriver, providerNa
         })
         .eq('id', localDriver.id);
 
+      // Sync to separate eld_driver_mappings table for FK constraints
+      await syncToDriverMappingsTable(data.id, userId, connectionId, externalDriver, localDriver.id);
+
       return { data, autoMatched: true, confidence: matchConfidence };
     }
 
@@ -559,6 +679,9 @@ export async function mapDriver(userId, connectionId, externalDriver, providerNa
 
       if (mapError) {
         console.log('[ELDMapping] Failed to create mapping for auto-created driver:', mapError.message);
+      } else {
+        // Sync to separate eld_driver_mappings table for FK constraints
+        await syncToDriverMappingsTable(mapping.id, userId, connectionId, externalDriver, newDriver.id);
       }
 
       console.log('[ELDMapping] Auto-created driver from ELD:', fullName || externalId);
