@@ -238,13 +238,14 @@ export async function syncVehicles(userId, connectionId) {
 
     log(`Fetched ${vehicles.length} vehicles from provider`);
 
-    // Auto-match vehicles to local records
+    // Auto-match vehicles to local records (or auto-create if no match)
     const matchResults = await autoMatchVehicles(userId, connectionId, vehicles);
 
     return {
       success: true,
       count: vehicles.length,
       matched: matchResults.matched.length,
+      created: matchResults.created?.length || 0,
       unmatched: matchResults.unmatched.length,
       unmatchedVehicles: matchResults.unmatched
     };
@@ -281,13 +282,14 @@ export async function syncDrivers(userId, connectionId) {
 
     log(`Fetched ${drivers.length} drivers from provider`);
 
-    // Auto-match drivers to local records
+    // Auto-match drivers to local records (or auto-create if no match)
     const matchResults = await autoMatchDrivers(userId, connectionId, drivers);
 
     return {
       success: true,
       count: drivers.length,
       matched: matchResults.matched.length,
+      created: matchResults.created?.length || 0,
       unmatched: matchResults.unmatched.length,
       unmatchedDrivers: matchResults.unmatched
     };

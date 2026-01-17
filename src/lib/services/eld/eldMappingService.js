@@ -144,16 +144,67 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
       return { data, autoMatched: true, confidence: matchConfidence };
     }
 
-    // No match found - return external vehicle info for manual mapping
-    return {
-      noMatch: true,
-      externalVehicle: {
-        externalId,
-        vin,
-        licensePlate,
-        name
+    // No match found - auto-create a new local vehicle from ELD data
+    try {
+      const { data: newVehicle, error: createError } = await supabaseAdmin
+        .from('vehicles')
+        .insert({
+          user_id: userId,
+          name: name || `ELD Vehicle ${externalId}`,
+          vin: vin || null,
+          license_plate: licensePlate || null,
+          eld_external_id: externalId,
+          eld_provider: 'motive',
+          status: 'active',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.log('[ELDMapping] Failed to auto-create vehicle:', createError.message);
+        return {
+          noMatch: true,
+          externalVehicle: { externalId, vin, licensePlate, name }
+        };
       }
-    };
+
+      // Create mapping for the new vehicle
+      const { data: mapping, error: mapError } = await supabaseAdmin
+        .from('eld_entity_mappings')
+        .insert({
+          user_id: userId,
+          connection_id: connectionId,
+          entity_type: 'vehicle',
+          local_id: newVehicle.id,
+          external_id: externalId,
+          provider: 'motive',
+          external_name: name,
+          auto_matched: true,
+          match_confidence: 1.0,
+          metadata: {
+            vin,
+            licensePlate,
+            matchedBy: 'auto_created',
+            autoCreated: true
+          }
+        })
+        .select()
+        .single();
+
+      if (mapError) {
+        console.log('[ELDMapping] Failed to create mapping for auto-created vehicle:', mapError.message);
+      }
+
+      console.log('[ELDMapping] Auto-created vehicle from ELD:', name || externalId);
+      return { data: mapping, autoCreated: true, newVehicle, confidence: 1.0 };
+    } catch (createErr) {
+      console.log('[ELDMapping] Error auto-creating vehicle:', createErr.message);
+      return {
+        noMatch: true,
+        externalVehicle: { externalId, vin, licensePlate, name }
+      };
+    }
   } catch (error) {
     return { error: true, errorMessage: error.message };
   }
@@ -402,19 +453,72 @@ export async function mapDriver(userId, connectionId, externalDriver) {
       return { data, autoMatched: true, confidence: matchConfidence };
     }
 
-    // No match found
-    return {
-      noMatch: true,
-      externalDriver: {
-        externalId,
-        name: fullName,
-        firstName,
-        lastName,
-        licenseNumber,
-        email,
-        phone
+    // No match found - auto-create a new local driver from ELD data
+    try {
+      const { data: newDriver, error: createError } = await supabaseAdmin
+        .from('drivers')
+        .insert({
+          user_id: userId,
+          name: fullName || `ELD Driver ${externalId}`,
+          license_number: licenseNumber || null,
+          license_state: externalDriver.licenseState || null,
+          email: email || null,
+          phone: phone || null,
+          eld_external_id: externalId,
+          eld_provider: 'motive',
+          status: 'active',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.log('[ELDMapping] Failed to auto-create driver:', createError.message);
+        return {
+          noMatch: true,
+          externalDriver: { externalId, name: fullName, firstName, lastName, licenseNumber, email, phone }
+        };
       }
-    };
+
+      // Create mapping for the new driver
+      const { data: mapping, error: mapError } = await supabaseAdmin
+        .from('eld_entity_mappings')
+        .insert({
+          user_id: userId,
+          connection_id: connectionId,
+          entity_type: 'driver',
+          local_id: newDriver.id,
+          external_id: externalId,
+          provider: 'motive',
+          external_name: fullName,
+          auto_matched: true,
+          match_confidence: 1.0,
+          metadata: {
+            firstName,
+            lastName,
+            licenseNumber,
+            email,
+            phone,
+            matchedBy: 'auto_created',
+            autoCreated: true
+          }
+        })
+        .select()
+        .single();
+
+      if (mapError) {
+        console.log('[ELDMapping] Failed to create mapping for auto-created driver:', mapError.message);
+      }
+
+      console.log('[ELDMapping] Auto-created driver from ELD:', fullName || externalId);
+      return { data: mapping, autoCreated: true, newDriver, confidence: 1.0 };
+    } catch (createErr) {
+      console.log('[ELDMapping] Error auto-creating driver:', createErr.message);
+      return {
+        noMatch: true,
+        externalDriver: { externalId, name: fullName, firstName, lastName, licenseNumber, email, phone }
+      };
+    }
   } catch (error) {
     return { error: true, errorMessage: error.message };
   }
@@ -706,6 +810,7 @@ export async function deleteMapping(userId, mappingId) {
 export async function autoMatchVehicles(userId, connectionId, externalVehicles) {
   const results = {
     matched: [],
+    created: [],
     unmatched: [],
     errors: []
   };
@@ -717,6 +822,13 @@ export async function autoMatchVehicles(userId, connectionId, externalVehicles) 
       results.errors.push({ vehicle, error: result.errorMessage });
     } else if (result.noMatch) {
       results.unmatched.push(result.externalVehicle);
+    } else if (result.autoCreated) {
+      // Vehicle was auto-created from ELD data
+      results.created.push({
+        external: vehicle,
+        mapping: result.data,
+        newVehicle: result.newVehicle
+      });
     } else {
       results.matched.push({
         external: vehicle,
@@ -739,6 +851,7 @@ export async function autoMatchVehicles(userId, connectionId, externalVehicles) 
 export async function autoMatchDrivers(userId, connectionId, externalDrivers) {
   const results = {
     matched: [],
+    created: [],
     unmatched: [],
     errors: []
   };
@@ -750,6 +863,13 @@ export async function autoMatchDrivers(userId, connectionId, externalDrivers) {
       results.errors.push({ driver, error: result.errorMessage });
     } else if (result.noMatch) {
       results.unmatched.push(result.externalDriver);
+    } else if (result.autoCreated) {
+      // Driver was auto-created from ELD data
+      results.created.push({
+        external: driver,
+        mapping: result.data,
+        newDriver: result.newDriver
+      });
     } else {
       results.matched.push({
         external: driver,
