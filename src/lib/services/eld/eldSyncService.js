@@ -560,20 +560,42 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
 
     let recordsInserted = 0;
     const driverDailyTotals = {};
+    const driverLatestStatus = {}; // Track latest status for each driver
+    const providerName = provider.getName();
 
     // Process each HOS log entry and aggregate by driver/date
     for (const hosLog of hosLogs) {
       const {
         driverId: externalDriverId,
+        vehicleId: externalVehicleId,
         dutyStatus,
         durationMinutes,
-        logDate
+        logDate,
+        startTime,
+        location,
+        latitude,
+        longitude
       } = hosLog;
 
       // Get driver mapping ID
       const driverMappingId = await getDriverMappingId(connectionId, externalDriverId);
       if (!driverMappingId) {
         continue; // Skip unmapped drivers
+      }
+
+      // Track latest status for each driver (for driver_hos_status table)
+      const statusTime = startTime ? new Date(startTime).getTime() : 0;
+      if (!driverLatestStatus[externalDriverId] || statusTime > driverLatestStatus[externalDriverId].statusTime) {
+        driverLatestStatus[externalDriverId] = {
+          externalDriverId,
+          dutyStatus,
+          startTime,
+          statusTime,
+          vehicleId: externalVehicleId,
+          location,
+          latitude,
+          longitude
+        };
       }
 
       // Aggregate daily totals for driver summary
@@ -654,6 +676,64 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
         }
       }
     }
+
+    // Update driver_hos_status table with latest duty status for each driver
+    for (const status of Object.values(driverLatestStatus)) {
+      const localDriverId = await getLocalDriverId(userId, status.externalDriverId);
+
+      // Check if record exists
+      const { data: existingStatus } = await supabaseAdmin
+        .from('driver_hos_status')
+        .select('id')
+        .eq('organization_id', userId)
+        .eq('eld_driver_id', status.externalDriverId)
+        .eq('eld_provider', providerName)
+        .maybeSingle();
+
+      if (existingStatus) {
+        // Update existing
+        const { error: updateError } = await supabaseAdmin
+          .from('driver_hos_status')
+          .update({
+            driver_id: localDriverId,
+            duty_status: status.dutyStatus || 'unknown',
+            status_started_at: status.startTime || new Date().toISOString(),
+            vehicle_id: status.vehicleId,
+            location_description: status.location,
+            latitude: status.latitude,
+            longitude: status.longitude,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingStatus.id);
+
+        if (updateError) {
+          syncLog(`Error updating driver_hos_status: ${updateError.message}`);
+        }
+      } else {
+        // Insert new
+        const { error: insertError } = await supabaseAdmin
+          .from('driver_hos_status')
+          .insert({
+            organization_id: userId,
+            driver_id: localDriverId,
+            eld_driver_id: status.externalDriverId,
+            eld_provider: providerName,
+            duty_status: status.dutyStatus || 'unknown',
+            status_started_at: status.startTime || new Date().toISOString(),
+            vehicle_id: status.vehicleId,
+            location_description: status.location,
+            latitude: status.latitude,
+            longitude: status.longitude,
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          syncLog(`Error inserting to driver_hos_status: ${insertError.message}`);
+        }
+      }
+    }
+
+    syncLog(`HOS sync completed: ${recordsInserted} daily records, ${Object.keys(driverLatestStatus).length} driver statuses`);
 
     return {
       success: true,
@@ -747,7 +827,7 @@ export async function syncVehicleLocations(userId, connectionId) {
         recordsInserted++;
       }
 
-      // Update vehicle's last known location
+      // Update vehicle's last known location in vehicles table
       const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
       if (localVehicleId) {
         await supabaseAdmin
@@ -766,9 +846,67 @@ export async function syncVehicleLocations(userId, connectionId) {
           })
           .eq('id', localVehicleId);
       }
+
+      // Also update vehicle_current_locations (for ELD tracking page display)
+      const providerName = provider.getName();
+
+      // Check if record exists
+      const { data: existingLoc } = await supabaseAdmin
+        .from('vehicle_current_locations')
+        .select('id')
+        .eq('organization_id', userId)
+        .eq('eld_vehicle_id', externalVehicleId)
+        .eq('eld_provider', providerName)
+        .maybeSingle();
+
+      if (existingLoc) {
+        // Update existing
+        const { error: updateError } = await supabaseAdmin
+          .from('vehicle_current_locations')
+          .update({
+            vehicle_id: localVehicleId,
+            latitude,
+            longitude,
+            speed_mph: speedMph,
+            heading,
+            odometer_miles: odometerMiles,
+            engine_hours: engineHours,
+            address,
+            recorded_at: recordedAt || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingLoc.id);
+
+        if (updateError) {
+          syncLog(`Error updating vehicle_current_locations: ${updateError.message}`);
+        }
+      } else {
+        // Insert new
+        const { error: insertError } = await supabaseAdmin
+          .from('vehicle_current_locations')
+          .insert({
+            organization_id: userId,
+            vehicle_id: localVehicleId,
+            eld_vehicle_id: externalVehicleId,
+            eld_provider: providerName,
+            latitude,
+            longitude,
+            speed_mph: speedMph,
+            heading,
+            odometer_miles: odometerMiles,
+            engine_hours: engineHours,
+            address,
+            recorded_at: recordedAt || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          syncLog(`Error inserting to vehicle_current_locations: ${insertError.message}`);
+        }
+      }
     }
 
-    log(`Location sync completed: ${recordsInserted} records`);
+    syncLog(`Location sync completed: ${recordsInserted} records to eld_vehicle_locations`);
 
     return {
       success: true,
@@ -879,9 +1017,68 @@ export async function syncFaultCodes(userId, connectionId) {
           log(`Error inserting fault code: ${error.message}`);
         }
       }
+
+      // Also update vehicle_active_faults (for ELD tracking page display)
+      const providerName = provider.getName();
+      const localVehicleId = await getLocalVehicleId(userId, externalVehicleId);
+
+      // Check if record exists
+      const { data: existingFault } = await supabaseAdmin
+        .from('vehicle_active_faults')
+        .select('id')
+        .eq('organization_id', userId)
+        .eq('eld_vehicle_id', externalVehicleId)
+        .eq('eld_provider', providerName)
+        .eq('code', code)
+        .maybeSingle();
+
+      if (existingFault) {
+        // Update existing
+        const { error: updateError } = await supabaseAdmin
+          .from('vehicle_active_faults')
+          .update({
+            vehicle_id: localVehicleId,
+            description,
+            severity: severity || 'info',
+            source,
+            is_active: isActive,
+            last_observed_at: lastObservedAt || new Date().toISOString(),
+            resolved_at: isActive ? null : new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingFault.id);
+
+        if (updateError) {
+          syncLog(`Error updating vehicle_active_faults: ${updateError.message}`);
+        }
+      } else {
+        // Insert new
+        const { error: insertError } = await supabaseAdmin
+          .from('vehicle_active_faults')
+          .insert({
+            organization_id: userId,
+            vehicle_id: localVehicleId,
+            eld_vehicle_id: externalVehicleId,
+            eld_provider: providerName,
+            code: code,
+            description,
+            severity: severity || 'info',
+            source,
+            is_active: isActive,
+            first_observed_at: firstObservedAt || new Date().toISOString(),
+            last_observed_at: lastObservedAt || new Date().toISOString(),
+            resolved_at: isActive ? null : new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          syncLog(`Error inserting to vehicle_active_faults: ${insertError.message}`);
+        }
+      }
     }
 
-    log(`Fault code sync completed: ${recordsInserted} new records`);
+    syncLog(`Fault code sync completed: ${recordsInserted} new records`);
 
     return {
       success: true,
