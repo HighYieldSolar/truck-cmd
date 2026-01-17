@@ -44,6 +44,34 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
       .single();
 
     if (existingMapping) {
+      // Even if mapping exists, update the local vehicle with latest ELD data
+      if (existingMapping.local_id) {
+        const { data: localVehicle } = await supabaseAdmin
+          .from('vehicles')
+          .select('id, vin, license_plate, make, model, year')
+          .eq('id', existingMapping.local_id)
+          .single();
+
+        if (localVehicle) {
+          const updateData = {};
+          // Fill in missing fields from ELD data
+          if (vin && !localVehicle.vin) updateData.vin = vin.toUpperCase();
+          if (licensePlate && !localVehicle.license_plate) updateData.license_plate = licensePlate;
+          if (make && !localVehicle.make) updateData.make = make;
+          if (model && !localVehicle.model) updateData.model = model;
+          if (year && !localVehicle.year) updateData.year = parseInt(year);
+          if (odometerMiles) updateData.odometer_miles = odometerMiles;
+          if (engineHours) updateData.engine_hours = engineHours;
+
+          if (Object.keys(updateData).length > 0) {
+            await supabaseAdmin
+              .from('vehicles')
+              .update(updateData)
+              .eq('id', existingMapping.local_id);
+            console.log('[ELDMapping] Updated existing vehicle with ELD data:', existingMapping.local_id, updateData);
+          }
+        }
+      }
       return { data: existingMapping, existing: true };
     }
 
