@@ -32,7 +32,7 @@ const supabaseAdmin = createClient(
  */
 export async function mapVehicle(userId, connectionId, externalVehicle) {
   try {
-    const { id: externalId, vin, licensePlate, name } = externalVehicle;
+    const { id: externalId, vin, licensePlate, name, make, model, year, odometerMiles, engineHours } = externalVehicle;
 
     // Check if mapping already exists
     const { data: existingMapping } = await supabaseAdmin
@@ -55,7 +55,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
     if (vin) {
       const { data: vinMatch } = await supabaseAdmin
         .from('vehicles')
-        .select('id, name, vin')
+        .select('id, name, vin, license_plate, make, model, year')
         .eq('user_id', userId)
         .eq('vin', vin.toUpperCase())
         .single();
@@ -72,7 +72,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
       const normalizedPlate = licensePlate.replace(/\s|-/g, '').toUpperCase();
       const { data: plateMatch } = await supabaseAdmin
         .from('vehicles')
-        .select('id, name, license_plate')
+        .select('id, name, vin, license_plate, make, model, year')
         .eq('user_id', userId)
         .ilike('license_plate', `%${normalizedPlate}%`)
         .single();
@@ -88,7 +88,7 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
     if (!localVehicle && name) {
       const { data: vehicles } = await supabaseAdmin
         .from('vehicles')
-        .select('id, name')
+        .select('id, name, vin, license_plate, make, model, year')
         .eq('user_id', userId);
 
       if (vehicles) {
@@ -122,6 +122,9 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
           metadata: {
             vin,
             licensePlate,
+            make,
+            model,
+            year,
             matchedBy: matchConfidence === 1.0 ? 'vin' : matchConfidence === 0.9 ? 'license_plate' : 'name'
           }
         })
@@ -132,15 +135,27 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
         return { error: true, errorMessage: error.message };
       }
 
-      // Update vehicle with ELD external ID
+      // Update vehicle with ELD data - sync all available fields
+      const updateData = {
+        eld_external_id: externalId,
+        eld_provider: 'motive'
+      };
+
+      // Fill in missing fields from ELD data
+      if (vin && !localVehicle.vin) updateData.vin = vin.toUpperCase();
+      if (licensePlate && !localVehicle.license_plate) updateData.license_plate = licensePlate;
+      if (make) updateData.make = make;
+      if (model) updateData.model = model;
+      if (year) updateData.year = parseInt(year);
+      if (odometerMiles) updateData.odometer_miles = odometerMiles;
+      if (engineHours) updateData.engine_hours = engineHours;
+
       await supabaseAdmin
         .from('vehicles')
-        .update({
-          eld_external_id: externalId,
-          eld_provider: 'terminal'
-        })
+        .update(updateData)
         .eq('id', localVehicle.id);
 
+      console.log('[ELDMapping] Updated vehicle with ELD data:', localVehicle.id, updateData);
       return { data, autoMatched: true, confidence: matchConfidence };
     }
 
@@ -151,8 +166,13 @@ export async function mapVehicle(userId, connectionId, externalVehicle) {
         .insert({
           user_id: userId,
           name: name || `ELD Vehicle ${externalId}`,
-          vin: vin || null,
+          vin: vin ? vin.toUpperCase() : null,
           license_plate: licensePlate || null,
+          make: make || null,
+          model: model || null,
+          year: year ? parseInt(year) : null,
+          odometer_miles: odometerMiles || null,
+          engine_hours: engineHours || null,
           eld_external_id: externalId,
           eld_provider: 'motive',
           status: 'active',
