@@ -17,6 +17,7 @@ import {
   ELDAuthError
 } from './providers';
 import { registerWebhooksForConnection } from './webhooks/webhookRegistrationService';
+import { syncAll } from './eldSyncService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[ELDConnectionService]', ...args);
@@ -150,6 +151,22 @@ export async function handleOAuthCallback(code, state, redirectUri) {
         // Log but don't fail the connection if webhook registration fails
         // Webhooks can be registered manually or retried later
         log('Webhook registration failed (non-fatal):', webhookError.message);
+      }
+
+      // Trigger initial data sync in the background
+      // This pulls existing vehicles, drivers, HOS logs, etc. from the ELD provider
+      try {
+        log(`Starting initial sync for connection ${connectionResult.data.id}...`);
+        // Run sync asynchronously - don't block the OAuth callback
+        syncAll(userId, connectionResult.data.id)
+          .then(syncResult => {
+            log('Initial sync completed:', syncResult);
+          })
+          .catch(syncError => {
+            log('Initial sync failed (non-fatal):', syncError.message);
+          });
+      } catch (syncError) {
+        log('Failed to start initial sync (non-fatal):', syncError.message);
       }
     }
 
