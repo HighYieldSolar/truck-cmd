@@ -277,21 +277,25 @@ export class MotiveProvider extends BaseELDProvider {
   async fetchCurrentLocations() {
     const response = await this.request(`${this.baseUrl}/vehicle_locations`);
 
-    const locations = (response.vehicle_locations || []).map(loc => ({
-      vehicleId: loc.vehicle?.id?.toString(),
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-      speedMph: loc.speed,
-      heading: loc.bearing,
-      odometerMiles: loc.odometer,
-      engineHours: loc.engine_hours,
-      address: loc.description,
-      recordedAt: loc.located_at,
-      metadata: {
-        provider: 'motive',
-        vehicleName: loc.vehicle?.number
-      }
-    }));
+    const locations = (response.vehicle_locations || []).map(item => {
+      // Motive wraps each location in a 'vehicle_location' object
+      const loc = item.vehicle_location || item;
+      return {
+        vehicleId: loc.vehicle?.id?.toString(),
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        speedMph: loc.speed,
+        heading: loc.bearing,
+        odometerMiles: loc.odometer,
+        engineHours: loc.engine_hours,
+        address: loc.description,
+        recordedAt: loc.located_at,
+        metadata: {
+          provider: 'motive',
+          vehicleName: loc.vehicle?.number
+        }
+      };
+    });
 
     log(`Fetched ${locations.length} locations from Motive`);
     return locations;
@@ -311,7 +315,9 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.vehicle_locations?.length > 0) {
-        for (const loc of response.vehicle_locations) {
+        for (const item of response.vehicle_locations) {
+          // Motive wraps each location in a 'vehicle_location' object
+          const loc = item.vehicle_location || item;
           locations.push({
             vehicleId: loc.vehicle?.id?.toString(),
             latitude: loc.latitude,
@@ -349,7 +355,9 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.hos_logs?.length > 0) {
-        for (const hosLog of response.hos_logs) {
+        for (const item of response.hos_logs) {
+          // Motive wraps each log in a 'hos_log' object
+          const hosLog = item.hos_log || item;
           logs.push({
             driverId: hosLog.driver?.id?.toString(),
             vehicleId: hosLog.vehicle?.id?.toString(),
@@ -395,7 +403,10 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.ifta_trips?.length > 0) {
-        for (const trip of response.ifta_trips) {
+        for (const item of response.ifta_trips) {
+          // Motive wraps each trip in an 'ifta_trip' object
+          const trip = item.ifta_trip || item;
+
           // Build jurisdiction miles map
           const jurisdictionsMiles = {};
           if (trip.jurisdiction_details) {
@@ -448,7 +459,9 @@ export class MotiveProvider extends BaseELDProvider {
     const summaries = [];
 
     if (response.ifta_summary) {
-      for (const summary of response.ifta_summary) {
+      for (const item of response.ifta_summary) {
+        // Motive may wrap each summary - handle both wrapped and unwrapped
+        const summary = item.ifta_summary || item;
         const jurisdictionsMiles = {};
 
         if (summary.jurisdiction_breakdown) {
@@ -490,7 +503,9 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.fault_codes?.length > 0) {
-        for (const fault of response.fault_codes) {
+        for (const item of response.fault_codes) {
+          // Motive wraps each fault in a 'fault_code' object
+          const fault = item.fault_code || item;
           faults.push({
             vehicleId: fault.vehicle?.id?.toString(),
             code: fault.code,
@@ -532,7 +547,9 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.fuel_purchases?.length > 0) {
-        for (const purchase of response.fuel_purchases) {
+        for (const item of response.fuel_purchases) {
+          // Motive wraps each purchase in a 'fuel_purchase' object
+          const purchase = item.fuel_purchase || item;
           purchases.push({
             vehicleId: purchase.vehicle?.id?.toString(),
             driverId: purchase.driver?.id?.toString(),
