@@ -194,10 +194,12 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.vehicles?.length > 0) {
-        for (const v of response.vehicles) {
+        for (const item of response.vehicles) {
+          // Motive wraps each vehicle in a 'vehicle' object
+          const v = item.vehicle || item;
           vehicles.push({
             id: v.id?.toString(),
-            name: v.number || v.name,
+            name: v.number || v.name || `Vehicle ${v.id}`,
             vin: v.vin,
             licensePlate: v.license_plate_number,
             make: v.make,
@@ -239,7 +241,9 @@ export class MotiveProvider extends BaseELDProvider {
       );
 
       if (response.users?.length > 0) {
-        for (const d of response.users) {
+        for (const item of response.users) {
+          // Motive wraps each user in a 'user' object
+          const d = item.user || item;
           drivers.push({
             id: d.id?.toString(),
             firstName: d.first_name,
