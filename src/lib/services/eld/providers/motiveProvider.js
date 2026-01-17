@@ -17,6 +17,8 @@ const MOTIVE_TOKEN_URL = 'https://keeptruckin.com/oauth/token';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[MotiveProvider]', ...args);
+// Production logging for API responses
+const apiLog = (...args) => console.log('[MotiveAPI]', ...args);
 
 export class MotiveProvider extends BaseELDProvider {
   constructor(config = {}) {
@@ -277,6 +279,10 @@ export class MotiveProvider extends BaseELDProvider {
   async fetchCurrentLocations() {
     const response = await this.request(`${this.baseUrl}/vehicle_locations`);
 
+    // Log raw API response structure for debugging
+    apiLog('vehicle_locations response keys:', Object.keys(response || {}));
+    apiLog('vehicle_locations array length:', response?.vehicle_locations?.length || 0);
+
     const locations = (response.vehicle_locations || []).map(item => {
       // Motive wraps each location in a 'vehicle_location' object
       const loc = item.vehicle_location || item;
@@ -354,6 +360,12 @@ export class MotiveProvider extends BaseELDProvider {
         `${this.baseUrl}/hos_logs?start_date=${startDate}&end_date=${endDate}&page_no=${page}&per_page=100`
       );
 
+      // Log first page response for debugging
+      if (page === 1) {
+        apiLog('hos_logs response keys:', Object.keys(response || {}));
+        apiLog('hos_logs array length:', response?.hos_logs?.length || 0);
+      }
+
       if (response.hos_logs?.length > 0) {
         for (const item of response.hos_logs) {
           // Motive wraps each log in a 'hos_log' object
@@ -401,6 +413,12 @@ export class MotiveProvider extends BaseELDProvider {
       const response = await this.request(
         `${this.baseUrl}/ifta/trips?start_date=${startDate}&end_date=${endDate}&page_no=${page}&per_page=100`
       );
+
+      // Log first page response for debugging
+      if (page === 1) {
+        apiLog('ifta_trips response keys:', Object.keys(response || {}));
+        apiLog('ifta_trips array length:', response?.ifta_trips?.length || 0);
+      }
 
       if (response.ifta_trips?.length > 0) {
         for (const item of response.ifta_trips) {
@@ -455,6 +473,10 @@ export class MotiveProvider extends BaseELDProvider {
     const response = await this.request(
       `${this.baseUrl}/ifta/summary?start_date=${startDate}&end_date=${endDate}`
     );
+
+    // Log raw API response structure for debugging
+    apiLog('ifta_summary response keys:', Object.keys(response || {}));
+    apiLog('ifta_summary array length:', response?.ifta_summary?.length || 0);
 
     const summaries = [];
 

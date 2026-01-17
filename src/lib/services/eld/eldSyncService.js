@@ -56,6 +56,8 @@ async function getDriverMappingId(connectionId, externalDriverId) {
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[ELDSyncService]', ...args);
+// Production logging for critical sync operations
+const syncLog = (...args) => console.log('[ELDSync]', ...args);
 
 // Initialize Supabase admin client
 const supabaseAdmin = createClient(
@@ -228,8 +230,21 @@ export async function syncAll(userId, connectionId) {
       }
     }
 
-    // Update sync job and connection
-    await updateSyncJob(job.id, 'completed', results.totalRecords);
+    // Update sync job and connection - store sync details for debugging
+    const syncDetails = JSON.stringify({
+      vehicles: results.vehicles?.count || 0,
+      drivers: results.drivers?.count || 0,
+      gps: results.gps?.count || 0,
+      gpsMessage: results.gps?.message,
+      hos: results.hos?.count || 0,
+      hosMessage: results.hos?.message,
+      ifta: results.ifta?.quarters || [],
+      faultCodes: results.faultCodes?.count || 0,
+      errors: results.errors
+    });
+    syncLog('Sync completed with details:', syncDetails);
+
+    await updateSyncJob(job.id, 'completed', results.totalRecords, syncDetails);
     await updateLastSync(connectionId);
 
     log(`Full sync completed. Total records: ${results.totalRecords}`);
@@ -365,7 +380,7 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
       return { error: true, errorMessage: 'Provider does not support IFTA data' };
     }
 
-    log(`Syncing IFTA mileage for ${quarter} from ${provider.getName()}`);
+    syncLog(`Syncing IFTA mileage for ${quarter} from ${provider.getName()}`);
 
     // Convert quarter to date range
     const [year, q] = quarter.split('-Q');
@@ -386,9 +401,9 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
     if (hasSummary) {
       try {
         iftaData = await provider.fetchIFTASummary(startDateStr, endDateStr);
-        log(`Fetched IFTA summary: ${iftaData.length} vehicle records`);
+        syncLog(`IFTA summary from API: ${iftaData?.length || 0} vehicle records`);
       } catch (e) {
-        log('IFTA summary failed, falling back to trips:', e);
+        syncLog('IFTA summary failed, falling back to trips:', e.message);
       }
     }
 
@@ -396,7 +411,7 @@ export async function syncIftaMileage(userId, connectionId, quarter) {
     if (iftaData.length === 0) {
       try {
         const trips = await provider.fetchIFTATrips(startDateStr, endDateStr);
-        log(`Fetched ${trips.length} IFTA trips`);
+        syncLog(`IFTA trips from API: ${trips?.length || 0} records`);
 
         // Aggregate trips by vehicle and jurisdiction
         const vehicleMileage = {};
@@ -530,12 +545,15 @@ export async function syncHosLogs(userId, connectionId, startDate, endDate) {
       return { error: true, errorMessage: 'Provider does not support HOS data' };
     }
 
-    log(`Syncing HOS logs from ${startDate} to ${endDate} from ${provider.getName()}`);
+    syncLog(`Syncing HOS logs from ${startDate} to ${endDate} from ${provider.getName()}`);
 
     // Fetch HOS logs from provider (normalized format)
     const hosLogs = await provider.fetchHOSLogs(startDate, endDate);
+    syncLog(`HOS logs from API: ${hosLogs?.length || 0} records`);
+
     if (!hosLogs || hosLogs.length === 0) {
-      return { success: true, count: 0, dateRange: { startDate, endDate } };
+      syncLog('No HOS logs returned from provider API');
+      return { success: true, count: 0, dateRange: { startDate, endDate }, message: 'No HOS logs from API' };
     }
 
     log(`Fetched ${hosLogs.length} HOS logs`);
@@ -669,12 +687,15 @@ export async function syncVehicleLocations(userId, connectionId) {
       return { error: true, errorMessage: 'Provider does not support GPS data' };
     }
 
-    log(`Syncing vehicle locations from ${provider.getName()}`);
+    syncLog(`Syncing vehicle locations from ${provider.getName()}`);
 
     // Fetch current locations from provider (normalized format)
     const locations = await provider.fetchCurrentLocations();
+    syncLog(`GPS locations from API: ${locations?.length || 0} records`);
+
     if (!locations || locations.length === 0) {
-      return { success: true, count: 0 };
+      syncLog('No GPS locations returned from provider API');
+      return { success: true, count: 0, message: 'No locations returned from API' };
     }
 
     log(`Fetched ${locations.length} vehicle locations`);
@@ -780,10 +801,12 @@ export async function syncFaultCodes(userId, connectionId) {
       return { success: true, count: 0, message: 'Provider does not support fault codes' };
     }
 
-    log(`Syncing fault codes from ${provider.getName()}`);
+    syncLog(`Syncing fault codes from ${provider.getName()}`);
 
     // Fetch fault codes from provider (normalized format)
     const faultCodes = await provider.fetchFaultCodes();
+    syncLog(`Fault codes from API: ${faultCodes?.length || 0} records`);
+
     if (!faultCodes || faultCodes.length === 0) {
       return { success: true, count: 0 };
     }
