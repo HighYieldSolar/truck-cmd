@@ -53,18 +53,24 @@ export class MotiveProvider extends BaseELDProvider {
    */
   async getAuthorizationUrl(redirectUri, state) {
     // Motive OAuth scopes - see https://developer-docs.gomotive.com/docs/oauth-scopes
+    // NOTE: hos_logs.logs is required for /logs endpoint (NOT just hos_logs.read)
     const scopes = [
       'companies.read',                    // Company details (recommended)
       'vehicles.read',                     // Vehicle data
       'users.read',                        // Drivers and fleet managers
-      'hos_logs.read',                     // HOS logs
+      'hos_logs.logs',                     // HOS logs (/logs endpoint) - REQUIRED
+      'hos_logs.read',                     // HOS logs read access
       'hos_logs.hours_of_service',         // Hours of service summary
+      'hos_logs.available_time',           // Available driving time
+      'hos_logs.hos_violation',            // HOS violations
       'ifta_reports.trips',                // IFTA trip reports
       'ifta_reports.summary',              // IFTA mileage summary
       'locations.vehicle_locations_list',  // Current vehicle locations
       'locations.vehicle_locations_single', // Vehicle location history
+      'locations.driver_locations',        // Driver locations with vehicle info
       'fault_codes.read',                  // Vehicle fault codes
-      'fuel_purchases.read'                // Fuel purchases
+      'fuel_purchases.read',               // Fuel purchases
+      'eld_devices.read'                   // ELD device information
     ].join(' ');
 
     const params = new URLSearchParams({
