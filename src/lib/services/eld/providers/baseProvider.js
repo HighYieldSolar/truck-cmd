@@ -108,31 +108,47 @@ export const DataModels = {
  * Normalize duty status across providers
  */
 export function normalizeDutyStatus(providerStatus, provider) {
+  if (!providerStatus) return 'unknown';
+
+  // Normalize to lowercase for consistent matching
+  const status = providerStatus.toString().toLowerCase().trim();
+
   const statusMap = {
-    // Motive statuses
-    'D': 'driving',
-    'ON': 'on_duty',
-    'OFF': 'off_duty',
-    'SB': 'sleeper',
+    // Motive statuses (from /logs endpoint events)
+    'd': 'driving',
+    'on': 'on_duty',
+    'off': 'off_duty',
+    'sb': 'sleeper',
     'driving': 'driving',
+    'on_duty': 'on_duty',
     'on_duty_not_driving': 'on_duty',
     'off_duty': 'off_duty',
+    'sleeper': 'sleeper',
     'sleeper_berth': 'sleeper',
+    'yard_move': 'on_duty',
+    'personal_conveyance': 'off_duty',
+    'pc': 'off_duty',
+    'ym': 'on_duty',
+    'waiting': 'on_duty',
+    'waiting_time': 'on_duty',
 
     // Samsara statuses
-    'onDutyDriving': 'driving',
-    'onDutyNotDriving': 'on_duty',
-    'offDuty': 'off_duty',
-    'sleeperBerth': 'sleeper',
+    'ondutydrivingState': 'driving',
+    'ondutydriving': 'driving',
+    'ondutynotdriving': 'on_duty',
+    'offduty': 'off_duty',
+    'sleeperberth': 'sleeper',
 
     // Geotab statuses
-    'Driving': 'driving',
-    'On': 'on_duty',
-    'Off': 'off_duty',
-    'Sleeper': 'sleeper'
+    'active': 'driving',
+    'inactive': 'off_duty',
+
+    // Generic
+    'break': 'off_duty',
+    'rest': 'sleeper'
   };
 
-  return statusMap[providerStatus] || 'unknown';
+  return statusMap[status] || 'unknown';
 }
 
 /**

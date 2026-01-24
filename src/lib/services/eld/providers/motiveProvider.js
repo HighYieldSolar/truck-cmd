@@ -275,33 +275,128 @@ export class MotiveProvider extends BaseELDProvider {
 
   /**
    * Fetch current GPS locations
+   * Tries v1/vehicle_locations first, falls back to v3 for newer Vehicle Gateway devices
    */
   async fetchCurrentLocations() {
-    const response = await this.request(`${this.baseUrl}/vehicle_locations`);
+    let locations = [];
 
-    // Log raw API response structure for debugging
-    apiLog('vehicle_locations response keys:', Object.keys(response || {}));
-    apiLog('vehicle_locations array length:', response?.vehicle_locations?.length || 0);
+    // Try v1 endpoint first
+    try {
+      const response = await this.request(`${this.baseUrl}/vehicle_locations`);
 
-    const locations = (response.vehicle_locations || []).map(item => {
-      // Motive wraps each location in a 'vehicle_location' object
-      const loc = item.vehicle_location || item;
-      return {
-        vehicleId: loc.vehicle?.id?.toString(),
-        latitude: loc.latitude,
-        longitude: loc.longitude,
-        speedMph: loc.speed,
-        heading: loc.bearing,
-        odometerMiles: loc.odometer,
-        engineHours: loc.engine_hours,
-        address: loc.description,
-        recordedAt: loc.located_at,
-        metadata: {
-          provider: 'motive',
-          vehicleName: loc.vehicle?.number
+      // Log raw API response structure for debugging
+      apiLog('v1 vehicle_locations response keys:', Object.keys(response || {}));
+      apiLog('v1 vehicle_locations array length:', response?.vehicle_locations?.length || 0);
+
+      if (response?.vehicle_locations?.length > 0) {
+        locations = response.vehicle_locations.map(item => {
+          // Motive wraps each location in a 'vehicle_location' object
+          const loc = item.vehicle_location || item;
+          return {
+            vehicleId: loc.vehicle?.id?.toString(),
+            latitude: loc.latitude || loc.lat,
+            longitude: loc.longitude || loc.lon,
+            speedMph: loc.speed,
+            heading: loc.bearing,
+            odometerMiles: loc.odometer,
+            engineHours: loc.engine_hours,
+            address: loc.description,
+            recordedAt: loc.located_at,
+            metadata: {
+              provider: 'motive',
+              vehicleName: loc.vehicle?.number,
+              apiVersion: 'v1'
+            }
+          };
+        });
+      }
+    } catch (e) {
+      apiLog('v1 vehicle_locations failed:', e.message);
+    }
+
+    // If v1 returned no data, try v3 endpoint (for Vehicle Gateway devices)
+    if (locations.length === 0) {
+      try {
+        // v3 endpoint returns vehicles with current_location embedded
+        const v3Response = await this.request(`https://api.gomotive.com/v3/vehicle_locations`);
+
+        apiLog('v3 vehicle_locations response keys:', Object.keys(v3Response || {}));
+        apiLog('v3 vehicles array length:', v3Response?.vehicles?.length || 0);
+
+        if (v3Response?.vehicles?.length > 0) {
+          locations = v3Response.vehicles
+            .filter(item => {
+              const vehicle = item.vehicle || item;
+              return vehicle.current_location?.lat && vehicle.current_location?.lon;
+            })
+            .map(item => {
+              const vehicle = item.vehicle || item;
+              const loc = vehicle.current_location || {};
+              return {
+                vehicleId: vehicle.id?.toString(),
+                latitude: loc.lat,
+                longitude: loc.lon,
+                speedMph: loc.kph ? loc.kph * 0.621371 : loc.speed,
+                heading: loc.bearing,
+                odometerMiles: loc.true_odometer || loc.odometer,
+                engineHours: loc.true_engine_hours || loc.engine_hours,
+                address: loc.current_location || `${loc.city || ''}, ${loc.state || ''}`.trim(),
+                recordedAt: loc.located_at,
+                metadata: {
+                  provider: 'motive',
+                  vehicleName: vehicle.number,
+                  vehicleState: loc.vehicle_state,
+                  apiVersion: 'v3'
+                }
+              };
+            });
         }
-      };
-    });
+      } catch (e) {
+        apiLog('v3 vehicle_locations failed:', e.message);
+      }
+    }
+
+    // If still no locations, try driver_locations endpoint as last resort
+    if (locations.length === 0) {
+      try {
+        const driverLocResponse = await this.request(`${this.baseUrl}/driver_locations`);
+
+        apiLog('driver_locations response keys:', Object.keys(driverLocResponse || {}));
+        apiLog('driver_locations array length:', driverLocResponse?.driver_locations?.length || 0);
+
+        if (driverLocResponse?.driver_locations?.length > 0) {
+          locations = driverLocResponse.driver_locations
+            .filter(item => {
+              const loc = item.driver_location || item;
+              return loc.lat && loc.lon;
+            })
+            .map(item => {
+              const loc = item.driver_location || item;
+              const vehicle = loc.vehicle || {};
+              return {
+                vehicleId: vehicle.id?.toString(),
+                latitude: loc.lat,
+                longitude: loc.lon,
+                speedMph: loc.speed,
+                heading: loc.bearing,
+                odometerMiles: null,
+                engineHours: null,
+                address: loc.description,
+                recordedAt: loc.located_at,
+                metadata: {
+                  provider: 'motive',
+                  vehicleName: vehicle.number,
+                  driverId: loc.driver?.id,
+                  driverName: `${loc.driver?.first_name || ''} ${loc.driver?.last_name || ''}`.trim(),
+                  apiVersion: 'driver_locations'
+                }
+              };
+            });
+        }
+      } catch (e) {
+        apiLog('driver_locations failed:', e.message);
+      }
+    }
 
     log(`Fetched ${locations.length} locations from Motive`);
     return locations;
@@ -349,6 +444,8 @@ export class MotiveProvider extends BaseELDProvider {
 
   /**
    * Fetch HOS logs
+   * Motive API endpoint: /v1/logs (NOT /hos_logs)
+   * Returns daily log summaries with events array containing duty status changes
    */
   async fetchHOSLogs(startDate, endDate) {
     const logs = [];
@@ -356,48 +453,102 @@ export class MotiveProvider extends BaseELDProvider {
     let hasMore = true;
 
     while (hasMore) {
+      // Correct endpoint is /logs, not /hos_logs
       const response = await this.request(
-        `${this.baseUrl}/hos_logs?start_date=${startDate}&end_date=${endDate}&page_no=${page}&per_page=100`
+        `${this.baseUrl}/logs?start_date=${startDate}&end_date=${endDate}&page_no=${page}&per_page=100`
       );
 
       // Log first page response for debugging
       if (page === 1) {
-        apiLog('hos_logs response keys:', Object.keys(response || {}));
-        apiLog('hos_logs array length:', response?.hos_logs?.length || 0);
+        apiLog('logs response keys:', Object.keys(response || {}));
+        apiLog('logs array length:', response?.logs?.length || 0);
+        if (response?.logs?.[0]) {
+          apiLog('First log structure:', Object.keys(response.logs[0]?.log || response.logs[0] || {}));
+        }
       }
 
-      if (response.hos_logs?.length > 0) {
-        for (const item of response.hos_logs) {
-          // Motive wraps each log in a 'hos_log' object
-          const hosLog = item.hos_log || item;
-          logs.push({
-            driverId: hosLog.driver?.id?.toString(),
-            vehicleId: hosLog.vehicle?.id?.toString(),
-            dutyStatus: normalizeDutyStatus(hosLog.status, 'motive'),
-            startTime: hosLog.start_time,
-            endTime: hosLog.end_time,
-            durationMinutes: hosLog.duration ? Math.round(hosLog.duration / 60) : null,
-            location: hosLog.location?.name,
-            latitude: hosLog.location?.lat,
-            longitude: hosLog.location?.lon,
-            annotations: hosLog.notes,
-            logDate: hosLog.log_date,
-            metadata: {
-              provider: 'motive',
-              origin: hosLog.origin,
-              edited: hosLog.edited
-            }
-          });
+      if (response.logs?.length > 0) {
+        for (const item of response.logs) {
+          // Motive wraps each log in a 'log' object
+          const dailyLog = item.log || item;
+          const driver = dailyLog.driver;
+          const vehicles = dailyLog.vehicles || [];
+          const events = dailyLog.events || [];
+
+          // Process each event (duty status change) in the daily log
+          for (const eventItem of events) {
+            const event = eventItem.event || eventItem;
+            const vehicleId = vehicles[0]?.vehicle?.id || vehicles[0]?.id;
+
+            logs.push({
+              driverId: driver?.id?.toString(),
+              vehicleId: vehicleId?.toString(),
+              dutyStatus: normalizeDutyStatus(event.type, 'motive'),
+              startTime: event.start_time,
+              endTime: event.end_time,
+              durationMinutes: this.calculateDurationMinutes(event.start_time, event.end_time),
+              location: event.location,
+              latitude: event.lat,
+              longitude: event.lon,
+              annotations: event.notes,
+              logDate: dailyLog.date,
+              metadata: {
+                provider: 'motive',
+                origin: event.origin,
+                edited: event.edited,
+                driverName: `${driver?.first_name || ''} ${driver?.last_name || ''}`.trim()
+              }
+            });
+          }
+
+          // Also create a daily summary if no events but we have duration data
+          if (events.length === 0 && (dailyLog.driving_duration || dailyLog.on_duty_duration)) {
+            logs.push({
+              driverId: driver?.id?.toString(),
+              vehicleId: vehicles[0]?.vehicle?.id?.toString() || vehicles[0]?.id?.toString(),
+              dutyStatus: 'off_duty',
+              startTime: `${dailyLog.date}T00:00:00Z`,
+              endTime: `${dailyLog.date}T23:59:59Z`,
+              durationMinutes: Math.round((dailyLog.off_duty_duration || 0) / 60),
+              location: null,
+              latitude: null,
+              longitude: null,
+              annotations: null,
+              logDate: dailyLog.date,
+              metadata: {
+                provider: 'motive',
+                dailySummary: true,
+                drivingDuration: dailyLog.driving_duration,
+                onDutyDuration: dailyLog.on_duty_duration,
+                offDutyDuration: dailyLog.off_duty_duration,
+                sleeperDuration: dailyLog.sleeper_duration
+              }
+            });
+          }
         }
         page++;
-        hasMore = response.hos_logs.length === 100;
+        hasMore = response.logs.length === 100;
       } else {
         hasMore = false;
       }
     }
 
-    log(`Fetched ${logs.length} HOS logs from Motive`);
+    log(`Fetched ${logs.length} HOS log events from Motive`);
     return logs;
+  }
+
+  /**
+   * Calculate duration in minutes between two timestamps
+   */
+  calculateDurationMinutes(startTime, endTime) {
+    if (!startTime || !endTime) return null;
+    try {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      return Math.round((end - start) / (1000 * 60));
+    } catch (e) {
+      return null;
+    }
   }
 
   /**
