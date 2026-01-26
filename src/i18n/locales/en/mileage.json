@@ -168,12 +168,16 @@
     "crossingAdded": "State crossing added successfully!",
     "tripDeleted": "Trip deleted successfully",
     "iftaRecordsRemoved": "({{count}} IFTA record{{plural}} also removed)",
-    "tripCompleted": "Trip completed successfully! You can now manually import it to your IFTA calculator.",
+    "tripCompleted": "Trip completed!",
     "alreadyImported": "This trip has already been imported to the IFTA calculator",
     "noDataToImport": "No mileage data to import",
     "importSuccess": "Successfully imported {{count}} state records to IFTA calculator",
     "importSuccessQuarters": "Successfully imported {{count}} state records to IFTA calculator for {{quarter}}",
-    "importSuccessMultiQuarters": "Successfully imported {{count}} state records to IFTA calculator (split across {{quarters}})"
+    "importSuccessMultiQuarters": "Successfully imported {{count}} state records to IFTA calculator (split across {{quarters}})",
+    "autoImportSuccess": "Mileage auto-synced to IFTA ({{count}} records for {{quarter}})",
+    "autoImportMultiQuarter": "Mileage auto-synced to IFTA ({{count}} records across {{quarters}})",
+    "autoImportBasic": "Mileage auto-synced to IFTA ({{count}} records)",
+    "autoImportFailed": "Trip saved but auto-sync to IFTA failed. You can manually import from Past Trips."
   },
 
   "errors": {

@@ -933,7 +933,7 @@ export default function StateMileageLogger() {
     }
   };
 
-  // Handle ending a trip - the fixed version
+  // Handle ending a trip - with auto-sync to IFTA
   const handleEndTrip = async () => {
     if (!selectedTrip) return;
 
@@ -963,6 +963,36 @@ export default function StateMileageLogger() {
         [tripId]: currentCrossings
       }));
 
+      // AUTO-SYNC: Import trip to IFTA automatically
+      let iftaMessage = '';
+      try {
+        // Determine the current quarter for the import
+        const now = new Date();
+        const currentQuarter = `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
+
+        const importResult = await importMileageTripToIFTA(user.id, currentQuarter, tripId);
+
+        if (importResult.success) {
+          if (importResult.alreadyImported) {
+            // Trip was already imported (shouldn't happen for new completion, but handle gracefully)
+            iftaMessage = '';
+          } else if (importResult.importedCount > 0) {
+            // Successfully imported - show quarter info
+            if (importResult.quarters && importResult.quarters.length > 1) {
+              iftaMessage = ` ${t('messages.autoImportMultiQuarter', { count: importResult.importedCount, quarters: importResult.quarters.join(' & ') })}`;
+            } else if (importResult.quarters && importResult.quarters.length === 1) {
+              iftaMessage = ` ${t('messages.autoImportSuccess', { count: importResult.importedCount, quarter: importResult.quarters[0] })}`;
+            } else {
+              iftaMessage = ` ${t('messages.autoImportBasic', { count: importResult.importedCount })}`;
+            }
+          }
+        }
+      } catch (iftaError) {
+        // Log the error but don't fail the trip completion
+        console.warn('Auto-import to IFTA failed:', iftaError);
+        iftaMessage = ` ${t('messages.autoImportFailed')}`;
+      }
+
       // Reload trips
       await loadActiveTrips(user.id);
       await loadCompletedTrips(user.id);
@@ -973,8 +1003,8 @@ export default function StateMileageLogger() {
         loading: false
       });
 
-      setSuccess(t('messages.tripCompleted'));
-      setTimeout(() => setSuccess(null), 5000);
+      setSuccess(t('messages.tripCompleted') + iftaMessage);
+      setTimeout(() => setSuccess(null), 6000);
 
     } catch (error) {
       // console.error('Error ending trip:', error);

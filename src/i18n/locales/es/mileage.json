@@ -168,12 +168,16 @@
     "crossingAdded": "¡Cruce de estado agregado exitosamente!",
     "tripDeleted": "Viaje eliminado exitosamente",
     "iftaRecordsRemoved": "({{count}} registro{{plural}} IFTA también eliminado{{plural}})",
-    "tripCompleted": "¡Viaje completado exitosamente! Ahora puede importarlo manualmente a su calculadora IFTA.",
+    "tripCompleted": "¡Viaje completado!",
     "alreadyImported": "Este viaje ya ha sido importado a la calculadora IFTA",
     "noDataToImport": "No hay datos de millaje para importar",
     "importSuccess": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA",
     "importSuccessQuarters": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA para {{quarter}}",
-    "importSuccessMultiQuarters": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA (dividido entre {{quarters}})"
+    "importSuccessMultiQuarters": "Se importaron exitosamente {{count}} registros de estado a la calculadora IFTA (dividido entre {{quarters}})",
+    "autoImportSuccess": "Millaje sincronizado automáticamente a IFTA ({{count}} registros para {{quarter}})",
+    "autoImportMultiQuarter": "Millaje sincronizado automáticamente a IFTA ({{count}} registros en {{quarters}})",
+    "autoImportBasic": "Millaje sincronizado automáticamente a IFTA ({{count}} registros)",
+    "autoImportFailed": "Viaje guardado pero la sincronización automática a IFTA falló. Puede importar manualmente desde Viajes Pasados."
   },
 
   "errors": {
