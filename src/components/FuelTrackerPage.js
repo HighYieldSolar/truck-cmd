@@ -98,6 +98,54 @@ export default function FuelTrackerPage() {
     );
   }, [fuelEntries, filters.search]);
 
+  // Calculate stats from filtered entries so they update when filters change
+  const filteredStats = useMemo(() => {
+    if (!filteredFuelEntries || filteredFuelEntries.length === 0) {
+      return {
+        totalGallons: 0,
+        totalAmount: 0,
+        avgPricePerGallon: 0,
+        uniqueStates: 0,
+        entryCount: 0,
+        byState: {}
+      };
+    }
+
+    const totalGallons = filteredFuelEntries.reduce((sum, entry) =>
+      sum + (parseFloat(entry.gallons) || 0), 0);
+    const totalAmount = filteredFuelEntries.reduce((sum, entry) =>
+      sum + (parseFloat(entry.total_amount) || 0), 0);
+    const avgPricePerGallon = totalGallons > 0 ? totalAmount / totalGallons : 0;
+
+    // Group by state
+    const byState = filteredFuelEntries.reduce((stateMap, entry) => {
+      if (!entry.state) return stateMap;
+
+      if (!stateMap[entry.state]) {
+        stateMap[entry.state] = {
+          gallons: 0,
+          amount: 0,
+          purchases: 0
+        };
+      }
+
+      stateMap[entry.state].gallons += parseFloat(entry.gallons) || 0;
+      stateMap[entry.state].amount += parseFloat(entry.total_amount) || 0;
+      stateMap[entry.state].purchases += 1;
+
+      return stateMap;
+    }, {});
+
+    return {
+      totalGallons,
+      totalAmount,
+      avgPricePerGallon,
+      uniqueStates: Object.keys(byState).length,
+      entryCount: filteredFuelEntries.length,
+      byState
+    };
+  }, [filteredFuelEntries]);
+
   // Pagination
   const {
     paginatedData,
@@ -493,9 +541,9 @@ export default function FuelTrackerPage() {
             userId={user?.id}
           />
 
-          {/* Statistics */}
+          {/* Statistics - uses filteredStats to update when filters change */}
           <FuelStats
-            stats={stats}
+            stats={filteredStats}
             isLoading={loading}
             period={filters.dateRange === 'This Quarter' ? t('period.thisQuarter') : filters.dateRange === 'Last Quarter' ? t('period.lastQuarter') : t('period.selectedPeriod')}
             className="mb-6"
