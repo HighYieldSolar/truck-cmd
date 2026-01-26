@@ -949,13 +949,35 @@ export default function IFTACalculatorPage() {
                               </span>
                             </div>
                             <div className="flex items-center">
-                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
-                                {trip.start_jurisdiction}
-                              </span>
-                              <ArrowRight size={16} className="mx-2 text-gray-400" />
-                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
-                                {trip.end_jurisdiction}
-                              </span>
+                              {trip.start_jurisdiction === trip.end_jurisdiction ? (
+                                // Single state record (from mileage tracker import)
+                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
+                                  {trip.start_jurisdiction}
+                                </span>
+                              ) : (
+                                // Multi-state trip (manual entry)
+                                <>
+                                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
+                                    {trip.start_jurisdiction}
+                                  </span>
+                                  <ArrowRight size={16} className="mx-2 text-gray-400" />
+                                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 rounded text-sm font-medium">
+                                    {trip.end_jurisdiction}
+                                  </span>
+                                </>
+                              )}
+                              {/* Source indicator */}
+                              {trip.source === 'mileage_tracker' && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs">
+                                  Mileage
+                                </span>
+                              )}
+                              {trip.source === 'automated' && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs flex items-center">
+                                  <Sparkles size={10} className="mr-1" />
+                                  GPS
+                                </span>
+                              )}
                             </div>
                             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {parseFloat(trip.total_miles).toLocaleString()} mi
