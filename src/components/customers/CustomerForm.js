@@ -217,7 +217,7 @@ export default function CustomerForm({ isOpen, onClose, onSuccess, initialData =
       }
 
       if (isEditing) {
-        const result = await updateCustomer(initialData.id, formData);
+        const result = await updateCustomer(user.id, initialData.id, formData);
         if (!result) {
           throw new Error('Failed to update customer');
         }

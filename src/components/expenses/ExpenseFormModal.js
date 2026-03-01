@@ -299,7 +299,9 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQ
       const isNewExpense = !expense;
 
       if (expense) {
-        result = await updateExpense(expense.id, expenseData);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+        result = await updateExpense(session.user.id, expense.id, expenseData);
       } else {
         result = await createExpense(expenseData);
       }

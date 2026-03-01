@@ -351,7 +351,7 @@ export default function ExpensesPage() {
 
     try {
       setIsDeleting(true);
-      await deleteExpense(expenseToDelete.id);
+      await deleteExpense(user.id, expenseToDelete.id);
 
       setDeleteModalOpen(false);
       setExpenseToDelete(null);

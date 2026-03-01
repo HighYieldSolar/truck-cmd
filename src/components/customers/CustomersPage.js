@@ -268,7 +268,7 @@ export default function CustomersPage() {
 
     setIsDeleting(true);
     try {
-      const success = await deleteCustomer(selectedCustomer.id);
+      const success = await deleteCustomer(user.id, selectedCustomer.id);
       if (!success) {
         throw new Error('Failed to delete customer');
       }
