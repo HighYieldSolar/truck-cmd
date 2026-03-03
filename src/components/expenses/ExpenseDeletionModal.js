@@ -1,21 +1,32 @@
 'use client';
 
-import { AlertTriangle, Trash2, X, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Trash2, X, RefreshCw, Fuel, FileText } from 'lucide-react';
 import { useTranslation } from "@/context/LanguageContext";
 
 /**
  * Expense Deletion Modal
  *
  * Confirmation modal for deleting expenses following the design spec pattern.
+ * Supports optional linked fuel entry deletion when the expense was synced from a fuel entry.
  */
 export default function ExpenseDeletionModal({
   isOpen,
   onClose,
   onConfirm,
   expense,
-  isDeleting
+  isDeleting,
+  hasLinkedFuelEntry = false
 }) {
   const { t } = useTranslation('expenses');
+  const [deleteLinkedFuelEntry, setDeleteLinkedFuelEntry] = useState(true);
+
+  // Reset checkbox state when modal opens with a new expense
+  useEffect(() => {
+    if (isOpen) {
+      setDeleteLinkedFuelEntry(true);
+    }
+  }, [isOpen, expense?.id]);
 
   if (!isOpen || !expense) return null;
 
@@ -99,6 +110,39 @@ export default function ExpenseDeletionModal({
               </div>
             </div>
 
+            {/* Linked fuel entry option */}
+            {hasLinkedFuelEntry && (
+              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div className="flex items-start mb-2">
+                  <Fuel size={18} className="text-orange-500 dark:text-orange-400 mr-2 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('deleteModal.linkedFuelEntry', { defaultValue: 'Linked Fuel Entry' })}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('deleteModal.linkedFuelEntryDescription', { defaultValue: 'This expense was synced from a fuel entry.' })}
+                    </p>
+                  </div>
+                </div>
+
+                <label className="flex items-center mt-3 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deleteLinkedFuelEntry}
+                    onChange={() => setDeleteLinkedFuelEntry(!deleteLinkedFuelEntry)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded mr-2 bg-white dark:bg-gray-700"
+                  />
+                  <span className="flex items-center">
+                    <FileText size={16} className="text-gray-500 dark:text-gray-400 mr-1.5" />
+                    {t('deleteModal.alsoDeleteLinkedFuelEntry', { defaultValue: 'Also delete the linked fuel entry' })}
+                  </span>
+                </label>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 ml-6">
+                  {t('deleteModal.linkedFuelEntryNote', { defaultValue: 'If unchecked, the fuel entry will remain but will no longer be linked to this expense.' })}
+                </p>
+              </div>
+            )}
+
             {/* Warning about receipt */}
             {expense.receipt_image && (
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
@@ -119,7 +163,7 @@ export default function ExpenseDeletionModal({
               {t('deleteModal.cancel')}
             </button>
             <button
-              onClick={onConfirm}
+              onClick={() => onConfirm(hasLinkedFuelEntry ? deleteLinkedFuelEntry : false)}
               disabled={isDeleting}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >

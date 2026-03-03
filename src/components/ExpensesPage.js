@@ -87,6 +87,7 @@ export default function ExpensesPage() {
   const [currentExpense, setCurrentExpense] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState(null);
+  const [hasLinkedFuelEntry, setHasLinkedFuelEntry] = useState(false);
   const [receiptViewerOpen, setReceiptViewerOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -324,8 +325,22 @@ export default function ExpensesPage() {
     setFormModalOpen(true);
   };
 
-  const handleDeleteExpense = (expense) => {
+  const handleDeleteExpense = async (expense) => {
     setExpenseToDelete(expense);
+
+    // Check if this expense has a linked fuel entry
+    try {
+      const { data: linkedFuel } = await supabase
+        .from('fuel_entries')
+        .select('id')
+        .eq('expense_id', expense.id)
+        .maybeSingle();
+
+      setHasLinkedFuelEntry(!!linkedFuel);
+    } catch {
+      setHasLinkedFuelEntry(false);
+    }
+
     setDeleteModalOpen(true);
   };
 
@@ -346,19 +361,55 @@ export default function ExpensesPage() {
     await loadExpenses();
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (deleteLinkedFuelEntry = false) => {
     if (!expenseToDelete) return;
 
     try {
       setIsDeleting(true);
+
+      // If we should also delete the linked fuel entry
+      if (deleteLinkedFuelEntry) {
+        // Find the linked fuel entry
+        const { data: linkedFuel } = await supabase
+          .from('fuel_entries')
+          .select('id')
+          .eq('expense_id', expenseToDelete.id)
+          .maybeSingle();
+
+        if (linkedFuel) {
+          // Clear the expense_id reference first to avoid FK constraints
+          await supabase
+            .from('fuel_entries')
+            .update({ expense_id: null })
+            .eq('id', linkedFuel.id);
+
+          // Delete the fuel entry
+          await supabase
+            .from('fuel_entries')
+            .delete()
+            .eq('id', linkedFuel.id)
+            .eq('user_id', user.id);
+        }
+      } else if (hasLinkedFuelEntry) {
+        // User chose NOT to delete the linked fuel entry — just unlink it
+        await supabase
+          .from('fuel_entries')
+          .update({ expense_id: null })
+          .eq('expense_id', expenseToDelete.id);
+      }
+
+      // Now delete the expense
       await deleteExpense(user.id, expenseToDelete.id);
 
       setDeleteModalOpen(false);
       setExpenseToDelete(null);
+      setHasLinkedFuelEntry(false);
 
       setOperationMessage({
         type: 'success',
-        text: t('successMessages.expenseDeleted')
+        text: deleteLinkedFuelEntry
+          ? t('successMessages.expenseAndFuelDeleted', { defaultValue: 'Expense and linked fuel entry deleted successfully' })
+          : t('successMessages.expenseDeleted')
       });
 
       await loadExpenses();
@@ -825,10 +876,12 @@ export default function ExpensesPage() {
         onClose={() => {
           setDeleteModalOpen(false);
           setExpenseToDelete(null);
+          setHasLinkedFuelEntry(false);
         }}
         onConfirm={handleConfirmDelete}
         expense={expenseToDelete}
         isDeleting={isDeleting}
+        hasLinkedFuelEntry={hasLinkedFuelEntry}
       />
 
       <ReceiptViewer
