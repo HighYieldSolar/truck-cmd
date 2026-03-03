@@ -27,7 +27,7 @@ import FuelEntryForm from "@/components/fuel/FuelEntryForm";
 import ReceiptViewerModal from "@/components/fuel/ReceiptViewerModal";
 import FuelDeletionModal from "@/components/fuel/FuelDeletionModal";
 import EmptyState from "@/components/common/EmptyState";
-import StatusAlert from "@/components/common/StatusAlert";
+import { OperationMessage } from "@/components/ui/OperationMessage";
 import FuelFilterBar from "@/components/fuel/FuelFilterBar";
 import FuelCategories from "@/components/fuel/FuelCategories";
 import TopFuelEntries from "@/components/fuel/TopFuelEntries";
@@ -484,25 +484,17 @@ export default function FuelTrackerPage() {
 
           {/* Status messages */}
           {error && (
-            <div className="mb-6">
-              <StatusAlert 
-                type="error"
-                message={error}
-                onClose={() => setError(null)}
-              />
-            </div>
+            <OperationMessage
+              message={{ type: 'error', text: error }}
+              onDismiss={() => setError(null)}
+              autoHideDelay={0}
+            />
           )}
-          
-          {operationMessage && (
-            <div className="mb-6">
-              <StatusAlert
-                type={operationMessage.type}
-                message={operationMessage.text}
-                onClose={() => setOperationMessage(null)}
-                duration={5000}
-              />
-            </div>
-          )}
+
+          <OperationMessage
+            message={operationMessage}
+            onDismiss={() => setOperationMessage(null)}
+          />
 
           {/* Tutorial Card */}
           <TutorialCard
