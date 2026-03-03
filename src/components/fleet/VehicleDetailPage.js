@@ -159,7 +159,7 @@ export default function VehicleDetailPage({ vehicleId }) {
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await deleteTruck(vehicleId);
+      await deleteTruck(user.id, vehicleId);
 
       setOperationMessage({
         type: 'success',

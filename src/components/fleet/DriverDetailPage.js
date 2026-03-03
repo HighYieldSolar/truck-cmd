@@ -197,7 +197,7 @@ export default function DriverDetailPage({ driverId }) {
 
     try {
       setIsDeleting(true);
-      await deleteDriver(driver.id);
+      await deleteDriver(user.id, driver.id);
       setMessage({ type: 'success', text: t('driverDetailPage.driverDeletedSuccess') });
 
       // Redirect after short delay

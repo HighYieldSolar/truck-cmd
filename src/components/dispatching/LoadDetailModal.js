@@ -280,7 +280,7 @@ export default function LoadDetailModal({
 
       // If status changed, use updateLoadStatus which triggers notifications
       if (statusChanged) {
-        const statusUpdateResult = await updateLoadStatus(load.id, updatedLoad.status);
+        const statusUpdateResult = await updateLoadStatus(user.id, load.id, updatedLoad.status);
 
         if (!statusUpdateResult) {
           throw new Error("Failed to update load status");

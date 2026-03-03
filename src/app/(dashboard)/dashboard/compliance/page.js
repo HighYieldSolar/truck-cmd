@@ -383,7 +383,7 @@ export default function CompliancePage() {
       };
 
       if (currentItem) {
-        await updateComplianceItem(currentItem.id, complianceData);
+        await updateComplianceItem(user.id, currentItem.id, complianceData);
         setMessage({ type: 'success', text: 'Compliance record updated successfully' });
       } else {
         await createComplianceItem(complianceData);
@@ -417,7 +417,7 @@ export default function CompliancePage() {
       }
 
       // Delete the compliance item
-      await deleteComplianceItem(currentItem.id);
+      await deleteComplianceItem(user.id, currentItem.id);
 
       // Refresh data
       await loadData(user.id);

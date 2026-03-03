@@ -256,7 +256,7 @@ export default function useFuel(userId) {
       const { receipt_file, receipt_preview, ...dataToSave } = entryData;
       
       // Add receipt URL only if a new one was uploaded
-      const updatedEntry = await updateFuelEntry(id, {
+      const updatedEntry = await updateFuelEntry(userId, id, {
         ...dataToSave,
         ...(receiptUrl ? { receipt_image: receiptUrl } : {})
       });
@@ -356,7 +356,8 @@ export default function useFuel(userId) {
       const { error: deleteError } = await supabase
         .from('fuel_entries')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
       
       if (deleteError) {
         throw deleteError;

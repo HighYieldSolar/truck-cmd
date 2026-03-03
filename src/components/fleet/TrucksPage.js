@@ -340,7 +340,7 @@ export default function TrucksPage() {
 
     try {
       setIsDeleting(true);
-      await deleteTruck(truckToDelete.id);
+      await deleteTruck(user.id, truckToDelete.id);
 
       setTrucks(prev => prev.filter(t => t.id !== truckToDelete.id));
       setDeleteModalOpen(false);

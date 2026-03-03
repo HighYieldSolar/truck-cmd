@@ -367,7 +367,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, userId, onSubmi
       let result;
 
       if (truck) {
-        result = await updateTruck(truck.id, truckData);
+        result = await updateTruck(userId, truck.id, truckData);
       } else {
         truckData.user_id = userId;
         truckData.created_at = new Date().toISOString();

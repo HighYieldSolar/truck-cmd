@@ -312,7 +312,7 @@ export default function DriversPage() {
 
     try {
       setIsDeleting(true);
-      await deleteDriver(driverToDelete.id);
+      await deleteDriver(user.id, driverToDelete.id);
       await loadData(user.id);
       setDeleteModalOpen(false);
       setDriverToDelete(null);

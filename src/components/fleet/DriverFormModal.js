@@ -382,7 +382,7 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
       let result;
 
       if (driver) {
-        result = await updateDriver(driver.id, driverData);
+        result = await updateDriver(userId, driver.id, driverData);
       } else {
         driverData.user_id = userId;
         driverData.created_at = new Date().toISOString();
