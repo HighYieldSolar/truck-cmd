@@ -2,6 +2,12 @@
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import {
+  sendPaymentFailedEmail,
+  sendSubscriptionConfirmationEmail,
+  sendSubscriptionCancellationEmail,
+  sendPaymentReceiptEmail
+} from "@/lib/services/emailService";
 
 // Enable verbose logging only in development
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -457,6 +463,27 @@ async function handleSubscriptionCancellation(event) {
     throw updateError;
   }
 
+  // Send cancellation email (fire-and-forget)
+  try {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userId)
+      .single();
+    if (userData?.email) {
+      const endDate = subscription.current_period_end
+        ? safeTimestampToISO(subscription.current_period_end)
+        : null;
+      sendSubscriptionCancellationEmail({
+        to: userData.email,
+        userName: userData.full_name,
+        endDate
+      }).catch(err => log(`Error sending cancellation email: ${err.message}`));
+    }
+  } catch (emailErr) {
+    log(`Error looking up user for cancellation email: ${emailErr.message}`);
+  }
+
   log(`Subscription canceled for user ${userId}`);
 }
 
@@ -587,6 +614,27 @@ async function handleCheckoutCompleted(event, stripe) {
     }
 
     log(`Checkout completed for user ${userId}`);
+
+    // Send subscription confirmation email (fire-and-forget)
+    try {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", userId)
+        .single();
+      if (userData?.email) {
+        const planNames = { basic: 'Basic', premium: 'Premium', fleet: 'Fleet' };
+        sendSubscriptionConfirmationEmail({
+          to: userData.email,
+          userName: userData.full_name,
+          planName: planNames[plan] || plan,
+          amount: calculateAmount(plan, billingCycle) / 100,
+          billingPeriod: billingCycle === 'yearly' ? 'year' : 'month'
+        }).catch(err => log(`Error sending subscription confirmation email: ${err.message}`));
+      }
+    } catch (emailErr) {
+      log(`Error looking up user for confirmation email: ${emailErr.message}`);
+    }
 
     // Mark session as processed
     try {
@@ -860,6 +908,28 @@ async function handleInvoicePaymentSucceeded(event, stripe) {
 
     log(`Invoice payment succeeded for user ${userId}`);
 
+    // Send payment receipt email (fire-and-forget)
+    try {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", userId)
+        .single();
+      if (userData?.email) {
+        const planNames = { basic: 'Basic', premium: 'Premium', fleet: 'Fleet' };
+        sendPaymentReceiptEmail({
+          to: userData.email,
+          userName: userData.full_name,
+          amount: Math.round(amount) / 100,
+          invoiceNumber: invoice.number || invoice.id,
+          paymentDate: new Date().toISOString(),
+          planName: planNames[plan] || plan
+        }).catch(err => log(`Error sending payment receipt email: ${err.message}`));
+      }
+    } catch (emailErr) {
+      log(`Error looking up user for receipt email: ${emailErr.message}`);
+    }
+
   } catch (error) {
     log(`Error processing invoice payment: ${error.message}`);
     throw error;
@@ -1030,6 +1100,27 @@ async function handleInvoicePaymentFailed(event, stripe) {
   } catch (notifError) {
     log(`Error creating payment failed notification: ${notifError.message}`);
     // Non-critical, continue
+  }
+
+  // Send payment failed email (fire-and-forget)
+  try {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("email, full_name")
+      .eq("id", userId)
+      .single();
+
+    if (userData?.email) {
+      sendPaymentFailedEmail({
+        to: userData.email,
+        userName: userData.full_name,
+        attemptCount,
+        nextRetryDate: nextPaymentAttempt ? safeTimestampToISO(nextPaymentAttempt) : null,
+        invoiceId: invoice.id
+      }).catch(err => log(`Error sending payment failed email: ${err.message}`));
+    }
+  } catch (emailLookupError) {
+    log(`Error looking up user email for payment failed: ${emailLookupError.message}`);
   }
 
   log(`Processed failed payment for user ${userId}, attempt ${attemptCount}`);

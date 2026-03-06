@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/eld-sync",
       "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/marketing-emails",
+      "schedule": "0 15 * * *"
     }
   ]
 }

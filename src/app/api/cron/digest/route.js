@@ -182,7 +182,9 @@ async function sendOnboardingEmails(supabase) {
       1: 'firstWin',
       3: 'featureHighlight',
       5: 'socialProof',
-      6: 'trialEnding'
+      6: 'trialEnding',
+      10: 'reEngagement',
+      14: 'lastChance'
     };
 
     for (const subscription of trialUsers) {
@@ -282,7 +284,7 @@ export async function GET(request) {
       dailyDigests: { sent: 0, skipped: 0, errors: [] },
       weeklyDigests: { sent: 0, skipped: 0, errors: [] },
       pendingNotifications: { total: 0, emailsSent: 0, smsSent: 0, errors: [] },
-      onboardingEmails: { day1: { sent: 0, skipped: 0 }, day3: { sent: 0, skipped: 0 }, day5: { sent: 0, skipped: 0 }, day6: { sent: 0, skipped: 0 }, errors: [] }
+      onboardingEmails: { day1: { sent: 0, skipped: 0 }, day3: { sent: 0, skipped: 0 }, day5: { sent: 0, skipped: 0 }, day6: { sent: 0, skipped: 0 }, day10: { sent: 0, skipped: 0 }, day14: { sent: 0, skipped: 0 }, errors: [] }
     };
 
     // Get all users with their notification preferences

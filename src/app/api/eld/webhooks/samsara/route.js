@@ -31,6 +31,79 @@ const supabase = createClient(
 );
 
 /**
+ * Find the ELD connection from Samsara webhook payload
+ */
+async function findConnectionFromPayload(payload) {
+  try {
+    // Try to find by orgId (Samsara organization) if present
+    const orgId = payload.orgId || payload.data?.orgId;
+    if (orgId) {
+      const { data } = await supabase
+        .from('eld_connections')
+        .select('id, user_id, metadata')
+        .eq('provider', 'samsara')
+        .eq('external_connection_id', orgId.toString())
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (data) {
+        return { connectionId: data.id, userId: data.user_id };
+      }
+    }
+
+    // Try to find by vehicle ID from entity mappings
+    const vehicleId = payload.data?.vehicle?.id || payload.vehicle?.id;
+    if (vehicleId) {
+      const { data: mapping } = await supabase
+        .from('eld_entity_mappings')
+        .select('connection_id, user_id')
+        .eq('external_id', vehicleId.toString())
+        .eq('entity_type', 'vehicle')
+        .eq('provider', 'samsara')
+        .maybeSingle();
+
+      if (mapping) {
+        return { connectionId: mapping.connection_id, userId: mapping.user_id };
+      }
+    }
+
+    // Try to find by driver ID from entity mappings
+    const driverId = payload.data?.driver?.id || payload.driver?.id;
+    if (driverId) {
+      const { data: mapping } = await supabase
+        .from('eld_entity_mappings')
+        .select('connection_id, user_id')
+        .eq('external_id', driverId.toString())
+        .eq('entity_type', 'driver')
+        .eq('provider', 'samsara')
+        .maybeSingle();
+
+      if (mapping) {
+        return { connectionId: mapping.connection_id, userId: mapping.user_id };
+      }
+    }
+
+    // Fallback: find any active Samsara connection
+    const { data: connections } = await supabase
+      .from('eld_connections')
+      .select('id, user_id')
+      .eq('provider', 'samsara')
+      .eq('status', 'active')
+      .limit(1);
+
+    if (connections && connections.length > 0) {
+      console.log('[SamsaraWebhook] Using fallback connection lookup');
+      return { connectionId: connections[0].id, userId: connections[0].user_id };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[SamsaraWebhook] Error finding connection:', error.message);
+    return null;
+  }
+}
+
+/**
  * POST /api/eld/webhooks/samsara
  *
  * Handles incoming Samsara webhook events
@@ -71,6 +144,15 @@ export async function POST(request) {
 
     console.log(`[SamsaraWebhook] Received event: ${eventType} at ${eventTime}`);
 
+    // Find the connection for this webhook
+    const connectionInfo = await findConnectionFromPayload(payload);
+    const connectionId = connectionInfo?.connectionId;
+    const userId = connectionInfo?.userId;
+
+    if (!connectionId) {
+      console.warn(`[SamsaraWebhook] No connection found for event: ${eventType}`);
+    }
+
     // Log the webhook event
     const webhookLog = await logWebhookEvent({
       provider: 'samsara',
@@ -87,7 +169,9 @@ export async function POST(request) {
         case 'VehicleStatsUpdated':
         case 'VehicleLocationUpdated':
         case 'VehicleStatsTriggered':
-          result = await handleSamsaraVehicleStats(payload);
+          result = connectionId
+            ? await handleSamsaraVehicleStats(connectionId, userId, payload)
+            : { processed: false, error: 'No connection found' };
           break;
 
         // HOS/Driver Events
@@ -96,7 +180,9 @@ export async function POST(request) {
         case 'HosLogUpdated':
         case 'HosViolationCreated':
         case 'HosClockUpdated':
-          result = await handleSamsaraHosUpdate(payload);
+          result = connectionId
+            ? await handleSamsaraHosUpdate(connectionId, userId, payload)
+            : { processed: false, error: 'No connection found' };
           break;
 
         // Fault Code Events
@@ -105,7 +191,9 @@ export async function POST(request) {
         case 'VehicleDtcOff':
         case 'DiagnosticFaultCodeOn':
         case 'DiagnosticFaultCodeOff':
-          result = await handleSamsaraFaultCode(payload);
+          result = connectionId
+            ? await handleSamsaraFaultCode(connectionId, userId, payload)
+            : { processed: false, error: 'No connection found' };
           break;
 
         // Geofence Events

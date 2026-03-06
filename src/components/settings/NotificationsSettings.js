@@ -126,6 +126,10 @@ export default function NotificationsSettings() {
   const [testingSMS, setTestingSMS] = useState(false);
   const [testResults, setTestResults] = useState({ email: null, sms: null });
   const [userPhone, setUserPhone] = useState('');
+  const [smsConsentChecked, setSmsConsentChecked] = useState(false);
+  const [smsPhoneInput, setSmsPhoneInput] = useState('');
+  const [smsConsentLoading, setSmsConsentLoading] = useState(false);
+  const [userHasSmsConsent, setUserHasSmsConsent] = useState(false);
 
   // Feature access checks
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
@@ -144,7 +148,7 @@ export default function NotificationsSettings() {
     setIsLoading(true);
 
     try {
-      // Try to get existing preferences and user phone
+      // Try to get existing preferences and user phone/consent
       const [prefsResult, userResult] = await Promise.all([
         supabase
           .from('notification_preferences')
@@ -153,7 +157,7 @@ export default function NotificationsSettings() {
           .single(),
         supabase
           .from('users')
-          .select('phone')
+          .select('phone, sms_consent')
           .eq('id', user.id)
           .single()
       ]);
@@ -180,9 +184,14 @@ export default function NotificationsSettings() {
         });
       }
 
-      // Set user phone if available
+      // Set user phone and consent status if available
       if (userResult.data?.phone) {
         setUserPhone(userResult.data.phone);
+        setSmsPhoneInput(userResult.data.phone);
+      }
+      if (userResult.data?.sms_consent) {
+        setUserHasSmsConsent(true);
+        setSmsConsentChecked(true);
       }
     } catch (err) {
       // Silently handle errors and use defaults
@@ -380,6 +389,71 @@ export default function NotificationsSettings() {
     }
   };
 
+  // Handle SMS consent opt-in
+  const handleSmsConsent = async () => {
+    if (!smsConsentChecked || !smsPhoneInput) return;
+
+    setSmsConsentLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/sms/consent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ phone: smsPhoneInput, consent: true })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUserHasSmsConsent(true);
+        setUserPhone(smsPhoneInput);
+        setOperationMessage({ type: 'success', text: 'SMS notifications enabled. A confirmation text has been sent to your phone.' });
+      } else {
+        setOperationMessage({ type: 'error', text: data.error || 'Failed to enable SMS notifications.' });
+        updateMasterToggle('sms_enabled', false);
+      }
+    } catch (err) {
+      setOperationMessage({ type: 'error', text: 'Failed to enable SMS notifications. Please try again.' });
+      updateMasterToggle('sms_enabled', false);
+    } finally {
+      setSmsConsentLoading(false);
+    }
+  };
+
+  // Handle SMS opt-out
+  const handleSmsOptOut = async () => {
+    setSmsConsentLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/sms/consent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ phone: userPhone || smsPhoneInput, consent: false })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUserHasSmsConsent(false);
+        setSmsConsentChecked(false);
+        updateMasterToggle('sms_enabled', false);
+        setOperationMessage({ type: 'success', text: 'SMS notifications disabled.' });
+      } else {
+        setOperationMessage({ type: 'error', text: data.error || 'Failed to disable SMS notifications.' });
+      }
+    } catch (err) {
+      setOperationMessage({ type: 'error', text: 'Failed to disable SMS notifications. Please try again.' });
+    } finally {
+      setSmsConsentLoading(false);
+    }
+  };
+
   // Toggle Component - Compact version
   const Toggle = ({ enabled, onChange, disabled = false, size = 'sm' }) => {
     const sizes = {
@@ -554,39 +628,107 @@ export default function NotificationsSettings() {
           </div>
 
           {/* SMS Toggle */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
-                <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
+                  <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
+                    {t('notifications.channels.sms')}
+                    {userHasSmsConsent && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Consent given
+                      </span>
+                    )}
+                    {!hasSMSNotifications && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        <Lock className="h-3 w-3 mr-1" />
+                        {t('notifications.upgrade.fleet')}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.smsDescription')}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
-                  {t('notifications.channels.sms')}
-                  {!hasSMSNotifications && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                      <Lock className="h-3 w-3 mr-1" />
-                      {t('notifications.upgrade.fleet')}
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.smsDescription')}</p>
+              <div className="flex-shrink-0 pl-11 sm:pl-0">
+                {hasSMSNotifications ? (
+                  <Toggle
+                    enabled={preferences.sms_enabled}
+                    onChange={(v) => {
+                      if (v && !userHasSmsConsent) {
+                        // Don't enable yet — show consent form below
+                        updateMasterToggle('sms_enabled', v);
+                      } else if (!v && userHasSmsConsent) {
+                        // Disabling — call opt-out API
+                        handleSmsOptOut();
+                      } else {
+                        updateMasterToggle('sms_enabled', v);
+                      }
+                    }}
+                  />
+                ) : (
+                  <Link
+                    href="/dashboard/upgrade"
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
               </div>
             </div>
-            <div className="flex-shrink-0 pl-11 sm:pl-0">
-              {hasSMSNotifications ? (
-                <Toggle
-                  enabled={preferences.sms_enabled}
-                  onChange={(v) => updateMasterToggle('sms_enabled', v)}
-                />
-              ) : (
-                <Link
-                  href="/dashboard/upgrade"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+
+            {/* SMS Consent Form — shown when SMS is toggled on but user hasn't consented */}
+            {preferences.sms_enabled && !userHasSmsConsent && hasSMSNotifications && (
+              <div className="ml-11 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 space-y-3">
+                <div>
+                  <label htmlFor="sms-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Mobile Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="sms-phone"
+                    value={smsPhoneInput}
+                    onChange={(e) => setSmsPhoneInput(e.target.value)}
+                    placeholder="(555) 555-5555"
+                    className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smsConsentChecked}
+                    onChange={(e) => setSmsConsentChecked(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    I agree to receive SMS notifications from Truck Command. Msg frequency varies (1-10/mo). Msg&data rates may apply. Reply STOP to unsubscribe. Consent is not a condition of purchase.{' '}
+                    <Link href="/sms-consent" className="text-purple-600 dark:text-purple-400 underline hover:no-underline">
+                      SMS Terms
+                    </Link>
+                  </span>
+                </label>
+                <button
+                  onClick={handleSmsConsent}
+                  disabled={!smsConsentChecked || !smsPhoneInput || smsConsentLoading}
+                  className={`
+                    px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                    ${smsConsentChecked && smsPhoneInput
+                      ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    }
+                  `}
                 >
-                  {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
-                </Link>
-              )}
-            </div>
+                  {smsConsentLoading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Enable SMS & Save Consent'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

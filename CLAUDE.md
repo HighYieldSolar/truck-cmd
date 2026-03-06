@@ -53,6 +53,56 @@ mcp__MCP_DOCKER__obsidian_get_periodic_note(period)       // Daily/weekly notes
 - **Feature work**: Look for specs, requirements, or design notes
 - **After completion**: Update notes with implementation details if needed
 
+### Obsidian Knowledge Management System
+
+This project uses a structured Obsidian vault as its knowledge base. The vault is organized for instant AI context pickup and persistent project memory.
+
+#### Session Start Protocol (MANDATORY)
+At the start of EVERY coding session, read these notes in order:
+1. `Truck Command HQ.md` - Master control note with project overview and system explanation
+2. `01 - Active Sprint/Current Sprint.md` - What is actively being worked on
+3. `01 - Active Sprint/Blocked Items.md` - Check if anything has been unblocked
+
+#### Session End Protocol
+Before ending a session:
+1. Update `01 - Active Sprint/Current Sprint.md` with any status changes
+2. Create or update a session log in `02 - Work Log/` using the template in `08 - Templates/Session Log Template.md`
+3. Move completed items from "In Progress" to "Done This Sprint"
+4. Add any new blocked items to `01 - Active Sprint/Blocked Items.md`
+
+#### Vault Structure
+```
+Truck Command HQ.md              <- Read first (master control)
+00 - Maps of Content/            <- Index notes by domain (features, architecture, integrations, legal, work log)
+01 - Active Sprint/              <- Current Sprint + Blocked Items (read second)
+02 - Work Log/                   <- Session logs (write at end of session)
+03 - Architecture/               <- Tech stack, services, DB schema, API routes, subscription tiers
+04 - Features/                   <- One note per product feature
+05 - Integrations/               <- One note per third-party integration
+06 - Research/                   <- Deep research docs and analysis
+07 - Launch/                     <- Launch checklists, sprint plans, legal
+08 - Templates/                  <- Reusable templates for session logs and feature specs
+09 - Archive/                    <- Deprecated notes
+```
+
+#### When to Read Specific Notes
+- **Working on a feature**: Read the note in `04 - Features/` for that feature
+- **Working on an integration**: Read the note in `05 - Integrations/` for that integration
+- **Need to understand code structure**: Read `03 - Architecture/Service Layer Map.md`
+- **Need database info**: Read `03 - Architecture/Database Schema.md` or query Supabase MCP
+- **Need API route info**: Read `03 - Architecture/API Routes Map.md`
+- **Need subscription/tier info**: Read `03 - Architecture/Subscription Tiers.md`
+- **Need legal/compliance context**: Read `00 - Maps of Content/Compliance & Legal MOC.md`
+- **Need historical context**: Read `00 - Maps of Content/Work Log MOC.md` or search work logs
+
+#### Wikilink Convention
+All notes use `[[wikilinks]]` to connect to related notes. When creating or updating notes, always add wikilinks to related content. This powers Obsidian's graph view and makes the knowledge base navigable.
+
+#### Tags Convention
+- Status: `#status/shipped` `#status/in-progress` `#status/blocked` `#status/planned`
+- Domain: `#domain/backend` `#domain/frontend` `#domain/integrations` `#domain/infrastructure`
+- Priority: `#priority/critical` `#priority/high` `#priority/medium` `#priority/low`
+
 #### 3. Semgrep Security Scanner
 
 **Purpose**: Ensure code security, identify vulnerabilities, and maintain OWASP compliance for user safety.

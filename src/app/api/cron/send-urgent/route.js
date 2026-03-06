@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendNotificationEmail } from '@/lib/services/emailService';
-import { sendNotificationSMS } from '@/lib/services/smsService';
+import { sendNotificationSMS, hasUserSMSConsent } from '@/lib/services/smsService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[cron/send-urgent]', ...args);
@@ -116,8 +116,8 @@ export async function GET(request) {
         }
       }
 
-      // Check SMS preference (only for CRITICAL)
-      if (notification.urgency === 'CRITICAL' && user.phone) {
+      // Check SMS preference (only for CRITICAL, and only if user has TCPA consent)
+      if (notification.urgency === 'CRITICAL' && user.phone && await hasUserSMSConsent(notification.user_id)) {
         let shouldSendSMS = true; // Default to sending for CRITICAL
         try {
           const { data: smsPref, error: smsPrefError } = await supabase.rpc('should_send_notification', {

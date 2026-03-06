@@ -59,7 +59,7 @@ export async function GET(request) {
       );
     }
 
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

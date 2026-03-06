@@ -154,10 +154,10 @@ export async function GET(request) {
     log(`QuickBooks connection ${result.updated ? 'updated' : 'created'} for user ${userId}`);
 
     // Auto-map expense categories on first connection
-    if (!result.updated && result.connectionId) {
+    if (!result.updated && result.connection?.id) {
       log('Auto-mapping expense categories...');
       try {
-        const mappingResult = await autoMapCategories(result.connectionId, userId);
+        const mappingResult = await autoMapCategories(result.connection.id, userId);
         if (mappingResult.success) {
           log(`Auto-mapped ${mappingResult.mapped?.length || 0} categories`);
         } else {

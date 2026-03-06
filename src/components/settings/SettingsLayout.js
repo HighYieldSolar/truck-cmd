@@ -11,7 +11,8 @@ import {
   Shield,
   Settings,
   Bell,
-  Zap
+  Zap,
+  Building2
 } from "lucide-react";
 
 export default function SettingsLayout({ children }) {
@@ -61,6 +62,13 @@ export default function SettingsLayout({ children }) {
       href: "/dashboard/settings/notifications",
       icon: <Bell size={20} />,
       active: pathname === "/dashboard/settings/notifications"
+    },
+    {
+      name: t('menu.quickbooks') || 'QuickBooks',
+      key: 'quickbooks',
+      href: "/dashboard/settings/quickbooks",
+      icon: <Building2 size={20} />,
+      active: pathname === "/dashboard/settings/quickbooks"
     },
     {
       name: t('menu.eld') || 'ELD Integration',

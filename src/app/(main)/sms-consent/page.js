@@ -3,17 +3,52 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, Bell, Shield, CheckCircle, XCircle, Smartphone, Check } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SmsConsentPage() {
   const effectiveDate = "January 6, 2026";
   const [consentChecked, setConsentChecked] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleDemoSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (consentChecked && phoneNumber) {
-      setShowSuccess(true);
+    if (!consentChecked || !phoneNumber) return;
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setErrorMessage("You must be logged in to enable SMS notifications. Please log in and try again from Settings > Notifications.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await fetch("/api/sms/consent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ phone: phoneNumber, consent: true })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setShowSuccess(true);
+      } else {
+        setErrorMessage(data.error || "Failed to save consent. Please try again.");
+      }
+    } catch (err) {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -67,7 +102,14 @@ export default function SmsConsentPage() {
                 <p className="text-sm text-gray-500 mt-2">Reply STOP at any time to opt-out.</p>
               </div>
             ) : (
-              <form onSubmit={handleDemoSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Error Message */}
+                {errorMessage && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {errorMessage}
+                  </div>
+                )}
+
                 {/* Phone Number Input */}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -124,14 +166,14 @@ export default function SmsConsentPage() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={!consentChecked || !phoneNumber}
+                  disabled={!consentChecked || !phoneNumber || isSubmitting}
                   className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all ${
-                    consentChecked && phoneNumber
+                    consentChecked && phoneNumber && !isSubmitting
                       ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  Enable SMS Notifications
+                  {isSubmitting ? "Saving..." : "Enable SMS Notifications"}
                 </button>
 
                 {/* Additional Disclosure */}

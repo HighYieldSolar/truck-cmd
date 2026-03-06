@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendNotificationEmail } from '@/lib/services/emailService';
-import { sendNotificationSMS } from '@/lib/services/smsService';
+import { sendNotificationSMS, hasUserSMSConsent } from '@/lib/services/smsService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[notifications/send]', ...args);
@@ -115,8 +115,8 @@ export async function POST(request) {
       };
     }
 
-    // Send SMS if enabled (only for HIGH/CRITICAL by default)
-    if (shouldSendSMS && user.phone) {
+    // Send SMS if enabled (only for HIGH/CRITICAL by default) and user has TCPA consent
+    if (shouldSendSMS && user.phone && await hasUserSMSConsent(userId)) {
       const smsResult = await sendNotificationSMS({
         to: user.phone,
         notification: notification
@@ -254,8 +254,8 @@ export async function PUT(request) {
         }
       }
 
-      // Send SMS
-      if (shouldSendSMS && user.phone) {
+      // Send SMS (only if user has TCPA consent)
+      if (shouldSendSMS && user.phone && await hasUserSMSConsent(notification.user_id)) {
         const smsResult = await sendNotificationSMS({
           to: user.phone,
           notification: notification

@@ -12,10 +12,58 @@
  *   await sendNotificationSMS({ to: '+1234567890', notification });
  */
 
+import { createClient } from '@supabase/supabase-js';
+
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://truckcommand.com';
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
+/**
+ * Check if a phone number has opted out of SMS
+ * @param {string} phoneNumber - E.164 formatted phone number
+ * @returns {Promise<boolean>} - true if opted out
+ */
+export async function isPhoneOptedOut(phoneNumber) {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('sms_opt_outs')
+      .select('id')
+      .eq('phone_number', phoneNumber)
+      .single();
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a user has given SMS consent
+ * @param {string} userId - User ID
+ * @returns {Promise<boolean>} - true if user has consented to SMS
+ */
+export async function hasUserSMSConsent(userId) {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('users')
+      .select('sms_consent')
+      .eq('id', userId)
+      .single();
+    return data?.sms_consent === true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Get urgency prefix for SMS
@@ -51,6 +99,8 @@ function formatNotificationForSMS(notification) {
     smsText += `\n${shortUrl}`;
   }
 
+  smsText += '\nReply STOP to opt out';
+
   return smsText;
 }
 
@@ -75,6 +125,11 @@ export async function sendNotificationSMS({ to, notification }) {
   // Only send SMS for HIGH and CRITICAL urgency by default
   if (!['HIGH', 'CRITICAL'].includes(notification.urgency)) {
     return { success: false, error: 'SMS only sent for HIGH and CRITICAL urgency notifications' };
+  }
+
+  // Check opt-out status
+  if (await isPhoneOptedOut(to)) {
+    return { success: false, error: 'Phone number has opted out of SMS' };
   }
 
   try {
@@ -125,6 +180,11 @@ export async function sendSMS({ to, message }) {
 
   if (!to || !to.match(/^\+[1-9]\d{1,14}$/)) {
     return { success: false, error: 'Invalid phone number format' };
+  }
+
+  // Check opt-out status
+  if (await isPhoneOptedOut(to)) {
+    return { success: false, error: 'Phone number has opted out of SMS' };
   }
 
   try {
@@ -198,5 +258,7 @@ export default {
   sendNotificationSMS,
   sendSMS,
   isSMSServiceConfigured,
+  isPhoneOptedOut,
+  hasUserSMSConsent,
   formatPhoneE164
 };
