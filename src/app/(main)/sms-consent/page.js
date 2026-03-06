@@ -143,7 +143,7 @@ export default function SmsConsentPage() {
                       <p className="mb-2">
                         By checking this box and providing my phone number, I expressly consent to receive automated
                         text messages from Truck Command LLC at the phone number provided. This is entirely optional
-                        and you can use all Truck Command features without enabling SMS. Messages may include:</p>
+                        and you can use all Truck Command features without enabling SMS. Messages may include:
                       </p>
                       <ul className="list-disc pl-5 mb-3 space-y-1">
                         <li>Compliance alerts (document expirations, deadlines)</li>
