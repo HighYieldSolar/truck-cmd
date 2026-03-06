@@ -21,30 +21,30 @@ export default function SmsConsentPage() {
     setErrorMessage("");
 
     try {
+      // Check if user is logged in — if so, save consent to their account
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        setErrorMessage("You must be logged in to enable SMS notifications. Please log in and try again from Settings > Notifications.");
-        setIsSubmitting(false);
-        return;
+      if (session) {
+        const response = await fetch("/api/sms/consent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ phone: phoneNumber, consent: true })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          setErrorMessage(data.error || "Failed to save consent. Please try again.");
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      const response = await fetch("/api/sms/consent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ phone: phoneNumber, consent: true })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setShowSuccess(true);
-      } else {
-        setErrorMessage(data.error || "Failed to save consent. Please try again.");
-      }
+      // Show success regardless — logged-in users get saved, visitors see the confirmation
+      setShowSuccess(true);
     } catch (err) {
       setErrorMessage("Something went wrong. Please try again.");
     } finally {
@@ -97,9 +97,9 @@ export default function SmsConsentPage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
                   <Check className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-green-700 mb-2">Successfully Opted In!</h3>
-                <p className="text-gray-600">You will now receive SMS notifications from Truck Command.</p>
-                <p className="text-sm text-gray-500 mt-2">Reply STOP at any time to opt-out.</p>
+                <h3 className="text-xl font-bold text-green-700 mb-2">Consent Received!</h3>
+                <p className="text-gray-600">Thank you for opting in to SMS notifications from Truck Command.</p>
+                <p className="text-sm text-gray-500 mt-2">Reply STOP at any time to opt-out. Message and data rates may apply.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
