@@ -53,6 +53,17 @@ function WelcomeContent() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Send welcome email on first visit
+  useEffect(() => {
+    if (isNewUser && emailParam) {
+      fetch('/api/auth/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailParam })
+      }).catch(() => {}); // Fire and forget
+    }
+  }, [isNewUser, emailParam]);
+
   // Auto-advance from celebration after 3 seconds
   useEffect(() => {
     if (step === 0 && isNewUser) {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendOnboardingEmail } from '@/lib/services/emailService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[cron/trial-reminders]', ...args);
@@ -96,16 +95,6 @@ export async function GET(request) {
         }
       }
 
-      // Determine which email to send
-      const emailType = daysUntilEnd === 0 ? 'trialEnding' : 'trialEnding';
-      const subject = daysUntilEnd === 0
-        ? 'Your Truck Command trial ends today!'
-        : daysUntilEnd === 1
-          ? 'Your trial ends tomorrow - don\'t lose your data!'
-          : daysUntilEnd === 3
-            ? 'Your trial ends in 3 days - upgrade now'
-            : 'Your trial ends in 7 days - upgrade now';
-
       const emailResult = await sendTrialReminderEmail({
         to: user.email,
         userName: user.full_name?.split(' ')[0],
@@ -156,6 +145,7 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
   const FROM_EMAIL = process.env.EMAIL_FROM || 'Truck Command <notifications@truckcommand.com>';
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://truckcommand.com';
+  const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || 'Truck Command, 13949 Cameo Dr, Fontana, CA';
 
   if (!RESEND_API_KEY) {
     return { success: false, error: 'Email service not configured' };
@@ -180,7 +170,7 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
           <tr>
             <td style="padding: 24px 40px; background-color: ${urgencyColor}; border-radius: 16px 16px 0 0; text-align: center;">
               <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                ⏰ Trial Ends ${urgencyText}
+                Trial Ends ${urgencyText}
               </p>
             </td>
           </tr>
@@ -218,7 +208,7 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
                 <tr>
                   <td align="center">
                     <a href="${APP_URL}/dashboard/upgrade" style="display: inline-block; padding: 16px 48px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      Upgrade Now →
+                      Upgrade Now
                     </a>
                   </td>
                 </tr>
@@ -231,9 +221,14 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
           </tr>
 
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Truck Command | Making trucking simple
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
+                &nbsp;|&nbsp;
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
               </p>
             </td>
           </tr>
@@ -255,13 +250,17 @@ async function sendTrialReminderEmail({ to, userName, daysLeft, trialEndsAt }) {
         from: FROM_EMAIL,
         to: [to],
         subject: daysLeft === 0
-          ? '⏰ Your Truck Command trial ends TODAY'
+          ? 'Your Truck Command trial ends TODAY'
           : daysLeft === 1
-            ? '⚠️ Your trial ends tomorrow - don\'t lose your data!'
+            ? 'Your trial ends tomorrow - don\'t lose your data!'
             : daysLeft === 3
-              ? '📅 Your trial ends in 3 days - upgrade now'
-              : '📅 Your trial ends in 7 days - upgrade now',
-        html
+              ? 'Your trial ends in 3 days - upgrade now'
+              : 'Your trial ends in 7 days - upgrade now',
+        html,
+        headers: {
+          'List-Unsubscribe': `<${APP_URL}/dashboard/settings/notifications>, <mailto:unsubscribe@truckcommand.com?subject=unsubscribe&body=${encodeURIComponent(to || '')}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        }
       })
     });
 

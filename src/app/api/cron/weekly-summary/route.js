@@ -215,6 +215,7 @@ async function sendWeeklySummaryEmail({ to, userName, stats, weekStart, weekEnd 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
   const FROM_EMAIL = process.env.EMAIL_FROM || 'Truck Command <notifications@truckcommand.com>';
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://truckcommand.com';
+  const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || 'Truck Command, 13949 Cameo Dr, Fontana, CA';
 
   if (!RESEND_API_KEY) {
     return { success: false, error: 'Email service not configured' };
@@ -311,9 +312,14 @@ async function sendWeeklySummaryEmail({ to, userName, stats, weekStart, weekEnd 
           </tr>
 
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Truck Command | Your weekly summary every Monday
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
+                &nbsp;|&nbsp;
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
               </p>
             </td>
           </tr>
@@ -334,8 +340,12 @@ async function sendWeeklySummaryEmail({ to, userName, stats, weekStart, weekEnd 
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: [to],
-        subject: `📊 Your Weekly Summary: ${stats.loadsCompleted} loads, ${formatCurrency(stats.paymentsReceived)} collected`,
-        html
+        subject: `Your Weekly Summary: ${stats.loadsCompleted} loads, ${formatCurrency(stats.paymentsReceived)} collected`,
+        html,
+        headers: {
+          'List-Unsubscribe': `<${APP_URL}/dashboard/settings/notifications>, <mailto:unsubscribe@truckcommand.com?subject=unsubscribe&body=${encodeURIComponent(to || '')}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        }
       })
     });
 

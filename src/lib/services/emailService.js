@@ -16,7 +16,7 @@
 const getResendApiKey = () => process.env.RESEND_API_KEY;
 const getFromEmail = () => process.env.EMAIL_FROM || 'Truck Command <notifications@truckcommand.com>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://truckcommand.com';
-const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || 'Truck Command, Houston, TX';
+const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || 'Truck Command, 13949 Cameo Dr, Fontana, CA';
 
 /**
  * Standard email headers for CAN-SPAM compliance
@@ -32,14 +32,20 @@ function getEmailHeaders(to) {
 /**
  * Standard CAN-SPAM compliant footer HTML with physical address + unsubscribe link
  */
-function getComplianceFooterHTML() {
+function getComplianceFooterHTML(statusText) {
+  const statusLine = statusText
+    ? `<p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">${statusText}</p>`
+    : '';
   return `
-    <p style="margin: 8px 0 0; color: #9ca3af; font-size: 11px; line-height: 1.4;">
-      ${COMPANY_ADDRESS}<br>
-      <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
-      &nbsp;|&nbsp;
-      <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
-    </p>`;
+              ${statusLine}
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
+                &nbsp;|&nbsp;
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
+              </p>`;
 }
 
 /**
@@ -524,9 +530,7 @@ const onboardingEmails = {
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Truck Command | Making trucking simple
-              </p>
+              ${getComplianceFooterHTML('30 days left in your trial')}
             </td>
           </tr>
         </table>
@@ -537,7 +541,7 @@ const onboardingEmails = {
 </html>`
   },
 
-  // Day 1 - First Win
+  // Day 1 - First Win (personalized to their primary focus)
   firstWin: {
     subject: "Quick tip: Your first step in Truck Command",
     getHTML: (userName, operatorType, primaryFocus) => {
@@ -564,9 +568,6 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 40px 40px 24px; text-align: center;">
-              <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 28px;">💡</span>
-              </div>
               <h1 style="margin: 0; color: #111827; font-size: 24px;">Quick Win for Today</h1>
             </td>
           </tr>
@@ -580,7 +581,6 @@ const onboardingEmails = {
                 Most truckers who get value from Truck Command take just one action on their first day. Here's yours:
               </p>
 
-              <!-- Action Card -->
               <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 24px; margin: 0 0 24px; border-left: 4px solid #2563eb;">
                 <h3 style="margin: 0 0 8px; color: #1e40af; font-size: 18px;">${tip.action}</h3>
                 <p style="margin: 0; color: #3b82f6; font-size: 14px;">${tip.benefit}</p>
@@ -590,7 +590,7 @@ const onboardingEmails = {
                 <tr>
                   <td align="center">
                     <a href="${APP_URL}${tip.link}" style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      ${tip.action} →
+                      ${tip.action}
                     </a>
                   </td>
                 </tr>
@@ -604,9 +604,7 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                6 days left in your trial
-              </p>
+              ${getComplianceFooterHTML('29 days left in your trial')}
             </td>
           </tr>
         </table>
@@ -618,13 +616,13 @@ const onboardingEmails = {
     }
   },
 
-  // Day 3 - Feature Highlight
+  // Day 3 - Feature Highlight (IFTA for owner-operators, Fleet for small fleets)
   featureHighlight: {
     subject: "Did you know? A hidden gem in Truck Command",
     getHTML: (userName, operatorType) => {
       const features = operatorType === 'small-fleet'
         ? { title: 'Fleet Overview Dashboard', description: 'See all your trucks and drivers at a glance. Track which loads are assigned, monitor driver documents, and manage your entire operation from one screen.', link: '/dashboard/fleet' }
-        : { title: 'Automatic IFTA Calculations', description: 'Every time you log a fuel purchase or complete a load, we automatically calculate your state-by-state mileage. Quarterly reports generate in seconds.', link: '/dashboard/ifta' };
+        : { title: 'Automatic IFTA Calculations', description: 'Every time you log a fuel purchase or complete a load, we automatically calculate your state-by-state mileage. Quarterly reports generate in seconds — no more spreadsheets.', link: '/dashboard/ifta' };
 
       return `
 <!DOCTYPE html>
@@ -641,7 +639,6 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 40px 40px 24px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 16px;">✨</div>
               <h1 style="margin: 0; color: #111827; font-size: 24px;">Feature Spotlight</h1>
             </td>
           </tr>
@@ -661,7 +658,7 @@ const onboardingEmails = {
                 <tr>
                   <td align="center">
                     <a href="${APP_URL}${features.link}" style="display: inline-block; padding: 14px 32px; background-color: #7c3aed; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      Try It Now →
+                      Try It Now
                     </a>
                   </td>
                 </tr>
@@ -671,9 +668,7 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                4 days left in your trial
-              </p>
+              ${getComplianceFooterHTML('27 days left in your trial')}
             </td>
           </tr>
         </table>
@@ -685,9 +680,9 @@ const onboardingEmails = {
     }
   },
 
-  // Day 5 - Social Proof
-  socialProof: {
-    subject: "How other truckers use Truck Command",
+  // Day 7 - Invoicing & Getting Paid (biggest revenue driver for truckers)
+  invoicingTip: {
+    subject: "Stop chasing payments — send invoices in 60 seconds",
     getHTML: (userName, operatorType) => `
 <!DOCTYPE html>
 <html>
@@ -702,42 +697,40 @@ const onboardingEmails = {
         <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
 
           <tr>
-            <td style="padding: 40px 40px 24px; text-align: center;">
-              <h1 style="margin: 0; color: #111827; font-size: 24px;">Real Results from Real Truckers</h1>
+            <td style="padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 16px 16px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Get Paid Faster</h1>
+              <p style="margin: 12px 0 0; color: #a7f3d0; font-size: 14px;">Professional invoices in under a minute</p>
             </td>
           </tr>
 
           <tr>
-            <td style="padding: 0 40px 40px;">
-              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
                 Hey ${userName || 'there'},
               </p>
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                You've been on Truck Command for a week now. If there's one feature that pays for itself, it's invoicing.
+              </p>
 
-              <!-- Testimonial 1 -->
-              <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 0 0 16px; border-left: 4px solid #10b981;">
-                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; font-style: italic; line-height: 1.5;">
-                  "IFTA used to take me a whole weekend. Now it takes 10 minutes. I can't believe I waited so long to switch."
-                </p>
-                <p style="margin: 0; color: #6b7280; font-size: 13px; font-weight: 600;">
-                  — Mike T., Owner-Operator, Texas
-                </p>
+              <div style="background-color: #ecfdf5; border-radius: 12px; padding: 24px; margin: 0 0 24px;">
+                <h3 style="margin: 0 0 16px; color: #065f46; font-size: 16px;">Here's how truckers use it:</h3>
+                <table style="width: 100%;">
+                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">1. Complete a load in dispatch</td></tr>
+                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">2. Click "Create Invoice" — it auto-fills from the load</td></tr>
+                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">3. Send a professional PDF to your broker or shipper</td></tr>
+                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">4. Track payment status — no more guessing who owes you</td></tr>
+                </table>
               </div>
 
-              <!-- Testimonial 2 -->
-              <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 0 0 24px; border-left: 4px solid #3b82f6;">
-                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; font-style: italic; line-height: 1.5;">
-                  "Finally, invoices that look professional. My customers take me more seriously now."
-                </p>
-                <p style="margin: 0; color: #6b7280; font-size: 13px; font-weight: 600;">
-                  — Sarah K., Small Fleet Owner, Ohio
-                </p>
-              </div>
+              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+                No more handwriting invoices in the cab or waiting weeks to bill a load. The faster you invoice, the faster you get paid.
+              </p>
 
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center">
-                    <a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      Continue Your Trial →
+                    <a href="${APP_URL}/dashboard/invoices/new" style="display: inline-block; padding: 14px 32px; background-color: #059669; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                      Create Your First Invoice
                     </a>
                   </td>
                 </tr>
@@ -747,9 +740,7 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                2 days left in your trial
-              </p>
+              ${getComplianceFooterHTML('23 days left in your trial')}
             </td>
           </tr>
         </table>
@@ -760,10 +751,187 @@ const onboardingEmails = {
 </html>`
   },
 
-  // Day 6 - Trial Ending
-  trialEnding: {
-    subject: "Your trial ends tomorrow - don't lose your data!",
+  // Day 14 - Halfway Check-in + Social Proof
+  halfwayCheckIn: {
+    subject: "You're halfway through your trial — here's what truckers are saying",
     getHTML: (userName, operatorType) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <tr>
+            <td style="padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border-radius: 16px 16px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">You're Halfway Through</h1>
+              <p style="margin: 12px 0 0; color: #bfdbfe; font-size: 14px;">15 days left to explore everything</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hey ${userName || 'there'},
+              </p>
+              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+                You've had 2 weeks with Truck Command. Here's what other ${operatorType === 'small-fleet' ? 'fleet owners' : 'owner-operators'} are saying:
+              </p>
+
+              <!-- Testimonial 1 -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 0 0 16px; border-left: 4px solid #10b981;">
+                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; font-style: italic; line-height: 1.5;">
+                  "IFTA used to take me a whole weekend every quarter. Now it takes 10 minutes. I can't believe I was doing it by hand."
+                </p>
+                <p style="margin: 0; color: #6b7280; font-size: 13px; font-weight: 600;">
+                  — Mike T., Owner-Operator, Texas
+                </p>
+              </div>
+
+              <!-- Testimonial 2 -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 0 0 16px; border-left: 4px solid #3b82f6;">
+                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; font-style: italic; line-height: 1.5;">
+                  "I used to lose receipts all the time. Now I snap a photo and it's tracked. Saved me thousands at tax time."
+                </p>
+                <p style="margin: 0; color: #6b7280; font-size: 13px; font-weight: 600;">
+                  — Carlos R., Owner-Operator, California
+                </p>
+              </div>
+
+              <!-- Testimonial 3 -->
+              <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 0 0 24px; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; font-style: italic; line-height: 1.5;">
+                  "Finally, invoices that look professional. My brokers pay faster when it doesn't look like I typed it on my phone."
+                </p>
+                <p style="margin: 0; color: #6b7280; font-size: 13px; font-weight: 600;">
+                  — Sarah K., Small Fleet Owner, Ohio
+                </p>
+              </div>
+
+              <div style="background-color: #eff6ff; border-radius: 12px; padding: 20px; margin: 0 0 24px;">
+                <h3 style="margin: 0 0 12px; color: #1e40af; font-size: 15px;">Haven't tried these yet? You still have 2 weeks:</h3>
+                <table style="width: 100%;">
+                  <tr><td style="padding: 6px 0; color: #374151; font-size: 14px;"><a href="${APP_URL}/dashboard/expenses" style="color: #2563eb; text-decoration: underline;">Expense tracking</a> — snap receipts, track by category</td></tr>
+                  <tr><td style="padding: 6px 0; color: #374151; font-size: 14px;"><a href="${APP_URL}/dashboard/fuel" style="color: #2563eb; text-decoration: underline;">Fuel log</a> — auto-calculates cost per mile</td></tr>
+                  <tr><td style="padding: 6px 0; color: #374151; font-size: 14px;"><a href="${APP_URL}/dashboard/compliance" style="color: #2563eb; text-decoration: underline;">Compliance tracker</a> — never miss a CDL, medical, or insurance renewal</td></tr>
+                </table>
+              </div>
+
+              <table role="presentation" style="width: 100%;">
+                <tr>
+                  <td align="center">
+                    <a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                      Back to Dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              ${getComplianceFooterHTML('16 days left in your trial')}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+  },
+
+  // Day 21 - Compliance & IFTA Spotlight (the features that save truckers real money)
+  complianceSpotlight: {
+    subject: "IFTA quarter coming up? You're already covered",
+    getHTML: (userName, operatorType) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <tr>
+            <td style="padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius: 16px 16px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Stay Compliant, Stay on the Road</h1>
+              <p style="margin: 12px 0 0; color: #ddd6fe; font-size: 14px;">The features that save truckers real money</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hey ${userName || 'there'},
+              </p>
+              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
+                You've been using Truck Command for 3 weeks. Here are two features that truckers tell us save them the most time and money:
+              </p>
+
+              <!-- IFTA -->
+              <div style="background-color: #f0f9ff; border-radius: 12px; padding: 24px; margin: 0 0 16px; border-left: 4px solid #2563eb;">
+                <h3 style="margin: 0 0 8px; color: #1e40af; font-size: 17px;">Automatic IFTA Reports</h3>
+                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; line-height: 1.5;">
+                  Every load and fuel purchase you log feeds into your IFTA calculations. When the quarter ends, hit one button and get your state-by-state report. No spreadsheets. No $200 accountant fees.
+                </p>
+                <a href="${APP_URL}/dashboard/ifta" style="color: #2563eb; font-size: 14px; font-weight: 600; text-decoration: none;">View IFTA Dashboard &rarr;</a>
+              </div>
+
+              <!-- Compliance -->
+              <div style="background-color: #fef3c7; border-radius: 12px; padding: 24px; margin: 0 0 24px; border-left: 4px solid #f59e0b;">
+                <h3 style="margin: 0 0 8px; color: #92400e; font-size: 17px;">Document & Compliance Tracking</h3>
+                <p style="margin: 0 0 12px; color: #374151; font-size: 15px; line-height: 1.5;">
+                  CDL expiring? Medical card due? Insurance renewal coming up? Truck Command alerts you before deadlines hit — so you never get sidelined by an expired document.
+                </p>
+                <a href="${APP_URL}/dashboard/compliance" style="color: #92400e; font-size: 14px; font-weight: 600; text-decoration: none;">Set Up Compliance Alerts &rarr;</a>
+              </div>
+
+              <div style="background-color: #ecfdf5; border-radius: 12px; padding: 20px; margin: 0 0 24px; text-align: center;">
+                <p style="margin: 0 0 4px; color: #065f46; font-size: 14px;">The average trucker saves</p>
+                <p style="margin: 0; color: #065f46; font-size: 28px; font-weight: 700;">4+ hours per quarter</p>
+                <p style="margin: 4px 0 0; color: #047857; font-size: 14px;">on IFTA filing alone</p>
+              </div>
+
+              <table role="presentation" style="width: 100%;">
+                <tr>
+                  <td align="center">
+                    <a href="${APP_URL}/dashboard" style="display: inline-block; padding: 14px 32px; background-color: #7c3aed; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                      Explore Your Dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              ${getComplianceFooterHTML('9 days left in your trial')}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+  },
+
+  // Day 25 - Early bird upgrade offer (5 days before trial ends, before reminder emails kick in)
+  earlyBirdUpgrade: {
+    subject: "Your trial ends in 5 days — lock in 25% off",
+    getHTML: (userName) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -778,165 +946,8 @@ const onboardingEmails = {
 
           <tr>
             <td style="padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 16px 16px 0 0;">
-              <div style="font-size: 48px; margin-bottom: 12px;">⏰</div>
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Your Trial Ends Tomorrow</h1>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Hey ${userName || 'there'},
-              </p>
-              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Just a heads up - your 30-day trial ends tomorrow. If you've enjoyed using Truck Command, now's the time to upgrade and keep all your data.
-              </p>
-
-              <!-- What you'll keep -->
-              <div style="background-color: #ecfdf5; border-radius: 12px; padding: 24px; margin: 0 0 24px;">
-                <h3 style="margin: 0 0 12px; color: #065f46; font-size: 16px;">When you upgrade, you keep:</h3>
-                <ul style="margin: 0; padding-left: 20px; color: #047857;">
-                  <li style="margin-bottom: 8px;">All your loads and mileage data</li>
-                  <li style="margin-bottom: 8px;">Your invoices and customer info</li>
-                  <li style="margin-bottom: 8px;">Expense records and receipts</li>
-                  <li style="margin-bottom: 8px;">IFTA calculations and reports</li>
-                </ul>
-              </div>
-
-              <!-- Pricing reminder -->
-              <div style="background-color: #eff6ff; border-radius: 12px; padding: 24px; margin: 0 0 24px; text-align: center;">
-                <p style="margin: 0 0 8px; color: #1e40af; font-size: 14px;">Plans start at just</p>
-                <p style="margin: 0; color: #1e40af; font-size: 32px; font-weight: 700;">$29<span style="font-size: 16px; font-weight: 400;">/month</span></p>
-              </div>
-
-              <table role="presentation" style="width: 100%;">
-                <tr>
-                  <td align="center">
-                    <a href="${APP_URL}/dashboard/settings/billing" style="display: inline-block; padding: 16px 40px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      Upgrade Now →
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin: 24px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
-                Questions? Reply to this email anytime.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding: 24px 40px; background-color: #fef3c7; border-radius: 0 0 16px 16px; border-top: 1px solid #fcd34d; text-align: center;">
-              <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">
-                ⚠️ 1 day left in your trial
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
-  },
-
-  // Day 10 - "We miss you" re-engagement (if user hasn't logged in recently)
-  reEngagement: {
-    subject: "Your trucking data is collecting dust...",
-    getHTML: (userName) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-
-          <tr>
-            <td style="padding: 40px 40px 24px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 16px;">👋</div>
-              <h1 style="margin: 0; color: #111827; font-size: 24px;">We Miss You on the Road</h1>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding: 0 40px 40px;">
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Hey ${userName || 'there'},
-              </p>
-              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                We noticed you haven't been back to Truck Command in a while. No worries — your account is still here and your trial is still active.
-              </p>
-              <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Here's what other truckers have been doing this week:
-              </p>
-
-              <div style="background-color: #f0f9ff; border-radius: 12px; padding: 24px; margin: 0 0 24px;">
-                <table style="width: 100%;">
-                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">📊 Generated IFTA reports in seconds (no more spreadsheets)</td></tr>
-                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">💰 Tracked $12,000+ in monthly expenses for tax time</td></tr>
-                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">📄 Sent professional invoices and got paid faster</td></tr>
-                  <tr><td style="padding: 8px 0; color: #374151; font-size: 15px;">🔔 Never missed a document expiration again</td></tr>
-                </table>
-              </div>
-
-              <table role="presentation" style="width: 100%;">
-                <tr>
-                  <td align="center">
-                    <a href="${APP_URL}/dashboard" style="display: inline-block; padding: 16px 40px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                      Jump Back In
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin: 24px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
-                Need help getting started? Just reply to this email.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
-                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
-              </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 11px;">${COMPANY_ADDRESS}</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
-  },
-
-  // Day 14 - Last chance offer with discount code
-  lastChance: {
-    subject: "Last call: 25% off Truck Command (expires tonight)",
-    getHTML: (userName) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-
-          <tr>
-            <td style="padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 16px 16px 0 0;">
-              <div style="font-size: 48px; margin-bottom: 12px;">🔥</div>
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Last Chance — Trial Ending</h1>
-              <p style="margin: 12px 0 0; color: #fecaca; font-size: 14px;">Your free trial expires today</p>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">5 Days Left in Your Trial</h1>
+              <p style="margin: 12px 0 0; color: #fef3c7; font-size: 14px;">Upgrade now and save 25%</p>
             </td>
           </tr>
 
@@ -946,50 +957,47 @@ const onboardingEmails = {
                 Hey ${userName || 'there'},
               </p>
               <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                This is it — your 30-day Truck Command trial ends today. After today, you'll lose access to your dashboard, but we'll keep your data safe for 30 days.
+                You've had almost a month with Truck Command. If it's been helping you manage loads, invoices, expenses, or IFTA — now's the best time to lock in your rate.
               </p>
 
               <!-- Special Offer -->
               <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border-radius: 12px; padding: 24px; margin: 0 0 24px; text-align: center; border: 2px solid #c084fc;">
-                <p style="margin: 0 0 4px; color: #7c3aed; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">EXCLUSIVE OFFER</p>
+                <p style="margin: 0 0 4px; color: #7c3aed; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">EARLY BIRD OFFER</p>
                 <p style="margin: 0 0 8px; color: #581c87; font-size: 32px; font-weight: 700;">25% off your first 3 months</p>
                 <p style="margin: 0 0 4px; color: #7c3aed; font-size: 16px;">Use code <strong style="background: #ede9fe; padding: 2px 8px; border-radius: 4px;">LAUNCH25</strong> at checkout</p>
-                <p style="margin: 8px 0 0; color: #a78bfa; font-size: 13px;">Offer expires tonight at midnight</p>
+                <p style="margin: 8px 0 0; color: #a78bfa; font-size: 13px;">That's just $15/mo for the Basic plan</p>
               </div>
 
               <!-- What you keep -->
               <div style="background-color: #ecfdf5; border-radius: 12px; padding: 20px; margin: 0 0 24px;">
-                <h3 style="margin: 0 0 12px; color: #065f46; font-size: 15px;">Subscribe now and keep everything:</h3>
+                <h3 style="margin: 0 0 12px; color: #065f46; font-size: 15px;">When you subscribe, you keep everything:</h3>
                 <table style="width: 100%;">
-                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">✓ All your loads and mileage records</td></tr>
-                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">✓ Invoices, customers, and expense data</td></tr>
-                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">✓ IFTA calculations and reports</td></tr>
-                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">✓ All uploaded documents and receipts</td></tr>
+                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">&#10003; All your loads and mileage records</td></tr>
+                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">&#10003; Invoices, customers, and expense data</td></tr>
+                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">&#10003; IFTA calculations and reports</td></tr>
+                  <tr><td style="padding: 4px 0; color: #047857; font-size: 14px;">&#10003; Uploaded documents and compliance records</td></tr>
                 </table>
               </div>
 
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center">
-                    <a href="${APP_URL}/dashboard/settings/billing" style="display: inline-block; padding: 16px 40px; background-color: #7c3aed; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                    <a href="${APP_URL}/dashboard/upgrade" style="display: inline-block; padding: 16px 40px; background-color: #7c3aed; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
                       Subscribe Now & Save 25%
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin: 24px 0 0; color: #6b7280; font-size: 13px; text-align: center;">
-                Plans start at just $29/month ($21.75/mo with your discount)
+              <p style="margin: 24px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
+                Questions? Just reply to this email.
               </p>
             </td>
           </tr>
 
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
-                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
-              </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 11px;">${COMPANY_ADDRESS}</p>
+              ${getComplianceFooterHTML('5 days left in your trial')}
             </td>
           </tr>
         </table>
@@ -1005,7 +1013,7 @@ const onboardingEmails = {
  * Send an onboarding email
  * @param {Object} params - Email parameters
  * @param {string} params.to - Recipient email address
- * @param {string} params.emailType - Type of onboarding email (welcome, firstWin, featureHighlight, socialProof, trialEnding, reEngagement, lastChance)
+ * @param {string} params.emailType - Type of onboarding email (welcome, firstWin, featureHighlight, invoicingTip, halfwayCheckIn, complianceSpotlight, earlyBirdUpgrade)
  * @param {string} params.userName - User's name
  * @param {string} params.operatorType - owner-operator or small-fleet
  * @param {string} params.primaryFocus - User's primary focus (loads, invoicing, expenses, ifta)
@@ -1148,8 +1156,14 @@ export async function sendPaymentFailedEmail({ to, userName, attemptCount = 1, n
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
                 Questions? Reply to this email — we're here to help.
+              </p>
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
               </p>
             </td>
           </tr>
@@ -1243,7 +1257,7 @@ export async function sendTrialExpiredEmail({ to, userName }) {
               </div>
 
               <p style="margin: 0 0 24px; color: #374151; font-size: 16px; line-height: 1.6;">
-                Subscribe now to pick up right where you left off. Plans start at just <strong>$29/month</strong>.
+                Subscribe now to pick up right where you left off. Plans start at just <strong>$20/month</strong>.
               </p>
 
               <table role="presentation" style="width: 100%;">
@@ -1261,8 +1275,16 @@ export async function sendTrialExpiredEmail({ to, userName }) {
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
                 Questions? Reply to this email — we're here to help.
+              </p>
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Manage email preferences</a>
+                &nbsp;|&nbsp;
+                <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
               </p>
             </td>
           </tr>
@@ -1387,10 +1409,13 @@ export async function sendWinbackEmail({ to, userName, reason = 'trial_expired' 
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center;">
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px;">
                 Don't want to receive these emails?
                 <a href="${APP_URL}/dashboard/settings/notifications" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a>
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 11px;">
+                ${COMPANY_ADDRESS}
               </p>
             </td>
           </tr>

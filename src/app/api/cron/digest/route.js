@@ -148,8 +148,10 @@ async function sendOnboardingEmails(supabase) {
   const results = {
     day1: { sent: 0, skipped: 0 },
     day3: { sent: 0, skipped: 0 },
-    day5: { sent: 0, skipped: 0 },
-    day6: { sent: 0, skipped: 0 },
+    day7: { sent: 0, skipped: 0 },
+    day14: { sent: 0, skipped: 0 },
+    day21: { sent: 0, skipped: 0 },
+    day25: { sent: 0, skipped: 0 },
     errors: []
   };
 
@@ -177,14 +179,14 @@ async function sendOnboardingEmails(supabase) {
       return results;
     }
 
-    // Define email schedule: { dayNumber: emailType }
+    // Define email schedule for 30-day trial: { dayNumber: emailType }
     const emailSchedule = {
-      1: 'firstWin',
-      3: 'featureHighlight',
-      5: 'socialProof',
-      6: 'trialEnding',
-      10: 'reEngagement',
-      14: 'lastChance'
+      1: 'firstWin',           // Quick win — get them to take first action
+      3: 'featureHighlight',   // IFTA for O/O, Fleet for small-fleet
+      7: 'invoicingTip',       // Get paid faster — biggest revenue driver
+      14: 'halfwayCheckIn',    // Halfway through — social proof + feature discovery
+      21: 'complianceSpotlight', // IFTA & compliance — saves real money
+      25: 'earlyBirdUpgrade'   // 25% off — before trial-reminders kick in at day 23
     };
 
     for (const subscription of trialUsers) {
@@ -284,7 +286,7 @@ export async function GET(request) {
       dailyDigests: { sent: 0, skipped: 0, errors: [] },
       weeklyDigests: { sent: 0, skipped: 0, errors: [] },
       pendingNotifications: { total: 0, emailsSent: 0, smsSent: 0, errors: [] },
-      onboardingEmails: { day1: { sent: 0, skipped: 0 }, day3: { sent: 0, skipped: 0 }, day5: { sent: 0, skipped: 0 }, day6: { sent: 0, skipped: 0 }, day10: { sent: 0, skipped: 0 }, day14: { sent: 0, skipped: 0 }, errors: [] }
+      onboardingEmails: { day1: { sent: 0, skipped: 0 }, day3: { sent: 0, skipped: 0 }, day7: { sent: 0, skipped: 0 }, day14: { sent: 0, skipped: 0 }, day21: { sent: 0, skipped: 0 }, day25: { sent: 0, skipped: 0 }, errors: [] }
     };
 
     // Get all users with their notification preferences
