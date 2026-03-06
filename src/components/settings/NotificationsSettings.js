@@ -704,7 +704,7 @@ export default function NotificationsSettings() {
                     className="mt-1 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                    I agree to receive SMS notifications from Truck Command. Msg frequency varies (1-10/mo). Msg&data rates may apply. Reply STOP to unsubscribe. Consent is not a condition of purchase.{' '}
+                    Yes, I would like to receive optional SMS notifications from Truck Command (not required to use any features). Msg frequency varies (1-10/mo). Msg&data rates may apply. Reply STOP to unsubscribe.{' '}
                     <Link href="/sms-consent" className="text-purple-600 dark:text-purple-400 underline hover:no-underline">
                       SMS Terms
                     </Link>

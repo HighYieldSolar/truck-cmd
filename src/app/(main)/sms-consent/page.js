@@ -88,8 +88,8 @@ export default function SmsConsentPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4">
                 <MessageSquare className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">SMS Notification Opt-In</h2>
-              <p className="text-gray-600">Enable text message alerts for your Truck Command account</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Optional SMS Notifications</h2>
+              <p className="text-gray-600">Would you like to receive optional text message alerts for your Truck Command account? This is completely optional and not required to use any features.</p>
             </div>
 
             {showSuccess ? (
@@ -138,11 +138,12 @@ export default function SmsConsentPage() {
                     </div>
                     <div className="text-sm text-gray-700">
                       <p className="font-semibold text-gray-800 mb-2">
-                        I agree to receive SMS notifications from Truck Command
+                        Yes, I would like to receive optional SMS notifications from Truck Command (not required)
                       </p>
                       <p className="mb-2">
                         By checking this box and providing my phone number, I expressly consent to receive automated
-                        text messages from Truck Command LLC at the phone number provided. Messages may include:
+                        text messages from Truck Command LLC at the phone number provided. This is entirely optional
+                        and you can use all Truck Command features without enabling SMS. Messages may include:</p>
                       </p>
                       <ul className="list-disc pl-5 mb-3 space-y-1">
                         <li>Compliance alerts (document expirations, deadlines)</li>
@@ -155,7 +156,7 @@ export default function SmsConsentPage() {
                       </p>
                       <p className="mt-2">
                         Reply <strong>STOP</strong> to unsubscribe at any time. Reply <strong>HELP</strong> for assistance.
-                        Consent is not a condition of purchase. View our{" "}
+                        Consent is not a condition of purchase or use of any Truck Command service. You may decline and still use all features. View our{" "}
                         <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link> and{" "}
                         <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>.
                       </p>
@@ -173,8 +174,12 @@ export default function SmsConsentPage() {
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  {isSubmitting ? "Saving..." : "Enable SMS Notifications"}
+                  {isSubmitting ? "Saving..." : "Yes, Enable Optional SMS Notifications"}
                 </button>
+
+                <p className="text-center text-sm text-gray-600 font-medium">
+                  You can skip this entirely. SMS is not required to use Truck Command.
+                </p>
 
                 {/* Additional Disclosure */}
                 <div className="text-center text-xs text-gray-500 space-y-1">
