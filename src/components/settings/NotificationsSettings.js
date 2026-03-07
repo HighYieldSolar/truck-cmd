@@ -315,9 +315,13 @@ export default function NotificationsSettings() {
     setTestResults(prev => ({ ...prev, email: null }));
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/notifications/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           email: user.email,
           testEmail: true,
@@ -359,9 +363,13 @@ export default function NotificationsSettings() {
     setTestResults(prev => ({ ...prev, sms: null }));
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/notifications/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           phone: userPhone,
           testEmail: false,
