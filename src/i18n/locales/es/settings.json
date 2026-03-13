@@ -8,6 +8,7 @@
     "privacy": "Privacidad",
     "billing": "Facturación",
     "notifications": "Notificaciones",
+    "quickbooks": "QuickBooks",
     "eld": "Integración ELD"
   },
   "descriptions": {
@@ -17,6 +18,7 @@
     "privacy": "Administre la configuración de privacidad",
     "billing": "Administre la configuración de facturación",
     "notifications": "Administre la configuración de notificaciones",
+    "quickbooks": "Sincronice sus gastos con QuickBooks Online",
     "eld": "Conecte y administre sus proveedores ELD"
   },
   "profile": {

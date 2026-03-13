@@ -8,6 +8,7 @@
     "privacy": "Privacy",
     "billing": "Billing",
     "notifications": "Notifications",
+    "quickbooks": "QuickBooks",
     "eld": "ELD Integration"
   },
   "descriptions": {
@@ -17,6 +18,7 @@
     "privacy": "Manage your privacy settings",
     "billing": "Manage your billing settings",
     "notifications": "Manage your notifications settings",
+    "quickbooks": "Sync your expenses to QuickBooks Online",
     "eld": "Connect and manage your ELD providers"
   },
   "profile": {

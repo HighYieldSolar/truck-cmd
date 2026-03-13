@@ -11,8 +11,6 @@ import {
   Upload,
   Calendar,
   Filter,
-  FileText,
-  Receipt,
   ChevronDown
 } from 'lucide-react';
 
@@ -20,7 +18,7 @@ import {
 const CATEGORIES = ['All', 'Fuel', 'Maintenance', 'Insurance', 'Tolls', 'Office', 'Permits', 'Meals', 'Other'];
 
 /**
- * QuickBooksBulkSyncModal - Modal for bulk syncing expenses and invoices
+ * QuickBooksBulkSyncModal - Modal for bulk syncing expenses to QuickBooks
  */
 export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplete }) {
   const [loading, setLoading] = useState(false);
@@ -29,7 +27,6 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
   const [syncResults, setSyncResults] = useState(null);
 
   // Filter state
-  const [entityType, setEntityType] = useState('expenses');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [category, setCategory] = useState('All');
@@ -70,26 +67,15 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Build query based on entity type
-      let query;
-      if (entityType === 'expenses') {
-        query = supabase
-          .from('expenses')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+      // Build query for expenses
+      let query = supabase
+        .from('expenses')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
 
-        if (dateFrom) query = query.gte('date', dateFrom);
-        if (dateTo) query = query.lte('date', dateTo);
-        if (category && category !== 'All') query = query.eq('category', category);
-      } else {
-        query = supabase
-          .from('invoices')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        if (dateFrom) query = query.gte('invoice_date', dateFrom);
-        if (dateTo) query = query.lte('invoice_date', dateTo);
-      }
+      if (dateFrom) query = query.gte('date', dateFrom);
+      if (dateTo) query = query.lte('date', dateTo);
+      if (category && category !== 'All') query = query.eq('category', category);
 
       const { count } = await query;
       setPreviewCount(count || 0);
@@ -98,7 +84,7 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
     } finally {
       setPreviewLoading(false);
     }
-  }, [isOpen, entityType, dateFrom, dateTo, category]);
+  }, [isOpen, dateFrom, dateTo, category]);
 
   useEffect(() => {
     const timeout = setTimeout(fetchPreview, 300);
@@ -113,15 +99,14 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
       setSyncResults(null);
 
       const token = await getAuthToken();
-      const action = entityType === 'expenses' ? 'bulk-expenses' : 'bulk-invoices';
 
       const body = {
-        action,
+        action: 'bulk-expenses',
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined
       };
 
-      if (entityType === 'expenses' && category !== 'All') {
+      if (category !== 'All') {
         body.category = category;
       }
 
@@ -197,7 +182,7 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
                       Bulk Sync to QuickBooks
                     </Dialog.Title>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Sync multiple records at once
+                      Sync multiple expenses at once
                     </p>
                   </div>
                   <button
@@ -245,37 +230,6 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
                   {/* Filters (hide after sync) */}
                   {!syncResults && (
                     <>
-                      {/* Entity Type */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          What to Sync
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            onClick={() => setEntityType('expenses')}
-                            className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
-                              entityType === 'expenses'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                            }`}
-                          >
-                            <Receipt className="h-5 w-5" />
-                            <span className="font-medium">Expenses</span>
-                          </button>
-                          <button
-                            onClick={() => setEntityType('invoices')}
-                            className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors ${
-                              entityType === 'invoices'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                            }`}
-                          >
-                            <FileText className="h-5 w-5" />
-                            <span className="font-medium">Invoices</span>
-                          </button>
-                        </div>
-                      </div>
-
                       {/* Date Range */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -304,27 +258,25 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
                         </div>
                       </div>
 
-                      {/* Category Filter (expenses only) */}
-                      {entityType === 'expenses' && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            <Filter className="h-4 w-4 inline mr-1" />
-                            Category
-                          </label>
-                          <div className="relative">
-                            <select
-                              value={category}
-                              onChange={(e) => setCategory(e.target.value)}
-                              className="appearance-none w-full px-3 py-2 pr-8 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500"
-                            >
-                              {CATEGORIES.map((cat) => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                          </div>
+                      {/* Category Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <Filter className="h-4 w-4 inline mr-1" />
+                          Category
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="appearance-none w-full px-3 py-2 pr-8 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500"
+                          >
+                            {CATEGORIES.map((cat) => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                         </div>
-                      )}
+                      </div>
 
                       {/* Preview Count */}
                       <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
@@ -336,7 +288,7 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
                               {previewCount ?? '—'}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {entityType === 'expenses' ? 'expenses' : 'invoices'} to sync
+                              expenses to sync
                             </p>
                           </>
                         )}
@@ -365,7 +317,7 @@ export default function QuickBooksBulkSyncModal({ isOpen, onClose, onSyncComplet
                       ) : (
                         <Upload className="h-4 w-4 mr-2" />
                       )}
-                      Sync {previewCount || 0} {entityType === 'expenses' ? 'Expenses' : 'Invoices'}
+                      Sync {previewCount || 0} Expenses
                     </button>
                   )}
                 </div>
