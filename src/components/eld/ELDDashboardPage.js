@@ -159,7 +159,6 @@ export default function ELDDashboardPage() {
 
   const handleFaultClick = (fault) => {
     // Navigate to vehicle or show fault details
-    console.log('Fault clicked:', fault);
   };
 
   // Feature gate - show within DashboardLayout

@@ -94,8 +94,6 @@ export default function SuccessPage() {
 
     async function processPayment() {
       try {
-        console.log('Processing payment for user:', user.id);
-
         // Check for upgrade result (from /api/update-subscription flow)
         const upgradeResultStr = sessionStorage.getItem('upgrade_result');
         if (upgradeResultStr) {
@@ -193,8 +191,6 @@ export default function SuccessPage() {
       const savedPlan = sessionStorage.getItem('checkout_plan') || 'premium';
       const savedCycle = sessionStorage.getItem('checkout_billing_cycle') || 'monthly';
 
-      console.log('Syncing subscription for user:', userId, 'Plan:', savedPlan, 'Cycle:', savedCycle);
-
       // Sync subscription directly from Stripe with retry logic
       if (userId) {
         let syncResult = null;
@@ -207,7 +203,6 @@ export default function SuccessPage() {
 
           // Wait before syncing (longer on each retry)
           const waitTime = attempts === 1 ? 2000 : 3000;
-          console.log(`Attempt ${attempts}: Waiting ${waitTime}ms for Stripe to process...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
 
           try {
@@ -218,17 +213,14 @@ export default function SuccessPage() {
             });
 
             syncResult = await syncResponse.json();
-            console.log(`Attempt ${attempts} sync result:`, syncResult);
 
             // If subscription is active, we're done
             if (syncResult.success && syncResult.subscription?.status === 'active') {
-              console.log('Subscription is active, proceeding');
               break;
             }
 
             // If incomplete and we have retries left, wait and try again
             if (syncResult.success && syncResult.subscription?.status === 'incomplete' && attempts < maxAttempts) {
-              console.log('Subscription still incomplete, will retry...');
               continue;
             }
 
@@ -276,8 +268,6 @@ export default function SuccessPage() {
           try { refreshSubscription(); } catch (e) { console.error(e); }
           return;
         }
-      } else {
-        console.log('No userId provided, using fallback');
       }
 
       // Fallback: use session storage data

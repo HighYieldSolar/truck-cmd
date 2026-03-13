@@ -92,7 +92,6 @@ async function findConnectionFromPayload(payload) {
       .limit(1);
 
     if (connections && connections.length > 0) {
-      console.log('[SamsaraWebhook] Using fallback connection lookup');
       return { connectionId: connections[0].id, userId: connections[0].user_id };
     }
 
@@ -141,8 +140,6 @@ export async function POST(request) {
     // Samsara webhooks have eventType at the root level
     const eventType = payload.eventType || payload.event_type || payload.type;
     const eventTime = payload.eventTime;
-
-    console.log(`[SamsaraWebhook] Received event: ${eventType} at ${eventTime}`);
 
     // Find the connection for this webhook
     const connectionInfo = await findConnectionFromPayload(payload);
@@ -229,7 +226,6 @@ export async function POST(request) {
           break;
 
         default:
-          console.log(`[SamsaraWebhook] Unhandled event type: ${eventType}`);
           result = { processed: false, reason: 'unhandled_event_type' };
       }
 

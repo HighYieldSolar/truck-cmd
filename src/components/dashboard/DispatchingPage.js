@@ -805,7 +805,6 @@ export default function DispatchingPage() {
               loads={loads}
               onVehicleSelect={(vehicle) => {
                 // Could filter loads by this vehicle's driver
-                console.log('Selected vehicle:', vehicle);
               }}
               onLoadSelect={(load) => {
                 const foundLoad = loads.find(l => l.id === load.id);

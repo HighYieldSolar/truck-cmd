@@ -62,8 +62,6 @@ export function useRealtimeVehicleLocations(userId, options = {}) {
           filter: `organization_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('[Realtime] Vehicle location update:', payload.eventType);
-
           if (payload.eventType === 'INSERT') {
             setLocations(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -152,8 +150,6 @@ export function useRealtimeDriverHOS(userId, options = {}) {
           filter: `organization_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('[Realtime] Driver HOS update:', payload.eventType);
-
           if (payload.eventType === 'INSERT') {
             setDrivers(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -257,8 +253,6 @@ export function useRealtimeFaultCodes(userId, options = {}) {
           filter: `organization_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('[Realtime] Fault code update:', payload.eventType);
-
           if (payload.eventType === 'INSERT') {
             if (payload.new.is_active) {
               setFaults(prev => [payload.new, ...prev]);
