@@ -111,7 +111,7 @@ export async function POST(request) {
     const baseUrl = process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const redirectUri = `${baseUrl}/api/quickbooks/callback`;
 
-    const result = getAuthorizationUrl(user.id, redirectUri, { reconnect });
+    const result = await getAuthorizationUrl(user.id, redirectUri, { reconnect });
 
     if (result.error) {
       log('Error generating auth URL:', result.errorMessage);

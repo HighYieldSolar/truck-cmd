@@ -234,7 +234,7 @@ export default function QuickBooksSettings() {
     {
       id: 'mapping',
       name: 'Smart Category Mapping',
-      description: 'Auto-map your expense categories to QB accounts',
+      description: 'Auto-map your expense categories to QuickBooks accounts',
       icon: Wand2,
       action: () => setShowMappingModal(true),
       active: !!connection
@@ -560,7 +560,7 @@ export default function QuickBooksSettings() {
                   </h5>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      { icon: Receipt, name: 'Expense Sync', desc: 'Push expenses as QB purchases' },
+                      { icon: Receipt, name: 'Expense Sync', desc: 'Push expenses as QuickBooks purchases' },
                       { icon: Wand2, name: 'Auto-Mapping', desc: 'Smart category-to-account mapping' },
                       { icon: Zap, name: 'Auto-Sync', desc: 'Sync automatically on create' },
                       { icon: Upload, name: 'Bulk Sync', desc: 'Sync multiple expenses at once' }

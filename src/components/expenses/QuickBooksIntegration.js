@@ -472,7 +472,7 @@ export default function QuickBooksIntegration({ onSyncComplete }) {
               {/* Feature highlights */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { icon: Receipt, label: 'Expense Sync', desc: 'Push to QB automatically' },
+                  { icon: Receipt, label: 'Expense Sync', desc: 'Push to QuickBooks automatically' },
                   { icon: Upload, label: 'Bulk Sync', desc: 'Sync multiple at once' },
                   { icon: Zap, label: 'Auto-Sync', desc: 'Sync on create' },
                   { icon: Settings, label: 'Smart Mapping', desc: 'Auto category mapping' }

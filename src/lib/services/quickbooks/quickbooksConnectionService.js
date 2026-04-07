@@ -8,14 +8,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { getOAuthEndpoints } from './quickbooksDiscovery';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/connection]', ...args);
-
-// QuickBooks OAuth endpoints
-const QB_AUTH_ENDPOINT = 'https://appcenter.intuit.com/connect/oauth2';
-const QB_TOKEN_ENDPOINT = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
-const QB_REVOKE_ENDPOINT = 'https://developer.api.intuit.com/v2/oauth2/tokens/revoke';
 
 // Environment-based API URL
 const QB_API_BASE = process.env.QUICKBOOKS_ENVIRONMENT === 'production'
@@ -65,7 +61,7 @@ export function decodeState(stateParam) {
  * @param {Object} options - Additional options (reconnect, etc.)
  * @returns {Object} { authUrl, state } or { error, errorMessage }
  */
-export function getAuthorizationUrl(userId, redirectUri, options = {}) {
+export async function getAuthorizationUrl(userId, redirectUri, options = {}) {
   try {
     const clientId = process.env.QUICKBOOKS_CLIENT_ID;
 
@@ -75,6 +71,9 @@ export function getAuthorizationUrl(userId, redirectUri, options = {}) {
         errorMessage: 'QuickBooks client ID not configured'
       };
     }
+
+    // Get endpoints from Intuit discovery document
+    const endpoints = await getOAuthEndpoints();
 
     // Build state with user info and timestamp for CSRF protection
     const state = encodeState({
@@ -92,7 +91,7 @@ export function getAuthorizationUrl(userId, redirectUri, options = {}) {
       'email'
     ].join(' ');
 
-    // Build authorization URL
+    // Build authorization URL using discovery endpoint
     const params = new URLSearchParams({
       client_id: clientId,
       response_type: 'code',
@@ -101,7 +100,7 @@ export function getAuthorizationUrl(userId, redirectUri, options = {}) {
       state: state
     });
 
-    const authUrl = `${QB_AUTH_ENDPOINT}?${params.toString()}`;
+    const authUrl = `${endpoints.authEndpoint}?${params.toString()}`;
 
     log('Generated OAuth URL for user:', userId);
 
@@ -136,11 +135,14 @@ async function exchangeCodeForTokens(code, redirectUri) {
     };
   }
 
+  // Get token endpoint from Intuit discovery document
+  const endpoints = await getOAuthEndpoints();
+
   // Build Basic auth header
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   try {
-    const response = await fetch(QB_TOKEN_ENDPOINT, {
+    const response = await fetch(endpoints.tokenEndpoint, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -154,13 +156,16 @@ async function exchangeCodeForTokens(code, redirectUri) {
       })
     });
 
+    // Capture intuit_tid for debugging/support
+    const intuitTid = response.headers.get('intuit_tid');
     const data = await response.json();
 
     if (!response.ok) {
-      log('Token exchange failed:', data);
+      log('Token exchange failed:', data, 'intuit_tid:', intuitTid);
       return {
         error: true,
-        errorMessage: data.error_description || data.error || 'Token exchange failed'
+        errorMessage: data.error_description || data.error || 'Token exchange failed',
+        intuit_tid: intuitTid
       };
     }
 
@@ -168,7 +173,8 @@ async function exchangeCodeForTokens(code, redirectUri) {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       expiresIn: data.expires_in, // seconds until access token expires (3600)
-      refreshTokenExpiresIn: data.x_refresh_token_expires_in // seconds (8726400 = 100 days)
+      refreshTokenExpiresIn: data.x_refresh_token_expires_in, // seconds (8726400 = 100 days)
+      intuit_tid: intuitTid
     };
 
   } catch (error) {
@@ -197,8 +203,11 @@ async function fetchCompanyInfo(accessToken, realmId) {
       }
     });
 
+    // Capture intuit_tid for debugging/support
+    const intuitTid = response.headers.get('intuit_tid');
+
     if (!response.ok) {
-      log('Failed to fetch company info');
+      log('Failed to fetch company info, intuit_tid:', intuitTid);
       return null;
     }
 
@@ -415,7 +424,10 @@ export async function refreshTokens(connectionId) {
     const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-    const response = await fetch(QB_TOKEN_ENDPOINT, {
+    // Get token endpoint from Intuit discovery document
+    const endpoints = await getOAuthEndpoints();
+
+    const response = await fetch(endpoints.tokenEndpoint, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -428,10 +440,12 @@ export async function refreshTokens(connectionId) {
       })
     });
 
+    // Capture intuit_tid for debugging/support
+    const intuitTid = response.headers.get('intuit_tid');
     const data = await response.json();
 
     if (!response.ok) {
-      log('Token refresh failed:', data);
+      log('Token refresh failed:', data, 'intuit_tid:', intuitTid);
 
       // Update connection status to token_expired
       await supabaseAdmin
@@ -518,7 +532,10 @@ export async function disconnectConnection(userId) {
       const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
       const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-      await fetch(QB_REVOKE_ENDPOINT, {
+      // Get revocation endpoint from Intuit discovery document
+      const endpoints = await getOAuthEndpoints();
+
+      await fetch(endpoints.revokeEndpoint, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

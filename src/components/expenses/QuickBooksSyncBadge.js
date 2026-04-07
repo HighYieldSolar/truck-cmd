@@ -173,10 +173,10 @@ export default function QuickBooksSyncBadge({
 
           {/* Content */}
           <div className="p-3 space-y-2">
-            {/* QB Entity ID */}
+            {/* QuickBooks Entity ID */}
             {qbEntityId && (
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500 dark:text-gray-400">QB ID:</span>
+                <span className="text-gray-500 dark:text-gray-400">QuickBooks ID:</span>
                 <span className="font-mono text-gray-700 dark:text-gray-300">
                   {qbEntityId}
                 </span>
@@ -219,7 +219,7 @@ export default function QuickBooksSyncBadge({
                   ) : (
                     <>
                       <Upload className="h-3 w-3" />
-                      Sync to QB
+                      Sync to QuickBooks
                     </>
                   )}
                 </button>
@@ -234,7 +234,7 @@ export default function QuickBooksSyncBadge({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="h-3 w-3" />
-                  View in QB
+                  View in QuickBooks
                 </a>
               )}
             </div>

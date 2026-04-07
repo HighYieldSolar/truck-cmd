@@ -93,8 +93,43 @@ export async function createClientWithRefresh(connectionId) {
   }
 }
 
+// Retryable HTTP status codes (per Intuit best practices)
+const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
+
+// Max retries and backoff config
+const MAX_RETRIES = 3;
+const BASE_BACKOFF_MS = 1000; // 1s, 2s, 4s exponential
+
 /**
- * Execute a QuickBooks API call with error handling and retry
+ * Sleep for a given number of milliseconds
+ * @param {number} ms - Milliseconds to sleep
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Extract intuit_tid from an error response for logging/support
+ * @param {Object} apiError - Error from QuickBooks API
+ * @returns {string|null} The intuit_tid value if available
+ */
+function extractIntuitTid(apiError) {
+  return apiError?.headers?.intuit_tid
+    || apiError?.intuit_tid
+    || apiError?.response?.headers?.get?.('intuit_tid')
+    || null;
+}
+
+/**
+ * Execute a QuickBooks API call with error handling, intuit_tid capture,
+ * rate limit backoff, and automatic retry for transient errors.
+ *
+ * Retry policy (per Intuit best practices):
+ * - Max 3 retries with exponential backoff (1s, 2s, 4s)
+ * - Retryable: 408, 429, 500, 502, 503, 504
+ * - Auth errors (401): refresh token once, retry once
+ * - All responses capture intuit_tid for Intuit support debugging
+ *
  * @param {string} connectionId - Connection ID
  * @param {Function} apiCall - Function that takes (client) and returns a promise
  * @returns {Object} API result or error
@@ -107,45 +142,103 @@ export async function executeWithRetry(connectionId, apiCall) {
       return { error: true, errorMessage };
     }
 
-    // Execute the API call
-    try {
-      const result = await apiCall(client);
-      return { success: true, data: result };
+    let lastError = null;
 
-    } catch (apiError) {
-      log('API call failed:', apiError);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const result = await apiCall(client);
 
-      // Check if it's an auth error
-      if (apiError.statusCode === 401 || apiError.code === 'TOKEN_EXPIRED') {
-        // Try refreshing token and retrying once
-        log('Auth error, attempting token refresh...');
-        const refreshResult = await refreshTokens(connectionId);
-
-        if (refreshResult.error) {
-          await updateConnectionStatus(connectionId, 'token_expired', 'Authentication failed');
-          return { error: true, errorMessage: 'Authentication failed. Please reconnect to QuickBooks.' };
+        // Capture intuit_tid from successful responses if available
+        const intuitTid = result?.headers?.intuit_tid || null;
+        if (intuitTid) {
+          log('API call success, intuit_tid:', intuitTid);
         }
 
-        // Retry with new token
-        const { client: newClient } = await createClientWithRefresh(connectionId);
-        if (newClient) {
-          try {
-            const retryResult = await apiCall(newClient);
-            return { success: true, data: retryResult };
-          } catch (retryError) {
-            log('Retry failed:', retryError);
-            return { error: true, errorMessage: retryError.message || 'API call failed after retry' };
+        return { success: true, data: result };
+
+      } catch (apiError) {
+        lastError = apiError;
+        const intuitTid = extractIntuitTid(apiError);
+        const statusCode = apiError.statusCode || apiError.status;
+
+        log(`API call failed (attempt ${attempt + 1}/${MAX_RETRIES + 1}):`,
+          apiError.message || apiError,
+          'intuit_tid:', intuitTid,
+          'status:', statusCode
+        );
+
+        // Auth errors: refresh token and retry once (don't count as retryable)
+        if (statusCode === 401 || apiError.code === 'TOKEN_EXPIRED') {
+          log('Auth error, attempting token refresh...');
+          const refreshResult = await refreshTokens(connectionId);
+
+          if (refreshResult.error) {
+            await updateConnectionStatus(connectionId, 'token_expired', 'Authentication failed');
+            return {
+              error: true,
+              errorMessage: 'Authentication failed. Please reconnect to QuickBooks.',
+              intuit_tid: intuitTid
+            };
           }
+
+          // Retry with new token (one attempt only for auth)
+          const { client: newClient } = await createClientWithRefresh(connectionId);
+          if (newClient) {
+            try {
+              const retryResult = await apiCall(newClient);
+              return { success: true, data: retryResult };
+            } catch (retryError) {
+              const retryTid = extractIntuitTid(retryError);
+              log('Auth retry failed, intuit_tid:', retryTid);
+              return {
+                error: true,
+                errorMessage: retryError.message || 'API call failed after token refresh',
+                intuit_tid: retryTid
+              };
+            }
+          }
+          break;
         }
-      }
 
-      // Handle rate limiting
-      if (apiError.statusCode === 429) {
-        return { error: true, errorMessage: 'Rate limit exceeded. Please try again later.', retryAfter: 60 };
-      }
+        // Rate limiting (429): use Retry-After header if available, else exponential backoff
+        if (statusCode === 429) {
+          if (attempt < MAX_RETRIES) {
+            const retryAfter = apiError.headers?.['retry-after'];
+            const backoffMs = retryAfter
+              ? parseInt(retryAfter, 10) * 1000
+              : BASE_BACKOFF_MS * Math.pow(2, attempt);
+            log(`Rate limited (429). Backing off ${backoffMs}ms before retry...`);
+            await sleep(backoffMs);
+            continue;
+          }
+          return {
+            error: true,
+            errorMessage: 'QuickBooks rate limit exceeded. Please try again later.',
+            intuit_tid: intuitTid,
+            retryAfter: 60
+          };
+        }
 
-      return { error: true, errorMessage: apiError.message || 'QuickBooks API call failed' };
+        // Transient server errors: retry with exponential backoff
+        if (RETRYABLE_STATUS_CODES.includes(statusCode) && attempt < MAX_RETRIES) {
+          const backoffMs = BASE_BACKOFF_MS * Math.pow(2, attempt);
+          log(`Transient error (${statusCode}). Backing off ${backoffMs}ms before retry...`);
+          await sleep(backoffMs);
+          continue;
+        }
+
+        // Non-retryable error, break immediately
+        break;
+      }
     }
+
+    // All retries exhausted
+    const intuitTid = extractIntuitTid(lastError);
+    return {
+      error: true,
+      errorMessage: lastError?.message || 'QuickBooks API call failed',
+      intuit_tid: intuitTid
+    };
 
   } catch (error) {
     log('Execute with retry error:', error);
