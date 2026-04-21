@@ -174,7 +174,7 @@ export default function SmsConsentPage() {
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  {isSubmitting ? "Saving..." : "Yes, Enable Optional SMS Notifications"}
+                  {isSubmitting ? "Saving..." : "Enable Optional SMS Notifications (you can skip — not required)"}
                 </button>
 
                 <p className="text-center text-sm text-gray-600 font-medium">
