@@ -162,6 +162,9 @@ export class BaseELDProvider {
     this.accessToken = config.accessToken || null;
     this.refreshToken = config.refreshToken || null;
     this.tokenExpiresAt = config.tokenExpiresAt || null;
+    // Response formatting preferences; used as default request headers.
+    this.timeZone = config.timeZone || 'UTC';
+    this.metricUnits = config.metricUnits === true;
   }
 
   /**
@@ -340,6 +343,11 @@ export class BaseELDProvider {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      // Motive-specific headers that make responses deterministic. Unknown headers
+      // are ignored by other providers (Samsara), so this is safe to apply globally.
+      // Override per-request via options.headers if needed.
+      'X-Time-Zone': this.timeZone || 'UTC',
+      'X-Metric-Units': this.metricUnits ? 'true' : 'false',
       ...options.headers
     };
 

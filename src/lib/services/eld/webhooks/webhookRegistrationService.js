@@ -36,15 +36,13 @@ function getWebhookEndpoint(provider) {
  */
 const MOTIVE_WEBHOOK_EVENTS = [
   'vehicle_location_updated',    // GPS updates
-  'user_duty_status_updated',    // HOS status changes
+  'user_duty_status_updated',    // HOS status changes (V2)
   'hos_violation_upserted',      // HOS violations
   'fault_code_opened',           // New fault codes
   'fault_code_closed',           // Resolved fault codes
   'vehicle_geofence_event',      // Geofence entry/exit
-  'driver_created',              // New driver added
-  'driver_updated',              // Driver info changed
-  'vehicle_created',             // New vehicle added
-  'vehicle_updated',             // Vehicle info changed
+  'user_upserted',               // Driver/user created or updated (trigger field distinguishes)
+  'vehicle_upserted',            // Vehicle created or updated (trigger field distinguishes)
 ];
 
 /**
@@ -107,18 +105,20 @@ export async function registerMotiveWebhook(accessToken, events = MOTIVE_WEBHOOK
     }
 
     // Register new webhook
-    const response = await fetch(`${MOTIVE_API_BASE}/webhooks`, {
+    // NOTE: Motive endpoint is /v1/company_webhooks (not /v1/webhooks).
+    // Body shape is flat with `actions` (not wrapped in `webhook` with `events`).
+    // Docs: https://developer-docs.gomotive.com/reference/overview-company-webhooks
+    const response = await fetch(`${MOTIVE_API_BASE}/company_webhooks`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        webhook: {
-          url: webhookUrl,
-          events: events,
-          enabled: true,
-        }
+        url: webhookUrl,
+        actions: events,
+        enabled: true,
+        format: 'json',
       }),
     });
 
@@ -128,15 +128,15 @@ export async function registerMotiveWebhook(accessToken, events = MOTIVE_WEBHOOK
     }
 
     const data = await response.json();
-    console.log('[MotiveWebhook] Webhook registered:', data.webhook?.id);
+    console.log('[MotiveWebhook] Webhook registered:', data.company_webhook?.id);
 
     return {
       success: true,
       provider: 'motive',
-      webhookId: data.webhook?.id,
+      webhookId: data.company_webhook?.id,
       url: webhookUrl,
       events: events,
-      secret: data.webhook?.secret, // Save this for signature validation
+      secret: data.company_webhook?.secret, // Save this for signature validation
     };
   } catch (error) {
     console.error('[MotiveWebhook] Registration error:', error);
@@ -152,7 +152,7 @@ export async function registerMotiveWebhook(accessToken, events = MOTIVE_WEBHOOK
  */
 export async function listMotiveWebhooks(accessToken) {
   try {
-    const response = await fetch(`${MOTIVE_API_BASE}/webhooks`, {
+    const response = await fetch(`${MOTIVE_API_BASE}/company_webhooks`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -165,7 +165,8 @@ export async function listMotiveWebhooks(accessToken) {
     }
 
     const data = await response.json();
-    return data.webhooks || [];
+    // Motive returns `company_webhooks` array; unwrap to match our simpler shape
+    return (data.company_webhooks || []).map(item => item.company_webhook || item);
   } catch (error) {
     console.error('[MotiveWebhook] List error:', error);
     return [];
@@ -182,17 +183,15 @@ export async function listMotiveWebhooks(accessToken) {
  */
 export async function updateMotiveWebhook(accessToken, webhookId, events) {
   try {
-    const response = await fetch(`${MOTIVE_API_BASE}/webhooks/${webhookId}`, {
-      method: 'PATCH',
+    const response = await fetch(`${MOTIVE_API_BASE}/company_webhooks/${webhookId}`, {
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        webhook: {
-          events: events,
-          enabled: true,
-        }
+        actions: events,
+        enabled: true,
       }),
     });
 
@@ -200,7 +199,7 @@ export async function updateMotiveWebhook(accessToken, webhookId, events) {
       throw new Error(`Failed to update Motive webhook: ${response.status}`);
     }
 
-    const data = await response.json();
+    await response.json();
     return {
       success: true,
       provider: 'motive',
@@ -223,7 +222,7 @@ export async function updateMotiveWebhook(accessToken, webhookId, events) {
  */
 export async function deleteMotiveWebhook(accessToken, webhookId) {
   try {
-    const response = await fetch(`${MOTIVE_API_BASE}/webhooks/${webhookId}`, {
+    const response = await fetch(`${MOTIVE_API_BASE}/company_webhooks/${webhookId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

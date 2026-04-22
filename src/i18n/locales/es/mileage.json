@@ -5,6 +5,90 @@
   "iftaCalculator": "Calculadora IFTA",
   "iftaCompliant": "Compatible con IFTA",
 
+  "hero": {
+    "eyebrow": "IFTA · Millaje por Estado",
+    "title": "Registre millas por jurisdicción",
+    "subtitle": "Automático vía su ELD, con registro manual cuando lo necesite."
+  },
+
+  "helpLink": "¿Qué método debo usar?",
+
+  "tabsV2": {
+    "automated": "Automático",
+    "manual": "Registro manual",
+    "automatedSubConnected": "Sincronización ELD",
+    "automatedSubDisconnected": "No conectado",
+    "manualSub": "Siempre disponible",
+    "badgeLive": "EN VIVO",
+    "badgeSetup": "CONFIGURACIÓN REQUERIDA",
+    "badgeManualSuffix": "viajes"
+  },
+
+  "eldHero": {
+    "cardTitleDefault": "Proveedor ELD",
+    "liveBadge": "En vivo",
+    "syncedAgo": "sincronizado hace {{when}}",
+    "connectedInfo": "{{vehicles}} vehículos reportando · Sincronización automática cada 15 min",
+    "syncNow": "Sincronizar ahora",
+    "syncing": "Sincronizando...",
+    "totalMilesLabel": "Millas totales",
+    "totalMilesSub": "{{quarter}} registrado",
+    "jurisdictionsLabel": "Jurisdicciones",
+    "jurisdictionsSub": "estados cruzados",
+    "gpsPointsLabel": "Puntos GPS",
+    "gpsPointsSub": "rastros",
+    "lastSyncLabel": "Última sincronización",
+    "lastSyncSub": "automática cada 15 min",
+    "never": "Nunca",
+    "footerInfo": "Se importa como registros de jurisdicción para {{quarter}}. Puede revisar y ajustar antes de declarar.",
+    "previewImport": "Vista previa",
+    "syncWithIfta": "Sincronizar con IFTA",
+    "importing": "Importando...",
+    "importSuccess": "Se importaron {{count}} registros de millaje exitosamente"
+  },
+
+  "comparison": {
+    "title": "ELD vs. Manual",
+    "subtitle": "Reconciliación",
+    "eldLabel": "ELD",
+    "manualLabel": "Manual",
+    "varianceLabel": "Varianza",
+    "noVariance": "Sin varianza",
+    "reviewRecommended": "Se recomienda revisar",
+    "viewDetails": "Ver detalles"
+  },
+
+  "notConnected": {
+    "badge": "RECOMENDADO",
+    "title": "Conecte su ELD para evitar las hojas de cálculo",
+    "description": "Extraeremos las millas por jurisdicción automáticamente cada 15 minutos. La mayoría de las flotas se configuran en menos de 10 minutos.",
+    "connectCta": "Conectar proveedor ELD",
+    "valueProp1": "Las millas por jurisdicción se actualizan automáticamente desde los rastros GPS",
+    "valueProp2": "Revise y ajuste antes de declarar — nada se envía automáticamente",
+    "valueProp3": "La entrada manual sigue disponible para viajes pre-ELD y correcciones",
+    "supportedTitle": "ELDS COMPATIBLES",
+    "preferManualTitle": "¿Prefiere registrar manualmente?",
+    "preferManualDescription": "Puede omitir la conexión y registrar viajes a mano.",
+    "useManual": "Usar registro manual"
+  },
+
+  "noData": {
+    "banner": "{{provider}} conectado · sincronizando",
+    "title": "No hay millas registradas para {{quarter}} aún",
+    "description": "Su ELD está conectado y publicará viajes tan pronto como se cierren. También puede registrar un viaje manualmente.",
+    "logManual": "Registrar un viaje manualmente"
+  },
+
+  "manualInfo": {
+    "banner": "Los viajes manuales se agregan a sus totales de ELD para el trimestre — útil para viajes pre-ELD, conducción personal o correcciones."
+  },
+
+  "eldPremiumRequired": {
+    "title": "Importación automática de millaje ELD",
+    "description": "Importe millaje estado por estado directamente desde su ELD. Requiere plan Premium o superior.",
+    "upgrade": "Mejorar a Premium"
+  },
+
   "featurePreview": {
     "title": "Lo que obtendrá con el Rastreador de Millaje por Estado:",
     "activeTripRecording": "Grabación de viajes activos con cruces de fronteras estatales",
@@ -192,6 +276,7 @@
     "deleteCrossing": "Error al eliminar cruce. Por favor intente de nuevo.",
     "endTrip": "Error al finalizar viaje. Por favor intente de nuevo.",
     "authError": "Error de autenticación. Por favor inicie sesión de nuevo.",
-    "importIfta": "Error al importar a calculadora IFTA. Por favor intente de nuevo."
+    "importIfta": "Error al importar a calculadora IFTA. Por favor intente de nuevo.",
+    "importFailed": "Importación fallida"
   }
 }

@@ -116,9 +116,15 @@ export async function POST(request) {
 
     const { reconnect } = body;
 
-    // Get OAuth authorization URL
-    // Use NEXT_PUBLIC_URL for local dev, NEXT_PUBLIC_APP_URL for production
-    const baseUrl = process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Get OAuth authorization URL.
+    // Prefer NEXT_PUBLIC_APP_URL (canonical production domain) — fall back to
+    // NEXT_PUBLIC_URL (legacy) and localhost for dev. Strip any trailing slash
+    // so the redirect URI matches what Intuit has on file exactly.
+    const rawBaseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_URL ||
+      'http://localhost:3000';
+    const baseUrl = rawBaseUrl.replace(/\/+$/, '');
     const redirectUri = `${baseUrl}/api/quickbooks/callback`;
 
     const result = await getAuthorizationUrl(user.id, redirectUri, { reconnect });

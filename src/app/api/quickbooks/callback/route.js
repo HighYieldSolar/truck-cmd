@@ -49,7 +49,7 @@ export async function GET(request) {
     const errorDescription = searchParams.get('error_description');
 
     // Get the base URL for redirects
-    const baseUrl = process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
     // Redirect to expenses page since that's where QB integration lives
     const redirectBase = `${baseUrl}/dashboard/expenses`;
@@ -172,7 +172,7 @@ export async function GET(request) {
 
   } catch (error) {
     log('Callback error:', error);
-    const baseUrl = process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000').replace(/\/+$/, '');
     return NextResponse.redirect(
       `${baseUrl}/dashboard/expenses?qb_error=${encodeURIComponent('Connection failed. Please try again.')}`
     );

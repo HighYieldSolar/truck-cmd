@@ -96,18 +96,26 @@ async function findConnectionFromPayload(payload) {
       }
     }
 
-    // Fall back to finding any active Motive connection (for initial setup)
-    // This allows webhooks to work before entity mappings are created
-    const { data: connections } = await supabase
-      .from('eld_connections')
-      .select('id, user_id, metadata')
-      .eq('provider', 'motive')
-      .eq('status', 'active')
-      .limit(1);
+    // MULTI-TENANT SAFETY: Do NOT fall back to "any active Motive connection" in
+    // production. That fallback can route one customer's webhook to another
+    // customer's data. Only allow the fallback in development for initial setup
+    // before entity mappings exist.
+    if (process.env.NODE_ENV === 'development') {
+      const { data: connections } = await supabase
+        .from('eld_connections')
+        .select('id, user_id, metadata')
+        .eq('provider', 'motive')
+        .eq('status', 'active')
+        .limit(1);
 
-    if (connections && connections.length > 0) {
-      log('Using fallback connection lookup');
-      return { connectionId: connections[0].id, userId: connections[0].user_id, webhookSecret: connections[0].metadata?.webhook_secret };
+      if (connections && connections.length > 0) {
+        log('Using dev-only fallback connection lookup');
+        return {
+          connectionId: connections[0].id,
+          userId: connections[0].user_id,
+          webhookSecret: connections[0].metadata?.webhook_secret
+        };
+      }
     }
 
     return null;
@@ -172,9 +180,11 @@ export async function POST(request) {
         error: validation.error
       });
 
+      // 403 (not 401) signals terminal rejection to Motive — prevents indefinite retry.
+      // Per Motive webhook docs: 403 = signature verification failed, no retry.
       return NextResponse.json(
         { error: 'Invalid signature' },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -260,12 +270,25 @@ export async function POST(request) {
           result = { processed: true, type: 'geofence', skipped: true };
           break;
 
+        case 'user_upserted':
+        case 'vehicle_upserted':
+          // Motive's "upserted" events use a `trigger` field to distinguish create/update.
+          // Queue for background entity sync; the hourly cron picks up changes.
+          result = {
+            processed: true,
+            type: 'entity_sync',
+            queued: true,
+            trigger: payload.trigger || null
+          };
+          break;
+
+        // Legacy event names kept for one release as backward-compat aliases.
+        // Motive's real event names are `user_upserted` / `vehicle_upserted`.
         case 'driver_created':
         case 'driver_updated':
         case 'vehicle_created':
         case 'vehicle_updated':
-          // Entity sync events - queue for background sync
-          result = { processed: true, type: 'entity_sync', queued: true };
+          result = { processed: true, type: 'entity_sync', queued: true, legacy: true };
           break;
 
         default:

@@ -5,6 +5,90 @@
   "iftaCalculator": "IFTA Calculator",
   "iftaCompliant": "IFTA Compliant",
 
+  "hero": {
+    "eyebrow": "IFTA · State Mileage",
+    "title": "Track miles by jurisdiction",
+    "subtitle": "Automated via your ELD, with manual logging when you need it."
+  },
+
+  "helpLink": "Which method should I use?",
+
+  "tabsV2": {
+    "automated": "Automated",
+    "manual": "Manual trip log",
+    "automatedSubConnected": "ELD sync",
+    "automatedSubDisconnected": "Not connected",
+    "manualSub": "Always available",
+    "badgeLive": "LIVE",
+    "badgeSetup": "SETUP REQUIRED",
+    "badgeManualSuffix": "trips"
+  },
+
+  "eldHero": {
+    "cardTitleDefault": "ELD Provider",
+    "liveBadge": "Live",
+    "syncedAgo": "synced {{when}}",
+    "connectedInfo": "{{vehicles}} vehicles reporting · Auto-sync every 15 min",
+    "syncNow": "Sync now",
+    "syncing": "Syncing...",
+    "totalMilesLabel": "Total miles",
+    "totalMilesSub": "{{quarter}} tracked",
+    "jurisdictionsLabel": "Jurisdictions",
+    "jurisdictionsSub": "states crossed",
+    "gpsPointsLabel": "GPS points",
+    "gpsPointsSub": "breadcrumbs",
+    "lastSyncLabel": "Last sync",
+    "lastSyncSub": "auto every 15 min",
+    "never": "Never",
+    "footerInfo": "Imports as jurisdiction records for {{quarter}}. You can review and adjust before filing.",
+    "previewImport": "Preview import",
+    "syncWithIfta": "Sync with IFTA",
+    "importing": "Importing...",
+    "importSuccess": "Successfully imported {{count}} mileage records"
+  },
+
+  "comparison": {
+    "title": "ELD vs. Manual",
+    "subtitle": "Reconciliation",
+    "eldLabel": "ELD",
+    "manualLabel": "Manual",
+    "varianceLabel": "Variance",
+    "noVariance": "No variance",
+    "reviewRecommended": "Review recommended",
+    "viewDetails": "View details"
+  },
+
+  "notConnected": {
+    "badge": "RECOMMENDED",
+    "title": "Connect your ELD to skip the spreadsheet",
+    "description": "We'll pull jurisdiction miles automatically every 15 minutes. Most fleets are set up in under 10 minutes.",
+    "connectCta": "Connect ELD provider",
+    "valueProp1": "Miles per jurisdiction update automatically from GPS breadcrumbs",
+    "valueProp2": "Review and adjust before filing — nothing auto-submits",
+    "valueProp3": "Manual entry stays available for pre-ELD trips and corrections",
+    "supportedTitle": "SUPPORTED ELDS",
+    "preferManualTitle": "Prefer to log manually?",
+    "preferManualDescription": "You can skip the connection and track trips by hand.",
+    "useManual": "Use manual logging"
+  },
+
+  "noData": {
+    "banner": "{{provider}} connected · syncing",
+    "title": "No miles recorded for {{quarter}} yet",
+    "description": "Your ELD is connected and will post trips as soon as they close. You can also log a trip manually.",
+    "logManual": "Log a trip manually"
+  },
+
+  "manualInfo": {
+    "banner": "Manual trips are added to your ELD totals for the quarter — useful for pre-ELD trips, personal conveyance, or corrections."
+  },
+
+  "eldPremiumRequired": {
+    "title": "Automatic ELD mileage import",
+    "description": "Import state-by-state mileage directly from your ELD. Requires Premium plan or higher.",
+    "upgrade": "Upgrade to Premium"
+  },
+
   "featurePreview": {
     "title": "What you'll get with State Mileage Tracker:",
     "activeTripRecording": "Active trip recording with state border crossings",
@@ -192,6 +276,7 @@
     "deleteCrossing": "Failed to delete crossing. Please try again.",
     "endTrip": "Failed to end trip. Please try again.",
     "authError": "Authentication error. Please try logging in again.",
-    "importIfta": "Failed to import to IFTA calculator. Please try again."
+    "importIfta": "Failed to import to IFTA calculator. Please try again.",
+    "importFailed": "Import failed"
   }
 }

@@ -20,6 +20,17 @@ const log = (...args) => DEBUG && console.log('[MotiveProvider]', ...args);
 // Production logging for API responses
 const apiLog = (...args) => console.log('[MotiveAPI]', ...args);
 
+/**
+ * Build the OAuth redirect URI for this deployment.
+ * Token refresh requests require this per Motive docs, so we compute it eagerly.
+ */
+function getDefaultRedirectUri() {
+  const baseUrl = process.env.NODE_ENV === 'development'
+    ? (process.env.NEXT_PUBLIC_URL || 'http://localhost:3000')
+    : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
+  return `${baseUrl}/api/eld/callback`;
+}
+
 export class MotiveProvider extends BaseELDProvider {
   constructor(config = {}) {
     super(config);
@@ -28,6 +39,8 @@ export class MotiveProvider extends BaseELDProvider {
     this.clientId = config.clientId || process.env.MOTIVE_CLIENT_ID;
     this.clientSecret = config.clientSecret || process.env.MOTIVE_CLIENT_SECRET;
     this.apiKey = config.apiKey || process.env.MOTIVE_API_KEY;
+    // Redirect URI is needed for refresh token requests per Motive docs.
+    this.redirectUri = config.redirectUri || getDefaultRedirectUri();
   }
 
   /**
@@ -128,6 +141,8 @@ export class MotiveProvider extends BaseELDProvider {
       throw new ELDAuthError('No refresh token available');
     }
 
+    // Motive's token endpoint requires redirect_uri on refresh_token grants.
+    // Omitting it works today but is documented as required; avoid silent breakage.
     const response = await fetch(MOTIVE_TOKEN_URL, {
       method: 'POST',
       headers: {
@@ -136,6 +151,7 @@ export class MotiveProvider extends BaseELDProvider {
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: this.refreshToken,
+        redirect_uri: this.redirectUri,
         client_id: this.clientId,
         client_secret: this.clientSecret
       })
@@ -159,27 +175,35 @@ export class MotiveProvider extends BaseELDProvider {
   }
 
   /**
-   * Verify connection is valid
-   * Uses /users endpoint with per_page=1 to verify token works
+   * Verify connection is valid by calling /v1/companies.
+   *
+   * Motive's developer guide explicitly recommends /v1/companies as the first
+   * API call after OAuth — it returns the authoritative company info tied to
+   * the access token. The returned `company.id` is the canonical value used to
+   * match incoming webhook payloads (payload.company_id), which is far more
+   * reliable than the prior approach of pulling `carrier_company_id` off a
+   * best-effort admin user lookup.
    */
   async verifyConnection() {
     try {
-      // Motive doesn't have a /users/me endpoint
-      // Use /users with per_page=1 to verify the token works
-      const response = await this.request(`${this.baseUrl}/users?per_page=1&role=admin`);
+      const response = await this.request(`${this.baseUrl}/companies`);
 
-      // Extract company info from the first admin user if available
-      const firstUser = response.users?.[0]?.user;
-      const companyName = firstUser?.carrier_name || 'Unknown';
-      // Extract company_id for webhook matching
-      const companyId = firstUser?.carrier_company_id || firstUser?.company_id || firstUser?.id;
+      // Motive wraps the company in a `company` key; handle both wrapped and unwrapped
+      const company = response.company || response.companies?.[0]?.company || response;
+      const companyId = company?.id;
+      const companyName = company?.name || company?.dot_number || 'Unknown';
 
-      log('Connection verified successfully, company:', companyName, 'companyId:', companyId);
+      if (!companyId) {
+        log('verifyConnection: /v1/companies returned no company id', response);
+        return { valid: false };
+      }
+
+      log('Connection verified via /v1/companies — company:', companyName, 'id:', companyId);
 
       return {
         valid: true,
         companyName,
-        companyId: companyId?.toString(),
+        companyId: companyId.toString(),
         eldProvider: 'Motive'
       };
     } catch (error) {
@@ -210,17 +234,26 @@ export class MotiveProvider extends BaseELDProvider {
             name: v.number || v.name || `Vehicle ${v.id}`,
             vin: v.vin,
             licensePlate: v.license_plate_number,
+            licensePlateState: v.license_plate_state,
             make: v.make,
             model: v.model,
             year: v.year?.toString(),
+            // Note: /v1/vehicles does not include odometer/engine hours — those
+            // live on the location endpoints. Keep these fields for shape
+            // compatibility; they will be undefined here and populated via sync.
             odometerMiles: v.current_odometer,
             engineHours: v.engine_hours,
             status: v.status || 'active',
             metadata: {
               provider: 'motive',
               eldDeviceId: v.eld_device?.id,
-              eldDeviceSerial: v.eld_device?.serial_number,
-              fuelType: v.fuel_type
+              // Motive documents this as `identifier` on eld_device, not serial_number
+              eldDeviceIdentifier: v.eld_device?.identifier,
+              eldDeviceModel: v.eld_device?.model,
+              fuelType: v.fuel_type,
+              ifta: v.ifta,
+              currentDriverId: v.current_driver?.id?.toString(),
+              registrationExpiryDate: v.registration_expiry_date
             }
           });
         }
@@ -258,13 +291,17 @@ export class MotiveProvider extends BaseELDProvider {
             lastName: d.last_name,
             email: d.email,
             phone: d.phone,
-            licenseNumber: d.driver_license_number,
-            licenseState: d.driver_license_state,
+            // Motive's documented field names include the `s`: drivers_license_*
+            licenseNumber: d.drivers_license_number,
+            licenseState: d.drivers_license_state,
             status: d.status || 'active',
             metadata: {
               provider: 'motive',
               username: d.username,
-              driverCompanyId: d.driver_company_id
+              driverCompanyId: d.driver_company_id,
+              role: d.role,
+              dutyStatus: d.duty_status,
+              timeZone: d.time_zone
             }
           });
         }
@@ -624,43 +661,53 @@ export class MotiveProvider extends BaseELDProvider {
 
   /**
    * Fetch IFTA mileage summary by jurisdiction
-   * This is Motive's summary endpoint - pre-aggregated data!
+   * This is Motive's summary endpoint — pre-aggregated data.
+   * Paginated to support fleets with >100 vehicles.
    */
   async fetchIFTASummary(startDate, endDate) {
-    const response = await this.request(
-      `${this.baseUrl}/ifta/summary?start_date=${startDate}&end_date=${endDate}`
-    );
-
-    // Log raw API response structure for debugging
-    apiLog('ifta_summary response keys:', Object.keys(response || {}));
-    apiLog('ifta_summary array length:', response?.ifta_summary?.length || 0);
-
     const summaries = [];
+    let page = 1;
+    let hasMore = true;
 
-    if (response.ifta_summary) {
-      for (const item of response.ifta_summary) {
-        // Motive may wrap each summary - handle both wrapped and unwrapped
-        const summary = item.ifta_summary || item;
-        const jurisdictionsMiles = {};
+    while (hasMore) {
+      const response = await this.request(
+        `${this.baseUrl}/ifta/summary?start_date=${startDate}&end_date=${endDate}&page_no=${page}&per_page=100`
+      );
 
-        if (summary.jurisdiction_breakdown) {
-          for (const jb of summary.jurisdiction_breakdown) {
-            if (jb.jurisdiction) {
-              jurisdictionsMiles[jb.jurisdiction] = jb.distance || 0;
+      if (page === 1) {
+        apiLog('ifta_summary response keys:', Object.keys(response || {}));
+        apiLog('ifta_summary array length:', response?.ifta_summary?.length || 0);
+      }
+
+      if (response?.ifta_summary?.length > 0) {
+        for (const item of response.ifta_summary) {
+          // Motive may wrap each summary — handle both wrapped and unwrapped
+          const summary = item.ifta_summary || item;
+          const jurisdictionsMiles = {};
+
+          if (summary.jurisdiction_breakdown) {
+            for (const jb of summary.jurisdiction_breakdown) {
+              if (jb.jurisdiction) {
+                jurisdictionsMiles[jb.jurisdiction] = jb.distance || 0;
+              }
             }
           }
-        }
 
-        summaries.push({
-          vehicleId: summary.vehicle?.id?.toString(),
-          vehicleName: summary.vehicle?.number,
-          jurisdictionsMiles,
-          totalMiles: summary.total_distance || 0,
-          metadata: {
-            provider: 'motive',
-            fuelType: summary.fuel_type
-          }
-        });
+          summaries.push({
+            vehicleId: summary.vehicle?.id?.toString(),
+            vehicleName: summary.vehicle?.number,
+            jurisdictionsMiles,
+            totalMiles: summary.total_distance || 0,
+            metadata: {
+              provider: 'motive',
+              fuelType: summary.fuel_type
+            }
+          });
+        }
+        page++;
+        hasMore = response.ifta_summary.length === 100;
+      } else {
+        hasMore = false;
       }
     }
 
@@ -687,17 +734,27 @@ export class MotiveProvider extends BaseELDProvider {
           const fault = item.fault_code || item;
           faults.push({
             vehicleId: fault.vehicle?.id?.toString(),
-            code: fault.code,
-            description: fault.description,
-            severity: this.mapFaultSeverity(fault.severity),
-            source: fault.source || 'engine',
+            // Motive's documented response fields differ from our prior guesses:
+            //   description -> code_description
+            //   severity    -> dtc_severity
+            //   source      -> source_address_name (+ source_address_label)
+            //   is_active   -> derived from status === 'open'
+            code: fault.code || fault.code_label,
+            description: fault.code_description,
+            severity: this.mapFaultSeverity(fault.dtc_severity),
+            source: fault.source_address_name || fault.source_address_label || 'engine',
             firstObservedAt: fault.first_observed_at,
             lastObservedAt: fault.last_observed_at,
-            isActive: fault.is_active !== false,
+            isActive: fault.status === 'open',
             metadata: {
               provider: 'motive',
               spn: fault.spn,
-              fmi: fault.fmi
+              fmi: fault.fmi,
+              fmiDescription: fault.fmi_description,
+              type: fault.type,
+              occurrenceCount: fault.occurrence_count,
+              network: fault.network,
+              codeLabel: fault.code_label
             }
           });
         }
@@ -729,20 +786,35 @@ export class MotiveProvider extends BaseELDProvider {
         for (const item of response.fuel_purchases) {
           // Motive wraps each purchase in a 'fuel_purchase' object
           const purchase = item.fuel_purchase || item;
+          // Motive field names for fuel purchases per docs:
+          //   state         -> jurisdiction
+          //   gallons       -> fuel (+ fuel_unit like "gal")
+          //   merchant_name -> vendor
+          //   transaction_date -> purchased_at
+          //   price_per_gallon -> not documented; derive if needed
+          const fuel = purchase.fuel;
+          const totalCost = purchase.total_cost;
+          const pricePerGallon = (fuel && totalCost) ? (totalCost / fuel) : null;
+
           purchases.push({
             vehicleId: purchase.vehicle?.id?.toString(),
             driverId: purchase.driver?.id?.toString(),
-            jurisdiction: purchase.state,
-            gallons: purchase.gallons,
-            totalCost: purchase.total_cost,
-            pricePerGallon: purchase.price_per_gallon,
+            jurisdiction: purchase.jurisdiction,
+            gallons: fuel,
+            totalCost: totalCost,
+            pricePerGallon: pricePerGallon,
             fuelType: purchase.fuel_type || 'diesel',
-            merchantName: purchase.merchant_name,
+            merchantName: purchase.vendor,
             merchantAddress: purchase.merchant_address,
-            transactionDate: purchase.transaction_date,
+            transactionDate: purchase.purchased_at,
             metadata: {
               provider: 'motive',
-              odometerAtPurchase: purchase.odometer
+              odometerAtPurchase: purchase.odometer,
+              fuelUnit: purchase.fuel_unit,
+              currency: purchase.currency,
+              refNo: purchase.ref_no,
+              source: purchase.source,
+              receiptUrl: purchase.receipt_upload_url
             }
           });
         }
