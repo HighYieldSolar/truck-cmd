@@ -23,8 +23,11 @@ function ContactForm() {
     company: '',
     fleetSize: '',
     message: '',
+    website: '', // honeypot
     submitted: false
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,12 +37,35 @@ function ContactForm() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormState(prev => ({
-      ...prev,
-      submitted: true
-    }));
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formState.name,
+          email: formState.email,
+          phone: formState.phone,
+          company: formState.company,
+          fleetSize: formState.fleetSize,
+          message: formState.message,
+          website: formState.website,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send message. Please try again.');
+      }
+      setFormState(prev => ({ ...prev, submitted: true }));
+    } catch (err) {
+      setError(err.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (formState.submitted) {
@@ -53,7 +79,10 @@ function ContactForm() {
           Thank you for contacting us. We&apos;ll get back to you within 1 business day.
         </p>
         <button
-          onClick={() => setFormState({ name: '', email: '', phone: '', company: '', fleetSize: '', message: '', submitted: false })}
+          onClick={() => {
+            setError(null);
+            setFormState({ name: '', email: '', phone: '', company: '', fleetSize: '', message: '', website: '', submitted: false });
+          }}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           Send Another Message
@@ -149,13 +178,34 @@ function ContactForm() {
         ></textarea>
       </div>
 
+      {/* Honeypot — visually hidden from users, but bots will fill it in */}
+      <div aria-hidden="true" className="absolute left-[-9999px] top-auto w-px h-px overflow-hidden">
+        <label htmlFor="website">Leave this field empty</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={formState.website}
+          onChange={handleChange}
+        />
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
       <div>
         <button
           type="submit"
-          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          disabled={isSubmitting}
+          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Send Message
-          <Send size={18} />
+          {isSubmitting ? 'Sending…' : 'Send Message'}
+          {!isSubmitting && <Send size={18} />}
         </button>
         <p className="text-sm text-gray-500 mt-3 text-center">
           * Required fields. We typically respond within 24 hours.
@@ -206,10 +256,10 @@ export default function ContactPage() {
 
       {/* Contact Methods */}
       <section className="py-12 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-6">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="grid sm:grid-cols-2 gap-6 justify-items-center">
             {contactMethods.map((method, index) => (
-              <div key={index} className="bg-gray-50 rounded-2xl p-8 text-center border border-gray-100 hover:shadow-lg transition-shadow">
+              <div key={index} className="w-full max-w-sm bg-gray-50 rounded-2xl p-8 text-center border border-gray-100 hover:shadow-lg transition-shadow">
                 <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mx-auto mb-4">
                   {method.icon}
                 </div>

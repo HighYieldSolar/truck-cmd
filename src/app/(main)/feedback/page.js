@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 // Feedback Form Component
-function FeedbackForm({ onSubmit, formState, setFormState }) {
+function FeedbackForm({ onSubmit, formState, setFormState, isSubmitting, error }) {
   const [ratingHover, setRatingHover] = useState(0);
 
   const handleChange = (e) => {
@@ -168,14 +168,35 @@ function FeedbackForm({ onSubmit, formState, setFormState }) {
         ></textarea>
       </div>
 
+      {/* Honeypot — hidden from users, bots will fill it */}
+      <div aria-hidden="true" className="absolute left-[-9999px] top-auto w-px h-px overflow-hidden">
+        <label htmlFor="website">Leave this field empty</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={formState.website || ''}
+          onChange={handleChange}
+        />
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Submit Button */}
       <div>
         <button
           type="submit"
-          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          disabled={isSubmitting}
+          className="w-full px-6 py-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Submit Feedback
-          <Send size={18} />
+          {isSubmitting ? 'Sending…' : 'Submit Feedback'}
+          {!isSubmitting && <Send size={18} />}
         </button>
         <p className="text-sm text-gray-500 mt-3 text-center">
           * Required fields. We typically respond within 1-2 business days.
@@ -192,15 +213,40 @@ export default function FeedbackPage() {
     feedbackType: "general",
     rating: 5,
     message: "",
+    website: "", // honeypot
     submitted: false
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormState(prev => ({
-      ...prev,
-      submitted: true
-    }));
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formState.name,
+          email: formState.email,
+          feedbackType: formState.feedbackType,
+          rating: formState.rating,
+          message: formState.message,
+          website: formState.website,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send feedback. Please try again.');
+      }
+      setFormState(prev => ({ ...prev, submitted: true }));
+    } catch (err) {
+      setError(err.message || 'Failed to send feedback. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Successful submission view
@@ -244,14 +290,18 @@ export default function FeedbackPage() {
                   <ArrowRight size={18} />
                 </Link>
                 <button
-                  onClick={() => setFormState({
-                    name: "",
-                    email: "",
-                    feedbackType: "general",
-                    rating: 5,
-                    message: "",
-                    submitted: false
-                  })}
+                  onClick={() => {
+                    setError(null);
+                    setFormState({
+                      name: "",
+                      email: "",
+                      feedbackType: "general",
+                      rating: 5,
+                      message: "",
+                      website: "",
+                      submitted: false
+                    });
+                  }}
                   className="px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Submit Another Feedback
@@ -298,6 +348,8 @@ export default function FeedbackPage() {
                 onSubmit={handleSubmit}
                 formState={formState}
                 setFormState={setFormState}
+                isSubmitting={isSubmitting}
+                error={error}
               />
             </div>
 
