@@ -841,19 +841,19 @@ export default function QuickBooksSettings() {
                 Once connected, your expenses are synced automatically or manually to QuickBooks.
                 Map your Truck Command categories to QuickBooks accounts for accurate bookkeeping.
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <Link
                   href="/dashboard/support"
-                  className="text-sm text-[#2CA01C] hover:underline"
+                  className="inline-flex items-center text-sm text-[#2CA01C] hover:underline leading-none"
                 >
                   Contact Support
                 </Link>
-                <span className="text-gray-300 dark:text-gray-600">|</span>
+                <span className="text-gray-300 dark:text-gray-600 leading-none select-none" aria-hidden="true">|</span>
                 <a
                   href="https://quickbooks.intuit.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-[#2CA01C] hover:underline flex items-center gap-1"
+                  className="inline-flex items-center gap-1 text-sm text-[#2CA01C] hover:underline leading-none"
                 >
                   QuickBooks Online
                   <ExternalLink size={12} />
