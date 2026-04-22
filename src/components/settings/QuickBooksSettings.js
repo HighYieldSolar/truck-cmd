@@ -768,14 +768,14 @@ export default function QuickBooksSettings() {
             {/* Scroll container: ~10 rows visible (table row ~52px), then scroll */}
             <div className="overflow-x-auto overflow-y-auto max-h-[520px]">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/50 shadow-sm">
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Status</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Entity</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">QuickBooks ID</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Last Synced</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Error</th>
-                    <th className="text-right py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Action</th>
+                <thead className="sticky top-0 z-10 shadow-sm">
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700">
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Status</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Entity</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">QuickBooks ID</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Last Synced</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Error</th>
+                    <th className="text-right py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
