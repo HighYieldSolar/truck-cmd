@@ -18,8 +18,6 @@ import {
   Clock,
   Zap,
   RotateCcw,
-  ToggleLeft,
-  ToggleRight,
   Receipt,
   Building2,
   HelpCircle,
@@ -147,27 +145,42 @@ export default function QuickBooksSettings() {
     }
   };
 
-  const handleToggleSync = async (field) => {
+  const handleToggleAutoSync = async () => {
     if (!connection) return;
-    setTogglingSync(field);
+    setTogglingSync('autoSyncExpenses');
+    const newValue = !connection.autoSyncExpenses;
+    // Optimistic update for snappier UX
+    setConnection(prev => ({ ...prev, autoSyncExpenses: newValue }));
     try {
-      const newValue = !connection[field];
-      const { error: updateError } = await supabase
-        .from('quickbooks_connections')
-        .update({ [field]: newValue, updated_at: new Date().toISOString() })
-        .eq('id', connection.id);
-
-      if (updateError) throw updateError;
-      setConnection(prev => ({ ...prev, [field]: newValue }));
+      const token = await getAuthToken();
+      const res = await fetch('/api/quickbooks/settings', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ autoSyncExpenses: newValue }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update setting');
+      }
       setSuccess(`Auto-sync expenses ${newValue ? 'enabled' : 'disabled'}`);
-    } catch (_err) {
-      setError('Failed to update sync setting');
+    } catch (err) {
+      // Roll back on failure
+      setConnection(prev => ({ ...prev, autoSyncExpenses: !newValue }));
+      setError(err.message || 'Failed to update sync setting');
     } finally {
       setTogglingSync(null);
     }
   };
 
   const handleRetrySync = async (record) => {
+    // Only expense records are supported (integration is expense-only)
+    if (record.entity_type !== 'expense') {
+      setError('Only expense sync retries are supported');
+      return;
+    }
     setRetrying(record.id);
     setError(null);
     try {
@@ -176,20 +189,19 @@ export default function QuickBooksSettings() {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: record.sync_type,
-          entityId: record.entity_id,
-          entityType: record.entity_type
-        })
+          action: 'single-expense',
+          expenseId: record.local_entity_id,
+        }),
       });
 
+      const data = await res.json();
       if (res.ok) {
-        setSuccess('Sync retry initiated');
+        setSuccess('Sync retry succeeded');
         await fetchConnectionData();
       } else {
-        const data = await res.json();
         setError(data.error || 'Retry failed');
       }
     } catch (_err) {
@@ -215,16 +227,53 @@ export default function QuickBooksSettings() {
 
   const getSyncStatusBadge = (status) => {
     switch (status) {
+      case 'synced':
       case 'success':
-        return <span className="text-green-600 dark:text-green-400"><CheckCircle size={14} /></span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs font-medium">
+            <CheckCircle size={12} /> Synced
+          </span>
+        );
       case 'failed':
-        return <span className="text-red-600 dark:text-red-400"><XCircle size={14} /></span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs font-medium">
+            <XCircle size={12} /> Failed
+          </span>
+        );
       case 'pending':
-        return <span className="text-yellow-600 dark:text-yellow-400"><Clock size={14} /></span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs font-medium">
+            <Clock size={12} /> Pending
+          </span>
+        );
       default:
-        return <span className="text-gray-400"><Clock size={14} /></span>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium">
+            {status || 'Unknown'}
+          </span>
+        );
     }
   };
+
+  // Pill-style toggle switch (matches PrivacySettings / AppearanceSettings)
+  const ToggleSwitch = ({ enabled, onChange, disabled }) => (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      disabled={disabled}
+      onClick={onChange}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-60 ${
+        enabled ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-600'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          enabled ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  );
 
   // Features list (like ELD settings) — expenses only for now
   const features = [
@@ -690,15 +739,11 @@ export default function QuickBooksSettings() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">Automatically push new expenses to QuickBooks</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleToggleSync('auto_sync_expenses')}
-                  disabled={togglingSync === 'auto_sync_expenses'}
-                  className="transition-colors"
-                >
-                  {connection.auto_sync_expenses
-                    ? <ToggleRight size={36} className="text-[#2CA01C]" />
-                    : <ToggleLeft size={36} className="text-gray-400" />}
-                </button>
+                <ToggleSwitch
+                  enabled={!!connection.autoSyncExpenses}
+                  onChange={handleToggleAutoSync}
+                  disabled={togglingSync === 'autoSyncExpenses'}
+                />
               </div>
 
             </div>
@@ -714,48 +759,57 @@ export default function QuickBooksSettings() {
                 Recent Sync History
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Last {syncRecords.length} sync operations
+                {syncRecords.length > 10
+                  ? `Showing latest ${syncRecords.length} sync operations — scroll to see more`
+                  : `Latest ${syncRecords.length} sync operation${syncRecords.length === 1 ? '' : 's'}`}
               </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Scroll container: ~10 rows visible (table row ~52px), then scroll */}
+            <div className="overflow-x-auto overflow-y-auto max-h-[520px]">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
+                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700/50 shadow-sm">
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
                     <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Status</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Type</th>
                     <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Entity</th>
-                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Date</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">QuickBooks ID</th>
+                    <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Last Synced</th>
                     <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Error</th>
                     <th className="text-right py-2.5 px-4 text-gray-500 dark:text-gray-400 font-medium text-xs uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {syncRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                      <td className="py-3 px-4">{getSyncStatusBadge(record.status)}</td>
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300 capitalize">{record.sync_type}</td>
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300 capitalize">{record.entity_type}</td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
-                        {new Date(record.created_at).toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-red-500 dark:text-red-400 text-xs max-w-[200px] truncate">
-                        {record.error_message || '—'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {record.status === 'failed' && (
-                          <button
-                            onClick={() => handleRetrySync(record)}
-                            disabled={retrying === record.id}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2CA01C] bg-green-50 dark:bg-green-900/20 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50"
-                          >
-                            {retrying === record.id ? <RefreshCw size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                            Retry
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {syncRecords.map((record) => {
+                    const entityLabel = record.qb_entity_type || (record.entity_type ? record.entity_type.charAt(0).toUpperCase() + record.entity_type.slice(1) : '—');
+                    const syncedAt = record.last_synced_at || record.updated_at || record.created_at;
+                    return (
+                      <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td className="py-3 px-4">{getSyncStatusBadge(record.sync_status)}</td>
+                        <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{entityLabel}</td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400 font-mono text-xs">
+                          {record.qb_entity_id || '—'}
+                        </td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                          {syncedAt ? new Date(syncedAt).toLocaleString() : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-red-500 dark:text-red-400 text-xs max-w-[200px] truncate" title={record.error_message || ''}>
+                          {record.error_message || '—'}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {record.sync_status === 'failed' && (
+                            <button
+                              onClick={() => handleRetrySync(record)}
+                              disabled={retrying === record.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2CA01C] bg-green-50 dark:bg-green-900/20 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50"
+                            >
+                              {retrying === record.id ? <RefreshCw size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                              Retry
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
