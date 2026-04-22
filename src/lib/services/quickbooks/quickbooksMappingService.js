@@ -43,42 +43,52 @@ export const TC_EXPENSE_CATEGORIES = [
  */
 export const TRUCKING_CATEGORY_DEFAULTS = {
   'Fuel': {
-    keywords: ['fuel', 'gas', 'diesel', 'petroleum'],
+    // Expanded for QB's default charts which often use "Car and Truck" or
+    // "Automobile" with AutoExpenses subtype and don't always have a dedicated fuel account
+    keywords: ['fuel', 'gas', 'diesel', 'petroleum', 'gasoline', 'car and truck', 'auto'],
+    subTypes: ['AutoExpenses', 'Utilities', 'SuppliesMaterials'],
     defaultName: 'Fuel and Oil',
     fallbackName: 'Automobile Expense'
   },
   'Maintenance': {
     keywords: ['maintenance', 'repair', 'service'],
+    subTypes: ['RepairMaintenance', 'AutoExpenses'],
     defaultName: 'Repairs and Maintenance',
     fallbackName: 'Equipment Repairs'
   },
   'Insurance': {
     keywords: ['insurance'],
+    subTypes: ['Insurance', 'InsuranceGeneral'],
     defaultName: 'Insurance Expense',
     fallbackName: 'Insurance'
   },
   'Tolls': {
     keywords: ['toll', 'travel', 'highway'],
+    subTypes: ['Travel', 'AutoExpenses'],
     defaultName: 'Travel Expense',
     fallbackName: 'Automobile Expense'
   },
   'Office': {
     keywords: ['office', 'supplies', 'administrative'],
+    subTypes: ['OfficeExpenses', 'SuppliesMaterials', 'OfficeGeneralAdministrativeExpenses'],
     defaultName: 'Office Supplies',
     fallbackName: 'Office Expense'
   },
   'Permits': {
     keywords: ['permit', 'license', 'registration', 'fees'],
+    subTypes: ['TaxesPaid', 'LegalProfessionalFees'],
     defaultName: 'Licenses and Permits',
     fallbackName: 'Legal and Professional Fees'
   },
   'Meals': {
     keywords: ['meal', 'food', 'entertainment', 'per diem'],
+    subTypes: ['TravelMeals', 'Entertainment', 'Travel'],
     defaultName: 'Meals and Entertainment',
     fallbackName: 'Travel Expense'
   },
   'Other': {
     keywords: ['other', 'miscellaneous', 'misc'],
+    subTypes: ['OtherMiscellaneousExpense'],
     defaultName: 'Other Expense',
     fallbackName: 'Miscellaneous'
   }
@@ -94,25 +104,40 @@ function findBestMatch(qbAccounts, tcCategory) {
   const categoryConfig = TRUCKING_CATEGORY_DEFAULTS[tcCategory];
   if (!categoryConfig) return null;
 
-  // First, try exact match on default name
+  // 1. Exact match on default name
   let match = qbAccounts.find(acc =>
     acc.Name.toLowerCase() === categoryConfig.defaultName.toLowerCase()
   );
-
   if (match) return match;
 
-  // Try fallback name
+  // 2. Exact match on fallback name
   match = qbAccounts.find(acc =>
     acc.Name.toLowerCase() === categoryConfig.fallbackName.toLowerCase()
   );
-
   if (match) return match;
 
-  // Try keyword matching
+  // 3. Keyword substring match on account Name
   for (const keyword of categoryConfig.keywords) {
     match = qbAccounts.find(acc =>
-      acc.Name.toLowerCase().includes(keyword.toLowerCase())
+      acc.Name?.toLowerCase().includes(keyword.toLowerCase())
     );
+    if (match) return match;
+  }
+
+  // 4. Keyword match on FullyQualifiedName (handles QB sub-accounts like
+  //    "Car and Truck:Fuel" where Name is just "Fuel" but the parent matters)
+  for (const keyword of categoryConfig.keywords) {
+    match = qbAccounts.find(acc =>
+      acc.FullyQualifiedName?.toLowerCase().includes(keyword.toLowerCase())
+    );
+    if (match) return match;
+  }
+
+  // 5. AccountSubType match (QB's internal categorization — more reliable
+  //    when the user has renamed accounts or uses a non-standard chart)
+  const subTypes = categoryConfig.subTypes || [];
+  for (const subType of subTypes) {
+    match = qbAccounts.find(acc => acc.AccountSubType === subType);
     if (match) return match;
   }
 

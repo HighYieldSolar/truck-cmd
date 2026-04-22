@@ -239,10 +239,9 @@ export async function GET(request) {
         unmappedCategories: mappingStatus.unmappedCategories
       } : null,
       sync: syncStatus ? {
-        totalExpensesSynced: syncStatus.totalExpensesSynced,
-        totalInvoicesSynced: syncStatus.totalInvoicesSynced,
-        failedSyncs: syncStatus.failedSyncs,
-        pendingSyncs: syncStatus.pendingSyncs,
+        totalExpensesSynced: syncStatus.stats?.expensesSynced ?? 0,
+        pendingSyncs: syncStatus.stats?.pending ?? 0,
+        failedSyncs: syncStatus.stats?.failed ?? 0,
         lastSyncAt: syncStatus.lastSyncAt
       } : null
     };
