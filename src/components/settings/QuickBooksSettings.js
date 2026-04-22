@@ -103,13 +103,18 @@ export default function QuickBooksSettings() {
     try {
       const token = await getAuthToken();
       const res = await fetch('/api/quickbooks/connect', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.authUrl) {
         window.location.href = data.authUrl;
       } else {
-        setError('Failed to get authorization URL');
+        setError(data.error || 'Failed to get authorization URL');
       }
     } catch (_err) {
       setError('Failed to initiate connection');
