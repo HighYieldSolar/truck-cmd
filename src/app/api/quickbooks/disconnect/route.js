@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { disconnectConnection, deleteConnection, getConnection } from '@/lib/services/quickbooks/quickbooksConnectionService';
+import { enforceQbRateLimit } from '@/lib/services/quickbooks/quickbooksRateLimit';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/disconnect]', ...args);
@@ -72,6 +73,14 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const rateLimitResult = enforceQbRateLimit(user.id, 'auth');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
+    }
+
     let body = {};
     try {
       body = await request.json();
@@ -130,6 +139,14 @@ export async function DELETE(request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitResult = enforceQbRateLimit(user.id, 'auth');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
     }
 
     // Get existing connection

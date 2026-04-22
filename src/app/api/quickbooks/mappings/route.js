@@ -16,6 +16,7 @@ import {
   TC_EXPENSE_CATEGORIES
 } from '@/lib/services/quickbooks/quickbooksMappingService';
 import { hasFeature } from '@/config/tierConfig';
+import { enforceQbRateLimit } from '@/lib/services/quickbooks/quickbooksRateLimit';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/mappings]', ...args);
@@ -92,6 +93,14 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const rateLimitResult = enforceQbRateLimit(user.id, 'read');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
+    }
+
     const hasAccess = await checkQuickBooksAccess(user.id);
     if (!hasAccess) {
       return NextResponse.json(
@@ -162,6 +171,14 @@ export async function POST(request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitResult = enforceQbRateLimit(user.id, 'read');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
     }
 
     const hasAccess = await checkQuickBooksAccess(user.id);

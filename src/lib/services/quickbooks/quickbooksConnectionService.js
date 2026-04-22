@@ -8,15 +8,14 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { getOAuthEndpoints } from './quickbooksDiscovery';
+import { QB_CONFIG, validateQbConfig } from './quickbooksConfig';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/connection]', ...args);
 
-// Environment-based API URL
-const QB_API_BASE = process.env.QUICKBOOKS_ENVIRONMENT === 'production'
-  ? 'https://quickbooks.api.intuit.com'
-  : 'https://sandbox-quickbooks.api.intuit.com';
+const QB_API_BASE = QB_CONFIG.apiBase;
 
 // Initialize Supabase admin client for server-side operations
 const supabaseAdmin = createClient(
@@ -30,24 +29,105 @@ const supabaseAdmin = createClient(
   }
 );
 
-/**
- * Encode state parameter for OAuth flow
- * @param {Object} stateData - State data to encode
- * @returns {string} Base64 encoded state
- */
-function encodeState(stateData) {
-  return Buffer.from(JSON.stringify(stateData)).toString('base64');
+// Replay protection: track consumed OAuth state nonces (15 min TTL).
+// In-memory — fine for a 10-min state window since nonces expire on their own.
+const consumedStateNonces = new Map();
+const STATE_NONCE_TTL_MS = 15 * 60 * 1000;
+
+function cleanupConsumedNonces() {
+  const now = Date.now();
+  for (const [nonce, expiresAt] of consumedStateNonces.entries()) {
+    if (expiresAt < now) {
+      consumedStateNonces.delete(nonce);
+    }
+  }
 }
 
 /**
- * Decode state parameter from OAuth callback
- * @param {string} stateParam - Base64 encoded state
- * @returns {Object|null} Decoded state data or null
+ * Mark a state nonce as consumed. Returns false if already consumed.
+ * @param {string} nonce
+ * @returns {boolean} true if newly consumed, false if replay detected
+ */
+function markNonceConsumed(nonce) {
+  cleanupConsumedNonces();
+  if (consumedStateNonces.has(nonce)) {
+    return false;
+  }
+  consumedStateNonces.set(nonce, Date.now() + STATE_NONCE_TTL_MS);
+  return true;
+}
+
+/**
+ * Compute HMAC-SHA256 signature of a payload string.
+ * @param {string} payload - UTF-8 string to sign
+ * @returns {string} base64url signature
+ */
+function signPayload(payload) {
+  const secret = QB_CONFIG.stateSecret;
+  if (!secret) {
+    throw new Error('QUICKBOOKS_STATE_SECRET is not configured');
+  }
+  return createHmac('sha256', secret).update(payload).digest('base64url');
+}
+
+/**
+ * Encode state parameter for OAuth flow with HMAC signature.
+ * Format: base64url(payload) + '.' + base64url(hmac)
+ *
+ * The signature prevents attackers from forging a state with a different
+ * userId — critical for preventing OAuth account-linking attacks.
+ *
+ * @param {Object} stateData - State data to encode
+ * @returns {string} Signed, base64url-encoded state
+ */
+function encodeState(stateData) {
+  const payloadJson = JSON.stringify(stateData);
+  const payloadB64 = Buffer.from(payloadJson, 'utf8').toString('base64url');
+  const sig = signPayload(payloadB64);
+  return `${payloadB64}.${sig}`;
+}
+
+/**
+ * Decode and verify state parameter from OAuth callback.
+ * Returns null if:
+ *   - Format is invalid
+ *   - Signature doesn't match (tampered or forged)
+ *   - JSON parse fails
+ *
+ * Uses timing-safe comparison to prevent signature timing attacks.
+ *
+ * @param {string} stateParam - Signed state from callback
+ * @returns {Object|null} Decoded state data or null if invalid
  */
 export function decodeState(stateParam) {
   try {
-    const decoded = Buffer.from(stateParam, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
+    if (!stateParam || typeof stateParam !== 'string') return null;
+
+    // Backwards-compat: legacy unsigned states (no '.' separator) are rejected.
+    // This forces all in-flight OAuth flows to restart with signed state.
+    const dotIndex = stateParam.lastIndexOf('.');
+    if (dotIndex === -1) {
+      log('Rejected unsigned state parameter');
+      return null;
+    }
+
+    const payloadB64 = stateParam.slice(0, dotIndex);
+    const providedSig = stateParam.slice(dotIndex + 1);
+
+    // Recompute signature over the payload portion
+    const expectedSig = signPayload(payloadB64);
+
+    // Timing-safe comparison
+    const expectedBuf = Buffer.from(expectedSig, 'utf8');
+    const providedBuf = Buffer.from(providedSig, 'utf8');
+    if (expectedBuf.length !== providedBuf.length || !timingSafeEqual(expectedBuf, providedBuf)) {
+      log('Rejected state with invalid HMAC signature');
+      return null;
+    }
+
+    // Signature valid — decode payload
+    const payloadJson = Buffer.from(payloadB64, 'base64url').toString('utf8');
+    return JSON.parse(payloadJson);
   } catch (err) {
     log('Error decoding state:', err);
     return null;
@@ -63,22 +143,24 @@ export function decodeState(stateParam) {
  */
 export async function getAuthorizationUrl(userId, redirectUri, options = {}) {
   try {
-    const clientId = process.env.QUICKBOOKS_CLIENT_ID;
-
-    if (!clientId) {
-      return {
-        error: true,
-        errorMessage: 'QuickBooks client ID not configured'
-      };
+    const configCheck = validateQbConfig();
+    if (!configCheck.valid) {
+      return { error: true, errorMessage: configCheck.error };
     }
+
+    const clientId = QB_CONFIG.clientId;
 
     // Get endpoints from Intuit discovery document
     const endpoints = await getOAuthEndpoints();
 
-    // Build state with user info and timestamp for CSRF protection
+    // Build state with user info, timestamp, and random nonce.
+    // The nonce enables replay protection on callback: we reject any state
+    // we've already consumed, even within the 10-minute validity window.
+    const nonce = randomBytes(16).toString('hex');
     const state = encodeState({
       userId,
       timestamp: Date.now(),
+      nonce,
       reconnect: options.reconnect || false,
       connectionId: options.connectionId || null
     });
@@ -125,15 +207,12 @@ export async function getAuthorizationUrl(userId, redirectUri, options = {}) {
  * @returns {Object} Token response or error
  */
 async function exchangeCodeForTokens(code, redirectUri) {
-  const clientId = process.env.QUICKBOOKS_CLIENT_ID;
-  const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    return {
-      error: true,
-      errorMessage: 'QuickBooks credentials not configured'
-    };
+  const configCheck = validateQbConfig();
+  if (!configCheck.valid) {
+    return { error: true, errorMessage: configCheck.error };
   }
+
+  const { clientId, clientSecret } = QB_CONFIG;
 
   // Get token endpoint from Intuit discovery document
   const endpoints = await getOAuthEndpoints();
@@ -239,7 +318,7 @@ export async function handleOAuthCallback(code, stateParam, realmId, redirectUri
       };
     }
 
-    const { userId, reconnect, connectionId } = state;
+    const { userId, reconnect, connectionId, nonce } = state;
 
     // Validate timestamp (state should be less than 10 minutes old)
     const stateAge = Date.now() - state.timestamp;
@@ -247,6 +326,17 @@ export async function handleOAuthCallback(code, stateParam, realmId, redirectUri
       return {
         error: true,
         errorMessage: 'Authorization request expired'
+      };
+    }
+
+    // Replay protection: ensure this state nonce has not been consumed.
+    // Legacy states without nonce are allowed once-only; they'll pass timestamp
+    // check but won't be re-usable across callbacks within the same process.
+    if (nonce && !markNonceConsumed(nonce)) {
+      log('Rejected OAuth callback with replayed state nonce');
+      return {
+        error: true,
+        errorMessage: 'Authorization request already used. Please reconnect.'
       };
     }
 
@@ -258,6 +348,9 @@ export async function handleOAuthCallback(code, stateParam, realmId, redirectUri
 
     // Calculate token expiry
     const tokenExpiresAt = new Date(Date.now() + tokenResult.expiresIn * 1000);
+    const refreshTokenExpiresAt = tokenResult.refreshTokenExpiresIn
+      ? new Date(Date.now() + tokenResult.refreshTokenExpiresIn * 1000)
+      : new Date(Date.now() + 100 * 24 * 60 * 60 * 1000); // Default 100 days
 
     // Fetch company info
     const companyInfo = await fetchCompanyInfo(tokenResult.accessToken, realmId);
@@ -280,6 +373,7 @@ export async function handleOAuthCallback(code, stateParam, realmId, redirectUri
           access_token: tokenResult.accessToken,
           refresh_token: tokenResult.refreshToken,
           token_expires_at: tokenExpiresAt.toISOString(),
+          refresh_token_expires_at: refreshTokenExpiresAt.toISOString(),
           realm_id: realmId,
           company_name: companyName,
           status: 'active',
@@ -309,11 +403,11 @@ export async function handleOAuthCallback(code, stateParam, realmId, redirectUri
           access_token: tokenResult.accessToken,
           refresh_token: tokenResult.refreshToken,
           token_expires_at: tokenExpiresAt.toISOString(),
+          refresh_token_expires_at: refreshTokenExpiresAt.toISOString(),
           realm_id: realmId,
           company_name: companyName,
           status: 'active',
-          auto_sync_expenses: true,
-          auto_sync_invoices: true
+          auto_sync_expenses: true
         })
         .select()
         .single();
@@ -420,8 +514,12 @@ export async function refreshTokens(connectionId) {
       };
     }
 
-    const clientId = process.env.QUICKBOOKS_CLIENT_ID;
-    const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
+    const configCheck = validateQbConfig();
+    if (!configCheck.valid) {
+      return { error: true, errorMessage: configCheck.error };
+    }
+
+    const { clientId, clientSecret } = QB_CONFIG;
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
     // Get token endpoint from Intuit discovery document
@@ -463,8 +561,11 @@ export async function refreshTokens(connectionId) {
       };
     }
 
-    // Calculate new expiry
+    // Calculate new expiry (Intuit returns a fresh refresh token with new 100-day TTL)
     const tokenExpiresAt = new Date(Date.now() + data.expires_in * 1000);
+    const refreshTokenExpiresAt = data.x_refresh_token_expires_in
+      ? new Date(Date.now() + data.x_refresh_token_expires_in * 1000)
+      : new Date(Date.now() + 100 * 24 * 60 * 60 * 1000);
 
     // Update connection with new tokens
     const { error: updateError } = await supabaseAdmin
@@ -473,6 +574,7 @@ export async function refreshTokens(connectionId) {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         token_expires_at: tokenExpiresAt.toISOString(),
+        refresh_token_expires_at: refreshTokenExpiresAt.toISOString(),
         status: 'active',
         error_message: null,
         updated_at: new Date().toISOString()
@@ -528,8 +630,12 @@ export async function disconnectConnection(userId) {
 
     // Revoke token at QuickBooks (best effort)
     try {
-      const clientId = process.env.QUICKBOOKS_CLIENT_ID;
-      const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
+      const configCheck = validateQbConfig();
+      if (!configCheck.valid) {
+        log('Skipping token revocation - QB not configured');
+        throw new Error('QB not configured');
+      }
+      const { clientId, clientSecret } = QB_CONFIG;
       const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
       // Get revocation endpoint from Intuit discovery document
@@ -718,7 +824,7 @@ export async function getConnectionStatus(userId) {
   try {
     const { data: connection } = await supabaseAdmin
       .from('quickbooks_connections')
-      .select('id, status, company_name, last_sync_at, error_message, created_at')
+      .select('id, status, company_name, last_sync_at, error_message, created_at, token_expires_at, refresh_token_expires_at')
       .eq('user_id', userId)
       .single();
 
@@ -729,7 +835,7 @@ export async function getConnectionStatus(userId) {
       };
     }
 
-    // Get sync stats
+    // Get sync stats (expense-only)
     const { count: expensesSynced } = await supabaseAdmin
       .from('quickbooks_sync_records')
       .select('*', { count: 'exact', head: true })
@@ -737,12 +843,17 @@ export async function getConnectionStatus(userId) {
       .eq('entity_type', 'expense')
       .eq('sync_status', 'synced');
 
-    const { count: invoicesSynced } = await supabaseAdmin
-      .from('quickbooks_sync_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('connection_id', connection.id)
-      .eq('entity_type', 'invoice')
-      .eq('sync_status', 'synced');
+    // Compute refresh token expiry warning
+    const refreshExpiry = connection.refresh_token_expires_at
+      ? new Date(connection.refresh_token_expires_at)
+      : null;
+    const daysUntilRefreshExpiry = refreshExpiry
+      ? Math.ceil((refreshExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+    const refreshExpiryWarning =
+      daysUntilRefreshExpiry !== null && daysUntilRefreshExpiry <= 14 && daysUntilRefreshExpiry > 0
+        ? `Your QuickBooks connection expires in ${daysUntilRefreshExpiry} day${daysUntilRefreshExpiry === 1 ? '' : 's'}. Reconnect soon to avoid interruption.`
+        : null;
 
     return {
       connected: connection.status === 'active',
@@ -751,9 +862,12 @@ export async function getConnectionStatus(userId) {
       lastSyncAt: connection.last_sync_at,
       errorMessage: connection.error_message,
       connectedAt: connection.created_at,
+      tokenExpiresAt: connection.token_expires_at,
+      refreshTokenExpiresAt: connection.refresh_token_expires_at,
+      daysUntilRefreshExpiry,
+      refreshExpiryWarning,
       syncStats: {
-        expenses: expensesSynced || 0,
-        invoices: invoicesSynced || 0
+        expenses: expensesSynced || 0
       }
     };
 

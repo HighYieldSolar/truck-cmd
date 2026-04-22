@@ -10,7 +10,6 @@ import {
   createInvoice,
   updateInvoice
 } from "@/lib/services/invoiceService";
-import { useQuickBooksAutoSync } from '@/hooks/useQuickBooksAutoSync';
 import { fetchLoads } from "@/lib/services/loadService";
 import {
   Save,
@@ -121,10 +120,9 @@ const InvoiceItemRow = ({ item, index, onChange, onRemove, canRemove, t }) => {
 };
 
 // Main Invoice Form Component
-export default function InvoiceForm({ userId, initialData = null, isDuplicating = false, onQuickBooksSync }) {
+export default function InvoiceForm({ userId, initialData = null, isDuplicating = false }) {
   const { t } = useTranslation('invoices');
   const router = useRouter();
-  const { autoSyncInvoice } = useQuickBooksAutoSync();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -458,22 +456,6 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
       // Clear saved data
       if (!initialData) {
         clearSavedData();
-      }
-
-      // Trigger auto-sync for new invoices (non-blocking)
-      if (isNewInvoice && result?.id) {
-        // Don't await - fire and forget to not block the user
-        autoSyncInvoice(result.id).then((syncResult) => {
-          // Call the callback if provided so parent can show toast
-          if (onQuickBooksSync) {
-            onQuickBooksSync(syncResult);
-          }
-        }).catch((err) => {
-          // Silently ignore auto-sync errors but notify parent if callback exists
-          if (onQuickBooksSync) {
-            onQuickBooksSync({ synced: false, error: err.message });
-          }
-        });
       }
 
       setSuccess(true);

@@ -18,7 +18,6 @@ export default function NewInvoicePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState(null);
-  const [syncMessage, setSyncMessage] = useState(null);
 
   useEffect(() => {
     async function initialize() {
@@ -107,14 +106,6 @@ export default function NewInvoicePage() {
             userId={user.id}
             initialData={initialData}
             isDuplicating={!!duplicateId}
-            onQuickBooksSync={(result) => {
-              if (result.synced) {
-                setSyncMessage({ type: 'success', text: 'Invoice synced to QuickBooks' });
-              } else if (result.error) {
-                setSyncMessage({ type: 'warning', text: `QuickBooks sync failed: ${result.error}` });
-              }
-              // If skipped (auto-sync not enabled), don't show anything
-            }}
           />
         </div>
       </main>

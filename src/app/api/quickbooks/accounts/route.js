@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getConnection } from '@/lib/services/quickbooks/quickbooksConnectionService';
 import { fetchQbExpenseAccounts } from '@/lib/services/quickbooks/quickbooksMappingService';
 import { hasFeature } from '@/config/tierConfig';
+import { enforceQbRateLimit } from '@/lib/services/quickbooks/quickbooksRateLimit';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/accounts]', ...args);
@@ -85,6 +86,14 @@ export async function GET(request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitResult = enforceQbRateLimit(user.id, 'read');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
     }
 
     const hasAccess = await checkQuickBooksAccess(user.id);

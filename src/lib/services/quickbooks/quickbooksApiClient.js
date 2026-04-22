@@ -7,12 +7,12 @@
 
 import QuickBooks from 'node-quickbooks';
 import { refreshTokens, getConnectionById, updateConnectionStatus } from './quickbooksConnectionService';
+import { QB_CONFIG, validateQbConfig } from './quickbooksConfig';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/api]', ...args);
 
-// Sandbox vs Production
-const USE_SANDBOX = process.env.QUICKBOOKS_ENVIRONMENT !== 'production';
+const USE_SANDBOX = !QB_CONFIG.isProduction;
 
 /**
  * Create a QuickBooks client instance
@@ -22,8 +22,12 @@ const USE_SANDBOX = process.env.QUICKBOOKS_ENVIRONMENT !== 'production';
  * @returns {QuickBooks} QuickBooks client instance
  */
 export function createClient(accessToken, realmId, refreshToken) {
-  const clientId = process.env.QUICKBOOKS_CLIENT_ID;
-  const clientSecret = process.env.QUICKBOOKS_CLIENT_SECRET;
+  const configCheck = validateQbConfig();
+  if (!configCheck.valid) {
+    throw new Error(configCheck.error);
+  }
+
+  const { clientId, clientSecret } = QB_CONFIG;
 
   return new QuickBooks(
     clientId,
@@ -118,6 +122,62 @@ function extractIntuitTid(apiError) {
     || apiError?.intuit_tid
     || apiError?.response?.headers?.get?.('intuit_tid')
     || null;
+}
+
+/**
+ * Detect a QuickBooks "stale object" / SyncToken mismatch error.
+ * QB error code 5010 indicates the local SyncToken is behind QB's current version.
+ * @param {Object} apiError
+ * @returns {boolean}
+ */
+function isSyncTokenMismatch(apiError) {
+  if (!apiError) return false;
+  const errorDetails = apiError.Fault?.Error?.[0] || apiError.fault?.error?.[0] || {};
+  const code = String(errorDetails.code || errorDetails.Code || '');
+  const message = (apiError.message || errorDetails.Message || '').toLowerCase();
+
+  return (
+    code === '5010' ||
+    message.includes('stale object') ||
+    message.includes('synctoken') ||
+    message.includes('sync token')
+  );
+}
+
+/**
+ * Update an entity with automatic SyncToken refresh on stale-object errors.
+ * If QB rejects an update because our SyncToken is stale, this fetches the
+ * current entity, copies the fresh SyncToken, and retries the update once.
+ *
+ * @param {Object} client - QuickBooks client
+ * @param {string} entityName - e.g. 'Purchase', 'Invoice'
+ * @param {Object} entityData - Update payload (must include Id)
+ * @returns {Promise<Object>} Updated entity
+ */
+export async function updateEntityWithSyncTokenRetry(client, entityName, entityData) {
+  const capitalized = entityName.charAt(0).toUpperCase() + entityName.slice(1);
+  const updateMethod = `update${capitalized}`;
+  const getMethod = `get${capitalized}`;
+
+  try {
+    return await promisify(client, updateMethod, entityData);
+  } catch (error) {
+    if (!isSyncTokenMismatch(error)) {
+      throw error;
+    }
+
+    log(`Stale SyncToken detected for ${capitalized} ${entityData.Id}, refreshing...`);
+
+    // Fetch current version to get fresh SyncToken
+    const current = await promisify(client, getMethod, entityData.Id);
+    if (!current?.SyncToken) {
+      throw error; // Can't recover without fresh SyncToken
+    }
+
+    const retryData = { ...entityData, SyncToken: current.SyncToken };
+    log(`Retrying ${capitalized} update with fresh SyncToken: ${current.SyncToken}`);
+    return await promisify(client, updateMethod, retryData);
+  }
 }
 
 /**
@@ -290,13 +350,16 @@ export async function getPurchase(client, purchaseId) {
 }
 
 /**
- * Update a Purchase
+ * Update a Purchase with automatic SyncToken refresh on stale-object errors.
+ * If QB returns a "stale object" error (code 5010), fetches the current
+ * Purchase to get a fresh SyncToken and retries the update once.
+ *
  * @param {QuickBooks} client - QuickBooks client
- * @param {Object} purchaseData - Updated purchase data (must include Id and SyncToken)
+ * @param {Object} purchaseData - Updated purchase data (must include Id)
  * @returns {Promise<Object>} Updated purchase
  */
 export async function updatePurchase(client, purchaseData) {
-  return promisify(client, 'updatePurchase', purchaseData);
+  return updateEntityWithSyncTokenRetry(client, 'Purchase', purchaseData);
 }
 
 /**
@@ -317,50 +380,6 @@ export async function deletePurchase(client, purchaseIdOrEntity) {
  */
 export async function findPurchases(client, criteria = {}) {
   return promisify(client, 'findPurchases', criteria);
-}
-
-// ============================================================================
-// Invoice Operations
-// ============================================================================
-
-/**
- * Create an Invoice in QuickBooks
- * @param {QuickBooks} client - QuickBooks client
- * @param {Object} invoiceData - Invoice data object
- * @returns {Promise<Object>} Created invoice
- */
-export async function createInvoice(client, invoiceData) {
-  return promisify(client, 'createInvoice', invoiceData);
-}
-
-/**
- * Get an Invoice by ID
- * @param {QuickBooks} client - QuickBooks client
- * @param {string} invoiceId - QuickBooks Invoice ID
- * @returns {Promise<Object>} Invoice object
- */
-export async function getInvoice(client, invoiceId) {
-  return promisify(client, 'getInvoice', invoiceId);
-}
-
-/**
- * Update an Invoice
- * @param {QuickBooks} client - QuickBooks client
- * @param {Object} invoiceData - Updated invoice data
- * @returns {Promise<Object>} Updated invoice
- */
-export async function updateInvoice(client, invoiceData) {
-  return promisify(client, 'updateInvoice', invoiceData);
-}
-
-/**
- * Find Invoices with optional criteria
- * @param {QuickBooks} client - QuickBooks client
- * @param {Object} criteria - Query criteria
- * @returns {Promise<Object>} Query response with invoices
- */
-export async function findInvoices(client, criteria = {}) {
-  return promisify(client, 'findInvoices', criteria);
 }
 
 // ============================================================================
@@ -431,58 +450,6 @@ export async function getPaymentAccounts(client) {
   ]);
 
   return { bankAccounts, creditCardAccounts };
-}
-
-// ============================================================================
-// Customer Operations (for invoice sync)
-// ============================================================================
-
-/**
- * Find Customers
- * @param {QuickBooks} client - QuickBooks client
- * @param {Object} criteria - Query criteria
- * @returns {Promise<Object>} Query response with customers
- */
-export async function findCustomers(client, criteria = {}) {
-  return promisify(client, 'findCustomers', criteria);
-}
-
-/**
- * Create a Customer
- * @param {QuickBooks} client - QuickBooks client
- * @param {Object} customerData - Customer data
- * @returns {Promise<Object>} Created customer
- */
-export async function createCustomer(client, customerData) {
-  return promisify(client, 'createCustomer', customerData);
-}
-
-/**
- * Find or create a customer by name
- * @param {QuickBooks} client - QuickBooks client
- * @param {string} customerName - Customer name
- * @param {Object} customerData - Additional customer data
- * @returns {Promise<Object>} Customer object
- */
-export async function findOrCreateCustomer(client, customerName, customerData = {}) {
-  // Search for existing customer
-  const searchResult = await findCustomers(client, {
-    DisplayName: customerName
-  });
-
-  const existingCustomer = searchResult.QueryResponse?.Customer?.[0];
-
-  if (existingCustomer) {
-    return existingCustomer;
-  }
-
-  // Create new customer
-  const newCustomer = await createCustomer(client, {
-    DisplayName: customerName,
-    ...customerData
-  });
-
-  return newCustomer;
 }
 
 // ============================================================================

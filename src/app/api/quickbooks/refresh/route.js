@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getConnection, refreshTokens, verifyConnection } from '@/lib/services/quickbooks/quickbooksConnectionService';
 import { hasFeature } from '@/config/tierConfig';
+import { enforceQbRateLimit } from '@/lib/services/quickbooks/quickbooksRateLimit';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = (...args) => DEBUG && console.log('[quickbooks/refresh]', ...args);
@@ -71,6 +72,14 @@ export async function POST(request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimitResult = enforceQbRateLimit(user.id, 'auth');
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again shortly.', retryAfterSeconds: rateLimitResult.retryAfterSeconds },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+      );
     }
 
     // Check QuickBooks access

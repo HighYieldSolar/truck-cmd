@@ -77,7 +77,6 @@ async function checkQuickBooksAccess(userId) {
  * Update QuickBooks connection settings.
  * Body:
  *   - autoSyncExpenses: boolean - Enable/disable auto-sync for expenses
- *   - autoSyncInvoices: boolean - Enable/disable auto-sync for invoices
  */
 export async function PATCH(request) {
   try {
@@ -113,10 +112,6 @@ export async function PATCH(request) {
       updateData.auto_sync_expenses = body.autoSyncExpenses;
     }
 
-    if (typeof body.autoSyncInvoices === 'boolean') {
-      updateData.auto_sync_invoices = body.autoSyncInvoices;
-    }
-
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: 'No valid settings provided' },
@@ -146,7 +141,6 @@ export async function PATCH(request) {
       success: true,
       settings: {
         autoSyncExpenses: updated.auto_sync_expenses,
-        autoSyncInvoices: updated.auto_sync_invoices
       }
     });
 

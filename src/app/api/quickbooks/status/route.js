@@ -217,7 +217,6 @@ export async function GET(request) {
         companyName: connection.company_name,
         realmId: connection.realm_id,
         autoSyncExpenses: connection.auto_sync_expenses,
-        autoSyncInvoices: connection.auto_sync_invoices,
         lastSyncAt: connection.last_sync_at,
         lastVerifiedAt: connection.last_verified_at,
         createdAt: connection.created_at,

@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { handleOAuthCallback } from '@/lib/services/quickbooks/quickbooksConnectionService';
+import { handleOAuthCallback, decodeState } from '@/lib/services/quickbooks/quickbooksConnectionService';
 import { autoMapCategories } from '@/lib/services/quickbooks/quickbooksMappingService';
 import { hasFeature } from '@/config/tierConfig';
 
@@ -25,20 +25,6 @@ const supabaseAdmin = createClient(
     }
   }
 );
-
-/**
- * Decode state parameter from OAuth callback
- * State format: base64(JSON.stringify({ userId, reconnect? }))
- */
-function decodeState(stateParam) {
-  try {
-    const decoded = Buffer.from(stateParam, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
-  } catch (err) {
-    log('Error decoding state:', err);
-    return null;
-  }
-}
 
 /**
  * GET /api/quickbooks/callback

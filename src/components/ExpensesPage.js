@@ -856,18 +856,27 @@ export default function ExpensesPage() {
         expense={currentExpense}
         onSave={handleSaveExpense}
         onQuickBooksSync={(result) => {
-          if (result.synced) {
+          // Prefer the rich `notify` object from the hook
+          if (result.notify) {
+            const typeMap = { success: 'success', warning: 'warning', error: 'error' };
+            setOperationMessage({
+              type: typeMap[result.notify.level] || 'info',
+              text: result.notify.message,
+            });
+            return;
+          }
+          // Fallback for older shape
+          if (result.synced && !result.alreadySynced) {
             setOperationMessage({
               type: 'success',
-              text: 'Expense synced to QuickBooks'
+              text: 'Expense synced to QuickBooks',
             });
-          } else if (result.error) {
+          } else if (result.error && !result.skipped) {
             setOperationMessage({
               type: 'warning',
-              text: `QuickBooks sync failed: ${result.error}`
+              text: `QuickBooks sync failed: ${result.error}`,
             });
           }
-          // If skipped (auto-sync not enabled), don't show anything
         }}
       />
 
