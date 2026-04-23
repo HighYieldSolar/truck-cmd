@@ -243,6 +243,28 @@ export async function mapVehicle(userId, connectionId, externalVehicle, provider
       }
     }
 
+    // Guard against many-to-one collapse: if the matched local vehicle is
+    // already mapped to a DIFFERENT external vehicle on this connection, we
+    // must not link another external vehicle to it. This shows up with demo
+    // fleets that share fake VINs across many vehicles; real fleets have
+    // unique VINs so this check is a no-op for them.
+    if (localVehicle) {
+      const { data: conflicting } = await supabaseAdmin
+        .from('eld_entity_mappings')
+        .select('id')
+        .eq('connection_id', connectionId)
+        .eq('entity_type', 'vehicle')
+        .eq('local_id', localVehicle.id)
+        .neq('external_id', externalId)
+        .limit(1);
+
+      if (conflicting && conflicting.length > 0) {
+        localVehicle = null;
+        matchConfidence = 0;
+        autoMatched = false;
+      }
+    }
+
     // Create mapping if we found a match
     if (localVehicle) {
       const { data, error } = await supabaseAdmin
