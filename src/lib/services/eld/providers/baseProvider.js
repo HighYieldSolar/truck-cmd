@@ -162,8 +162,11 @@ export class BaseELDProvider {
     this.accessToken = config.accessToken || null;
     this.refreshToken = config.refreshToken || null;
     this.tokenExpiresAt = config.tokenExpiresAt || null;
-    // Response formatting preferences; used as default request headers.
-    this.timeZone = config.timeZone || 'UTC';
+    // Response formatting preferences; sent as request headers only when
+    // explicitly configured. Motive rejects 'UTC' as an X-Time-Zone value,
+    // so we must not default to it — omitting the header tells Motive to
+    // use the company's configured time zone, which is the desired behavior.
+    this.timeZone = config.timeZone || null;
     this.metricUnits = config.metricUnits === true;
   }
 
@@ -343,11 +346,11 @@ export class BaseELDProvider {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      // Motive-specific headers that make responses deterministic. Unknown headers
-      // are ignored by other providers (Samsara), so this is safe to apply globally.
-      // Override per-request via options.headers if needed.
-      'X-Time-Zone': this.timeZone || 'UTC',
-      'X-Metric-Units': this.metricUnits ? 'true' : 'false',
+      // Only send Motive's X-Time-Zone / X-Metric-Units headers when explicitly
+      // configured. Motive rejects X-Time-Zone: UTC with 400 "invalid time zone";
+      // omitting the header defers to the company's configured TZ.
+      ...(this.timeZone ? { 'X-Time-Zone': this.timeZone } : {}),
+      ...(this.metricUnits ? { 'X-Metric-Units': 'true' } : {}),
       ...options.headers
     };
 
