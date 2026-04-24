@@ -35,21 +35,25 @@ export async function getAllVehicleLocations(userId) {
 
     const connectionId = connectionResult.data.id;
 
-    // Get latest locations from our database
+    // Get latest locations from our database. Column names match the actual
+    // eld_vehicle_locations schema: eld_vehicle_id (not external_vehicle_id),
+    // speed_mph (not speed), location_time (not recorded_at). Using the
+    // wrong names produced a 400 "column does not exist" error which broke
+    // both the dashboard fleet widget and the load-management map.
     const { data: locations, error } = await supabaseAdmin
       .from('eld_vehicle_locations')
       .select(`
         id,
-        external_vehicle_id,
+        eld_vehicle_id,
         latitude,
         longitude,
         heading,
-        speed,
+        speed_mph,
         address,
-        recorded_at
+        location_time
       `)
       .eq('connection_id', connectionId)
-      .order('recorded_at', { ascending: false });
+      .order('location_time', { ascending: false });
 
     if (error) {
       return { error: true, errorMessage: error.message };
@@ -58,15 +62,15 @@ export async function getAllVehicleLocations(userId) {
     // Get unique latest locations per vehicle
     const latestByVehicle = {};
     for (const loc of (locations || [])) {
-      if (!latestByVehicle[loc.external_vehicle_id]) {
-        latestByVehicle[loc.external_vehicle_id] = loc;
+      if (!latestByVehicle[loc.eld_vehicle_id]) {
+        latestByVehicle[loc.eld_vehicle_id] = loc;
       }
     }
 
     // Enhance with local vehicle info
     const enhancedLocations = await Promise.all(
       Object.values(latestByVehicle).map(async (loc) => {
-        const localVehicleId = await getLocalVehicleId(connectionId, loc.external_vehicle_id);
+        const localVehicleId = await getLocalVehicleId(connectionId, loc.eld_vehicle_id);
         let vehicleInfo = null;
 
         if (localVehicleId) {
@@ -79,11 +83,12 @@ export async function getAllVehicleLocations(userId) {
         }
 
         // Calculate how fresh the location is
-        const ageMinutes = Math.round((Date.now() - new Date(loc.recorded_at).getTime()) / 60000);
+        const ageMinutes = Math.round((Date.now() - new Date(loc.location_time).getTime()) / 60000);
         const isStale = ageMinutes > 30; // Consider stale if older than 30 minutes
+        const speedMph = loc.speed_mph ?? null;
 
         return {
-          externalVehicleId: loc.external_vehicle_id,
+          externalVehicleId: loc.eld_vehicle_id,
           localVehicleId,
           vehicleName: vehicleInfo?.name || vehicleInfo?.license_plate || 'Unknown Vehicle',
           vehicleInfo,
@@ -91,14 +96,14 @@ export async function getAllVehicleLocations(userId) {
             lat: loc.latitude,
             lng: loc.longitude,
             heading: loc.heading,
-            speed: loc.speed,
-            speedMph: loc.speed ? Math.round(loc.speed * 0.621371) : null, // km/h to mph
+            speed: speedMph,
+            speedMph: speedMph != null ? Math.round(speedMph) : null,
             address: loc.address
           },
-          recordedAt: loc.recorded_at,
+          recordedAt: loc.location_time,
           ageMinutes,
           isStale,
-          isMoving: loc.speed > 5 // km/h
+          isMoving: (speedMph ?? 0) > 5
         };
       })
     );
@@ -157,15 +162,16 @@ export async function getVehicleLocationHistory(userId, vehicleId, startTime, en
     const end = endTime || new Date().toISOString();
     const start = startTime || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    // Get location history from database
+    // Get location history from database. Schema: eld_vehicle_id,
+    // location_time, speed_mph (already in mph from the sync writer).
     const { data: locations, error } = await supabaseAdmin
       .from('eld_vehicle_locations')
       .select('*')
       .eq('connection_id', connectionId)
-      .eq('external_vehicle_id', vehicle.eld_external_id)
-      .gte('recorded_at', start)
-      .lte('recorded_at', end)
-      .order('recorded_at', { ascending: true });
+      .eq('eld_vehicle_id', vehicle.eld_external_id)
+      .gte('location_time', start)
+      .lte('location_time', end)
+      .order('location_time', { ascending: true });
 
     if (error) {
       return { error: true, errorMessage: error.message };
@@ -173,24 +179,25 @@ export async function getVehicleLocationHistory(userId, vehicleId, startTime, en
 
     // Calculate trip statistics
     let totalDistance = 0;
-    let maxSpeed = 0;
+    let maxSpeedMph = 0;
     const points = [];
 
     for (let i = 0; i < (locations || []).length; i++) {
       const loc = locations[i];
+      const speedMph = loc.speed_mph ?? null;
 
       points.push({
         lat: loc.latitude,
         lng: loc.longitude,
-        time: loc.recorded_at,
-        speed: loc.speed,
-        speedMph: loc.speed ? Math.round(loc.speed * 0.621371) : null,
+        time: loc.location_time,
+        speed: speedMph,
+        speedMph: speedMph != null ? Math.round(speedMph) : null,
         heading: loc.heading,
         address: loc.address
       });
 
-      if (loc.speed > maxSpeed) {
-        maxSpeed = loc.speed;
+      if (speedMph != null && speedMph > maxSpeedMph) {
+        maxSpeedMph = speedMph;
       }
 
       // Calculate distance from previous point
@@ -216,8 +223,8 @@ export async function getVehicleLocationHistory(userId, vehicleId, startTime, en
       statistics: {
         totalDistanceMiles: Math.round(totalDistance * 0.621371 * 10) / 10,
         totalDistanceKm: Math.round(totalDistance * 10) / 10,
-        maxSpeedMph: Math.round(maxSpeed * 0.621371),
-        maxSpeedKmh: Math.round(maxSpeed),
+        maxSpeedMph: Math.round(maxSpeedMph),
+        maxSpeedKmh: Math.round(maxSpeedMph / 0.621371),
         avgSpeedMph: points.length > 0
           ? Math.round(points.reduce((sum, p) => sum + (p.speedMph || 0), 0) / points.length)
           : 0
@@ -265,17 +272,13 @@ export async function refreshLocations(userId) {
       try {
         const locationData = {
           connection_id: connectionId,
-          external_vehicle_id: location.vehicleId,
+          eld_vehicle_id: location.vehicleId,
           latitude: location.latitude,
           longitude: location.longitude,
           heading: location.heading,
-          speed: location.speed,
+          speed_mph: location.speed,
           address: location.address || location.formattedAddress,
-          recorded_at: location.time || now,
-          metadata: {
-            source: 'terminal',
-            refreshedAt: now
-          }
+          location_time: location.time || now
         };
 
         await supabaseAdmin

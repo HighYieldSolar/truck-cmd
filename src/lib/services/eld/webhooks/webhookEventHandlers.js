@@ -141,21 +141,21 @@ export async function handleMotiveLocationUpdated(connectionId, userId, payload)
   // Find local vehicle
   const vehicleId = await findVehicle(userId, vehicle_id, 'motive');
 
-  // Store location in eld_vehicle_locations
+  // Store location in eld_vehicle_locations. Schema uses eld_vehicle_id,
+  // location_time, and odometer (no odometer_miles). Using the old column
+  // names silently failed every webhook insert.
   const locationData = {
     user_id: userId,
     connection_id: connectionId,
-    vehicle_id: vehicleId,
-    external_vehicle_id: vehicle_id.toString(),
+    eld_vehicle_id: vehicle_id.toString(),
     latitude: lat,
     longitude: lon,
     speed_mph: speed,
     heading: bearing,
-    odometer_miles: odometer,
+    odometer: odometer,
     engine_hours: engine_hours,
     address: description,
-    recorded_at: located_at,
-    created_at: new Date().toISOString()
+    location_time: located_at
   };
 
   const { error: locationError } = await supabaseAdmin
@@ -243,20 +243,19 @@ export async function handleSamsaraVehicleStats(connectionId, userId, payload) {
   // Convert meters to miles
   const odometerMiles = obdOdometerMeters ? obdOdometerMeters * 0.000621371 : null;
 
-  // Store location
+  // Store location (Samsara). Schema: eld_vehicle_id, location_time, odometer.
   const locationData = {
     user_id: userId,
     connection_id: connectionId,
-    vehicle_id: vehicleId,
-    external_vehicle_id: vehicle.id.toString(),
+    eld_vehicle_id: vehicle.id.toString(),
     latitude: gps.latitude,
     longitude: gps.longitude,
     speed_mph: gps.speedMilesPerHour,
     heading: gps.headingDegrees,
-    odometer_miles: odometerMiles,
+    odometer: odometerMiles,
     engine_hours: engineHours,
     address: gps.reverseGeo?.formattedLocation,
-    recorded_at: gps.time,
+    location_time: gps.time,
     created_at: new Date().toISOString()
   };
 

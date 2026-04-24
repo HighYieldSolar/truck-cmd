@@ -171,15 +171,16 @@ export async function getDriverHosDetails(userId, driverId, startDate, endDate) 
       return { error: true, errorMessage: logsError.message };
     }
 
-    // Get individual log entries
+    // Get individual log entries. eld_hos_logs stores per-day aggregated rows
+    // keyed by eld_driver_id + log_date (not log_time), so filter by log_date.
     const { data: logEntries, error: entriesError } = await supabaseAdmin
       .from('eld_hos_logs')
       .select('*')
       .eq('connection_id', connectionId)
-      .eq('external_driver_id', driver.eld_external_id)
-      .gte('log_time', `${start}T00:00:00Z`)
-      .lte('log_time', `${end}T23:59:59Z`)
-      .order('log_time', { ascending: false });
+      .eq('eld_driver_id', driver.eld_external_id)
+      .gte('log_date', start)
+      .lte('log_date', end)
+      .order('log_date', { ascending: false });
 
     if (entriesError) {
       return { error: true, errorMessage: entriesError.message };
@@ -213,12 +214,13 @@ export async function getDriverHosDetails(userId, driverId, startDate, endDate) 
         certifiedAt: log.certified_at
       })),
       logEntries: (logEntries || []).map(entry => ({
-        time: entry.log_time,
+        time: entry.log_date,
         status: entry.duty_status,
         statusLabel: getStatusLabel(entry.duty_status),
-        location: entry.location,
-        notes: entry.notes,
-        vehicle: entry.external_vehicle_id
+        drivingHours: entry.driving_hours,
+        onDutyHours: entry.on_duty_hours,
+        offDutyHours: entry.off_duty_hours,
+        sleeperHours: entry.sleeper_hours
       })),
       summary: {
         totalDriveTime: formatMinutes(totalDriveMinutes),
