@@ -622,32 +622,37 @@ export class MotiveProvider extends BaseELDProvider {
           // Motive wraps each trip in an 'ifta_trip' object
           const trip = item.ifta_trip || item;
 
-          // Build jurisdiction miles map
-          const jurisdictionsMiles = {};
-          if (trip.jurisdiction_details) {
-            for (const jd of trip.jurisdiction_details) {
-              const state = jd.jurisdiction;
-              if (state) {
-                jurisdictionsMiles[state] = (jurisdictionsMiles[state] || 0) + (jd.distance || 0);
-              }
-            }
-          }
+          // Per Motive /v1/ifta/trips docs: each trip has a single top-level
+          // `jurisdiction` + `distance`. There is no `jurisdiction_details`
+          // array — using one would leave jurisdictionsMiles empty.
+          const jurisdiction = trip.jurisdiction;
+          const miles = parseFloat(trip.distance) || 0;
+          const jurisdictionsMiles = jurisdiction ? { [jurisdiction]: miles } : {};
+
+          // Vehicle info may be nested or flat on the response
+          const v = trip.vehicle || trip;
 
           trips.push({
-            vehicleId: trip.vehicle?.id?.toString(),
+            vehicleId: v.id?.toString(),
             driverId: trip.driver?.id?.toString(),
-            startJurisdiction: trip.start_jurisdiction,
-            endJurisdiction: trip.end_jurisdiction,
+            startJurisdiction: jurisdiction,
+            endJurisdiction: jurisdiction,
             jurisdictionsMiles,
-            totalMiles: trip.distance || 0,
+            totalMiles: miles,
             startOdometer: trip.start_odometer,
             endOdometer: trip.end_odometer,
-            startTime: trip.start_time,
-            endTime: trip.end_time,
+            startTime: trip.start_time || trip.date,
+            endTime: trip.end_time || trip.date,
             metadata: {
               provider: 'motive',
               tripId: trip.id,
-              vehicleName: trip.vehicle?.number
+              date: trip.date,
+              vehicleName: v.number,
+              startLat: trip.start_lat,
+              startLon: trip.start_lon,
+              endLat: trip.end_lat,
+              endLon: trip.end_lon,
+              timeZone: trip.time_zone
             }
           });
         }
@@ -686,24 +691,30 @@ export class MotiveProvider extends BaseELDProvider {
         for (const item of response.ifta_summary) {
           // Motive may wrap each summary — handle both wrapped and unwrapped
           const summary = item.ifta_summary || item;
-          const jurisdictionsMiles = {};
 
-          if (summary.jurisdiction_breakdown) {
-            for (const jb of summary.jurisdiction_breakdown) {
-              if (jb.jurisdiction) {
-                jurisdictionsMiles[jb.jurisdiction] = jb.distance || 0;
-              }
-            }
-          }
+          // Per Motive /v1/ifta/summary docs: each response row is one
+          // (vehicle, jurisdiction, distance) tuple. There is no nested
+          // `jurisdiction_breakdown` array — using one would leave
+          // jurisdictionsMiles empty on every sync. Vehicle info may be
+          // nested under `.vehicle` or flat on the row.
+          const jurisdiction = summary.jurisdiction;
+          const miles = parseFloat(summary.distance) || 0;
+          const jurisdictionsMiles = jurisdiction ? { [jurisdiction]: miles } : {};
+          const v = summary.vehicle || summary;
 
           summaries.push({
-            vehicleId: summary.vehicle?.id?.toString(),
-            vehicleName: summary.vehicle?.number,
+            vehicleId: v.id?.toString(),
+            vehicleName: v.number,
             jurisdictionsMiles,
-            totalMiles: summary.total_distance || 0,
+            totalMiles: miles,
             metadata: {
               provider: 'motive',
-              fuelType: summary.fuel_type
+              metricUnits: v.metric_units,
+              vin: v.vin,
+              make: v.make,
+              model: v.model,
+              year: v.year,
+              timeZone: summary.time_zone
             }
           });
         }

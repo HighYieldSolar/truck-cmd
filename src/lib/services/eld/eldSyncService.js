@@ -141,6 +141,7 @@ export async function syncAll(userId, connectionId) {
     ifta: null,
     gps: null,
     faultCodes: null,
+    fuel: null,
     totalRecords: 0,
     errors: []
   };
@@ -230,6 +231,29 @@ export async function syncAll(userId, connectionId) {
       }
     }
 
+    // Sync fuel purchases for current + previous quarter (IFTA window).
+    // Fuel purchases are the authoritative source for gallons-per-jurisdiction,
+    // required for the IFTA calculator. Matching the IFTA quarter window keeps
+    // miles and gallons in the same date range.
+    if (provider.supportsFeature('fuel_purchases')) {
+      const now = new Date();
+      const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+      const currentYear = now.getFullYear();
+      const prevQuarter = currentQuarter > 1 ? currentQuarter - 1 : 4;
+      const prevYear = currentQuarter > 1 ? currentYear : currentYear - 1;
+      const windowStart = new Date(prevYear, (prevQuarter - 1) * 3, 1);
+      const windowEnd = new Date(currentYear, currentQuarter * 3, 0);
+      const fuelStart = windowStart.toISOString().split('T')[0];
+      const fuelEnd = windowEnd.toISOString().split('T')[0];
+
+      results.fuel = await syncFuelPurchases(userId, connectionId, fuelStart, fuelEnd);
+      if (results.fuel.error) {
+        results.errors.push({ type: 'fuel', error: results.fuel.errorMessage });
+      } else {
+        results.totalRecords += results.fuel.count || 0;
+      }
+    }
+
     // Update sync job and connection - store sync details for debugging
     const syncDetails = JSON.stringify({
       vehicles: results.vehicles?.count || 0,
@@ -240,6 +264,7 @@ export async function syncAll(userId, connectionId) {
       hosMessage: results.hos?.message,
       ifta: results.ifta?.quarters || [],
       faultCodes: results.faultCodes?.count || 0,
+      fuel: results.fuel?.count || 0,
       errors: results.errors
     });
     syncLog('Sync completed with details:', syncDetails);

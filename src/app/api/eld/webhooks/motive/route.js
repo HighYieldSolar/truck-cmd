@@ -18,6 +18,7 @@ import { validateWebhook } from '@/lib/services/eld/webhooks/webhookSignatureSer
 import {
   handleMotiveLocationUpdated,
   handleMotiveHosUpdate,
+  handleMotiveHosViolation,
   handleMotiveFaultCode
 } from '@/lib/services/eld/webhooks/webhookEventHandlers';
 import { createClient } from '@supabase/supabase-js';
@@ -262,10 +263,18 @@ export async function POST(request) {
           break;
 
         case 'user_duty_status_updated':
-        case 'hos_violation_upserted':
         case 'hos_log_created':
         case 'hos_log_updated':
           result = await handleMotiveHosUpdate(connectionId, userId, payload);
+          break;
+
+        case 'hos_violation_upserted':
+          // Violation events carry type/start_time/end_time/driver — route to
+          // the violation handler so details land in eld_hos_violations and a
+          // CRITICAL notification is created. Previously this was routed to
+          // handleMotiveHosUpdate, which only updated duty status and
+          // silently discarded the violation detail.
+          result = await handleMotiveHosViolation(connectionId, userId, payload);
           break;
 
         case 'fault_code_opened':

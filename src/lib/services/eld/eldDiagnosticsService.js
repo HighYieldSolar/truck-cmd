@@ -5,7 +5,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getConnection, createProviderForConnection } from './eldConnectionService';
+import { getActiveEldConnection, createProviderForConnection } from './eldConnectionService';
 import { getLocalVehicleId } from './eldMappingService';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -32,7 +32,7 @@ const supabaseAdmin = createClient(
 export async function getDiagnosticsData(userId) {
   try {
     // Get active ELD connection
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     const connection = connectionResult?.data;
 
     if (!connection) {

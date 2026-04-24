@@ -18,7 +18,6 @@ import {
   getSyncHistory,
   getLatestSyncStatus
 } from '@/lib/services/eld/eldSyncService';
-import { getConnection } from '@/lib/services/eld/eldConnectionService';
 import { hasFeature } from '@/config/tierConfig';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -131,9 +130,16 @@ export async function GET(request) {
 
     // If connectionId provided, get that connection's sync history
     if (connectionId) {
-      // Verify user owns this connection
-      const connectionResult = await getConnection(user.id, 'terminal');
-      if (connectionResult.error || !connectionResult.data || connectionResult.data.id !== connectionId) {
+      // Verify user owns this specific connection. Previously this used
+      // getConnection(user.id, 'terminal') which is a nonexistent provider
+      // and always returned nothing, bricking the history endpoint.
+      const { data: ownedConn } = await supabaseAdmin
+        .from('eld_connections')
+        .select('id')
+        .eq('id', connectionId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!ownedConn) {
         return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
       }
 

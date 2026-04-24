@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getConnection, createProviderForConnection } from './eldConnectionService';
+import { getActiveEldConnection, createProviderForConnection } from './eldConnectionService';
 import { getLocalVehicleId } from './eldMappingService';
 
 // Initialize Supabase admin client
@@ -28,7 +28,7 @@ const supabaseAdmin = createClient(
  */
 export async function getAllVehicleLocations(userId) {
   try {
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
@@ -146,7 +146,7 @@ export async function getVehicleLocationHistory(userId, vehicleId, startTime, en
       return { error: true, errorMessage: 'Vehicle not linked to ELD' };
     }
 
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
@@ -239,7 +239,7 @@ export async function getVehicleLocationHistory(userId, vehicleId, startTime, en
  */
 export async function refreshLocations(userId) {
   try {
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }

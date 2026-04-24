@@ -12,7 +12,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getConnection } from './eldConnectionService';
+import { getActiveEldConnection } from './eldConnectionService';
 import { hasFeature } from '@/config/tierConfig';
 import {
   getAutomatedMileageSummary,
@@ -52,7 +52,7 @@ export async function getEldMileageForQuarter(userId, quarter) {
     const endMonth = `${year}-${(quarterNum * 3).toString().padStart(2, '0')}`;
 
     // Get user's active ELD connection
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return {
         error: false,

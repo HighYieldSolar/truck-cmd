@@ -296,6 +296,39 @@ export async function getConnection(userId, providerId) {
 }
 
 /**
+ * Get the user's active ELD connection regardless of provider.
+ *
+ * The older `getConnection(userId, providerId)` requires a literal provider
+ * string, and several services passed 'terminal' (a nonexistent provider),
+ * silently returning "No active ELD connection" for real Motive/Samsara users.
+ * Prefer this helper whenever the caller doesn't care which provider is active
+ * — it returns the first active connection ordered by most recent sync.
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{ data: object|null, error?: boolean, errorMessage?: string }>}
+ */
+export async function getActiveEldConnection(userId) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('eld_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('last_sync_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return { error: true, errorMessage: error.message };
+    }
+
+    return { data };
+  } catch (error) {
+    return { error: true, errorMessage: error.message };
+  }
+}
+
+/**
  * Get all ELD connections for a user
  * @param {string} userId - User ID
  * @returns {Promise<object>} - Array of connection records
@@ -745,6 +778,7 @@ export default {
   handleOAuthCallback,
   createConnection,
   getConnection,
+  getActiveEldConnection,
   getAllConnections,
   disconnectConnection,
   deleteConnection,

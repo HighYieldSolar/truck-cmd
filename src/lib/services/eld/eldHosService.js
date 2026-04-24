@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getConnection, createProviderForConnection } from './eldConnectionService';
+import { getActiveEldConnection, createProviderForConnection } from './eldConnectionService';
 import { getLocalDriverId } from './eldMappingService';
 import { normalizeDutyStatus } from './terminalClient';
 
@@ -50,7 +50,7 @@ export const HOS_LIMITS = {
  */
 export async function getAllDriversHosStatus(userId) {
   try {
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
@@ -146,7 +146,7 @@ export async function getDriverHosDetails(userId, driverId, startDate, endDate) 
       return { error: true, errorMessage: 'Driver not linked to ELD' };
     }
 
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
@@ -243,7 +243,7 @@ export async function getDriverHosDetails(userId, driverId, startDate, endDate) 
  */
 export async function getAvailableTime(userId) {
   try {
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }
@@ -312,7 +312,7 @@ export async function getAvailableTime(userId) {
  */
 export async function checkHosCompliance(userId) {
   try {
-    const connectionResult = await getConnection(userId, 'terminal');
+    const connectionResult = await getActiveEldConnection(userId);
     if (connectionResult.error || !connectionResult.data) {
       return { error: true, errorMessage: 'No active ELD connection' };
     }

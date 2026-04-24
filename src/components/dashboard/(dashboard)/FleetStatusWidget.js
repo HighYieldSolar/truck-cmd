@@ -233,7 +233,7 @@ export default function FleetStatusWidget({ className = '' }) {
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
           </button>
           <Link
-            href="/dashboard/settings/eld"
+            href="/dashboard/eld"
             className="text-sm hover:underline"
           >
             View Map
@@ -299,7 +299,7 @@ export default function FleetStatusWidget({ className = '' }) {
       {vehicles.length > 4 && (
         <div className="px-4 py-3 text-center border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
           <Link
-            href="/dashboard/settings/eld"
+            href="/dashboard/eld"
             className="text-sm text-green-600 dark:text-green-400 hover:underline"
           >
             View all {vehicles.length} vehicles
