@@ -40,16 +40,13 @@ const supabaseAdmin = createClient(
  */
 export async function getEldMileageForQuarter(userId, quarter) {
   try {
-    // Parse quarter to get month range
+    // Validate quarter format
     const [year, qPart] = quarter.split('-Q');
     const quarterNum = parseInt(qPart);
 
     if (isNaN(quarterNum) || quarterNum < 1 || quarterNum > 4) {
       return { error: true, errorMessage: 'Invalid quarter format' };
     }
-
-    const startMonth = `${year}-${((quarterNum - 1) * 3 + 1).toString().padStart(2, '0')}`;
-    const endMonth = `${year}-${(quarterNum * 3).toString().padStart(2, '0')}`;
 
     // Get user's active ELD connection
     const connectionResult = await getActiveEldConnection(userId);
@@ -64,19 +61,22 @@ export async function getEldMileageForQuarter(userId, quarter) {
 
     const connectionId = connectionResult.data.id;
 
-    // Fetch ELD IFTA mileage data
+    // Fetch ELD IFTA mileage data. Column names below match the actual
+    // eld_ifta_mileage schema: `miles` (not total_miles), `quarter` (not
+    // month), `eld_vehicle_id` (not external_vehicle_id). The previous
+    // column set did not exist and the query silently returned nothing.
     const { data, error } = await supabaseAdmin
       .from('eld_ifta_mileage')
       .select(`
         jurisdiction,
-        total_miles,
-        month,
-        vehicle_breakdown,
-        external_vehicle_id
+        miles,
+        quarter,
+        start_date,
+        end_date,
+        eld_vehicle_id
       `)
       .eq('connection_id', connectionId)
-      .gte('month', startMonth)
-      .lte('month', endMonth);
+      .eq('quarter', quarter);
 
     if (error) {
       return { error: true, errorMessage: error.message };
@@ -96,11 +96,13 @@ export async function getEldMileageForQuarter(userId, quarter) {
         };
       }
 
-      mileageByJurisdiction[record.jurisdiction].miles += record.total_miles || 0;
-      mileageByJurisdiction[record.jurisdiction].months.push(record.month);
+      mileageByJurisdiction[record.jurisdiction].miles += parseFloat(record.miles) || 0;
+      if (record.start_date) {
+        mileageByJurisdiction[record.jurisdiction].months.push(record.start_date.slice(0, 7));
+      }
 
-      if (record.external_vehicle_id) {
-        mileageByJurisdiction[record.jurisdiction].vehicles.add(record.external_vehicle_id);
+      if (record.eld_vehicle_id) {
+        mileageByJurisdiction[record.jurisdiction].vehicles.add(record.eld_vehicle_id);
       }
     }
 
