@@ -108,18 +108,24 @@ export default function SimplifiedExportModal({
     // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
 
-    // Seed with automated (ELD-sourced) miles per jurisdiction so exports
-    // include Motive-provided IFTA totals even when no manual trip rows
-    // exist. Manual trip miles are added on top below.
-    automatedJurisdictions.forEach(j => {
-      const state = j.code || j.jurisdiction;
-      const miles = parseFloat(j.miles || 0);
-      if (!state || miles <= 0) return;
-      if (!milesByJurisdiction[state]) {
-        milesByJurisdiction[state] = { state, miles: 0, gallons: 0 };
-      }
-      milesByJurisdiction[state].miles += miles;
-    });
+    // Miles come from EITHER manual trips OR automated ELD totals, not both.
+    // When manual trips exist (ifta_trip_records), they are the source of
+    // truth — adding automated miles on top double-counts (e.g. 21,541
+    // manual + 21,540 automated = 44,024 on the report when the user
+    // expects 21,541). Fall back to automated only when manual is empty.
+    const useAutomatedOnly = filteredTrips.length === 0 && hasAutomatedMileage;
+
+    if (useAutomatedOnly) {
+      automatedJurisdictions.forEach(j => {
+        const state = j.code || j.jurisdiction;
+        const miles = parseFloat(j.miles || 0);
+        if (!state || miles <= 0) return;
+        if (!milesByJurisdiction[state]) {
+          milesByJurisdiction[state] = { state, miles: 0, gallons: 0 };
+        }
+        milesByJurisdiction[state].miles += miles;
+      });
+    }
 
     // Process miles from filtered trips
     filteredTrips.forEach(trip => {
