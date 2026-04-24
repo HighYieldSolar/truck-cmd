@@ -82,8 +82,15 @@ export default function DispatchingMap({
         return;
       }
 
-      // Fetch GPS dashboard data
-      const response = await fetch('/api/eld/gps/dashboard');
+      // Fetch GPS dashboard data (route requires Bearer token for auth)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not signed in');
+      }
+
+      const response = await fetch('/api/eld/gps/dashboard', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
 
       if (!response.ok) {
         const data = await response.json();
@@ -114,7 +121,16 @@ export default function DispatchingMap({
     setRefreshing(true);
 
     try {
-      const response = await fetch('/api/eld/gps/refresh', { method: 'POST' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setRefreshing(false);
+        return;
+      }
+
+      const response = await fetch('/api/eld/gps/refresh', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
       if (response.ok) {
         await loadVehicleData();
       }
