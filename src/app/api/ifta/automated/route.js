@@ -145,21 +145,9 @@ export async function GET(request) {
 
     const { data: mileageData, error: mileageError } = await mileageQuery;
 
-    if (mileageError) {
-      // Table might not exist yet
-      if (mileageError.code === '42P01') {
-        log('ifta_automated_mileage table does not exist yet');
-        return NextResponse.json({
-          quarter,
-          jurisdictions: [],
-          totalMiles: 0,
-          jurisdictionCount: 0,
-          breadcrumbCount: 0,
-          crossingCount: 0,
-          hasData: false,
-          lastUpdated: new Date().toISOString()
-        });
-      }
+    if (mileageError && mileageError.code !== '42P01') {
+      // 42P01 = relation does not exist; treat as empty and fall through to
+      // the eld_ifta_mileage fallback below.
       throw mileageError;
     }
 
@@ -186,6 +174,30 @@ export async function GET(request) {
       totalMiles += miles;
       totalCrossings += crossings;
     });
+
+    // Fallback to eld_ifta_mileage (provider-computed, from Motive
+    // /v1/ifta/summary) when the PostGIS pipeline has not populated
+    // ifta_automated_mileage. Motive already aggregates per (vehicle,
+    // jurisdiction) on their side so these numbers are authoritative.
+    if (totalMiles === 0) {
+      const { data: eldRows } = await supabaseAdmin
+        .from('eld_ifta_mileage')
+        .select('jurisdiction, miles, eld_vehicle_id')
+        .eq('user_id', user.id)
+        .eq('quarter', quarter);
+
+      for (const row of (eldRows || [])) {
+        const code = row.jurisdiction;
+        const miles = parseFloat(row.miles) || 0;
+        if (!code || miles <= 0) continue;
+
+        if (!jurisdictionTotals[code]) {
+          jurisdictionTotals[code] = { code, miles: 0, crossings: 0 };
+        }
+        jurisdictionTotals[code].miles += miles;
+        totalMiles += miles;
+      }
+    }
 
     // Convert to sorted array
     const jurisdictions = Object.values(jurisdictionTotals)

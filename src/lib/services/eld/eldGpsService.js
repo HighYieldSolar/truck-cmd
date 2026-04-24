@@ -92,7 +92,12 @@ export async function getAllVehicleLocations(userId) {
           localVehicleId,
           vehicleName: vehicleInfo?.name || vehicleInfo?.license_plate || 'Unknown Vehicle',
           vehicleInfo,
+          // FleetMap reads `location.latitude`/`location.longitude` — keep
+          // those names as the canonical shape. `lat`/`lng` aliases retained
+          // for any older callers.
           location: {
+            latitude: loc.latitude,
+            longitude: loc.longitude,
             lat: loc.latitude,
             lng: loc.longitude,
             heading: loc.heading,
@@ -404,6 +409,11 @@ export async function getGpsDashboard(userId) {
 
     return {
       error: false,
+      // Full, map-ready vehicle list. The /api/eld/gps/dashboard route and
+      // downstream FleetMap/DispatchingMap/FleetStatusWidget consume this
+      // directly — previously the function omitted it and the map showed
+      // zero markers for both moving and stopped vehicles.
+      vehicles,
       totalVehicles: vehicles.length,
       movingCount: moving.length,
       stoppedCount: stopped.length,
