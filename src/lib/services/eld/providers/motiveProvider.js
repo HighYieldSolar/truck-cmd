@@ -84,8 +84,9 @@ export class MotiveProvider extends BaseELDProvider {
       'fault_codes.read',                  // Vehicle fault codes
       'fuel_purchases.read',               // Fuel purchases
       'eld_devices.read',                  // ELD device information
-      'company_webhooks.read',             // Required for webhook registration (POST/GET/PUT/DELETE /v1/company_webhooks)
-      'company_webhooks.write'             // Write scope for creating/updating webhooks
+      'company_webhooks.read'              // Required for webhook register/list/update/delete
+                                           // (Motive uses one scope for read+write on webhooks;
+                                           // `company_webhooks.write` is rejected as invalid)
     ].join(' ');
 
     const params = new URLSearchParams({
