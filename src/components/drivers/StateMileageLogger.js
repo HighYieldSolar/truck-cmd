@@ -1014,11 +1014,45 @@ export default function StateMileageLogger() {
     }
   };
 
-  // Calculate total miles for all historical trips - using memo to keep consistent values
+  // Quarter filter that applies to both the Past Trips list and the Summary
+  // card. Default to 'all' so existing "all time" behavior is preserved.
+  const [summaryQuarter, setSummaryQuarter] = useState('all');
+
+  // Derive the quarters that actually contain trip data so users only see
+  // quarters they have records in (plus "All time").
+  const availableQuarters = useMemo(() => {
+    const set = new Set();
+    completedTrips.forEach(trip => {
+      const raw = trip.end_date || trip.start_date;
+      if (!raw) return;
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return;
+      set.add(`${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`);
+    });
+    return Array.from(set).sort().reverse();
+  }, [completedTrips]);
+
+  // Trips narrowed by the selected quarter filter. A trip counts toward a
+  // quarter if its end_date (fallback start_date) falls inside it.
+  const filteredCompletedTrips = useMemo(() => {
+    if (summaryQuarter === 'all') return completedTrips;
+    return completedTrips.filter(trip => {
+      const raw = trip.end_date || trip.start_date;
+      if (!raw) return false;
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return false;
+      const q = `${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`;
+      return q === summaryQuarter;
+    });
+  }, [completedTrips, summaryQuarter]);
+
+  // Calculate total miles for trips in the selected quarter (or all time).
   const totalHistoricalMileage = useMemo(() => {
     const stateTotals = new Map();
+    const allowedTripIds = new Set(filteredCompletedTrips.map(t => t.id));
 
     Object.entries(completedTripCrossings).forEach(([tripId, crossings]) => {
+      if (!allowedTripIds.has(tripId)) return;
       if (!crossings || crossings.length < 2) return;
 
       for (let i = 0; i < crossings.length - 1; i++) {
@@ -1046,7 +1080,25 @@ export default function StateMileageLogger() {
     // Convert map to array and sort by miles
     return Array.from(stateTotals.values())
       .sort((a, b) => b.miles - a.miles);
-  }, [completedTripCrossings]);
+  }, [completedTripCrossings, filteredCompletedTrips]);
+
+  // Reusable dropdown rendered inside the Past Trips + Summary tab headers.
+  const quarterFilterOptions = [
+    { value: 'all', label: 'All time' },
+    ...availableQuarters.map(q => ({ value: q, label: q.replace('-', ' · ') }))
+  ];
+  const QuarterFilter = ({ className = '' }) => (
+    <select
+      value={summaryQuarter}
+      onChange={(e) => setSummaryQuarter(e.target.value)}
+      className={`text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      aria-label="Filter by quarter"
+    >
+      {quarterFilterOptions.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  );
 
   // Loading state
   if (loading && !selectedTrip) {
@@ -1493,9 +1545,12 @@ export default function StateMileageLogger() {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {t('pastTrips.title')}
-                </h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {t('pastTrips.title')}
+                  </h2>
+                  <QuarterFilter />
+                </div>
               </div>
 
               <div className="p-4 bg-white dark:bg-gray-800">
@@ -1504,15 +1559,19 @@ export default function StateMileageLogger() {
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-3"></div>
                     <p className="text-gray-500 dark:text-gray-400">{t('pastTrips.loading')}</p>
                   </div>
-                ) : completedTrips.length === 0 ? (
+                ) : filteredCompletedTrips.length === 0 ? (
                   <div className="text-center py-8">
                     <History className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('pastTrips.noTrips')}</h3>
-                    <p className="text-gray-500 dark:text-gray-400">{t('pastTrips.noTripsDescription')}</p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {summaryQuarter === 'all'
+                        ? t('pastTrips.noTripsDescription')
+                        : `No trips recorded for ${summaryQuarter.replace('-', ' · ')}.`}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {completedTrips.map(trip => (
+                    {filteredCompletedTrips.map(trip => (
                       <TripCard
                         key={trip.id}
                         trip={trip}
@@ -1694,10 +1753,13 @@ export default function StateMileageLogger() {
         <div className="grid grid-cols-1 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
-                {t('summaryTab.title')}
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                  <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
+                  {t('summaryTab.title')}
+                </h2>
+                <QuarterFilter />
+              </div>
             </div>
             <div className="p-4">
               {totalHistoricalMileage.length === 0 ? (
@@ -1743,7 +1805,7 @@ export default function StateMileageLogger() {
                       </div>
                       <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                         <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('summaryTab.completedTrips')}</div>
-                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{completedTrips.length}</div>
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{filteredCompletedTrips.length}</div>
                       </div>
                     </div>
                   </div>
