@@ -1018,49 +1018,75 @@ export default function StateMileageLogger() {
   // card. Default to 'all' so existing "all time" behavior is preserved.
   const [summaryQuarter, setSummaryQuarter] = useState('all');
 
-  // Derive the quarters that actually contain trip data so users only see
-  // quarters they have records in (plus "All time").
+  // Pure helper: YYYY-QN for any Date-parseable value, or null when unknown.
+  const quarterForDate = (raw) => {
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+    return `${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`;
+  };
+
+  // Derive the quarters that actually contain data so users only see
+  // quarters they have records in (plus "All time"). Pull quarters from
+  // crossing timestamps when available — those are the authoritative
+  // on-road times — and fall back to trip dates for trips without
+  // crossings yet.
   const availableQuarters = useMemo(() => {
     const set = new Set();
+    Object.values(completedTripCrossings).forEach(crossings => {
+      (crossings || []).forEach(c => {
+        const q = quarterForDate(c.timestamp || c.crossing_date);
+        if (q) set.add(q);
+      });
+    });
     completedTrips.forEach(trip => {
-      const raw = trip.end_date || trip.start_date;
-      if (!raw) return;
-      const d = new Date(raw);
-      if (isNaN(d.getTime())) return;
-      set.add(`${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`);
+      if (completedTripCrossings[trip.id]?.length) return; // already covered
+      const q = quarterForDate(trip.end_date || trip.start_date);
+      if (q) set.add(q);
     });
     return Array.from(set).sort().reverse();
-  }, [completedTrips]);
+  }, [completedTrips, completedTripCrossings]);
 
-  // Trips narrowed by the selected quarter filter. A trip counts toward a
-  // quarter if its end_date (fallback start_date) falls inside it.
+  // A trip belongs to a quarter if ANY of its crossings fall inside that
+  // quarter. That way a trip spanning Dec→Jan shows in both Q4 and Q1
+  // rather than artificially vanishing from Q4 because it ended in Q1.
   const filteredCompletedTrips = useMemo(() => {
     if (summaryQuarter === 'all') return completedTrips;
     return completedTrips.filter(trip => {
-      const raw = trip.end_date || trip.start_date;
-      if (!raw) return false;
-      const d = new Date(raw);
-      if (isNaN(d.getTime())) return false;
-      const q = `${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`;
-      return q === summaryQuarter;
+      const crossings = completedTripCrossings[trip.id] || [];
+      if (crossings.length > 0) {
+        return crossings.some(c => quarterForDate(c.timestamp || c.crossing_date) === summaryQuarter);
+      }
+      // Trip has no crossings loaded — fall back to its own dates
+      return quarterForDate(trip.end_date || trip.start_date) === summaryQuarter;
     });
-  }, [completedTrips, summaryQuarter]);
+  }, [completedTrips, completedTripCrossings, summaryQuarter]);
 
-  // Calculate total miles for trips in the selected quarter (or all time).
+  // Per-segment mileage aggregation. For each pair of consecutive crossings,
+  // the miles between them were driven in `crossings[i].state` during the
+  // quarter containing `crossings[i].timestamp`. When a quarter filter is
+  // active we only count segments whose entry timestamp falls in that
+  // quarter — so a cross-quarter trip splits miles correctly between Q4
+  // and Q1 instead of dumping them all into one bucket.
   const totalHistoricalMileage = useMemo(() => {
     const stateTotals = new Map();
-    const allowedTripIds = new Set(filteredCompletedTrips.map(t => t.id));
 
-    Object.entries(completedTripCrossings).forEach(([tripId, crossings]) => {
-      if (!allowedTripIds.has(tripId)) return;
+    Object.values(completedTripCrossings).forEach(crossings => {
       if (!crossings || crossings.length < 2) return;
 
       for (let i = 0; i < crossings.length - 1; i++) {
-        const currentState = crossings[i].state;
-        const stateName = crossings[i].state_name;
-        const currentOdometer = crossings[i].odometer;
-        const nextOdometer = crossings[i + 1].odometer;
-        const milesDriven = nextOdometer - currentOdometer;
+        const entry = crossings[i];
+        const exit = crossings[i + 1];
+
+        if (summaryQuarter !== 'all') {
+          const segQuarter = quarterForDate(entry.timestamp || entry.crossing_date);
+          if (segQuarter !== summaryQuarter) continue;
+        }
+
+        const currentState = entry.state;
+        const stateName = entry.state_name;
+        const milesDriven = (exit.odometer || 0) - (entry.odometer || 0);
+        if (!currentState || milesDriven <= 0) continue;
 
         if (stateTotals.has(currentState)) {
           stateTotals.set(currentState, {
@@ -1077,10 +1103,9 @@ export default function StateMileageLogger() {
       }
     });
 
-    // Convert map to array and sort by miles
     return Array.from(stateTotals.values())
       .sort((a, b) => b.miles - a.miles);
-  }, [completedTripCrossings, filteredCompletedTrips]);
+  }, [completedTripCrossings, summaryQuarter]);
 
   // Reusable dropdown rendered inside the Past Trips + Summary tab headers.
   const quarterFilterOptions = [
