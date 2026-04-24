@@ -125,7 +125,13 @@ export default function AutomatedIFTAPanel({
       const startDate = new Date(parseInt(year), startMonth, 1);
       const endDate = new Date(parseInt(year), startMonth + 3, 0);
 
-      // Build query for automated mileage
+      // Two data sources, in priority order:
+      //   1) ifta_automated_mileage — PostGIS-derived from GPS breadcrumbs
+      //   2) eld_ifta_mileage       — provider-computed (Motive /v1/ifta/summary)
+      //
+      // Motive already aggregates miles per (vehicle, jurisdiction) on their
+      // side, so when we have their numbers we should use them — PostGIS
+      // derivation is only needed when GPS breadcrumbs are our only source.
       let query = supabase
         .from('ifta_automated_mileage')
         .select('*')
@@ -138,12 +144,8 @@ export default function AutomatedIFTAPanel({
 
       const { data: mileageData, error: mileageError } = await query;
 
-      if (mileageError) {
-        // Table might not exist yet
-        if (mileageError.code === '42P01') {
-          setAutomatedData({ jurisdictions: [], totalMiles: 0, hasData: false });
-          return;
-        }
+      if (mileageError && mileageError.code !== '42P01') {
+        // 42P01 = relation does not exist; treat as empty and fall through
         throw mileageError;
       }
 
@@ -168,6 +170,36 @@ export default function AutomatedIFTAPanel({
         jurisdictionTotals[code].crossings += record.crossing_count || 0;
         totalMiles += miles;
       });
+
+      // Fallback to eld_ifta_mileage (provider-supplied IFTA summary) when
+      // PostGIS automated mileage is empty — this is the normal path for
+      // Motive connections today.
+      if (totalMiles === 0) {
+        const { data: eldRows, error: eldErr } = await supabase
+          .from('eld_ifta_mileage')
+          .select('jurisdiction, miles, eld_vehicle_id')
+          .eq('user_id', user.id)
+          .eq('quarter', quarter);
+
+        if (!eldErr && eldRows?.length) {
+          for (const row of eldRows) {
+            const code = row.jurisdiction;
+            const miles = parseFloat(row.miles) || 0;
+            if (!code || miles <= 0) continue;
+
+            if (!jurisdictionTotals[code]) {
+              jurisdictionTotals[code] = {
+                code,
+                name: STATE_NAMES[code] || code,
+                miles: 0,
+                crossings: 0
+              };
+            }
+            jurisdictionTotals[code].miles += miles;
+            totalMiles += miles;
+          }
+        }
+      }
 
       // Convert to sorted array
       const jurisdictions = Object.values(jurisdictionTotals)
