@@ -163,36 +163,24 @@ export async function POST(request) {
   const startTime = Date.now();
 
   try {
-    // Get raw body for signature validation
+    // Get raw body — we need it both for signature validation and parsing.
     const rawBody = await request.text();
     const headers = request.headers;
 
-    // Validate webhook signature
-    const validation = validateWebhook('motive', rawBody, headers);
-
-    if (!validation.valid) {
-      log('Signature validation failed:', validation.error);
-      await logWebhookEvent({
-        provider: 'motive',
-        eventType: 'signature_failed',
-        rawPayload: rawBody.substring(0, 1000),
-        status: 'rejected',
-        error: validation.error
-      });
-
-      // 403 (not 401) signals terminal rejection to Motive — prevents indefinite retry.
-      // Per Motive webhook docs: 403 = signature verification failed, no retry.
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 403 }
-      );
+    // Parse first so we can (a) short-circuit URL-validation pings before any
+    // signature/connection work and (b) use payload fields to look up the
+    // per-connection webhook secret we need to validate against.
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      log('Failed to parse webhook body as JSON');
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    // Parse the payload
-    const payload = JSON.parse(rawBody);
-
-    // Handle Motive test/validation requests
-    // Motive sends '[vehicle_location_updated]' or similar array during URL validation
+    // Motive sends an array payload like ["vehicle_location_updated"] during
+    // webhook URL registration/validation. No signature, no connection yet —
+    // acknowledge with 200 so Motive marks the webhook as verified.
     if (Array.isArray(payload)) {
       log('Received test/validation request:', payload);
       return NextResponse.json({
@@ -203,33 +191,56 @@ export async function POST(request) {
     }
 
     const eventType = payload.event_type || payload.type || payload.action;
-
     log(`Received event: ${eventType}`);
 
-    // Look up connection from payload to get connectionId and userId
+    // Look up the connection BEFORE signature validation: the per-connection
+    // secret (stored in eld_connections.metadata.webhook_secret during webhook
+    // registration) is what we must validate against for multi-tenant safety.
     const connectionInfo = await findConnectionFromPayload(payload);
 
     if (!connectionInfo) {
-      log('No connection found for webhook payload, storing for later processing');
-      // Still log the event even if we can't find a connection
+      // Real events with no matching connection are suspicious — could be
+      // misconfiguration or spoofing. Log and reject with 403 so Motive stops
+      // retrying. (The old behavior of accepting as "pending" meant anyone
+      // could post arbitrary unsigned events and have them sit in our DB.)
+      log('No connection found for event; rejecting.');
       await logWebhookEvent({
         provider: 'motive',
         eventType,
         rawPayload: payload,
-        status: 'pending',
-        error: 'No matching connection found'
+        status: 'rejected',
+        error: 'No matching connection'
       });
-
-      // Return 200 to acknowledge receipt (can be reprocessed later)
-      return NextResponse.json({
-        success: true,
-        event: eventType,
-        pending: true,
-        message: 'Event stored for later processing'
-      });
+      return NextResponse.json(
+        { error: 'No matching connection' },
+        { status: 403 }
+      );
     }
 
-    const { connectionId, userId } = connectionInfo;
+    const { connectionId, userId, webhookSecret } = connectionInfo;
+
+    // Validate the HMAC signature against this connection's secret.
+    const validation = validateWebhook('motive', rawBody, headers, webhookSecret);
+
+    if (!validation.valid) {
+      log('Signature validation failed:', validation.error);
+      await logWebhookEvent({
+        provider: 'motive',
+        eventType: eventType || 'signature_failed',
+        rawPayload: rawBody.substring(0, 1000),
+        status: 'rejected',
+        error: validation.error,
+        connectionId,
+        userId
+      });
+
+      // 403 (not 401) signals terminal rejection to Motive — prevents indefinite retry.
+      // Per Motive webhook docs: 403 = signature verification failed, no retry.
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 403 }
+      );
+    }
 
     // Log the webhook event with connection info
     const webhookLog = await logWebhookEvent({

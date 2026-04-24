@@ -203,9 +203,15 @@ export function isTimestampValid(timestamp, maxAgeSeconds = 300) {
  * @param {string} provider - 'motive' or 'samsara'
  * @param {string} body - Raw request body
  * @param {object} headers - Request headers
+ * @param {string} [secret] - Per-connection webhook secret. When provided (the
+ *   preferred path — multi-tenant safe), signature is checked against it.
+ *   When omitted, falls back to `{PROVIDER}_WEBHOOK_SECRET` env var. Env
+ *   fallback only exists for dev/initial-setup convenience; production
+ *   webhooks MUST be validated with the per-connection secret returned by
+ *   the provider during webhook registration.
  * @returns {{ valid: boolean, error?: string }}
  */
-export function validateWebhook(provider, body, headers) {
+export function validateWebhook(provider, body, headers, secret) {
   const getHeader = (name) => {
     // Handle both Map-like and object-like headers
     if (typeof headers.get === 'function') {
@@ -216,9 +222,9 @@ export function validateWebhook(provider, body, headers) {
 
   if (provider === 'motive') {
     const signature = getHeader('x-kt-webhook-signature') || getHeader('X-KT-Webhook-Signature');
-    const secret = process.env.MOTIVE_WEBHOOK_SECRET;
+    const effectiveSecret = secret || process.env.MOTIVE_WEBHOOK_SECRET;
 
-    if (!validateMotiveSignature(body, signature, secret)) {
+    if (!validateMotiveSignature(body, signature, effectiveSecret)) {
       return { valid: false, error: 'Invalid Motive webhook signature' };
     }
 
@@ -228,14 +234,14 @@ export function validateWebhook(provider, body, headers) {
   if (provider === 'samsara') {
     const signature = getHeader('x-samsara-signature') || getHeader('X-Samsara-Signature');
     const timestamp = getHeader('x-samsara-timestamp') || getHeader('X-Samsara-Timestamp');
-    const secret = process.env.SAMSARA_WEBHOOK_SECRET;
+    const effectiveSecret = secret || process.env.SAMSARA_WEBHOOK_SECRET;
 
     // Validate timestamp first (prevents replay attacks)
     if (!isTimestampValid(timestamp)) {
       return { valid: false, error: 'Webhook timestamp expired or invalid' };
     }
 
-    if (!validateSamsaraSignature(body, signature, timestamp, secret)) {
+    if (!validateSamsaraSignature(body, signature, timestamp, effectiveSecret)) {
       return { valid: false, error: 'Invalid Samsara webhook signature' };
     }
 

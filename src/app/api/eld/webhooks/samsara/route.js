@@ -31,11 +31,13 @@ const supabase = createClient(
 );
 
 /**
- * Find the ELD connection from Samsara webhook payload
+ * Look up connection from a Samsara webhook payload, returning the connection
+ * id, user id, and the per-connection webhook secret stored at registration
+ * time. The secret is what `validateWebhook` needs to verify the HMAC-SHA256
+ * signature multi-tenantly (one secret per customer, not a single env var).
  */
 async function findConnectionFromPayload(payload) {
   try {
-    // Try to find by orgId (Samsara organization) if present
     const orgId = payload.orgId || payload.data?.orgId;
     if (orgId) {
       const { data } = await supabase
@@ -47,11 +49,14 @@ async function findConnectionFromPayload(payload) {
         .maybeSingle();
 
       if (data) {
-        return { connectionId: data.id, userId: data.user_id };
+        return {
+          connectionId: data.id,
+          userId: data.user_id,
+          webhookSecret: data.metadata?.webhook_secret
+        };
       }
     }
 
-    // Try to find by vehicle ID from entity mappings
     const vehicleId = payload.data?.vehicle?.id || payload.vehicle?.id;
     if (vehicleId) {
       const { data: mapping } = await supabase
@@ -63,11 +68,19 @@ async function findConnectionFromPayload(payload) {
         .maybeSingle();
 
       if (mapping) {
-        return { connectionId: mapping.connection_id, userId: mapping.user_id };
+        const { data: conn } = await supabase
+          .from('eld_connections')
+          .select('metadata')
+          .eq('id', mapping.connection_id)
+          .maybeSingle();
+        return {
+          connectionId: mapping.connection_id,
+          userId: mapping.user_id,
+          webhookSecret: conn?.metadata?.webhook_secret
+        };
       }
     }
 
-    // Try to find by driver ID from entity mappings
     const driverId = payload.data?.driver?.id || payload.driver?.id;
     if (driverId) {
       const { data: mapping } = await supabase
@@ -79,20 +92,37 @@ async function findConnectionFromPayload(payload) {
         .maybeSingle();
 
       if (mapping) {
-        return { connectionId: mapping.connection_id, userId: mapping.user_id };
+        const { data: conn } = await supabase
+          .from('eld_connections')
+          .select('metadata')
+          .eq('id', mapping.connection_id)
+          .maybeSingle();
+        return {
+          connectionId: mapping.connection_id,
+          userId: mapping.user_id,
+          webhookSecret: conn?.metadata?.webhook_secret
+        };
       }
     }
 
-    // Fallback: find any active Samsara connection
-    const { data: connections } = await supabase
-      .from('eld_connections')
-      .select('id, user_id')
-      .eq('provider', 'samsara')
-      .eq('status', 'active')
-      .limit(1);
+    // MULTI-TENANT SAFETY: no "pick any active Samsara connection" fallback.
+    // Routing one customer's webhook to another customer's data is a
+    // cross-tenant leak. Dev-only fallback mirrors the Motive route.
+    if (process.env.NODE_ENV === 'development') {
+      const { data: connections } = await supabase
+        .from('eld_connections')
+        .select('id, user_id, metadata')
+        .eq('provider', 'samsara')
+        .eq('status', 'active')
+        .limit(1);
 
-    if (connections && connections.length > 0) {
-      return { connectionId: connections[0].id, userId: connections[0].user_id };
+      if (connections && connections.length > 0) {
+        return {
+          connectionId: connections[0].id,
+          userId: connections[0].user_id,
+          webhookSecret: connections[0].metadata?.webhook_secret
+        };
+      }
     }
 
     return null;
@@ -111,43 +141,64 @@ export async function POST(request) {
   const startTime = Date.now();
 
   try {
-    // Get raw body for signature validation
     const rawBody = await request.text();
     const headers = request.headers;
 
-    // Validate webhook signature
-    const validation = validateWebhook('samsara', rawBody, headers);
+    // Parse first so we can look up the connection (and its per-connection
+    // secret) BEFORE validating the signature. Multi-tenant: each customer's
+    // webhooks are signed with their own secret, not one global env var.
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      console.error('[SamsaraWebhook] Failed to parse body as JSON');
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const eventType = payload.eventType || payload.event_type || payload.type;
+    const eventTime = payload.eventTime;
+
+    const connectionInfo = await findConnectionFromPayload(payload);
+
+    if (!connectionInfo) {
+      // Real events with no matching connection are rejected — previously we
+      // silently accepted and logged them, which allowed unsigned spoofed
+      // webhooks to sit in the DB.
+      console.warn(`[SamsaraWebhook] No connection found for event: ${eventType}; rejecting.`);
+      await logWebhookEvent({
+        provider: 'samsara',
+        eventType: eventType || 'no_connection',
+        rawPayload: payload,
+        status: 'rejected',
+        error: 'No matching connection'
+      });
+      return NextResponse.json(
+        { error: 'No matching connection' },
+        { status: 403 }
+      );
+    }
+
+    const { connectionId, userId, webhookSecret } = connectionInfo;
+
+    // Validate the HMAC-SHA256 signature against this connection's secret.
+    const validation = validateWebhook('samsara', rawBody, headers, webhookSecret);
 
     if (!validation.valid) {
       console.error('[SamsaraWebhook] Signature validation failed:', validation.error);
       await logWebhookEvent({
         provider: 'samsara',
-        eventType: 'signature_failed',
+        eventType: eventType || 'signature_failed',
         rawPayload: rawBody.substring(0, 1000),
         status: 'rejected',
-        error: validation.error
+        error: validation.error,
+        connectionId,
+        userId
       });
 
       return NextResponse.json(
         { error: 'Invalid signature' },
-        { status: 401 }
+        { status: 403 }
       );
-    }
-
-    // Parse the payload
-    const payload = JSON.parse(rawBody);
-
-    // Samsara webhooks have eventType at the root level
-    const eventType = payload.eventType || payload.event_type || payload.type;
-    const eventTime = payload.eventTime;
-
-    // Find the connection for this webhook
-    const connectionInfo = await findConnectionFromPayload(payload);
-    const connectionId = connectionInfo?.connectionId;
-    const userId = connectionInfo?.userId;
-
-    if (!connectionId) {
-      console.warn(`[SamsaraWebhook] No connection found for event: ${eventType}`);
     }
 
     // Log the webhook event
