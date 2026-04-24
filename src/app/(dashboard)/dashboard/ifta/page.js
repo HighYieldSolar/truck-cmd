@@ -418,9 +418,12 @@ export default function IFTACalculatorPage() {
     }
   };
 
-  // Export handler
+  // Export handler — allow export when either manual trips OR automated
+  // (ELD-sourced) mileage is available. Gating on trips alone blocked
+  // users whose data came entirely from Motive's IFTA summary.
   const handleExport = () => {
-    if (!trips.length) {
+    const hasAutomatedMiles = (automatedData?.totalMiles || 0) > 0;
+    if (!trips.length && !hasAutomatedMiles) {
       setError(t('page.noDataToExport'));
       return;
     }
@@ -1102,6 +1105,7 @@ export default function IFTACalculatorPage() {
             quarter={activeQuarter}
             fuelData={fuelData}
             selectedVehicle={selectedVehicle}
+            automatedData={automatedData}
             companyInfo={{
               name: 'Truck Command',
               email: 'support@truckcommand.com',

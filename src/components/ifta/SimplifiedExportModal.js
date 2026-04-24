@@ -24,6 +24,7 @@ export default function SimplifiedExportModal({
   quarter,
   fuelData = [],
   selectedVehicle = "all", // Add selectedVehicle prop
+  automatedData = null, // ELD-sourced jurisdiction mileage (from eld_ifta_mileage)
   companyInfo = null // Add company info for branding
 }) {
   const { t } = useTranslation('ifta');
@@ -96,10 +97,29 @@ export default function SimplifiedExportModal({
     ? fuelData
     : fuelData.filter(entry => entry.vehicle_id === selectedVehicle);
 
+  // Automated/ELD mileage totals — used when manual trips alone would be empty
+  const automatedMiles = automatedData?.totalMiles || 0;
+  const automatedJurisdictions = automatedData?.jurisdictions || [];
+  const hasAutomatedMileage = automatedMiles > 0;
+  const hasExportableData = filteredTrips.length > 0 || hasAutomatedMileage;
+
   // Prepare jurisdiction data from filtered data
   const prepareJurisdictionData = () => {
     // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
+
+    // Seed with automated (ELD-sourced) miles per jurisdiction so exports
+    // include Motive-provided IFTA totals even when no manual trip rows
+    // exist. Manual trip miles are added on top below.
+    automatedJurisdictions.forEach(j => {
+      const state = j.code || j.jurisdiction;
+      const miles = parseFloat(j.miles || 0);
+      if (!state || miles <= 0) return;
+      if (!milesByJurisdiction[state]) {
+        milesByJurisdiction[state] = { state, miles: 0, gallons: 0 };
+      }
+      milesByJurisdiction[state].miles += miles;
+    });
 
     // Process miles from filtered trips
     filteredTrips.forEach(trip => {
@@ -866,7 +886,7 @@ export default function SimplifiedExportModal({
             type="button"
             onClick={handleExport}
             className="w-full sm:w-auto px-6 py-3 sm:py-2 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 focus:outline-none flex items-center justify-center touch-manipulation transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={exportState === 'loading' || exportState === 'success' || filteredTrips.length === 0}
+            disabled={exportState === 'loading' || exportState === 'success' || !hasExportableData}
           >
             {exportState === 'loading' ? (
               <>
