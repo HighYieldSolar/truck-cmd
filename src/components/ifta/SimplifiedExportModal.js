@@ -103,64 +103,59 @@ export default function SimplifiedExportModal({
   const hasAutomatedMileage = automatedMiles > 0;
   const hasExportableData = filteredTrips.length > 0 || hasAutomatedMileage;
 
-  // Prepare jurisdiction data from filtered data
+  // Prepare jurisdiction data from filtered data.
+  //
+  // Mirror the IFTA page's getJurisdictionSummary priority: automated
+  // (ELD-sourced) miles win PER JURISDICTION, manual trips only fill
+  // jurisdictions that have no automated data. Without this, a user can
+  // see 21,541 on the page but get 22,484 in the PDF, because the export
+  // was summing manual trip totals while the page summed automated totals
+  // for the same jurisdictions.
   const prepareJurisdictionData = () => {
-    // Calculate miles by jurisdiction
     const milesByJurisdiction = {};
 
-    // Miles come from EITHER manual trips OR automated ELD totals, not both.
-    // When manual trips exist (ifta_trip_records), they are the source of
-    // truth — adding automated miles on top double-counts (e.g. 21,541
-    // manual + 21,540 automated = 44,024 on the report when the user
-    // expects 21,541). Fall back to automated only when manual is empty.
-    const useAutomatedOnly = filteredTrips.length === 0 && hasAutomatedMileage;
+    // 1) Seed from automated (Motive /v1/ifta/summary) — marks jurisdictions
+    //    so manual trips below don't add on top of them.
+    automatedJurisdictions.forEach(j => {
+      const state = j.code || j.jurisdiction;
+      const miles = parseFloat(j.miles || 0);
+      if (!state) return;
+      milesByJurisdiction[state] = {
+        state,
+        miles,
+        gallons: 0,
+        source: 'automated'
+      };
+    });
 
-    if (useAutomatedOnly) {
-      automatedJurisdictions.forEach(j => {
-        const state = j.code || j.jurisdiction;
-        const miles = parseFloat(j.miles || 0);
-        if (!state || miles <= 0) return;
-        if (!milesByJurisdiction[state]) {
-          milesByJurisdiction[state] = { state, miles: 0, gallons: 0 };
-        }
-        milesByJurisdiction[state].miles += miles;
-      });
-    }
-
-    // Process miles from filtered trips
+    // 2) Add manual trip miles only for jurisdictions without automated data.
     filteredTrips.forEach(trip => {
-      // If trip has start and end in same jurisdiction
-      if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
-        if (!milesByJurisdiction[trip.start_jurisdiction]) {
-          milesByJurisdiction[trip.start_jurisdiction] = {
-            state: trip.start_jurisdiction,
-            miles: 0,
-            gallons: 0
-          };
-        }
-        milesByJurisdiction[trip.start_jurisdiction].miles += parseFloat(trip.total_miles || 0);
-      }
-      // If trip crosses jurisdictions, split miles between them
-      else if (trip.start_jurisdiction && trip.end_jurisdiction) {
-        if (!milesByJurisdiction[trip.start_jurisdiction]) {
-          milesByJurisdiction[trip.start_jurisdiction] = {
-            state: trip.start_jurisdiction,
-            miles: 0,
-            gallons: 0
-          };
-        }
-        if (!milesByJurisdiction[trip.end_jurisdiction]) {
-          milesByJurisdiction[trip.end_jurisdiction] = {
-            state: trip.end_jurisdiction,
-            miles: 0,
-            gallons: 0
-          };
-        }
+      const total = parseFloat(trip.total_miles || 0);
 
-        // Split the miles between jurisdictions (simplified approach)
-        const milesPerJurisdiction = parseFloat(trip.total_miles || 0) / 2;
-        milesByJurisdiction[trip.start_jurisdiction].miles += milesPerJurisdiction;
-        milesByJurisdiction[trip.end_jurisdiction].miles += milesPerJurisdiction;
+      if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
+        const s = trip.start_jurisdiction;
+        if (!milesByJurisdiction[s]) {
+          milesByJurisdiction[s] = { state: s, miles: 0, gallons: 0, source: 'manual' };
+        }
+        if (milesByJurisdiction[s].source !== 'automated') {
+          milesByJurisdiction[s].miles += total;
+        }
+      } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
+        const half = total / 2;
+        const s = trip.start_jurisdiction;
+        const e = trip.end_jurisdiction;
+        if (!milesByJurisdiction[s]) {
+          milesByJurisdiction[s] = { state: s, miles: 0, gallons: 0, source: 'manual' };
+        }
+        if (!milesByJurisdiction[e]) {
+          milesByJurisdiction[e] = { state: e, miles: 0, gallons: 0, source: 'manual' };
+        }
+        if (milesByJurisdiction[s].source !== 'automated') {
+          milesByJurisdiction[s].miles += half;
+        }
+        if (milesByJurisdiction[e].source !== 'automated') {
+          milesByJurisdiction[e].miles += half;
+        }
       }
     });
 
