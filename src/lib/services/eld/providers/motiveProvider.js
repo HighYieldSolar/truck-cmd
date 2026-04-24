@@ -83,7 +83,9 @@ export class MotiveProvider extends BaseELDProvider {
       'locations.driver_locations',        // Driver locations with vehicle info
       'fault_codes.read',                  // Vehicle fault codes
       'fuel_purchases.read',               // Fuel purchases
-      'eld_devices.read'                   // ELD device information
+      'eld_devices.read',                  // ELD device information
+      'company_webhooks.read',             // Required for webhook registration (POST/GET/PUT/DELETE /v1/company_webhooks)
+      'company_webhooks.write'             // Write scope for creating/updating webhooks
     ].join(' ');
 
     const params = new URLSearchParams({
