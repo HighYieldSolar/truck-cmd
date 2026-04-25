@@ -242,6 +242,21 @@ export default function IFTACalculatorPage() {
           jurisdictionData[trip.start_jurisdiction].miles += miles;
         }
       } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
+        // Cross-jurisdiction trip with no per-state breakdown. Today every
+        // ifta_trip_records row written by importMileageTripToIFTA or
+        // importEldMileageToIfta has start === end (one row per state),
+        // so this branch is currently unreachable for legitimate data.
+        // Loud warning so any future writer that introduces a real
+        // multi-state row gets caught — splitting miles 50/50 between
+        // start and end is an approximation that misrepresents IFTA
+        // jurisdiction miles for tax filing.
+        if (typeof console !== 'undefined') {
+          console.warn(
+            '[IFTA] Trip', trip.id, 'has different start/end jurisdictions',
+            `(${trip.start_jurisdiction}→${trip.end_jurisdiction}, ${miles}mi).`,
+            'Falling back to 50/50 approximation. Per-state crossings are needed for accurate IFTA filing.'
+          );
+        }
         const halfMiles = miles / 2;
 
         if (!jurisdictionData[trip.start_jurisdiction]) {

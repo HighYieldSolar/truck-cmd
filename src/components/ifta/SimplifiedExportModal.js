@@ -141,6 +141,16 @@ export default function SimplifiedExportModal({
           milesByJurisdiction[s].miles += total;
         }
       } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
+        // Same warning as ifta/page.js — this 50/50 approximation should
+        // never fire for current data (every importer writes start === end).
+        // If it does fire, the export is misrepresenting IFTA miles.
+        if (typeof console !== 'undefined') {
+          console.warn(
+            '[IFTA Export] Trip', trip.id, 'has different start/end jurisdictions',
+            `(${trip.start_jurisdiction}→${trip.end_jurisdiction}, ${total}mi).`,
+            'Splitting 50/50; per-state crossings would be more accurate.'
+          );
+        }
         const half = total / 2;
         const s = trip.start_jurisdiction;
         const e = trip.end_jurisdiction;

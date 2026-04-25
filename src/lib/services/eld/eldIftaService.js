@@ -165,14 +165,19 @@ export async function getManualMileageForQuarter(userId, quarter) {
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Get completed trips within the quarter
+    // Get completed trips that overlap the quarter. Previously this used
+    // two chained .or() filters which Supabase ANDs together (each .or()
+    // returns a new builder), producing a semantically broken query that
+    // could return trips outside the quarter and inflate the manual miles
+    // shown in the reconciliation panel. The correct overlap test is:
+    // trip.start_date <= q_end AND trip.end_date >= q_start.
     const { data: trips, error: tripError } = await supabaseAdmin
       .from('driver_mileage_trips')
       .select('id, start_date, end_date, status')
       .eq('user_id', userId)
       .eq('status', 'completed')
-      .or(`start_date.gte.${startDateStr},end_date.gte.${startDateStr}`)
-      .or(`start_date.lte.${endDateStr},end_date.lte.${endDateStr}`);
+      .lte('start_date', endDateStr)
+      .gte('end_date', startDateStr);
 
     if (tripError) {
       return { error: true, errorMessage: tripError.message };
@@ -210,15 +215,24 @@ export async function getManualMileageForQuarter(userId, quarter) {
       crossingsByTrip[crossing.trip_id].push(crossing);
     }
 
-    // Calculate mileage for each trip
+    // Calculate mileage for each trip — but only count segments whose
+    // entry crossing date falls inside the quarter window. Without this
+    // per-segment guard, a trip that spans Dec 28 → Jan 3 would dump all
+    // its miles into whichever quarter the user is viewing, double-counting
+    // across quarters in the reconciliation view.
     for (const tripId of Object.keys(crossingsByTrip)) {
       const tripCrossings = crossingsByTrip[tripId].sort((a, b) =>
         new Date(a.timestamp) - new Date(b.timestamp)
       );
 
       for (let i = 0; i < tripCrossings.length - 1; i++) {
-        const currentState = tripCrossings[i].state;
-        const currentOdometer = parseFloat(tripCrossings[i].odometer) || 0;
+        const entry = tripCrossings[i];
+        const segmentDate = entry.crossing_date;
+        if (!segmentDate) continue; // skip rather than mis-bucket
+        if (segmentDate < startDateStr || segmentDate > endDateStr) continue;
+
+        const currentState = entry.state;
+        const currentOdometer = parseFloat(entry.odometer) || 0;
         const nextOdometer = parseFloat(tripCrossings[i + 1].odometer) || 0;
         const milesDriven = nextOdometer - currentOdometer;
 
@@ -226,7 +240,7 @@ export async function getManualMileageForQuarter(userId, quarter) {
           if (!mileageByJurisdiction[currentState]) {
             mileageByJurisdiction[currentState] = {
               jurisdiction: currentState,
-              stateName: tripCrossings[i].state_name || getStateName(currentState),
+              stateName: entry.state_name || getStateName(currentState),
               miles: 0,
               source: 'manual',
               tripCount: 0,

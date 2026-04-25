@@ -26,14 +26,18 @@ export async function getImportableMileageTrips(userId, quarter) {
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Get mileage trips completed in the quarter date range
+    // Get mileage trips that overlap the quarter window. Previously this
+    // required start_date >= q_start AND end_date <= q_end, which silently
+    // dropped any trip spanning a quarter boundary (e.g. Dec 28 → Jan 3
+    // appeared in neither Q4's nor Q1's importable list). Use a date-range
+    // overlap test instead: trip.start_date <= q_end AND trip.end_date >= q_start.
     const { data: trips, error: tripsError } = await supabase
       .from('driver_mileage_trips')
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'completed')
-      .gte('start_date', startDateStr)
-      .lte('end_date', endDateStr)
+      .lte('start_date', endDateStr)
+      .gte('end_date', startDateStr)
       .order('end_date', { ascending: false });
 
     if (tripsError) throw tripsError;
@@ -161,12 +165,20 @@ export async function getStateMileageByQuarter(tripId) {
         // Skip negative or zero miles (possible data error)
         if (milesDriven <= 0) continue;
 
-        // Determine the quarter based on the crossing date (when the miles were driven)
-        // Use crossing_date if available, otherwise fall back to timestamp
-        const crossingDate = currentCrossing.crossing_date ||
-          (currentCrossing.timestamp ? currentCrossing.timestamp.split('T')[0] : null);
+        // Determine the quarter based on the crossing's local date (when the
+        // miles were driven). crossing_date is the user's local date and is
+        // the only correct source — DO NOT fall back to slicing the UTC
+        // `timestamp`, because for late-night cross-state submissions the UTC
+        // date can land in a different quarter than the actual driving date,
+        // pushing miles into the wrong IFTA quarter for tax filing.
+        const crossingDate = currentCrossing.crossing_date;
 
-        if (!crossingDate) continue;
+        if (!crossingDate) {
+          // Skip rather than mis-bucket. A missing crossing_date is bad data
+          // that needs to be surfaced, not silently bucketed by UTC time.
+          console.warn(`[iftaMileage] Skipping crossing ${currentCrossing.id}: missing crossing_date`);
+          continue;
+        }
 
         const quarter = getQuarterFromDate(crossingDate);
         if (!quarter) continue;
@@ -306,6 +318,10 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           is_imported: true,
+          // Explicitly false so ELD-side duplicate-detection (which keys on
+          // is_eld_data=true) doesn't accidentally treat manual rows as
+          // already-imported ELD rows and skip a real ELD insert.
+          is_eld_data: false,
           source: 'mileage_tracker'
         });
       }

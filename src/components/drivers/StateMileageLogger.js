@@ -1026,16 +1026,17 @@ export default function StateMileageLogger() {
     return `${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`;
   };
 
-  // Derive the quarters that actually contain data so users only see
-  // quarters they have records in (plus "All time"). Pull quarters from
-  // crossing timestamps when available — those are the authoritative
-  // on-road times — and fall back to trip dates for trips without
-  // crossings yet.
+  // Derive available quarters from `crossing_date` (the user-entered local
+  // date) — NOT `timestamp` (UTC submission time). Mismatch caused the
+  // filter pill to assign a near-midnight cross-state submission to a
+  // different quarter than the IFTA import did. Use the same priority the
+  // import uses: crossing_date first, only fall back to timestamp slice if
+  // crossing_date is missing.
   const availableQuarters = useMemo(() => {
     const set = new Set();
     Object.values(completedTripCrossings).forEach(crossings => {
       (crossings || []).forEach(c => {
-        const q = quarterForDate(c.timestamp || c.crossing_date);
+        const q = quarterForDate(c.crossing_date || c.timestamp);
         if (q) set.add(q);
       });
     });
@@ -1055,19 +1056,18 @@ export default function StateMileageLogger() {
     return completedTrips.filter(trip => {
       const crossings = completedTripCrossings[trip.id] || [];
       if (crossings.length > 0) {
-        return crossings.some(c => quarterForDate(c.timestamp || c.crossing_date) === summaryQuarter);
+        return crossings.some(c => quarterForDate(c.crossing_date || c.timestamp) === summaryQuarter);
       }
       // Trip has no crossings loaded — fall back to its own dates
       return quarterForDate(trip.end_date || trip.start_date) === summaryQuarter;
     });
   }, [completedTrips, completedTripCrossings, summaryQuarter]);
 
-  // Per-segment mileage aggregation. For each pair of consecutive crossings,
-  // the miles between them were driven in `crossings[i].state` during the
-  // quarter containing `crossings[i].timestamp`. When a quarter filter is
-  // active we only count segments whose entry timestamp falls in that
-  // quarter — so a cross-quarter trip splits miles correctly between Q4
-  // and Q1 instead of dumping them all into one bucket.
+  // Per-segment mileage aggregation. Each segment (pair of consecutive
+  // crossings) is bucketed by the entry crossing's local date — matching
+  // the IFTA import logic in iftaMileageService.getStateMileageByQuarter,
+  // so the page filter and the imported records always agree on which
+  // quarter each segment belongs to.
   const totalHistoricalMileage = useMemo(() => {
     const stateTotals = new Map();
 
@@ -1079,7 +1079,7 @@ export default function StateMileageLogger() {
         const exit = crossings[i + 1];
 
         if (summaryQuarter !== 'all') {
-          const segQuarter = quarterForDate(entry.timestamp || entry.crossing_date);
+          const segQuarter = quarterForDate(entry.crossing_date || entry.timestamp);
           if (segQuarter !== summaryQuarter) continue;
         }
 
