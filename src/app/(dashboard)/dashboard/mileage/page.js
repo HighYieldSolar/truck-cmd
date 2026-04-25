@@ -154,14 +154,18 @@ function ELDHeroCard({
             {t('eldHero.connectedInfo', { vehicles: vehicleCount ?? '—' })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {/* Sync Now is now icon-only. Webhooks push live data and the
+              hourly cron runs syncAll, so this is a force-refresh
+              affordance, not a primary action. */}
           <button
             onClick={onSyncNow}
             disabled={syncingNow}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            title={syncingNow ? t('eldHero.syncing') : t('eldHero.syncNow')}
+            aria-label={syncingNow ? t('eldHero.syncing') : t('eldHero.syncNow')}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
-            <RefreshCw size={13} className={syncingNow ? 'animate-spin' : ''} />
-            {syncingNow ? t('eldHero.syncing') : t('eldHero.syncNow')}
+            <RefreshCw size={14} className={syncingNow ? 'animate-spin' : ''} />
           </button>
           <Link
             href="/dashboard/settings/eld"
@@ -219,42 +223,56 @@ function ELDHeroCard({
         />
       </div>
 
-      {/* Footer */}
+      {/* Footer — now a passive 'auto-flowing' note. The IFTA calculator
+          reads eld_ifta_mileage directly, so the prior 'Sync with IFTA'
+          button just created duplicate rows. The optional manual import
+          (and the Preview action) remain available behind small
+          secondary actions for power users. */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-teal-200 dark:border-teal-800">
         <div className="flex items-start gap-2 flex-1 min-w-0">
-          <Info size={15} className="text-teal-700 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+          <CheckCircle size={15} className="text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-gray-700 dark:text-gray-300">
-            {t('eldHero.footerInfo', { quarter: formatQuarterLabel(quarter) })}
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              Auto-synced to your IFTA calculator.
+            </span>{' '}
+            <span className="text-gray-500 dark:text-gray-400">
+              {formatQuarterLabel(quarter)} miles flow through automatically — no import needed.
+            </span>
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {onPreview && (
-            <button
-              onClick={onPreview}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Eye size={14} />
-              {t('eldHero.previewImport')}
-            </button>
-          )}
-          <button
-            onClick={onImport}
-            disabled={importing || !stats.totalMiles}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-sm font-semibold shadow-sm transition-colors disabled:cursor-not-allowed"
-          >
-            {importing ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                {t('eldHero.importing')}
-              </>
-            ) : (
-              <>
-                <Download size={14} strokeWidth={2.25} />
-                {t('eldHero.syncWithIfta')}
-              </>
+        {(onPreview || onImport) && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onPreview && (
+              <button
+                onClick={onPreview}
+                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <Eye size={12} />
+                {t('eldHero.previewImport')}
+              </button>
             )}
-          </button>
-        </div>
+            {onImport && (
+              <button
+                onClick={onImport}
+                disabled={importing || !stats.totalMiles}
+                title="Manually push these jurisdiction miles into ifta_trip_records (creates a snapshot row per state). Not normally needed — numbers already flow to IFTA automatically."
+                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {importing ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    {t('eldHero.importing')}
+                  </>
+                ) : (
+                  <>
+                    <Download size={12} />
+                    Snapshot to records
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -285,6 +303,11 @@ function StatCard({ label, value, sub, primary, valueSize = 'default' }) {
 }
 
 // ── Comparison strip ──────────────────────────────────────
+// onCta is now optional. The duplicate "Sync with IFTA" button that used
+// to live here mirrored the one in ELDHeroCard's footer; both pushed the
+// same data into ifta_trip_records, which (after the eld_ifta_mileage
+// fallback shipped) just creates duplicate rows. Default flow is to show
+// the comparison + a single 'View details' link.
 function ComparisonStrip({ eldMiles, manualMiles, variance, varianceTone, onCta, ctaLabel, onViewDetails, t }) {
   const toneClasses = {
     good: 'text-green-700 dark:text-green-400',
@@ -319,18 +342,21 @@ function ComparisonStrip({ eldMiles, manualMiles, variance, varianceTone, onCta,
         {onViewDetails && (
           <button
             onClick={onViewDetails}
-            className="inline-flex items-center h-8 px-2.5 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+            className="inline-flex items-center h-8 px-2.5 rounded-md text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
             {t('comparison.viewDetails')}
+            <ArrowRight size={12} className="ml-1" />
           </button>
         )}
-        <button
-          onClick={onCta}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors"
-        >
-          <Download size={12} strokeWidth={2.25} />
-          {ctaLabel}
-        </button>
+        {onCta && (
+          <button
+            onClick={onCta}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors"
+          >
+            <Download size={12} strokeWidth={2.25} />
+            {ctaLabel}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -903,8 +929,9 @@ function MileagePageInner() {
                     manualMiles={manualTotalMiles}
                     variance={variance}
                     varianceTone={varianceTone}
-                    onCta={handleImport}
-                    ctaLabel={t('eldHero.syncWithIfta')}
+                    /* No onCta — the import button here was a duplicate of
+                       the ELDHeroCard one and is unnecessary now that the
+                       IFTA calculator reads eld_ifta_mileage directly. */
                     onViewDetails={() => handleTabChange('manual')}
                     t={t}
                   />
