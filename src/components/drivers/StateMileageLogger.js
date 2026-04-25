@@ -1713,11 +1713,23 @@ export default function StateMileageLogger() {
             {selectedPastTrip ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-                      {t('pastTrips.tripDetailsTitle', { vehicleName: vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id })}
-                    </h2>
-                    <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+                        {t('pastTrips.tripDetailsTitle', { vehicleName: vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id })}
+                      </h2>
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
+                        <CheckCircle size={11} className="text-emerald-500" />
+                        Auto-synced to IFTA when the trip ended.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {/* Re-import is now a small icon-only ghost action.
+                          Manual trips auto-import on End Trip via the
+                          handleEndTrip flow (see line ~970), so this is a
+                          recovery affordance for legacy trips OR cases
+                          where the auto-import failed. Most users will
+                          never need it. */}
                       <button
                         onClick={async () => {
                           try {
@@ -1731,7 +1743,6 @@ export default function StateMileageLogger() {
                             } else if (result.importedCount === 0) {
                               setSuccess(result.message || t('messages.noDataToImport'));
                             } else {
-                              // Show quarters info if trip spans multiple quarters
                               if (result.quarters && result.quarters.length > 1) {
                                 setSuccess(t('messages.importSuccessMultiQuarters', { count: result.importedCount, quarters: result.quarters.join(' & ') }));
                               } else if (result.quarters && result.quarters.length === 1) {
@@ -1748,14 +1759,15 @@ export default function StateMileageLogger() {
                           }
                         }}
                         disabled={loading || selectedPastTripData.mileageByState.length === 0}
-                        className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Re-import to IFTA records (manual trips auto-import on completion — only use this if the original sync failed or for legacy trips)"
+                        aria-label="Re-import to IFTA"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {loading ? (
-                          <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />
+                          <RefreshCw size={13} className="animate-spin" />
                         ) : (
-                          <Fuel className="h-4 w-4 mr-1.5" />
+                          <RefreshCw size={13} />
                         )}
-                        {t('pastTrips.importToIfta')}
                       </button>
                       <ExportMileageButton
                         tripId={selectedPastTrip.id}
