@@ -173,7 +173,7 @@ export async function getManualMileageForQuarter(userId, quarter) {
     // trip.start_date <= q_end AND trip.end_date >= q_start.
     const { data: trips, error: tripError } = await supabaseAdmin
       .from('driver_mileage_trips')
-      .select('id, start_date, end_date, status')
+      .select('id, vehicle_id, start_date, end_date, status')
       .eq('user_id', userId)
       .eq('status', 'completed')
       .lte('start_date', endDateStr)
@@ -192,8 +192,41 @@ export async function getManualMileageForQuarter(userId, quarter) {
       };
     }
 
-    // Get crossings for all trips
-    const tripIds = trips.map(t => t.id);
+    // Vehicle-level priority: get the set of vehicles currently mapped
+    // to an active ELD connection. Trips on those vehicles are skipped
+    // here because their miles already came in through eld_ifta_mileage
+    // — counting them again would inflate the 'Manual' total in the
+    // reconciliation view, making the variance meaningless.
+    const { data: activeConns } = await supabaseAdmin
+      .from('eld_connections')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    const activeConnIds = (activeConns || []).map(c => c.id);
+
+    let eldTrackedVehicleIds = new Set();
+    if (activeConnIds.length > 0) {
+      const { data: maps } = await supabaseAdmin
+        .from('eld_entity_mappings')
+        .select('local_id')
+        .in('connection_id', activeConnIds)
+        .eq('entity_type', 'vehicle')
+        .not('local_id', 'is', null);
+      eldTrackedVehicleIds = new Set((maps || []).map(m => m.local_id));
+    }
+
+    const eligibleTrips = trips.filter(t => !(t.vehicle_id && eldTrackedVehicleIds.has(t.vehicle_id)));
+    if (eligibleTrips.length === 0) {
+      return {
+        error: false,
+        hasManual: false,
+        data: [],
+        message: 'No non-ELD manual trips for this quarter'
+      };
+    }
+
+    // Get crossings for the eligible (non-ELD) trips
+    const tripIds = eligibleTrips.map(t => t.id);
     const { data: crossings, error: crossingError } = await supabaseAdmin
       .from('driver_mileage_crossings')
       .select('*')

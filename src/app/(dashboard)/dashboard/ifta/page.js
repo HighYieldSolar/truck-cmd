@@ -88,6 +88,14 @@ export default function IFTACalculatorPage() {
   const [selectedVehicle, setSelectedVehicle] = useState("all");
   const [automatedData, setAutomatedData] = useState(null);
 
+  // Set of vehicle UUIDs that are currently mapped to an active ELD
+  // connection. Used to enforce vehicle-level priority in the merge:
+  // ELD-tracked vehicles use their ELD miles only, non-ELD vehicles use
+  // their manual entries — both add together per jurisdiction. Without
+  // this, a non-ELD truck's manual miles would be silently dropped any
+  // time another truck on ELD reported the same state.
+  const [eldTrackedVehicleIds, setEldTrackedVehicleIds] = useState(() => new Set());
+
   // UI state
   const [showTripDetails, setShowTripDetails] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -205,7 +213,15 @@ export default function IFTACalculatorPage() {
   }, [trips, fuelData]);
 
   // Calculate jurisdiction summary (THE MAIN IFTA DATA)
-  // Priority: Automated GPS data > Manual trip entries
+  //
+  // Vehicle-level priority merge:
+  //  - ELD totals are added first.
+  //  - Manual trip rows are added IF the trip's vehicle is NOT mapped
+  //    to an active ELD connection. ELD-tracked vehicles use ELD only
+  //    (the same trips would otherwise count twice). Non-ELD vehicles
+  //    use manual entries — and they ADD to ELD totals for the same
+  //    jurisdiction (e.g. ELD truck does CA 15,000 + non-ELD rental
+  //    does CA 2,000 → CA 17,000).
   const getJurisdictionSummary = useCallback(() => {
     const jurisdictionData = {};
 
@@ -218,7 +234,7 @@ export default function IFTACalculatorPage() {
       ? fuelData
       : fuelData.filter(f => f.vehicle_id === selectedVehicle);
 
-    // FIRST: Add automated GPS-based mileage (highest priority - most accurate)
+    // FIRST: Add automated ELD/GPS mileage. Always counted.
     if (automatedData?.jurisdictions?.length > 0) {
       automatedData.jurisdictions.forEach(j => {
         if (!jurisdictionData[j.code]) {
@@ -229,18 +245,25 @@ export default function IFTACalculatorPage() {
       });
     }
 
-    // SECOND: Add miles from manual trips (only if no automated data for that jurisdiction)
+    // SECOND: Add manual trip miles, but ONLY for vehicles that are not
+    // on ELD. If a manual trip's vehicle is ELD-tracked, the same miles
+    // already came in through `automatedData` — adding them would double
+    // count. If the vehicle isn't ELD-tracked, the manual miles are the
+    // only source for that vehicle and should add to the totals.
     filteredTrips.forEach(trip => {
       const miles = parseFloat(trip.total_miles) || 0;
+      const vehicleIsOnEld = trip.vehicle_id && eldTrackedVehicleIds.has(trip.vehicle_id);
+      if (vehicleIsOnEld) return; // ELD already accounts for this vehicle's miles
 
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         if (!jurisdictionData[trip.start_jurisdiction]) {
           jurisdictionData[trip.start_jurisdiction] = { miles: 0, gallons: 0, source: 'manual' };
         }
-        // Only add manual miles if no automated data exists for this jurisdiction
-        if (jurisdictionData[trip.start_jurisdiction].source !== 'automated') {
-          jurisdictionData[trip.start_jurisdiction].miles += miles;
+        // Mark mixed source if both are contributing to this jurisdiction
+        if (jurisdictionData[trip.start_jurisdiction].source === 'automated') {
+          jurisdictionData[trip.start_jurisdiction].source = 'mixed';
         }
+        jurisdictionData[trip.start_jurisdiction].miles += miles;
       } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
         // Cross-jurisdiction trip with no per-state breakdown. Today every
         // ifta_trip_records row written by importMileageTripToIFTA or
@@ -265,14 +288,18 @@ export default function IFTACalculatorPage() {
         if (!jurisdictionData[trip.end_jurisdiction]) {
           jurisdictionData[trip.end_jurisdiction] = { miles: 0, gallons: 0, source: 'manual' };
         }
-
-        // Only add manual miles if no automated data exists
-        if (jurisdictionData[trip.start_jurisdiction].source !== 'automated') {
-          jurisdictionData[trip.start_jurisdiction].miles += halfMiles;
+        // Vehicle-level priority is enforced by the early-return above
+        // — if we reached this branch the vehicle is non-ELD so the miles
+        // unconditionally add. Mark mixed if automated already had this
+        // jurisdiction from a different (ELD-tracked) vehicle.
+        if (jurisdictionData[trip.start_jurisdiction].source === 'automated') {
+          jurisdictionData[trip.start_jurisdiction].source = 'mixed';
         }
-        if (jurisdictionData[trip.end_jurisdiction].source !== 'automated') {
-          jurisdictionData[trip.end_jurisdiction].miles += halfMiles;
+        if (jurisdictionData[trip.end_jurisdiction].source === 'automated') {
+          jurisdictionData[trip.end_jurisdiction].source = 'mixed';
         }
+        jurisdictionData[trip.start_jurisdiction].miles += halfMiles;
+        jurisdictionData[trip.end_jurisdiction].miles += halfMiles;
       }
     });
 
@@ -297,7 +324,7 @@ export default function IFTACalculatorPage() {
         source: data.source || 'manual'
       }))
       .sort((a, b) => b.miles - a.miles);
-  }, [trips, fuelData, selectedVehicle, automatedData]);
+  }, [trips, fuelData, selectedVehicle, automatedData, eldTrackedVehicleIds]);
 
   // Calculate summary stats
   const getStats = useCallback(() => {
@@ -357,6 +384,40 @@ export default function IFTACalculatorPage() {
       localStorage.setItem('ifta-selected-quarter', activeQuarter);
     }
   }, [activeQuarter]);
+
+  // Load the set of ELD-tracked vehicles for this user. A vehicle counts
+  // as ELD-tracked if it has a row in eld_entity_mappings linked to an
+  // active eld_connections row. Refreshes whenever the user changes.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: conns } = await supabase
+          .from('eld_connections')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+        const connIds = (conns || []).map(c => c.id);
+        if (connIds.length === 0) {
+          if (!cancelled) setEldTrackedVehicleIds(new Set());
+          return;
+        }
+        const { data: maps } = await supabase
+          .from('eld_entity_mappings')
+          .select('local_id')
+          .in('connection_id', connIds)
+          .eq('entity_type', 'vehicle')
+          .not('local_id', 'is', null);
+        if (!cancelled) {
+          setEldTrackedVehicleIds(new Set((maps || []).map(m => m.local_id)));
+        }
+      } catch (err) {
+        if (!cancelled) setEldTrackedVehicleIds(new Set());
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -1121,6 +1182,7 @@ export default function IFTACalculatorPage() {
             fuelData={fuelData}
             selectedVehicle={selectedVehicle}
             automatedData={automatedData}
+            eldTrackedVehicleIds={eldTrackedVehicleIds}
             companyInfo={{
               name: 'Truck Command',
               email: 'support@truckcommand.com',

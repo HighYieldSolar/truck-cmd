@@ -25,6 +25,7 @@ export default function SimplifiedExportModal({
   fuelData = [],
   selectedVehicle = "all", // Add selectedVehicle prop
   automatedData = null, // ELD-sourced jurisdiction mileage (from eld_ifta_mileage)
+  eldTrackedVehicleIds = null, // Set<UUID> of vehicles on active ELD connections
   companyInfo = null // Add company info for branding
 }) {
   const { t } = useTranslation('ifta');
@@ -105,17 +106,16 @@ export default function SimplifiedExportModal({
 
   // Prepare jurisdiction data from filtered data.
   //
-  // Mirror the IFTA page's getJurisdictionSummary priority: automated
-  // (ELD-sourced) miles win PER JURISDICTION, manual trips only fill
-  // jurisdictions that have no automated data. Without this, a user can
-  // see 21,541 on the page but get 22,484 in the PDF, because the export
-  // was summing manual trip totals while the page summed automated totals
-  // for the same jurisdictions.
+  // Vehicle-level priority — mirrors the IFTA page's getJurisdictionSummary:
+  //   1) Seed automated (ELD) miles per jurisdiction.
+  //   2) Add manual trip miles ONLY for vehicles that aren't on ELD.
+  //      ELD-tracked vehicles already contributed via step 1; adding
+  //      their manual rows would double-count. Non-ELD vehicles add to
+  //      the totals (e.g. ELD truck does CA 15,000 + non-ELD rental does
+  //      CA 2,000 → CA 17,000).
   const prepareJurisdictionData = () => {
     const milesByJurisdiction = {};
 
-    // 1) Seed from automated (Motive /v1/ifta/summary) — marks jurisdictions
-    //    so manual trips below don't add on top of them.
     automatedJurisdictions.forEach(j => {
       const state = j.code || j.jurisdiction;
       const miles = parseFloat(j.miles || 0);
@@ -128,22 +128,24 @@ export default function SimplifiedExportModal({
       };
     });
 
-    // 2) Add manual trip miles only for jurisdictions without automated data.
     filteredTrips.forEach(trip => {
       const total = parseFloat(trip.total_miles || 0);
+      const vehicleIsOnEld =
+        eldTrackedVehicleIds &&
+        trip.vehicle_id &&
+        eldTrackedVehicleIds.has(trip.vehicle_id);
+      if (vehicleIsOnEld) return; // ELD already accounts for this vehicle
 
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         const s = trip.start_jurisdiction;
         if (!milesByJurisdiction[s]) {
           milesByJurisdiction[s] = { state: s, miles: 0, gallons: 0, source: 'manual' };
         }
-        if (milesByJurisdiction[s].source !== 'automated') {
-          milesByJurisdiction[s].miles += total;
+        if (milesByJurisdiction[s].source === 'automated') {
+          milesByJurisdiction[s].source = 'mixed';
         }
+        milesByJurisdiction[s].miles += total;
       } else if (trip.start_jurisdiction && trip.end_jurisdiction) {
-        // Same warning as ifta/page.js — this 50/50 approximation should
-        // never fire for current data (every importer writes start === end).
-        // If it does fire, the export is misrepresenting IFTA miles.
         if (typeof console !== 'undefined') {
           console.warn(
             '[IFTA Export] Trip', trip.id, 'has different start/end jurisdictions',
@@ -160,12 +162,10 @@ export default function SimplifiedExportModal({
         if (!milesByJurisdiction[e]) {
           milesByJurisdiction[e] = { state: e, miles: 0, gallons: 0, source: 'manual' };
         }
-        if (milesByJurisdiction[s].source !== 'automated') {
-          milesByJurisdiction[s].miles += half;
-        }
-        if (milesByJurisdiction[e].source !== 'automated') {
-          milesByJurisdiction[e].miles += half;
-        }
+        if (milesByJurisdiction[s].source === 'automated') milesByJurisdiction[s].source = 'mixed';
+        if (milesByJurisdiction[e].source === 'automated') milesByJurisdiction[e].source = 'mixed';
+        milesByJurisdiction[s].miles += half;
+        milesByJurisdiction[e].miles += half;
       }
     });
 
