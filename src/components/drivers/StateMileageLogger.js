@@ -205,110 +205,139 @@ function DeleteTripModal({
 }
 
 // StateCrossing component for rendering individual state crossings
-const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst, t }) => {
-  // Format the crossing date for display
+// Timeline-style crossing row. Renders as a node on a vertical rail so a
+// trip reads as a journey instead of a stack of card rows.
+const StateCrossing = ({ crossing, index, onDelete, isLast, isFirst, prevOdometer, t }) => {
   const crossingDate = crossing.crossing_date
     ? formatDateForDisplayMMDDYYYY(crossing.crossing_date)
     : t('stateCrossings.noDate');
 
+  // Miles driven in the previous state to GET to this crossing point.
+  const segmentMiles = !isFirst && typeof prevOdometer === 'number'
+    ? Math.max(0, crossing.odometer - prevOdometer)
+    : null;
+
+  const dotClass = isFirst
+    ? 'bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-500/20'
+    : isLast
+      ? 'bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-500/20'
+      : 'bg-gray-300 dark:bg-gray-600 ring-4 ring-transparent';
+
+  const labelTone = isFirst
+    ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30'
+    : isLast
+      ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+      : 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
+
+  const label = isFirst ? t('stateCrossings.startLabel', { defaultValue: 'Start' })
+    : isLast ? t('stateCrossings.currentLabel', { defaultValue: 'Latest' })
+      : t('stateCrossings.crossingLabel', { defaultValue: 'Crossing' });
+
   return (
-    <div className="flex items-center mb-2">
-      <div className="flex-shrink-0 mr-2">
-        {isFirst ? (
-          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-            <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+    <div className="relative pl-7">
+      {/* Vertical rail line — extended so it visually joins to the next row */}
+      {!isLast && (
+        <span className="absolute left-[10px] top-5 bottom-[-1.5rem] w-px bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
+      )}
+      {/* Timeline dot */}
+      <span className={`absolute left-[5px] top-2 h-3 w-3 rounded-full ${dotClass}`} aria-hidden="true" />
+
+      <div className="pb-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <div className="flex items-baseline gap-2">
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{crossing.state_name}</span>
+            <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{crossing.state}</span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${labelTone}`}>
+              {label}
+            </span>
           </div>
-        ) : isLast ? (
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-            <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </div>
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-            <CornerDownRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          </div>
-        )}
-      </div>
-      <div className="flex-grow p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="flex items-center">
-              <span className="font-medium text-gray-900 dark:text-gray-100">{crossing.state_name}</span>
-              <span className="ml-2 text-gray-500 dark:text-gray-400 text-sm">({crossing.state})</span>
-            </div>
-            <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
-              <Calendar size={12} className="mr-1" />
-              <span>{crossingDate}</span>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <div className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-md mr-2">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{crossing.odometer.toLocaleString()} mi</span>
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-mono tabular-nums text-gray-700 dark:text-gray-300">
+              {crossing.odometer.toLocaleString()} <span className="text-xs text-gray-400">mi</span>
+            </span>
             {onDelete && (
               <button
                 onClick={() => onDelete(index)}
-                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
+                className="p-1 -mr-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                aria-label="Delete crossing"
               >
-                <Trash size={16} />
+                <Trash size={14} />
               </button>
             )}
           </div>
+        </div>
+        <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1">
+            <Calendar size={11} />
+            {crossingDate}
+          </span>
+          {segmentMiles !== null && segmentMiles > 0 && (
+            <span className="inline-flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <CornerDownRight size={11} />
+              {segmentMiles.toLocaleString()} mi in previous state
+            </span>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// TripCard component for rendering active and completed trips
+// TripCard — refined card with a left status indicator. Active trips
+// get a pulsing emerald dot; completed trips get a static gray dot.
+// Selection is signalled by an inset blue ring + left border instead
+// of the previous gradient + bottom-bar treatment.
 const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
   const vehicle = vehicles.find(v => v.id === trip.vehicle_id);
-  const vehicleName = vehicle
-    ? `${vehicle.name}${vehicle.license_plate ? ` (${vehicle.license_plate})` : ''}`
-    : trip.vehicle_id;
-
-  // Format date for display (fixed timezone issue)
+  const vehicleName = vehicle?.name || trip.vehicle_id;
+  const plate = vehicle?.license_plate;
   const tripDate = formatDateForDisplayMMDDYYYY(trip.start_date);
+  const isActive = trip.status !== 'completed';
 
   return (
     <div
-      className={`border rounded-xl shadow-sm mb-3 transition-all hover:shadow-md cursor-pointer overflow-hidden ${isSelected
-        ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 dark:from-blue-900/30 dark:to-indigo-900/30'
-        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700'
-        }`}
       onClick={() => onSelect(trip)}
+      className={`group relative cursor-pointer rounded-lg border transition-all
+        ${isSelected
+          ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-900/10 ring-1 ring-blue-500/30 shadow-sm'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+        }`}
     >
-      <div className="p-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="mr-3 bg-blue-100 dark:bg-blue-900/40 p-2 rounded-xl">
-              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">{vehicleName}</h3>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <Calendar className="h-3.5 w-3.5 mr-1" />
-                {tripDate}
-              </div>
-            </div>
-          </div>
-
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(trip, vehicleName);
-              }}
-              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-            >
-              <Trash size={16} />
-            </button>
+      <div className="p-3 flex items-center gap-3">
+        {/* Status dot */}
+        <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+          {isActive && (
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
           )}
-        </div>
-      </div>
+          <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isActive ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+        </span>
 
-      {isSelected && (
-        <div className="bg-blue-600 h-1.5 w-full"></div>
-      )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1.5">
+            <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{vehicleName}</h3>
+            {plate && (
+              <span className="text-xs font-mono text-gray-400 dark:text-gray-500 truncate">{plate}</span>
+            )}
+          </div>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <Calendar className="h-3 w-3" />
+            <span>{tripDate}</span>
+          </div>
+        </div>
+
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(trip, vehicleName);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all flex-shrink-0"
+            aria-label={`Delete trip for ${vehicleName}`}
+          >
+            <Trash size={14} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -1198,35 +1227,43 @@ export default function StateMileageLogger() {
       {activeTab === 'active' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Active trips section */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {t('activeTrips.title')}
-                </h2>
+          <div className="lg:col-span-1 space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {t('activeTrips.title')}
+                  </h2>
+                  {activeTrips.length > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                      {activeTrips.length}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setSelectedTrip(null);
-                    // Reset crossing form when switching to new trip
                     setCrossingForm({
                       state: "",
                       odometer: "",
                       date: getCurrentDateLocal()
                     });
                   }}
-                  className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-medium rounded-md shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
                 >
-                  <Plus size={18} className="mr-1.5" />
+                  <Plus size={14} />
                   {t('activeTrips.newTrip')}
                 </button>
               </div>
 
-              <div className="p-4 bg-white dark:bg-gray-800">
+              <div className="p-3">
                 {activeTrips.length === 0 ? (
-                  <div className="text-center py-6">
-                    <Truck className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">{t('activeTrips.noTrips')}</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">{t('activeTrips.noTripsDescription')}</p>
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                      <Truck className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{t('activeTrips.noTrips')}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto">{t('activeTrips.noTripsDescription')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1237,7 +1274,6 @@ export default function StateMileageLogger() {
                         vehicles={vehicles}
                         onSelect={(trip) => {
                           handleSelectTrip(trip);
-                          // Reset crossing form when switching trips
                           setCrossingForm({
                             state: "",
                             odometer: "",
@@ -1255,21 +1291,22 @@ export default function StateMileageLogger() {
 
             {/* New Trip Form */}
             {!selectedTrip && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm mt-6 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('newTrip.title')}</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('newTrip.title')}</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Log the starting point for a new state-mileage trip.</p>
                 </div>
                 <div className="p-4">
-                  <form onSubmit={handleStartTrip}>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <form onSubmit={handleStartTrip} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {t('newTrip.selectVehicle')}
                       </label>
                       <select
                         name="vehicle_id"
                         value={newTripForm.vehicle_id}
                         onChange={handleNewTripChange}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
                         <option value="">{t('newTrip.selectVehiclePlaceholder')}</option>
@@ -1281,15 +1318,15 @@ export default function StateMileageLogger() {
                       </select>
                     </div>
 
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {t('newTrip.startingState')}
                       </label>
                       <select
                         name="start_state"
                         value={newTripForm.start_state}
                         onChange={handleNewTripChange}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
                         <option value="">{t('newTrip.selectState')}</option>
@@ -1299,40 +1336,41 @@ export default function StateMileageLogger() {
                       </select>
                     </div>
 
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('newTrip.startingOdometer')}
-                      </label>
-                      <input
-                        type="number"
-                        name="start_odometer"
-                        value={newTripForm.start_odometer}
-                        onChange={handleNewTripChange}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder={t('newTrip.odometerPlaceholder')}
-                        required
-                      />
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {t('newTrip.date')}
-                      </label>
-                      <input
-                        type="date"
-                        name="date"
-                        value={newTripForm.date}
-                        onChange={handleNewTripChange}
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('newTrip.startingOdometer')}
+                        </label>
+                        <input
+                          type="number"
+                          name="start_odometer"
+                          value={newTripForm.start_odometer}
+                          onChange={handleNewTripChange}
+                          className="w-full px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder={t('newTrip.odometerPlaceholder')}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {t('newTrip.date')}
+                        </label>
+                        <input
+                          type="date"
+                          name="date"
+                          value={newTripForm.date}
+                          onChange={handleNewTripChange}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm flex items-center justify-center"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
                     >
-                      <Plus size={16} className="mr-2" />
+                      <Plus size={14} />
                       {t('newTrip.startTrip')}
                     </button>
                   </form>
@@ -1344,59 +1382,114 @@ export default function StateMileageLogger() {
           {/* Trip details */}
           <div className="lg:col-span-2">
             {selectedTrip ? (
-              <div className="space-y-6">
-                {/* Trip header */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {vehicles.find(v => v.id === selectedTrip.vehicle_id)?.name || selectedTrip.vehicle_id}
-                        </h2>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          <Calendar className="h-4 w-4 mr-1.5" />
-                          {t('tripDetails.startedOn', { date: formatDateForDisplayMMDDYYYY(selectedTrip.start_date) })}
+              <div className="space-y-4">
+                {/* Trip header — clean, status-led, with quick stats */}
+                {(() => {
+                  const v = vehicles.find(vh => vh.id === selectedTrip.vehicle_id);
+                  const totalMilesSoFar = stateMileage.reduce((s, e) => s + e.miles, 0);
+                  const startedAt = new Date(selectedTrip.start_date);
+                  const daysRunning = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                  const lastCrossing = selectedTripData.crossings[selectedTripData.crossings.length - 1];
+                  return (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <div className="p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                              </span>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Active trip</span>
+                            </div>
+                            <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                              {v?.name || selectedTrip.vehicle_id}
+                            </h2>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                              {v?.license_plate && (
+                                <span className="font-mono text-xs">{v.license_plate}</span>
+                              )}
+                              <span className="inline-flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" />
+                                {formatDateForDisplayMMDDYYYY(selectedTrip.start_date)}
+                              </span>
+                              <span>·</span>
+                              <span>{daysRunning === 0 ? 'Today' : `${daysRunning} day${daysRunning === 1 ? '' : 's'} running`}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleEndTrip}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-md disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
+                          >
+                            {loading ? (
+                              <>
+                                <RefreshCw size={14} className="animate-spin" />
+                                {t('tripDetails.ending')}
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle size={14} />
+                                {t('tripDetails.endTrip')}
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Quick stats */}
+                        <div className="mt-4 grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700">
+                          <div className="px-4 py-3">
+                            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total miles</div>
+                            <div className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                              {totalMilesSoFar.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">States</div>
+                            <div className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                              {stateMileage.length}
+                            </div>
+                          </div>
+                          <div className="px-4 py-3">
+                            <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Currently in</div>
+                            <div className="mt-0.5 text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              {lastCrossing?.state || '—'}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <button
-                        onClick={handleEndTrip}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md shadow-sm flex items-center"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <>
-                            <RefreshCw size={16} className="animate-spin mr-2" />
-                            {t('tripDetails.ending')}
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle size={16} className="mr-2" />
-                            {t('tripDetails.endTrip')}
-                          </>
-                        )}
-                      </button>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
-                {/* State crossings */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('stateCrossings.title')}</h3>
+                {/* State crossings — vertical timeline */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('stateCrossings.title')}</h3>
+                      {selectedTripData.crossings.length > 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {selectedTripData.crossings.length} {selectedTripData.crossings.length === 1 ? 'point' : 'points'} logged
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="p-4">
                     {selectedTripData.crossings.length === 0 ? (
-                      <div className="text-center py-6">
-                        <MapPin className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-700 dark:text-gray-400">{t('stateCrossings.noData')}</p>
+                      <div className="text-center py-8">
+                        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                          <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('stateCrossings.noData')}</p>
                       </div>
                     ) : (
-                      <div className="space-y-2 mb-6">
+                      <div className="mb-2">
                         {selectedTripData.crossings.map((crossing, index) => (
                           <StateCrossing
                             key={index}
                             crossing={crossing}
                             index={index}
+                            prevOdometer={index > 0 ? selectedTripData.crossings[index - 1].odometer : null}
                             onDelete={index > 0 && index === selectedTripData.crossings.length - 1 ? handleDeleteCrossing : null}
                             isFirst={index === 0}
                             isLast={index === selectedTripData.crossings.length - 1}
@@ -1406,19 +1499,19 @@ export default function StateMileageLogger() {
                       </div>
                     )}
 
-                    {/* Add crossing form */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-md font-medium mb-3 text-gray-900 dark:text-gray-100">{t('stateCrossings.addTitle')}</h4>
-                      <form onSubmit={handleAddCrossing} className="flex flex-wrap items-end gap-3">
-                        <div className="flex-grow min-w-[200px]">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {/* Add crossing — inline at the foot of the timeline */}
+                    <div className="mt-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('stateCrossings.addTitle')}</h4>
+                      <form onSubmit={handleAddCrossing} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                        <div className="sm:col-span-5">
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.enteringState')}
                           </label>
                           <select
                             name="state"
                             value={crossingForm.state}
                             onChange={handleCrossingChange}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                           >
                             <option value="">{t('newTrip.selectState')}</option>
@@ -1428,8 +1521,8 @@ export default function StateMileageLogger() {
                           </select>
                         </div>
 
-                        <div className="flex-grow min-w-[180px]">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <div className="sm:col-span-3">
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.odometerReading')}
                           </label>
                           <input
@@ -1437,15 +1530,14 @@ export default function StateMileageLogger() {
                             name="odometer"
                             value={crossingForm.odometer}
                             onChange={handleCrossingChange}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder={t('stateCrossings.currentReading')}
                             required
                           />
                         </div>
 
-                        <div className="flex-grow min-w-[160px]">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                            <Calendar size={14} className="mr-1 text-gray-400" />
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.crossingDate')}
                           </label>
                           <input
@@ -1453,28 +1545,23 @@ export default function StateMileageLogger() {
                             name="date"
                             value={crossingForm.date}
                             onChange={handleCrossingChange}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                           />
                         </div>
 
-                        <div className="flex-shrink-0">
+                        <div className="sm:col-span-2">
                           <button
                             type="submit"
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm h-[42px] flex items-center"
                             disabled={loading}
+                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
                           >
                             {loading ? (
-                              <>
-                                <RefreshCw size={16} className="animate-spin mr-2" />
-                                {t('stateCrossings.adding')}
-                              </>
+                              <RefreshCw size={14} className="animate-spin" />
                             ) : (
-                              <>
-                                <Plus size={16} className="mr-2" />
-                                {t('stateCrossings.add')}
-                              </>
+                              <Plus size={14} />
                             )}
+                            {loading ? t('stateCrossings.adding') : t('stateCrossings.add')}
                           </button>
                         </div>
                       </form>
@@ -1482,67 +1569,75 @@ export default function StateMileageLogger() {
                   </div>
                 </div>
 
-                {/* Mileage by State */}
+                {/* Mileage by State — restrained design with bigger, sharper bars */}
                 {selectedTrip && stateMileage.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                        <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <BarChart2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         {t('milesByState.title')}
                       </h2>
+                      <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                        {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()}
+                        <span className="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">{t('milesByState.milesUnit')}</span>
+                      </span>
                     </div>
                     <div className="p-4">
-                      <div className="space-y-3 mb-4">
-                        {stateMileage.map(entry => (
-                          <div key={entry.state} className="p-2">
-                            <div className="flex justify-between items-center mb-1">
-                              <div className="font-medium text-gray-900 dark:text-gray-100">{entry.state_name}</div>
-                              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{entry.miles.toLocaleString()} {t('milesByState.milesUnit')}</div>
+                      <div className="space-y-3">
+                        {stateMileage.map(entry => {
+                          const pct = stateMileage[0].miles > 0
+                            ? (entry.miles / stateMileage[0].miles) * 100
+                            : 0;
+                          return (
+                            <div key={entry.state}>
+                              <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                                <div className="min-w-0 flex items-baseline gap-2">
+                                  <span className="font-mono text-xs font-bold text-gray-500 dark:text-gray-400 w-7">{entry.state}</span>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{entry.state_name}</span>
+                                </div>
+                                <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                                  {entry.miles.toLocaleString()}
+                                  <span className="ml-0.5 text-xs font-normal text-gray-500 dark:text-gray-400">mi</span>
+                                </span>
+                              </div>
+                              <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                              <div
-                                className="bg-blue-600 h-2.5 rounded-full"
-                                style={{ width: `${(entry.miles / stateMileage[0].miles) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Total miles */}
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-center">
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{t('milesByState.total')}</div>
-                          <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                            {stateMileage.reduce((total, entry) => total + entry.miles, 0).toLocaleString()} {t('milesByState.milesUnit')}
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
             ) : activeTrips.length > 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
-                  <Truck className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-3">{t('selectPrompts.selectActiveTrip')}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-5">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/20">
+                    <Truck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('selectPrompts.selectActiveTrip')}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     {t('selectPrompts.activeTripsCount', { count: activeTrips.length, plural: activeTrips.length !== 1 ? 's' : '' })}
                     {' '}{t('selectPrompts.selectFromList')}
                   </p>
-                  <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
                     {activeTrips.slice(0, 3).map(trip => (
                       <button
                         key={trip.id}
                         onClick={() => handleSelectTrip(trip)}
-                        className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md text-blue-700 dark:text-blue-300 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-200 font-medium hover:border-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                       >
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         {vehicles.find(v => v.id === trip.vehicle_id)?.name || trip.vehicle_id}
                       </button>
                     ))}
                     {activeTrips.length > 3 && (
-                      <span className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-gray-500 dark:text-gray-400">
+                      <span className="px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400">
                         {t('selectPrompts.moreTrips', { count: activeTrips.length - 3 })}
                       </span>
                     )}
@@ -1550,11 +1645,13 @@ export default function StateMileageLogger() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="p-10 text-center">
-                  <MapPin className="h-16 w-16 text-blue-300 dark:text-blue-500/50 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">{t('selectPrompts.selectOrCreate')}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                    <MapPin className="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{t('selectPrompts.selectOrCreate')}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     {t('selectPrompts.selectOrCreateDescription')}
                   </p>
                 </div>
@@ -1569,9 +1666,9 @@ export default function StateMileageLogger() {
           {/* Past trips list */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">
                     {t('pastTrips.title')}
                   </h2>
                   <QuarterFilter />
@@ -1615,9 +1712,9 @@ export default function StateMileageLogger() {
           <div className="lg:col-span-2">
             {selectedPastTrip ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h2 className="font-semibold text-gray-900 dark:text-gray-100">
                       {t('pastTrips.tripDetailsTitle', { vehicleName: vehicles.find(v => v.id === selectedPastTrip.vehicle_id)?.name || selectedPastTrip.vehicle_id })}
                     </h2>
                     <div className="flex gap-2">
@@ -1777,10 +1874,10 @@ export default function StateMileageLogger() {
       {activeTab === 'summary' && (
         <div className="grid grid-cols-1 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                  <BarChart2 className="h-5 w-5 text-blue-600 mr-2" />
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <BarChart2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   {t('summaryTab.title')}
                 </h2>
                 <QuarterFilter />
