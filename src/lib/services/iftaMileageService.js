@@ -322,6 +322,11 @@ export async function importMileageTripToIFTA(userId, quarter, tripId) {
           // is_eld_data=true) doesn't accidentally treat manual rows as
           // already-imported ELD rows and skip a real ELD insert.
           is_eld_data: false,
+          // Mirror the trip's off-ELD flag so the IFTA calculator's
+          // vehicle-level priority knows whether to add these miles on
+          // top of ELD data (true) or skip them when the vehicle is on
+          // ELD (false, the default).
+          is_off_eld: !!trip.is_off_eld,
           source: 'mileage_tracker'
         });
       }

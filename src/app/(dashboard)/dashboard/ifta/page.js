@@ -253,7 +253,11 @@ export default function IFTACalculatorPage() {
     filteredTrips.forEach(trip => {
       const miles = parseFloat(trip.total_miles) || 0;
       const vehicleIsOnEld = trip.vehicle_id && eldTrackedVehicleIds.has(trip.vehicle_id);
-      if (vehicleIsOnEld) return; // ELD already accounts for this vehicle's miles
+      // Skip only when the vehicle is on ELD AND the user did NOT mark
+      // this trip as off-ELD. An off-ELD trip means the device wasn't
+      // logging (driver unplugged, ELD failure, etc.) so these miles
+      // should add on top of the ELD data instead of being deduplicated.
+      if (vehicleIsOnEld && !trip.is_off_eld) return;
 
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         if (!jurisdictionData[trip.start_jurisdiction]) {

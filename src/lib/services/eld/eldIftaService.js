@@ -173,7 +173,7 @@ export async function getManualMileageForQuarter(userId, quarter) {
     // trip.start_date <= q_end AND trip.end_date >= q_start.
     const { data: trips, error: tripError } = await supabaseAdmin
       .from('driver_mileage_trips')
-      .select('id, vehicle_id, start_date, end_date, status')
+      .select('id, vehicle_id, start_date, end_date, status, is_off_eld')
       .eq('user_id', userId)
       .eq('status', 'completed')
       .lte('start_date', endDateStr)
@@ -215,7 +215,12 @@ export async function getManualMileageForQuarter(userId, quarter) {
       eldTrackedVehicleIds = new Set((maps || []).map(m => m.local_id));
     }
 
-    const eligibleTrips = trips.filter(t => !(t.vehicle_id && eldTrackedVehicleIds.has(t.vehicle_id)));
+    // Skip ELD-tracked vehicles UNLESS the trip was marked off-ELD
+    // (driver was running without the device — those miles add on top).
+    const eligibleTrips = trips.filter(t => {
+      const onEld = t.vehicle_id && eldTrackedVehicleIds.has(t.vehicle_id);
+      return !onEld || t.is_off_eld;
+    });
     if (eligibleTrips.length === 0) {
       return {
         error: false,

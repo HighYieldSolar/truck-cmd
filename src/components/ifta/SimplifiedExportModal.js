@@ -134,7 +134,10 @@ export default function SimplifiedExportModal({
         eldTrackedVehicleIds &&
         trip.vehicle_id &&
         eldTrackedVehicleIds.has(trip.vehicle_id);
-      if (vehicleIsOnEld) return; // ELD already accounts for this vehicle
+      // Same vehicle-level priority as the page, with the off-ELD
+      // override: skip the trip only when the vehicle is on ELD AND the
+      // user did NOT mark it as off-ELD.
+      if (vehicleIsOnEld && !trip.is_off_eld) return;
 
       if (trip.start_jurisdiction === trip.end_jurisdiction && trip.start_jurisdiction) {
         const s = trip.start_jurisdiction;

@@ -318,6 +318,11 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
             {plate && (
               <span className="text-xs font-mono text-gray-400 dark:text-gray-500 truncate">{plate}</span>
             )}
+            {trip.is_off_eld && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                Off-ELD
+              </span>
+            )}
           </div>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <Calendar className="h-3 w-3" />
@@ -361,7 +366,11 @@ export default function StateMileageLogger() {
     vehicle_id: "",
     start_state: "",
     start_odometer: "",
-    date: getCurrentDateLocal()
+    date: getCurrentDateLocal(),
+    // Off-ELD: when true, these miles add ON TOP of ELD data instead of
+    // being deduplicated. Used when the driver runs the truck without
+    // the ELD device plugged in (personal/yard moves, ELD failure, etc.)
+    is_off_eld: false
   });
 
   // Crossing form state
@@ -767,12 +776,12 @@ export default function StateMileageLogger() {
     checkAuth();
   }, [loadActiveTrips, loadCompletedTrips, loadVehicles, t]);
 
-  // Handle form input changes
+  // Handle form input changes (supports text + checkbox inputs)
   const handleNewTripChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setNewTripForm(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -804,6 +813,7 @@ export default function StateMileageLogger() {
         status: 'active',
         start_date: newTripForm.date,
         end_date: null,
+        is_off_eld: !!newTripForm.is_off_eld,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -1365,6 +1375,29 @@ export default function StateMileageLogger() {
                         />
                       </div>
                     </div>
+
+                    {/* Off-ELD checkbox — when checked, this trip's miles
+                        are added on top of any ELD data for the same vehicle
+                        instead of being deduplicated against it. Default
+                        unchecked because most trips on ELD-tracked trucks
+                        ARE captured by the ELD; checking it tells the IFTA
+                        calculator the ELD missed these miles. */}
+                    <label className="flex items-start gap-2 p-2.5 rounded-md border border-gray-200 dark:border-gray-700 bg-amber-50/50 dark:bg-amber-900/10 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                      <input
+                        type="checkbox"
+                        name="is_off_eld"
+                        checked={!!newTripForm.is_off_eld}
+                        onChange={handleNewTripChange}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="flex-1 text-xs text-gray-700 dark:text-gray-300">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">ELD was off for this trip</span>
+                        <br />
+                        <span className="text-gray-500 dark:text-gray-400">
+                          Adds these miles on top of ELD data instead of skipping them. Use when the device was unplugged or the trip wasn't logged by ELD.
+                        </span>
+                      </span>
+                    </label>
 
                     <button
                       type="submit"
