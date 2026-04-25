@@ -296,10 +296,23 @@ export async function POST(request) {
             { status: 403 }
           );
         }
-        // Default to current quarter
-        const startMonth = options.startMonth || getQuarterStartMonth(now);
-        const endMonth = options.endMonth || getQuarterEndMonth(now);
-        result = await syncIftaMileage(user.id, connection.id, startMonth, endMonth);
+        {
+          // syncIftaMileage expects a single quarter string (YYYY-QN) and
+          // converts it internally to a date range for the provider call.
+          // Previously this route passed startMonth/endMonth which the
+          // service silently ignored, so users could never backfill an
+          // arbitrary historical quarter.
+          const currentQuarter = `${now.getFullYear()}-Q${Math.ceil((now.getMonth() + 1) / 3)}`;
+          const quarterArg = options.quarter || currentQuarter;
+          const quarterRegex = /^\d{4}-Q[1-4]$/;
+          if (!quarterRegex.test(quarterArg)) {
+            return NextResponse.json(
+              { error: `Invalid quarter '${quarterArg}'. Use YYYY-QN format (e.g. 2025-Q4).` },
+              { status: 400 }
+            );
+          }
+          result = await syncIftaMileage(user.id, connection.id, quarterArg);
+        }
         break;
 
       case 'hos':

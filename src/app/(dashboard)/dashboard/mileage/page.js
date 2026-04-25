@@ -420,7 +420,7 @@ function NotConnectedState({ t }) {
 }
 
 // ── No data for quarter ──────────────────────────────────
-function NoDataState({ provider, quarter, onSwitchToManual, t }) {
+function NoDataState({ provider, quarter, onSwitchToManual, onBackfill, backfilling, t }) {
   return (
     <>
       <div className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
@@ -439,13 +439,31 @@ function NoDataState({ provider, quarter, onSwitchToManual, t }) {
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
           {t('noData.description')}
         </p>
-        <button
-          onClick={onSwitchToManual}
-          className="mt-5 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors"
-        >
-          <Edit size={14} />
-          {t('noData.logManual')}
-        </button>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {onBackfill && (
+            <button
+              onClick={onBackfill}
+              disabled={backfilling}
+              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm transition-colors"
+            >
+              {backfilling ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              {backfilling
+                ? `Pulling ${formatQuarterLabel(quarter)}…`
+                : `Pull ${formatQuarterLabel(quarter)} from ${provider || 'Motive'}`}
+            </button>
+          )}
+          <button
+            onClick={onSwitchToManual}
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors"
+          >
+            <Edit size={14} />
+            {t('noData.logManual')}
+          </button>
+        </div>
       </div>
     </>
   );
@@ -521,11 +539,13 @@ function MileagePageInner() {
     [activeTab, updateUrl]
   );
 
-  // Quarter options: current + 4 prior
+  // Quarter options: current + 15 prior = 4 years total (IFTA audit retention).
+  // Carriers must keep IFTA records for 4 years, so users need to be able to
+  // pull or review any quarter in that window.
   const quarterOptions = useMemo(() => {
     const opts = [];
     const now = new Date();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 16; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i * 3, 1);
       opts.push(`${d.getFullYear()}-Q${Math.floor(d.getMonth() / 3) + 1}`);
     }
@@ -632,19 +652,33 @@ function MileagePageInner() {
     try {
       setSyncingNow(true);
       setEldError(null);
+      setEldSuccess(null);
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) return;
-      await fetch('/api/eld/sync', {
+      // Run an IFTA-only sync for the SELECTED quarter so users can backfill
+      // historical quarters (the default 'all' sync only covers current +
+      // previous quarter). Pass quarter via options.quarter, which is what
+      // /api/eld/sync now reads.
+      const res = await fetch('/api/eld/sync', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quarter: selectedQuarter }),
-      }).catch(() => null);
+        body: JSON.stringify({
+          syncType: 'ifta',
+          options: { quarter: selectedQuarter },
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Sync failed');
+      }
       await loadEldData();
+      setEldSuccess(`Synced ${formatQuarterLabel(selectedQuarter)} from Motive.`);
+      setTimeout(() => setEldSuccess(null), 5000);
     } catch (err) {
       setEldError(err.message);
     } finally {
@@ -881,6 +915,8 @@ function MileagePageInner() {
                 provider={providerName}
                 quarter={selectedQuarter}
                 onSwitchToManual={() => handleTabChange('manual')}
+                onBackfill={hasEldIftaAccess ? handleSyncNow : undefined}
+                backfilling={syncingNow}
                 t={t}
               />
             )}
