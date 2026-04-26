@@ -279,7 +279,7 @@ export function FleetExportModal({ isOpen, onClose, user }) {
       doc.text(`Fleet Summary Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
     }
 
-    doc.save(`Fleet_Summary_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    return { doc, filename: `Fleet_Summary_Report_${new Date().toISOString().split('T')[0]}.pdf` };
   };
 
   // Generate Maintenance Report PDF
@@ -376,7 +376,7 @@ export function FleetExportModal({ isOpen, onClose, user }) {
       doc.text(`Maintenance Schedule Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
     }
 
-    doc.save(`Maintenance_Schedule_${new Date().toISOString().split('T')[0]}.pdf`);
+    return { doc, filename: `Maintenance_Schedule_${new Date().toISOString().split('T')[0]}.pdf` };
   };
 
   // Generate Document Expiration Report PDF
@@ -489,7 +489,7 @@ export function FleetExportModal({ isOpen, onClose, user }) {
       doc.text(`Document Expiration Report | Page ${i} of ${pageCount} | Truck Command`, 105, 287, { align: 'center' });
     }
 
-    doc.save(`Document_Expiration_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    return { doc, filename: `Document_Expiration_Report_${new Date().toISOString().split('T')[0]}.pdf` };
   };
 
   // Generate Full Export CSV
@@ -585,22 +585,46 @@ export function FleetExportModal({ isOpen, onClose, user }) {
 
     try {
       if (exportFormat === 'pdf' || exportFormat === 'print') {
+        let result;
         switch (reportType) {
           case 'summary':
-            await generateFleetSummaryPDF();
+            result = await generateFleetSummaryPDF();
             break;
           case 'maintenance':
-            await generateMaintenancePDF();
+            result = await generateMaintenancePDF();
             break;
           case 'documents':
-            await generateDocumentsPDF();
+            result = await generateDocumentsPDF();
             break;
           case 'full':
-            await generateFleetSummaryPDF(); // Full export as PDF uses summary
+            result = await generateFleetSummaryPDF(); // Full export as PDF uses summary
             break;
         }
         if (exportFormat === 'print') {
-          setTimeout(() => window.print(), 500);
+          // Open the generated PDF in a new tab and trigger the browser's
+          // print dialog from THAT window. window.print() in this window
+          // would have printed the modal itself instead of the report.
+          // jsPDF's autoPrint() embeds a JS action so the PDF reader
+          // auto-opens print on load.
+          if (result?.doc) {
+            try {
+              result.doc.autoPrint();
+            } catch (_) {
+              /* older jsPDF builds may not have autoPrint — fall through */
+            }
+            const blobUrl = result.doc.output('bloburl');
+            const printWindow = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+            if (!printWindow) {
+              // Popup blocked — fall back to saving the PDF so the user
+              // can open + print it manually.
+              result.doc.save(result.filename);
+              throw new Error(
+                'Popup blocked. The PDF was saved to your downloads — open it to print.'
+              );
+            }
+          }
+        } else if (result?.doc) {
+          result.doc.save(result.filename);
         }
       } else {
         // CSV/TXT export - use full export for all types

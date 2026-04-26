@@ -49,6 +49,8 @@ export async function getAllVehicleLocations(userId) {
         longitude,
         heading,
         speed_mph,
+        odometer,
+        engine_hours,
         address,
         location_time
       `)
@@ -105,6 +107,11 @@ export async function getAllVehicleLocations(userId) {
             speedMph: speedMph != null ? Math.round(speedMph) : null,
             address: loc.address
           },
+          // Surface the latest sensor readings so the fleet UI can show fresh
+          // odometer / engine-hours instead of stale values from the vehicles
+          // table (which is only written on initial mapping).
+          odometerMiles: loc.odometer ?? null,
+          engineHours: loc.engine_hours ?? null,
           recordedAt: loc.location_time,
           ageMinutes,
           isStale,
