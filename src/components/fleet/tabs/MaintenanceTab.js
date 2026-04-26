@@ -169,7 +169,7 @@ export default function MaintenanceTab({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex items-center gap-1 px-5 py-2 bg-white border-b border-slate-100 shrink-0">
+      <div className="flex items-center gap-1 px-5 py-2 bg-white dark:bg-gray-800 border-b border-slate-100 dark:border-gray-700 shrink-0">
         <SubTabBtn active={!isHistory} onClick={() => url.setMaint("upcoming")} label={t("redesign.upcoming", "Upcoming")} />
         <SubTabBtn active={isHistory} onClick={() => url.setMaint("history")} label={t("redesign.history", "History")} />
         <div className="flex-1" />
