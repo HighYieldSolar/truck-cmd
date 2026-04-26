@@ -1,27 +1,11 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import dynamic from 'next/dynamic';
-import { Suspense, use } from 'react';
-
-const DriverDetailPage = dynamic(() => import('@/components/fleet/DriverDetailPage'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  ),
-});
-
-export default function DriverDetailRoute({ params }) {
-  const resolvedParams = use(params);
-
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    }>
-      <DriverDetailPage driverId={resolvedParams.id} />
-    </Suspense>
-  );
+/**
+ * Old detail route — redirect to /dashboard/fleet?tab=drivers&row=<id>.
+ * The unified page opens that driver's drawer on load. RLS still gates the row.
+ */
+export default async function DriverDetailRedirect({ params }) {
+  const { id } = await params;
+  if (!id) redirect("/dashboard/fleet?tab=drivers");
+  redirect(`/dashboard/fleet?tab=drivers&row=${encodeURIComponent(id)}`);
 }

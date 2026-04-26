@@ -96,11 +96,20 @@ export async function GET(request) {
     const dashboardData = await getGpsDashboard(user.id);
 
     if (dashboardData.error) {
-      log('Error getting GPS dashboard:', dashboardData.errorMessage);
-      return NextResponse.json(
-        { error: dashboardData.errorMessage || 'Failed to get GPS data' },
-        { status: 500 }
-      );
+      const msg = dashboardData.errorMessage || 'Failed to get GPS data';
+      log('GPS dashboard:', msg);
+      // "No active ELD connection" is the steady state for users who haven't
+      // connected an ELD yet — return an empty payload at 200 instead of a
+      // 500 so the fleet UI stays clean (no red console errors).
+      if (/no active eld connection/i.test(msg)) {
+        return NextResponse.json({
+          vehicles: [],
+          summary: { totalVehicles: 0, vehiclesMoving: 0, vehiclesIdle: 0, vehiclesOffline: 0 },
+          lastUpdated: null,
+          eldConnected: false,
+        });
+      }
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     return NextResponse.json({

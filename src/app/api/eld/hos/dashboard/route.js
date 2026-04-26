@@ -70,7 +70,7 @@ async function getAuthenticatedUser(request) {
  */
 export async function GET(request) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await getAuthenticatedUser(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -96,11 +96,25 @@ export async function GET(request) {
     const dashboardData = await getHosDashboard(user.id);
 
     if (dashboardData.error) {
-      log('Error getting HOS dashboard:', dashboardData.errorMessage);
-      return NextResponse.json(
-        { error: dashboardData.errorMessage || 'Failed to get HOS data' },
-        { status: 500 }
-      );
+      const msg = dashboardData.errorMessage || 'Failed to get HOS data';
+      log('HOS dashboard:', msg);
+      // No active ELD connection is the normal state for unconnected users —
+      // return an empty payload so the fleet page doesn't log a red 500.
+      if (/no active eld connection/i.test(msg)) {
+        return NextResponse.json({
+          drivers: [],
+          summary: {
+            totalDrivers: 0,
+            driversOnDuty: 0,
+            driversOffDuty: 0,
+            driversDriving: 0,
+            driversInViolation: 0,
+          },
+          lastUpdated: null,
+          eldConnected: false,
+        });
+      }
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     return NextResponse.json({

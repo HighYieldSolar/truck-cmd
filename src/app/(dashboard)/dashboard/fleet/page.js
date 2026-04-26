@@ -1,26 +1,29 @@
 "use client";
 
-import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
-// Dynamically import the FleetManagementPage component to avoid server/client mismatch
-const FleetManagementPage = dynamic(() => import('@/components/fleet/FleetManagementPage'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  ),
-});
+// Dynamically import the fleet page to avoid SSR/CSR mismatch (mapbox + supabase auth).
+const FleetPageClient = dynamic(
+  () => import("@/components/fleet/FleetPageClient"),
+  {
+    ssr: false,
+    loading: () => <PageSpinner />,
+  }
+);
 
-export default function FleetManagementRoute() {
+export default function FleetRoute() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    }>
-      <FleetManagementPage />
+    <Suspense fallback={<PageSpinner />}>
+      <FleetPageClient />
     </Suspense>
+  );
+}
+
+function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-slate-900" />
+    </div>
   );
 }

@@ -51,7 +51,7 @@ export default function FleetStatusWidget({ className = '' }) {
         .eq('user_id', user.id)
         .eq('status', 'active')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       setHasEldConnection(!!connection);
 
