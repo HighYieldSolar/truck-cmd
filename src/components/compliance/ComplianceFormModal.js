@@ -409,10 +409,10 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden"
       >
         {/* Header with Progress */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-6 rounded-t-xl">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 text-white p-6 rounded-t-xl flex-shrink-0">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-2xl font-bold">
               {compliance ? t('form.editTitle') : t('form.createTitle')}
@@ -487,8 +487,10 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
           </div>
         )}
 
-        {/* Form Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 240px)' }}>
+        {/* Form Content — flex-1 so it fills the gap between header and
+            footer, and overflow-y-auto so it scrolls inside the modal
+            instead of pushing the footer off-screen. */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
           {renderStepContent()}
 
           {errors.submit && (
@@ -502,7 +504,7 @@ export default function ComplianceFormModal({ isOpen, onClose, compliance, onSav
         </div>
 
         {/* Footer with Actions */}
-        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl">
+        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex-shrink-0">
           <div className="flex justify-between items-center">
             <button
               type="button"

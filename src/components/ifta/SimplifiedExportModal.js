@@ -661,7 +661,7 @@ export default function SimplifiedExportModal({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[9999] overflow-y-auto"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[9999] sm:p-4"
       onClick={(e) => {
         // Close modal when clicking backdrop
         if (e.target === e.currentTarget && exportState !== 'loading') {
@@ -670,7 +670,7 @@ export default function SimplifiedExportModal({
       }}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md mx-auto sm:my-8 relative max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-none"
+        className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md mx-auto relative max-h-[calc(100dvh-env(safe-area-inset-top))] sm:max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col animate-slide-up sm:animate-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile-friendly Header */}

@@ -32,26 +32,38 @@ export default function DriverRow({ d, selected, dense, onClick, onSelect, isSel
         <Avatar name={d.name} tone={d.avatar} size={dense ? 24 : 32} src={d.imageUrl} />
       </div>
 
-      {/* Identity + secondary line */}
+      {/* Identity + secondary line. On mobile: name gets the full row,
+          status pill sits inline on the right; the id and other meta drop
+          to a second line so names aren't squashed. On md+ the original
+          inline layout returns. */}
       <div className="flex-1 min-w-0 px-2.5">
         <div className={`flex items-center gap-2 ${dense ? "" : "mb-1"}`}>
-          <span className="font-semibold text-slate-900 dark:text-gray-100 truncate max-w-[220px]">{d.name}</span>
-          <span className="font-mono text-[11px] text-slate-500 dark:text-gray-400">{d.id?.slice(0, 8) || ""}</span>
+          <span className="font-semibold text-slate-900 dark:text-gray-100 truncate flex-1 md:flex-initial md:max-w-[220px]">
+            {d.name}
+          </span>
+          <span className="hidden md:inline font-mono text-[11px] text-slate-500 dark:text-gray-400">
+            {d.id?.slice(0, 8) || ""}
+          </span>
           <StatusPill status={d.status} />
         </div>
         {!dense && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-slate-500 dark:text-gray-400">
+            {d.id && (
+              <span className="md:hidden font-mono text-[11px] text-slate-500 dark:text-gray-400">
+                {d.id?.slice(0, 8)}
+              </span>
+            )}
             <HosChip duty={d.hos.duty} remaining={d.hos.remaining} stale={d.hos.stale} size="xs" />
             {d.truck && (
-              <span className="inline-flex items-center gap-1">
-                <Truck size={11} className="text-slate-400 dark:text-gray-500" />
-                <span className="text-slate-600 dark:text-gray-400 truncate max-w-[200px]">{d.truck}</span>
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <Truck size={11} className="text-slate-400 dark:text-gray-500 flex-shrink-0" />
+                <span className="text-slate-600 dark:text-gray-400 truncate">{d.truck}</span>
               </span>
             )}
             {d.location && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin size={11} className="text-slate-400 dark:text-gray-500" />
-                <span className="truncate max-w-[200px]">{d.location}</span>
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <MapPin size={11} className="text-slate-400 dark:text-gray-500 flex-shrink-0" />
+                <span className="truncate">{d.location}</span>
               </span>
             )}
           </div>
@@ -73,17 +85,20 @@ export default function DriverRow({ d, selected, dense, onClick, onSelect, isSel
         </>
       )}
 
-      {/* Lic / Med chips */}
+      {/* Lic / Med chips — hidden on mobile (status info already covered
+          via the HOS chip in the secondary line); shown on md+ at fixed
+          width so the table aligns. */}
       <div
-        className="flex items-center gap-1 justify-end px-2.5"
+        className="hidden md:flex items-center gap-1 justify-end px-2.5"
         style={{ flex: "0 0 140px", paddingTop: dense ? 0 : 4 }}
       >
         {d.license != null ? <DaysChip days={d.license} label="License" /> : <span className="text-slate-300 dark:text-gray-600">—</span>}
         {d.medical != null ? <DaysChip days={d.medical} label="Medical" /> : <span className="text-slate-300 dark:text-gray-600">—</span>}
       </div>
 
-      {/* More */}
-      <div className="w-9 flex items-center justify-center self-stretch">
+      {/* More — sits flush on the right of the row on mobile and matches
+          desktop alignment. */}
+      <div className="w-9 flex items-center justify-center self-start md:self-stretch flex-shrink-0">
         <RowMenu
           ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: d.name })}
           items={[

@@ -28,20 +28,21 @@ export default function FleetFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
       {segments.length > 0 && (
-        <div className="inline-flex gap-px bg-gray-100 dark:bg-gray-900/40 p-0.5 rounded-md max-w-full overflow-x-auto">
-          {segments.map((s) => {
+        <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto gap-px bg-gray-100 dark:bg-gray-900/40 p-0.5 rounded-md max-w-full">
+          {segments.map((s, idx) => {
             const isActive = activeSegment === s;
             const count = segmentCounts[s];
             const label = segmentLabel ? segmentLabel(s) : s;
+            const isLastOfOdd = idx === segments.length - 1 && segments.length % 2 === 1;
             return (
               <button
                 key={s}
                 onClick={() => onSegment?.(s)}
-                className={`px-2.5 py-1 rounded text-[12px] font-medium tracking-tight whitespace-nowrap transition ${
+                className={`px-2.5 py-1.5 sm:py-1 rounded text-[12px] font-medium tracking-tight transition text-center sm:text-left ${
                   isActive
                     ? "bg-white dark:bg-gray-700 text-slate-900 dark:text-gray-100 shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
                     : "text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100"
-                }`}
+                } ${isLastOfOdd ? "col-span-2 sm:col-span-1" : ""}`}
               >
                 {label}
                 {count != null && (
@@ -53,9 +54,9 @@ export default function FleetFilterBar({
         </div>
       )}
 
-      {segments.length > 0 && <div className="w-px h-4 bg-slate-200 dark:bg-gray-700 mx-1" />}
+      {segments.length > 0 && <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-gray-700 mx-1" />}
 
-      <div className="inline-flex items-center gap-1.5 h-7 px-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-[12.5px] text-slate-700 dark:text-gray-200 w-[200px] focus-within:border-slate-400 dark:focus-within:border-gray-500">
+      <div className="inline-flex items-center gap-1.5 h-8 sm:h-7 px-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-[12.5px] text-slate-700 dark:text-gray-200 w-full sm:w-[200px] focus-within:border-slate-400 dark:focus-within:border-gray-500">
         <Search size={12} className="text-slate-400 dark:text-gray-500" />
         <input
           value={q}

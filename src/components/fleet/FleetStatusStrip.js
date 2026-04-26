@@ -35,15 +35,18 @@ export default function FleetStatusStrip({
   return (
     <div className="px-3 sm:px-5 py-3">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2">
-        {items.map((it) => {
+        {items.map((it, idx) => {
           const muted = it.val === 0;
           const tone = muted ? "muted" : it.tone;
           const active = activeFilter === it.key;
+          // When there's an odd count, the last cell would sit alone in the
+          // mobile 2-col grid; let it span both columns so it fills the gap.
+          const isLastOfOdd = idx === items.length - 1 && items.length % 2 === 1;
           return (
             <button
               key={it.key}
               onClick={() => onPick?.(it)}
-              className={`min-w-0 inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-lg border text-[12.5px] font-medium tracking-tight transition ${PALETTE[tone]} ${active ? "ring-2 ring-offset-1 ring-slate-900" : "hover:brightness-95"}`}
+              className={`min-w-0 inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-lg border text-[12.5px] font-medium tracking-tight transition ${PALETTE[tone]} ${active ? "ring-2 ring-offset-1 ring-slate-900" : "hover:brightness-95"} ${isLastOfOdd ? "col-span-2 sm:col-span-1 justify-center sm:justify-start" : ""}`}
             >
               <span className="relative inline-flex items-center justify-center w-3 h-3 flex-shrink-0">
                 <it.icon size={12} strokeWidth={1.75} />

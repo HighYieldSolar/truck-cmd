@@ -291,18 +291,18 @@ export default function GPSTrackingMap({
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-700 dark:to-teal-700 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-700 dark:to-teal-700 p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
               <Navigation size={20} className="text-white" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Fleet GPS Tracking</h3>
-              <p className="text-sm text-green-100">Real-time vehicle locations</p>
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-semibold text-white truncate">Fleet GPS Tracking</h3>
+              <p className="text-sm text-green-100 truncate">Real-time vehicle locations</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -315,23 +315,24 @@ export default function GPSTrackingMap({
         </div>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{vehicles.length}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Total Vehicles</p>
+      {/* Stats Bar — 2-col on mobile, 4-col on sm+ to avoid the cramped
+          single-row grid that forced horizontal scroll on narrow viewports. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+        <div className="text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{vehicles.length}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Total Vehicles</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-green-600">{movingCount}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Moving</p>
+        <div className="text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-green-600">{movingCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Moving</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-600">{stoppedCount}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Stopped</p>
+        <div className="text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-gray-600">{stoppedCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Stopped</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-amber-600">{staleCount}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Stale Signal</p>
+        <div className="text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-amber-600">{staleCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Stale Signal</p>
         </div>
       </div>
 

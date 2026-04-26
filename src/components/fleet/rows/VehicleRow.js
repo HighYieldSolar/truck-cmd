@@ -40,38 +40,47 @@ export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, on
 
       <div className="flex-1 min-w-0 px-2.5">
         <div className={`flex items-center gap-2 ${dense ? "" : "mb-1"}`}>
-          <span className="font-semibold text-slate-900 dark:text-gray-100 truncate">{v.name}</span>
-          <span className="font-mono text-[11px] text-slate-500 dark:text-gray-400">{v.plate}</span>
+          <span className="font-semibold text-slate-900 dark:text-gray-100 truncate flex-1 md:flex-initial">
+            {v.name}
+          </span>
+          <span className="hidden md:inline font-mono text-[11px] text-slate-500 dark:text-gray-400">
+            {v.plate}
+          </span>
           <StatusPill status={v.status} />
         </div>
         {!dense && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-slate-500 dark:text-gray-400">
+            {v.plate && (
+              <span className="md:hidden font-mono text-[11px] text-slate-500 dark:text-gray-400">
+                {v.plate}
+              </span>
+            )}
             {v.mmy && <span className="truncate">{v.mmy}</span>}
             {v.driver && (
               <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1 truncate">
-                  <User size={11} className="text-slate-400 dark:text-gray-500" />
-                  {v.driver}
+                <span className="hidden md:inline">·</span>
+                <span className="inline-flex items-center gap-1 min-w-0">
+                  <User size={11} className="text-slate-400 dark:text-gray-500 flex-shrink-0" />
+                  <span className="truncate">{v.driver}</span>
                 </span>
               </>
             )}
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
-              <MapPin size={11} className="text-slate-400 dark:text-gray-500" />
-              <span className="truncate max-w-[180px]">{v.location.city}</span>
+            <span className="hidden md:inline">·</span>
+            <span className="inline-flex items-center gap-1 min-w-0">
+              <MapPin size={11} className="text-slate-400 dark:text-gray-500 flex-shrink-0" />
+              <span className="truncate">{v.location.city}</span>
               <LocationAge ageMinutes={v.location.ageMinutes} label={v.location.ageLabel} />
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex items-center px-2.5" style={{ flex: "0 0 130px", paddingTop: dense ? 0 : 4 }}>
+      <div className="hidden md:flex items-center px-2.5" style={{ flex: "0 0 130px", paddingTop: dense ? 0 : 4 }}>
         <HealthChip health={v.health} />
       </div>
 
       <div
-        className="flex items-center justify-end px-2.5 text-[12.5px] tabular-nums text-slate-700 dark:text-gray-300"
+        className="hidden md:flex items-center justify-end px-2.5 text-[12.5px] tabular-nums text-slate-700 dark:text-gray-300"
         style={{ flex: "0 0 110px", paddingTop: dense ? 0 : 6 }}
       >
         {v.odo != null ? (
@@ -84,7 +93,7 @@ export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, on
       </div>
 
       <div
-        className="flex items-center justify-end px-2.5"
+        className="hidden md:flex items-center justify-end px-2.5"
         style={{ flex: "0 0 120px", paddingTop: dense ? 0 : 4 }}
       >
         {v.nextMaint != null ? (
@@ -94,7 +103,7 @@ export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, on
         )}
       </div>
 
-      <div className="w-9 flex items-center justify-center self-stretch">
+      <div className="w-9 flex items-center justify-center self-start md:self-stretch flex-shrink-0">
         <RowMenu
           ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: v.name })}
           items={[

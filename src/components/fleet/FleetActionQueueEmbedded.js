@@ -51,55 +51,94 @@ export default function FleetActionQueueEmbedded({ items = [], onItemClick }) {
   return (
     <div className="mt-4 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden shrink-0">
       <div
-        className={`flex items-center gap-2.5 px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900/40 ${
+        className={`px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900/40 ${
           collapsed ? "" : "border-b border-gray-100 dark:border-gray-700"
         }`}
       >
-        <Bell size={14} className="text-slate-600 dark:text-gray-400" />
-        <span className="text-[13px] font-semibold tracking-tight text-slate-900 dark:text-gray-100">
-          {t("redesign.actionQueue", "Action queue")}
-        </span>
-        <span
-          className={`inline-flex items-center px-1.5 rounded-lg text-[11px] font-semibold tabular-nums ${
-            items.length > 0
-              ? "bg-slate-100 text-slate-600 dark:text-gray-400"
-              : "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-          }`}
-        >
-          {items.length}
-        </span>
-        <div className="flex-1" />
-        {counts.crit > 0 && (
-          <span className="inline-flex items-center gap-1 text-[11.5px] text-rose-700 dark:text-rose-300 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            {counts.crit} {t("redesign.critical", "critical")}
+        {/* Row 1 — title + count + collapse toggle (always visible) */}
+        <div className="flex items-center gap-2">
+          <Bell size={14} className="text-slate-600 dark:text-gray-400 flex-shrink-0" />
+          <span className="text-[13px] font-semibold tracking-tight text-slate-900 dark:text-gray-100">
+            {t("redesign.actionQueue", "Action queue")}
           </span>
-        )}
-        {counts.warn > 0 && (
-          <span className="ml-2 inline-flex items-center gap-1 text-[11.5px] text-amber-700 dark:text-amber-300 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            {counts.warn} {t("redesign.warning", "warning")}
-          </span>
-        )}
-        {items.length > 3 && !collapsed && (
-          <button
-            onClick={() => setShowAll((s) => !s)}
-            className="ml-2 text-[11.5px] text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100 font-medium"
+          <span
+            className={`inline-flex items-center px-1.5 rounded-lg text-[11px] font-semibold tabular-nums flex-shrink-0 ${
+              items.length > 0
+                ? "bg-slate-100 text-slate-600 dark:text-gray-400"
+                : "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+            }`}
           >
-            {showAll ? t("redesign.showTop3", "Show top 3") : t("redesign.viewAllN", "View all ({{n}})", { n: items.length })}
-          </button>
-        )}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="ml-1 p-1 rounded hover:bg-slate-100 dark:hover:bg-gray-700"
-          aria-label={collapsed ? t("redesign.expand", "Expand") : t("redesign.collapse", "Collapse")}
-        >
-          {collapsed ? (
-            <ChevronDown size={12} className="text-slate-500 dark:text-gray-400" />
-          ) : (
-            <ChevronUp size={12} className="text-slate-500 dark:text-gray-400" />
+            {items.length}
+          </span>
+
+          {/* Desktop-only severity counts inline on row 1 */}
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            {counts.crit > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11.5px] text-rose-700 dark:text-rose-300 font-medium whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                {counts.crit} {t("redesign.critical", "critical")}
+              </span>
+            )}
+            {counts.warn > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11.5px] text-amber-700 dark:text-amber-300 font-medium whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                {counts.warn} {t("redesign.warning", "warning")}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Desktop View all */}
+          {items.length > 3 && !collapsed && (
+            <button
+              onClick={() => setShowAll((s) => !s)}
+              className="hidden sm:inline text-[11.5px] text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100 font-medium whitespace-nowrap"
+            >
+              {showAll ? t("redesign.showTop3", "Show top 3") : t("redesign.viewAllN", "View all ({{n}})", { n: items.length })}
+            </button>
           )}
-        </button>
+
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-gray-700 flex-shrink-0"
+            aria-label={collapsed ? t("redesign.expand", "Expand") : t("redesign.collapse", "Collapse")}
+          >
+            {collapsed ? (
+              <ChevronDown size={14} className="text-slate-500 dark:text-gray-400" />
+            ) : (
+              <ChevronUp size={14} className="text-slate-500 dark:text-gray-400" />
+            )}
+          </button>
+        </div>
+
+        {/* Row 2 — mobile-only: severity counts + view-all */}
+        {(counts.crit > 0 || counts.warn > 0 || (items.length > 3 && !collapsed)) && (
+          <div className="sm:hidden flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-200/70 dark:border-gray-700/70">
+            <div className="flex items-center gap-3">
+              {counts.crit > 0 && (
+                <span className="inline-flex items-center gap-1 text-[11.5px] text-rose-700 dark:text-rose-300 font-medium whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  {counts.crit} {t("redesign.critical", "critical")}
+                </span>
+              )}
+              {counts.warn > 0 && (
+                <span className="inline-flex items-center gap-1 text-[11.5px] text-amber-700 dark:text-amber-300 font-medium whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  {counts.warn} {t("redesign.warning", "warning")}
+                </span>
+              )}
+            </div>
+            {items.length > 3 && !collapsed && (
+              <button
+                onClick={() => setShowAll((s) => !s)}
+                className="text-[11.5px] text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-gray-100 font-medium whitespace-nowrap"
+              >
+                {showAll ? t("redesign.showTop3", "Show top 3") : t("redesign.viewAllN", "View all ({{n}})", { n: items.length })}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {!collapsed && (

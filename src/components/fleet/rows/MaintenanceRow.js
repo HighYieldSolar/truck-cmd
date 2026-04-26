@@ -55,7 +55,7 @@ export default function MaintenanceRow({
           )}
         </div>
 
-        <div className="px-2.5 flex items-center" style={{ flex: "0 0 110px" }}>
+        <div className="hidden md:flex px-2.5 items-center" style={{ flex: "0 0 110px" }}>
           {kind === "upcoming" ? (
             m.due != null ? (
               <DaysChip days={m.due} label="Due" />
@@ -69,12 +69,12 @@ export default function MaintenanceRow({
           )}
         </div>
 
-        <div className="px-2.5 flex items-center" style={{ flex: "0 0 110px" }}>
+        <div className="hidden md:flex px-2.5 items-center" style={{ flex: "0 0 110px" }}>
           <StatusPill status={m.status} />
         </div>
 
         <div
-          className="px-2.5 flex items-center text-[12.5px] text-slate-600 dark:text-gray-400 truncate"
+          className="hidden md:flex px-2.5 items-center text-[12.5px] text-slate-600 dark:text-gray-400 truncate"
           style={{ flex: "0 0 200px" }}
         >
           <span className="truncate">{m.provider}</span>
@@ -82,7 +82,7 @@ export default function MaintenanceRow({
         </div>
 
         <div
-          className="px-2.5 flex items-center justify-end font-mono tabular-nums text-[12.5px] text-slate-700 dark:text-gray-300"
+          className="hidden md:flex px-2.5 items-center justify-end font-mono tabular-nums text-[12.5px] text-slate-700 dark:text-gray-300"
           style={{ flex: "0 0 110px" }}
         >
           ${m.cost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -92,7 +92,7 @@ export default function MaintenanceRow({
         </div>
 
         {kind === "history" && (
-          <div className="flex items-center justify-center" style={{ flex: "0 0 50px" }}>
+          <div className="hidden md:flex items-center justify-center" style={{ flex: "0 0 50px" }}>
             {m.synced ? (
               <span title="Synced to expenses">
                 <CheckCircle2 size={14} className="text-emerald-600" />
@@ -119,7 +119,7 @@ export default function MaintenanceRow({
             )}
         </div>
 
-        <div className="w-9 flex items-center justify-center self-stretch">
+        <div className="w-9 flex items-center justify-center self-start md:self-stretch flex-shrink-0">
           <RowMenu
             ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: m.type })}
             items={[

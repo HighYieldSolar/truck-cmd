@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { Eye, Edit, Trash2, CheckCircle, MoreVertical, MoreHorizontal, ChevronDown } from "lucide-react";
 
 /**
@@ -207,6 +207,7 @@ export function TableActionsDropdown({
   disabled = false
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [flipUp, setFlipUp] = useState(false);
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -228,6 +229,24 @@ export function TableActionsDropdown({
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
+
+  // Auto-flip the menu upward when there isn't enough room below the
+  // trigger (e.g. last row in a paginated table). Estimate ~40px per
+  // visible item plus padding.
+  useLayoutEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    // Rough estimate: header + each item ~36px + footer padding
+    const itemCount =
+      (onView ? 1 : 0) +
+      (onComplete ? 1 : 0) +
+      (onEdit ? 1 : 0) +
+      customActions.length +
+      (onDelete ? 1 : 0);
+    const estimatedHeight = 16 + itemCount * 36;
+    setFlipUp(spaceBelow < estimatedHeight + 16);
+  }, [isOpen, onView, onComplete, onEdit, onDelete, customActions]);
 
   // Close on escape key
   useEffect(() => {
@@ -394,7 +413,9 @@ export function TableActionsDropdown({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-30 animate-in fade-in slide-in-from-top-2 duration-150"
+          className={`absolute right-0 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-30 animate-in fade-in duration-150 ${
+            flipUp ? "bottom-full mb-1 slide-in-from-bottom-2" : "top-full mt-1 slide-in-from-top-2"
+          }`}
         >
           {actions.map((action, index) => {
             const ActionIcon = action.icon;
