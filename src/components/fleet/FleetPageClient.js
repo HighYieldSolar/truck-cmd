@@ -23,9 +23,13 @@ import MaintenanceDrawerBody from "./drawers/MaintenanceDrawerBody";
 import DriverFormModal from "./DriverFormModal";
 import TruckFormModal from "./TruckFormModal";
 import MaintenanceFormModal from "./MaintenanceFormModal";
+import DeleteConfirmationModal from "../common/DeleteConfirmationModal";
+import { FleetExportModal } from "./FleetReportsComponent";
 
 import { useFleetUrlState, useFleetData, useActionQueue } from "./hooks";
-import { completeMaintenanceRecord } from "@/lib/services/maintenanceService";
+import { completeMaintenanceRecord, deleteMaintenanceRecord } from "@/lib/services/maintenanceService";
+import { deleteDriver } from "@/lib/services/driverService";
+import { deleteTruck } from "@/lib/services/truckService";
 import { Truck } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -54,6 +58,13 @@ export default function FleetPageClient() {
   const closeModal = () => setModal(null);
   const openAdd = (kind) => setModal({ mode: "add", kind });
   const openEdit = (kind) => setModal({ mode: "edit", kind });
+
+  // Delete-confirm state — { kind, items: [...], isDeleting: bool } | null
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const closeDeleteConfirm = () => setDeleteConfirm((s) => (s?.isDeleting ? s : null));
+
+  // Export modal — opens both from hero "Export" button and from bulk actions.
+  const [showExport, setShowExport] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -212,6 +223,7 @@ export default function FleetPageClient() {
           onAddDriver={() => openAdd("driver")}
           onAddVehicle={() => openAdd("vehicle")}
           onAddMaintenance={() => openAdd("maintenance")}
+          onExport={() => setShowExport(true)}
         />
 
         <div className="mb-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -254,6 +266,9 @@ export default function FleetPageClient() {
               onOpenRow={(id) => url.setRow(id)}
               onAddDriver={() => openAdd("driver")}
               onEditDriver={(d) => { url.setRow(d.id); openEdit("driver"); }}
+              onDeleteDriver={(d) => setDeleteConfirm({ kind: "driver", items: [d] })}
+              onBulkArchiveDrivers={(items) => setDeleteConfirm({ kind: "driver", items })}
+              onBulkExport={() => setShowExport(true)}
             />
           )}
           {url.tab === "vehicles" && (
@@ -268,6 +283,9 @@ export default function FleetPageClient() {
               onOpenRow={(id) => url.setRow(id)}
               onAddVehicle={() => openAdd("vehicle")}
               onEditVehicle={(v) => { url.setRow(v.id); openEdit("vehicle"); }}
+              onDeleteVehicle={(v) => setDeleteConfirm({ kind: "vehicle", items: [v] })}
+              onBulkArchiveVehicles={(items) => setDeleteConfirm({ kind: "vehicle", items })}
+              onBulkExport={() => setShowExport(true)}
             />
           )}
           {url.tab === "maintenance" && (
@@ -278,6 +296,25 @@ export default function FleetPageClient() {
               onOpenRow={(id) => url.setRow(id)}
               onAddMaintenance={() => openAdd("maintenance")}
               onEditMaintenance={(m) => { url.setRow(m.id); openEdit("maintenance"); }}
+              onDeleteMaintenance={(m) => setDeleteConfirm({ kind: "maintenance", items: [m] })}
+              onBulkArchiveMaintenance={(items) => setDeleteConfirm({ kind: "maintenance", items })}
+              onBulkExport={() => setShowExport(true)}
+              onBulkMarkComplete={async (items) => {
+                if (!items?.length) return;
+                try {
+                  for (const m of items) {
+                    await completeMaintenanceRecord(
+                      m.id,
+                      { completed_date: new Date().toISOString().slice(0, 10) },
+                      true
+                    );
+                  }
+                  reload();
+                } catch (e) {
+                  console.error("Bulk mark complete failed", e);
+                  window.alert("Failed: " + (e?.message || ""));
+                }
+              }}
               onMarkComplete={async (m) => {
                 if (!m?.id) return;
                 try {
@@ -362,6 +399,59 @@ export default function FleetPageClient() {
         onSubmit={() => {
           closeModal();
           reload();
+        }}
+      />
+      <FleetExportModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        user={user}
+      />
+      <DeleteConfirmationModal
+        isOpen={!!deleteConfirm}
+        onClose={closeDeleteConfirm}
+        isDeleting={!!deleteConfirm?.isDeleting}
+        title={
+          deleteConfirm?.kind === "driver"
+            ? `Delete ${deleteConfirm.items.length === 1 ? "driver" : `${deleteConfirm.items.length} drivers`}`
+            : deleteConfirm?.kind === "vehicle"
+            ? `Delete ${deleteConfirm.items.length === 1 ? "vehicle" : `${deleteConfirm.items.length} vehicles`}`
+            : deleteConfirm?.kind === "maintenance"
+            ? `Delete ${deleteConfirm.items.length === 1 ? "maintenance record" : `${deleteConfirm.items.length} records`}`
+            : "Delete"
+        }
+        itemName={
+          deleteConfirm?.items?.length === 1
+            ? (deleteConfirm.items[0].name || deleteConfirm.items[0].type || "item")
+            : null
+        }
+        message={
+          deleteConfirm?.items?.length > 1
+            ? `Are you sure you want to delete these ${deleteConfirm.items.length} items? This cannot be undone.`
+            : "This action cannot be undone."
+        }
+        confirmButtonText="Delete"
+        onConfirm={async () => {
+          if (!deleteConfirm) return;
+          setDeleteConfirm((s) => ({ ...s, isDeleting: true }));
+          const { kind, items } = deleteConfirm;
+          try {
+            for (const it of items) {
+              if (kind === "driver") {
+                await deleteDriver(user.id, it.id);
+              } else if (kind === "vehicle") {
+                await deleteTruck(user.id, it.id);
+              } else if (kind === "maintenance") {
+                await deleteMaintenanceRecord(it.id, true);
+              }
+              if (url.row === it.id) url.closeRow();
+            }
+            setDeleteConfirm(null);
+            reload();
+          } catch (e) {
+            console.error("Bulk delete failed", e);
+            setDeleteConfirm((s) => (s ? { ...s, isDeleting: false } : s));
+            window.alert("Delete failed: " + (e?.message || "unknown error"));
+          }
         }}
       />
     </main>

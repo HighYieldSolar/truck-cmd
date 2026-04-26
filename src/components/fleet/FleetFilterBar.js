@@ -91,10 +91,10 @@ export default function FleetFilterBar({
       {mapToggle && (
         <button
           onClick={mapToggle.onToggle}
-          className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12.5px] font-medium hover:bg-slate-100 dark:hover:bg-gray-700 ${
+          className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[12.5px] font-semibold transition-colors ${
             mapToggle.on
-              ? "text-slate-900 dark:text-gray-100"
-              : "text-slate-600 dark:text-gray-400"
+              ? "bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+              : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/60"
           }`}
         >
           <MapIcon size={13} />

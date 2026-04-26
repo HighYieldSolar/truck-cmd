@@ -1,6 +1,6 @@
 "use client";
 
-import { Truck, MapPin, User, Pencil, ExternalLink } from "lucide-react";
+import { Truck, MapPin, User, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { StatusPill, HealthChip, DaysChip, LocationAge, RowMenu } from "../atoms";
 import { FleetRow } from "../FleetTable";
 import { useTranslation } from "@/context/LanguageContext";
@@ -9,13 +9,12 @@ import { useTranslation } from "@/context/LanguageContext";
  * Vehicle row — same two-line shape as DriverRow but vehicle-flavored.
  * Health chip + odometer + next-maint chip on the right.
  */
-export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, onEdit, onOpen }) {
+export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, onEdit, onOpen, onDelete }) {
   const { t } = useTranslation("fleet");
   return (
     <FleetRow selected={isSelected} onClick={onClick} dense={dense} ariaLabel={v.name}>
       <div
-        className="w-9 flex justify-center"
-        style={{ paddingTop: dense ? 0 : 6 }}
+        className="w-9 flex items-center justify-center self-stretch"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -95,15 +94,13 @@ export default function VehicleRow({ v, dense, isSelected, onClick, onSelect, on
         )}
       </div>
 
-      <div
-        className="w-9 flex justify-center"
-        style={{ paddingTop: dense ? 0 : 4 }}
-      >
+      <div className="w-9 flex items-center justify-center self-stretch">
         <RowMenu
           ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: v.name })}
           items={[
             { label: t("redesign.openDetails", "Open details"), icon: ExternalLink, onClick: () => onOpen?.(v) },
             { label: t("redesign.editVehicle", "Edit vehicle"), icon: Pencil, onClick: () => onEdit?.(v) },
+            { label: t("redesign.deleteVehicle", "Delete vehicle"), icon: Trash2, onClick: () => onDelete?.(v), danger: true },
           ]}
         />
       </div>

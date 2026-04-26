@@ -1,6 +1,6 @@
 "use client";
 
-import { Truck, MapPin, Pencil, ExternalLink } from "lucide-react";
+import { Truck, MapPin, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { Avatar, StatusPill, HosChip, DaysChip, RowMenu } from "../atoms";
 import { FleetRow } from "../FleetTable";
 import { useTranslation } from "@/context/LanguageContext";
@@ -9,12 +9,12 @@ import { useTranslation } from "@/context/LanguageContext";
  * Driver row — two-line avatar-led layout (FKRowB shape).
  * In compact mode the second-line chips fold into proper columns.
  */
-export default function DriverRow({ d, selected, dense, onClick, onSelect, isSelected, onEdit, onOpen }) {
+export default function DriverRow({ d, selected, dense, onClick, onSelect, isSelected, onEdit, onOpen, onDelete }) {
   const { t } = useTranslation("fleet");
   return (
     <FleetRow selected={selected || isSelected} onClick={onClick} dense={dense} ariaLabel={d.name}>
       {/* Checkbox cell */}
-      <div className="w-9 flex justify-center" style={{ paddingTop: dense ? 0 : 6 }} onClick={(e) => e.stopPropagation()}>
+      <div className="w-9 flex items-center justify-center self-stretch" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
           aria-label={`Select ${d.name}`}
@@ -83,15 +83,13 @@ export default function DriverRow({ d, selected, dense, onClick, onSelect, isSel
       </div>
 
       {/* More */}
-      <div
-        className="w-9 flex justify-center"
-        style={{ paddingTop: dense ? 0 : 4 }}
-      >
+      <div className="w-9 flex items-center justify-center self-stretch">
         <RowMenu
           ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: d.name })}
           items={[
             { label: t("redesign.openDetails", "Open details"), icon: ExternalLink, onClick: () => onOpen?.(d) },
             { label: t("redesign.editDriver", "Edit driver"), icon: Pencil, onClick: () => onEdit?.(d) },
+            { label: t("redesign.deleteDriver", "Delete driver"), icon: Trash2, onClick: () => onDelete?.(d), danger: true },
           ]}
         />
       </div>

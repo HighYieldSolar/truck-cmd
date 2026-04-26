@@ -26,7 +26,7 @@ export default function useFleetUrlState() {
       status: sp.get("status") || "All",
       filterChip: sp.get("filter") || null, // e.g. "driving", "faults", "hos-violations"
       maint: sp.get("maint") === "history" ? "history" : "upcoming",
-      mapOn: sp.get("map") !== "off", // default ON for vehicles tab
+      mapOn: sp.get("map") === "on", // default OFF; user opts in via toggle
       density: sp.get("d") === "compact" ? "compact" : "comfortable",
     };
   }, [sp]);
@@ -55,7 +55,7 @@ export default function useFleetUrlState() {
   const setStatus = useCallback((s) => update({ status: s === "All" ? null : s }), [update]);
   const setFilterChip = useCallback((f) => update({ filter: f }), [update]);
   const setMaint = useCallback((m) => update({ maint: m === "history" ? "history" : null }), [update]);
-  const toggleMap = useCallback(() => update({ map: state.mapOn ? "off" : null }), [update, state.mapOn]);
+  const toggleMap = useCallback(() => update({ map: state.mapOn ? null : "on" }), [update, state.mapOn]);
   const setDensity = useCallback((d) => update({ d: d === "compact" ? "compact" : null }, { replace: true }), [update]);
 
   return {

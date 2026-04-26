@@ -277,8 +277,11 @@ export default function useFleetData(userId) {
             },
             driver: driver?.name || null,
             driverId: driver?.id || null,
-            odo: v.odometer_miles ?? null,
-            engineHours: v.engine_hours ?? null,
+            // Prefer fresh values from the live GPS feed (updated on every
+            // ELD sync) and fall back to the vehicles table for unmapped or
+            // recently-added trucks.
+            odo: gps?.odometerMiles ?? v.odometer_miles ?? null,
+            engineHours: gps?.engineHours ?? v.engine_hours ?? null,
             nextMaint: nextMaintByVehicleId.get(v.id) ?? null,
             registration: daysBetween(v.registration_expiry),
             insurance: daysBetween(v.insurance_expiry),

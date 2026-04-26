@@ -1,6 +1,6 @@
 "use client";
 
-import { Truck, CheckCircle2, Pencil, ExternalLink } from "lucide-react";
+import { Truck, CheckCircle2, Pencil, ExternalLink, Trash2 } from "lucide-react";
 import { StatusPill, DaysChip, ManualBadge, RowMenu } from "../atoms";
 import { FleetRow } from "../FleetTable";
 import { useTranslation } from "@/context/LanguageContext";
@@ -15,6 +15,7 @@ export default function MaintenanceRow({
   onMarkComplete,
   onEdit,
   onOpen,
+  onDelete,
 }) {
   const { t } = useTranslation("fleet");
   const overdue = kind === "upcoming" && m.due != null && m.due < 0;
@@ -118,12 +119,13 @@ export default function MaintenanceRow({
             )}
         </div>
 
-        <div className="w-9 flex items-center justify-center">
+        <div className="w-9 flex items-center justify-center self-stretch">
           <RowMenu
             ariaLabel={t("redesign.actionsFor", "Actions for {{name}}", { name: m.type })}
             items={[
               { label: t("redesign.openDetails", "Open details"), icon: ExternalLink, onClick: () => onOpen?.(m) },
               { label: t("redesign.editRecord", "Edit record"), icon: Pencil, onClick: () => onEdit?.(m) },
+              { label: t("redesign.deleteRecord", "Delete record"), icon: Trash2, onClick: () => onDelete?.(m), danger: true },
             ]}
           />
         </div>

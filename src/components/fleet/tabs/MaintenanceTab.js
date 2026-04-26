@@ -33,7 +33,11 @@ export default function MaintenanceTab({
   onOpenRow,
   onAddMaintenance,
   onEditMaintenance,
+  onDeleteMaintenance,
   onMarkComplete,
+  onBulkArchiveMaintenance,
+  onBulkMarkComplete,
+  onBulkExport,
 }) {
   const { t } = useTranslation("fleet");
   const [selected, setSelected] = useState(new Set());
@@ -159,12 +163,34 @@ export default function MaintenanceTab({
         />
       : null;
 
+  const selectedRecords = useMemo(
+    () => filtered.filter((m) => selected.has(m.id)),
+    [filtered, selected]
+  );
+
   const showSelection = selected.size > 0;
   const bulkActions = SELECTION_ACTIONS.maintenance({
-    onMarkComplete: () => {},
-    onAssignVendor: () => {},
-    onExport: () => {},
-    onArchive: () => {},
+    // Mark complete only meaningful on Upcoming tab — limit to non-completed.
+    onMarkComplete:
+      !isHistory && selectedRecords.some((m) => m.status !== "Completed" && m.status !== "Cancelled")
+        ? async () => {
+            const eligible = selectedRecords.filter(
+              (m) => m.status !== "Completed" && m.status !== "Cancelled"
+            );
+            await onBulkMarkComplete?.(eligible);
+            setSelected(new Set());
+          }
+        : undefined,
+    onExport: selectedRecords.length
+      ? () => onBulkExport?.({ kind: "maintenance", items: selectedRecords })
+      : undefined,
+    onArchive: selectedRecords.length
+      ? () => {
+          onBulkArchiveMaintenance?.(selectedRecords);
+          setSelected(new Set());
+        }
+      : undefined,
+    // onAssignVendor left undefined — needs a vendor picker, hidden for now.
   });
 
   return (
@@ -219,6 +245,7 @@ export default function MaintenanceTab({
             onMarkComplete={onMarkComplete}
             onOpen={(rec) => onOpenRow?.(rec.id)}
             onEdit={(rec) => onEditMaintenance?.(rec)}
+            onDelete={(rec) => onDeleteMaintenance?.(rec)}
           />
         ))}
       </FleetTable>

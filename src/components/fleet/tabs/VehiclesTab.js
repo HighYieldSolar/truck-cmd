@@ -29,6 +29,9 @@ export default function VehiclesTab({
   onOpenRow,
   onAddVehicle,
   onEditVehicle,
+  onDeleteVehicle,
+  onBulkArchiveVehicles,
+  onBulkExport,
   filterChip,
   eldConnected,
   eldLastSync,
@@ -153,12 +156,24 @@ export default function VehiclesTab({
         />
       : null;
 
+  const selectedVehicles = useMemo(
+    () => filtered.filter((v) => selected.has(v.id)),
+    [filtered, selected]
+  );
+
   const showSelection = selected.size > 0;
   const bulkActions = SELECTION_ACTIONS.vehicles({
-    onEditStatus: () => {},
-    onAssign: () => {},
-    onExport: () => {},
-    onArchive: () => {},
+    onExport: selectedVehicles.length
+      ? () => onBulkExport?.({ kind: "vehicle", items: selectedVehicles })
+      : undefined,
+    onArchive: selectedVehicles.length
+      ? () => {
+          onBulkArchiveVehicles?.(selectedVehicles);
+          setSelected(new Set());
+        }
+      : undefined,
+    // Edit status & Assign driver are not yet wired — left undefined so the
+    // bar hides them rather than rendering dead buttons.
   });
 
   const lastUpdated = eldLastSync
@@ -221,6 +236,7 @@ export default function VehiclesTab({
             onClick={() => onOpenRow?.(v.id)}
             onOpen={(veh) => onOpenRow?.(veh.id)}
             onEdit={(veh) => onEditVehicle?.(veh)}
+            onDelete={(veh) => onDeleteVehicle?.(veh)}
           />
         ))}
       </FleetTable>

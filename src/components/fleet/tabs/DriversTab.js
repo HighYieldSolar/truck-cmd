@@ -31,6 +31,9 @@ export default function DriversTab({
   onOpenRow,
   onAddDriver,
   onEditDriver,
+  onDeleteDriver,
+  onBulkArchiveDrivers,
+  onBulkExport,
   filterChip,
 }) {
   const { t } = useTranslation("fleet");
@@ -170,13 +173,23 @@ export default function DriversTab({
         />
       : null;
 
+  const selectedDrivers = useMemo(
+    () => filtered.filter((d) => selected.has(d.id)),
+    [filtered, selected]
+  );
+
   const showSelection = selected.size > 0;
   const bulkActions = SELECTION_ACTIONS.drivers({
-    onEditStatus: () => {},
-    onAssign: () => {},
-    onNotify: () => {},
-    onExport: () => {},
-    onArchive: () => {},
+    onExport: selectedDrivers.length
+      ? () => onBulkExport?.({ kind: "driver", items: selectedDrivers })
+      : undefined,
+    onArchive: selectedDrivers.length
+      ? () => {
+          onBulkArchiveDrivers?.(selectedDrivers);
+          setSelected(new Set());
+        }
+      : undefined,
+    // Edit status / Assign / Notify left undefined — bar hides them.
   });
 
   return (
@@ -224,6 +237,7 @@ export default function DriversTab({
             onClick={() => onOpenRow?.(d.id)}
             onOpen={(driver) => onOpenRow?.(driver.id)}
             onEdit={(driver) => onEditDriver?.(driver)}
+            onDelete={(driver) => onDeleteDriver?.(driver)}
           />
         ))}
       </FleetTable>

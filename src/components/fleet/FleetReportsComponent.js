@@ -82,7 +82,7 @@ export default function FleetReportsComponent() {
 }
 
 // Fleet Export Modal Component
-function FleetExportModal({ isOpen, onClose, user }) {
+export function FleetExportModal({ isOpen, onClose, user }) {
   const [reportType, setReportType] = useState('summary');
   const [exportFormat, setExportFormat] = useState('pdf');
   const [exportState, setExportState] = useState('idle');
@@ -584,6 +584,8 @@ function FleetExportModal({ isOpen, onClose, user }) {
 
   const modalContent = (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-[9999] overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget && exportState !== 'loading') onClose();

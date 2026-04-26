@@ -17,7 +17,7 @@ export default function FleetSelectionBar({ count, onClear, actions = [] }) {
         Clear
       </button>
       <div className="w-px h-4 bg-blue-200 dark:bg-blue-700/50 mx-1" />
-      {actions.map((a) => (
+      {actions.filter((a) => typeof a.onClick === "function").map((a) => (
         <button
           key={a.label}
           onClick={a.onClick}
