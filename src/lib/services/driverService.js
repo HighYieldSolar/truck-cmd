@@ -85,10 +85,13 @@ export async function createDriver(driverData) {
       medical_card_expiry: driverData.medical_card_expiry,
       status: driverData.status,
       hire_date: driverData.hire_date,
+      address: driverData.address || null,
       city: driverData.city || null,
       state: driverData.state || null,
+      zip: driverData.zip || null,
       emergency_contact: driverData.emergency_contact,
       emergency_phone: driverData.emergency_phone,
+      notes: driverData.notes || null,
       image_url: driverData.image_url || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -196,10 +199,13 @@ export async function updateDriver(userId, id, driverData) {
       medical_card_expiry: driverData.medical_card_expiry,
       status: driverData.status,
       hire_date: driverData.hire_date,
+      address: driverData.address ?? null,
       city: driverData.city,
       state: driverData.state,
+      zip: driverData.zip ?? null,
       emergency_contact: driverData.emergency_contact,
       emergency_phone: driverData.emergency_phone,
+      notes: driverData.notes ?? null,
       image_url: driverData.image_url,
       updated_at: new Date().toISOString()
     };

@@ -37,8 +37,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
     medical_card_expiry: '',
     status: 'Active',
     hire_date: getCurrentDateLocal(),
+    address: '',
     city: '',
     state: '',
+    zip: '',
     emergency_contact: '',
     emergency_phone: '',
     image: null,
@@ -96,8 +98,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
         medical_card_expiry: driver.medical_card_expiry || '',
         status: driver.status || 'Active',
         hire_date: driver.hire_date || '',
+        address: driver.address || '',
         city: driver.city || '',
         state: driver.state || '',
+        zip: driver.zip || '',
         emergency_contact: driver.emergency_contact || '',
         emergency_phone: driver.emergency_phone || '',
         image: driver.image_url || null,
@@ -590,8 +594,10 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                         className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
                         <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
+                        <option value="Onboarding">Onboarding</option>
                         <option value="On Leave">On Leave</option>
+                        <option value="Suspended">Suspended</option>
+                        <option value="Inactive">Inactive</option>
                       </select>
                     </div>
                   </div>
@@ -717,6 +723,21 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                   )}
                 </div>
 
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <MapPin size={14} className="inline mr-1.5" />
+                    Street address
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="123 Main St"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     <MapPin size={14} className="inline mr-1.5" />
@@ -732,19 +753,35 @@ export default function DriverFormModal({ isOpen, onClose, driver, userId, onSub
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <MapPin size={14} className="inline mr-1.5" />
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="State"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <MapPin size={14} className="inline mr-1.5" />
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="CA"
+                      maxLength={2}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      ZIP
+                    </label>
+                    <input
+                      type="text"
+                      name="zip"
+                      value={formData.zip}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="92337"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -73,6 +73,16 @@ export async function getTruckById(userId, id) {
 export async function createTruck(truckData) {
   try {
     // Prepare the data to match the vehicles table structure
+    // The form exposes an "Odometer" reading at create time but submits it
+    // under `odometer`; the DB column is `odometer_miles`. Map it explicitly
+    // so initial readings actually persist.
+    const odoNum =
+      truckData.odometer_miles != null
+        ? parseFloat(truckData.odometer_miles)
+        : truckData.odometer != null && truckData.odometer !== ""
+          ? parseFloat(truckData.odometer)
+          : null;
+
     const preparedData = {
       user_id: truckData.user_id,
       name: truckData.name,
@@ -87,6 +97,7 @@ export async function createTruck(truckData) {
       mpg: truckData.mpg || null,
       fuel_type: truckData.fuel_type || null,
       tank_capacity: truckData.tank_capacity || null,
+      odometer_miles: odoNum != null && !Number.isNaN(odoNum) ? odoNum : null,
       notes: truckData.notes || null,
       image_url: truckData.image_url || null,
       // Compliance fields
@@ -215,6 +226,15 @@ export async function updateTruck(userId, id, truckData) {
       .single();
 
     // Only include valid columns that exist in the vehicles table
+    // Same odometer mapping as create — form sends `odometer`, DB stores
+    // `odometer_miles`.
+    const odoEdit =
+      truckData.odometer_miles != null
+        ? parseFloat(truckData.odometer_miles)
+        : truckData.odometer != null && truckData.odometer !== ""
+          ? parseFloat(truckData.odometer)
+          : undefined;
+
     const validColumns = {
       name: truckData.name,
       type: truckData.type,
@@ -228,6 +248,11 @@ export async function updateTruck(userId, id, truckData) {
       mpg: truckData.mpg,
       fuel_type: truckData.fuel_type,
       tank_capacity: truckData.tank_capacity,
+      // Only set odometer when the user actually edited it; otherwise leave
+      // the column alone so an in-flight ELD sync doesn't get clobbered.
+      ...(odoEdit !== undefined && !Number.isNaN(odoEdit)
+        ? { odometer_miles: odoEdit }
+        : {}),
       notes: truckData.notes,
       image_url: truckData.image_url,
       // Compliance fields

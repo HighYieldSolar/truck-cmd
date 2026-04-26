@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { fetchDrivers, getDriverStats } from "@/lib/services/driverService";
 import { fetchTrucks } from "@/lib/services/truckService";
 import { fetchMaintenanceRecords } from "@/lib/services/maintenanceService";
+import { normalizeStatus } from "../atoms/StatusPill";
 
 const POLL_MS = 60_000;
 
@@ -208,7 +209,7 @@ export default function useFleetData(userId) {
             avatar: toneFor(d.name || d.id),
             cdl: d.position || "CDL-A",
             dot: d.license_number || null,
-            status: d.status || "Inactive",
+            status: normalizeStatus(d.status) || "Inactive",
             email: d.email,
             phone: d.phone,
             hireDate: d.hire_date,
@@ -263,7 +264,7 @@ export default function useFleetData(userId) {
             vin: v.vin,
             mmy: [v.make, v.model, v.year].filter(Boolean).join(" "),
             year: v.year,
-            status: v.status || "Active",
+            status: normalizeStatus(v.status) || "Active",
             health,
             location: {
               city: gpsLoc.address || lkl.address || lkl.city || (v.city || "—"),

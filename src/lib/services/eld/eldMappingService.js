@@ -339,7 +339,11 @@ export async function mapVehicle(userId, connectionId, externalVehicle, provider
           engine_hours: engineHours || null,
           eld_external_id: externalId,
           eld_provider: providerName,
-          status: 'active',
+          // 'Active' (capitalized) matches the StatusPill palette and the
+          // DriversTab/VehiclesTab segment filters. Lowercase 'active'
+          // would render the row as Inactive (gray) instead of Active
+          // (green) and exclude it from the Active filter chip.
+          status: 'Active',
           created_at: new Date().toISOString()
         })
         .select()
@@ -659,7 +663,9 @@ export async function mapDriver(userId, connectionId, externalDriver, providerNa
           phone: phone || null,
           eld_external_id: externalId,
           eld_provider: providerName,
-          status: 'active',
+          // 'Active' (capitalized) matches the StatusPill palette and the
+          // DriversTab segment filters — lowercase would render Inactive.
+          status: 'Active',
           created_at: new Date().toISOString()
         })
         .select()

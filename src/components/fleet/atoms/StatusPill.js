@@ -38,11 +38,26 @@ const I18N_KEYS = {
   Overdue: "redesign.segments.overdue",
 };
 
+// Case-insensitive lookup table built from PALETTE keys so legacy rows
+// that were stored as lowercase ('active') still render in the right
+// color. Without this, ELD-synced rows pre-migration would fall through
+// to the Inactive (gray) styling.
+const PALETTE_CI = Object.fromEntries(
+  Object.keys(PALETTE).map((k) => [k.toLowerCase(), k])
+);
+
+export function normalizeStatus(status) {
+  if (!status) return null;
+  const canonical = PALETTE_CI[String(status).toLowerCase()];
+  return canonical || status;
+}
+
 export default function StatusPill({ status }) {
   const { t } = useTranslation("fleet");
-  const cls = PALETTE[status] || PALETTE.Inactive;
-  const key = I18N_KEYS[status];
-  const label = key ? t(key, status) : status;
+  const canonical = normalizeStatus(status) || "Inactive";
+  const cls = PALETTE[canonical] || PALETTE.Inactive;
+  const key = I18N_KEYS[canonical];
+  const label = key ? t(key, canonical) : canonical;
   return (
     <span
       className={`inline-flex items-center gap-1.5 h-5 px-2 rounded-full border text-[11.5px] font-medium tracking-tight whitespace-nowrap ${cls}`}
