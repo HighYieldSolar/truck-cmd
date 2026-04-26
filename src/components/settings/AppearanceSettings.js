@@ -576,12 +576,9 @@ export default function AppearanceSettings() {
           ref={listContainerRef}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl shadow-sm"
         >
-          {/* Header Row */}
-          <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            <div className="col-span-1"></div>
-            <div className="col-span-5">{t('appearance.menuItem')}</div>
-            <div className="col-span-3 text-center">{t('appearance.reorder')}</div>
-            <div className="col-span-3 text-center">{t('appearance.visible')}</div>
+          {/* Header */}
+          <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            {t('appearance.menuItem')}
           </div>
 
           {localSidebarConfig.map((item, index) => {
@@ -629,7 +626,7 @@ export default function AppearanceSettings() {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, index)}
-                  className={`group grid grid-cols-12 gap-2 items-center px-4 py-3.5 transition-all duration-150 ${
+                  className={`group flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 transition-all duration-150 ${
                     index !== localSidebarConfig.length - 1 ? 'border-b border-gray-100 dark:border-gray-700/50' : ''
                   } ${isDragging
                     ? 'scale-[1.02] bg-blue-100 dark:bg-blue-900/40 shadow-lg shadow-blue-500/30 ring-2 ring-blue-500 ring-opacity-50 z-20 rounded-lg'
@@ -642,11 +639,11 @@ export default function AppearanceSettings() {
                 >
                   {/* Drag Handle */}
                   <div
-                    className="col-span-1 flex justify-center touch-none"
+                    className="flex-shrink-0 touch-none"
                     onTouchStart={(e) => handleTouchStart(e, index)}
                     onTouchMove={handleTouchMoveForCancel}
                   >
-                    <div className={`p-2 rounded cursor-grab active:cursor-grabbing transition-all select-none ${
+                    <div className={`p-1.5 sm:p-2 rounded cursor-grab active:cursor-grabbing transition-all select-none ${
                       isDragging
                         ? 'text-blue-600 dark:text-blue-400 scale-110 bg-blue-100 dark:bg-blue-900/50'
                         : item.visible
@@ -658,7 +655,7 @@ export default function AppearanceSettings() {
                   </div>
 
                 {/* Item Icon and Name */}
-                <div className="col-span-5 flex items-center space-x-3 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <div className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
                     item.visible
                       ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
@@ -683,18 +680,19 @@ export default function AppearanceSettings() {
                   </div>
                 </div>
 
-                {/* Reorder Buttons */}
-                <div className="col-span-3 flex items-center justify-center space-x-1">
+                {/* Reorder Buttons — hidden on mobile (use drag handle instead). */}
+                <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
-                    className={`p-2 rounded-lg border transition-all duration-150 ${
+                    className={`p-1.5 sm:p-2 rounded-lg border transition-all duration-150 ${
                       index === 0
                         ? 'border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
                         : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 active:scale-95'
                     }`}
                     title="Move up"
+                    aria-label="Move up"
                   >
                     <ArrowUp size={16} />
                   </button>
@@ -702,28 +700,29 @@ export default function AppearanceSettings() {
                     type="button"
                     onClick={() => handleMoveDown(index)}
                     disabled={index === localSidebarConfig.length - 1}
-                    className={`p-2 rounded-lg border transition-all duration-150 ${
+                    className={`p-1.5 sm:p-2 rounded-lg border transition-all duration-150 ${
                       index === localSidebarConfig.length - 1
                         ? 'border-gray-100 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
                         : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 active:scale-95'
                     }`}
                     title="Move down"
+                    aria-label="Move down"
                   >
                     <ArrowDown size={16} />
                   </button>
                 </div>
 
                 {/* Visibility Toggle Switch */}
-                <div className="col-span-3 flex justify-center">
+                <div className="flex-shrink-0 ml-1 sm:ml-2">
                   {isDashboard ? (
-                    <div className="relative w-12 h-7 bg-green-500 rounded-full opacity-60 cursor-not-allowed" title="Dashboard is always visible">
-                      <span className="absolute right-1 top-1 w-5 h-5 bg-white rounded-full shadow-md" />
+                    <div className="relative w-11 h-6 bg-green-500 rounded-full opacity-60 cursor-not-allowed" title="Dashboard is always visible">
+                      <span className="absolute right-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md" />
                     </div>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleToggleVisibility(item.id)}
-                      className={`relative w-12 h-7 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 ${
+                      className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 ${
                         item.visible
                           ? 'bg-green-500 dark:bg-green-500'
                           : 'bg-gray-300 dark:bg-gray-600'
@@ -733,8 +732,8 @@ export default function AppearanceSettings() {
                       title={item.visible ? 'Click to hide from sidebar' : 'Click to show in sidebar'}
                     >
                       <span
-                        className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
-                          item.visible ? 'left-6' : 'left-1'
+                        className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ease-in-out ${
+                          item.visible ? 'left-[22px]' : 'left-0.5'
                         }`}
                       />
                     </button>

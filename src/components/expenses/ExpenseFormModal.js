@@ -348,29 +348,29 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQ
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="relative flex min-h-full items-center justify-center p-3 sm:p-4">
         <div
-          className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl transform transition-all"
+          className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              {expense ? t('form.editExpense') : t('form.addExpense')}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl flex-shrink-0">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 min-w-0 truncate">
+              <Wallet className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">{expense ? t('form.editExpense') : t('form.addExpense')}</span>
             </h2>
             <button
               onClick={onClose}
               disabled={isSubmitting}
               aria-label="Close"
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-4 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto">
             {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
@@ -436,7 +436,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQ
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('form.date')} <span className="text-red-500">*</span>
                     </label>
@@ -445,7 +445,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQ
                       name="date"
                       value={formData.date}
                       onChange={handleChange}
-                      className={`w-full px-3 py-2 border ${fieldErrors.date ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                      className={`w-full min-w-0 max-w-full px-3 py-2 border ${fieldErrors.date ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                     />
                     {fieldErrors.date && (
                       <p className="mt-1 text-sm text-red-500 dark:text-red-400">{fieldErrors.date}</p>

@@ -8,8 +8,16 @@ import {
   User, CreditCard, Package, Clock, AlertCircle, Fuel
 } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 
-export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
+export function NotificationListItem({
+  notification,
+  onMarkAsRead,
+  onDelete,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+}) {
   const router = useRouter();
   const { t } = useTranslation('common');
 
@@ -162,6 +170,10 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
   };
 
   const handleClick = () => {
+    if (selectionMode) {
+      onToggleSelect?.(notification.id);
+      return;
+    }
     if (!notification.is_read && onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
@@ -170,19 +182,8 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
     }
   };
 
-  const handleMarkAsReadClick = (e) => {
-    e.stopPropagation();
-    if (onMarkAsRead) {
-      onMarkAsRead(notification.id);
-    }
-  };
-
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    if (onDelete) {
-      onDelete(notification.id);
-    }
-  };
+  const handleMarkAsRead = () => onMarkAsRead?.(notification.id);
+  const handleDelete = () => onDelete?.(notification.id);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -217,12 +218,27 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
     <div
       onClick={handleClick}
       className={`px-3 py-2.5 transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-        !notification.is_read
-          ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-3 border-blue-500'
-          : 'bg-white dark:bg-gray-800 border-l-3 border-transparent'
+        isSelected
+          ? 'bg-blue-100/70 dark:bg-blue-900/30 border-l-3 border-blue-600'
+          : !notification.is_read
+            ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-3 border-blue-500'
+            : 'bg-white dark:bg-gray-800 border-l-3 border-transparent'
       }`}
     >
       <div className="flex items-start space-x-3">
+        {/* Selection checkbox (only in selection mode) */}
+        {selectionMode && (
+          <div className="flex-shrink-0 pt-1" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onToggleSelect?.(notification.id)}
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              aria-label="Select notification"
+            />
+          </div>
+        )}
+
         {/* Icon */}
         <div className="flex-shrink-0">
           {getIcon()}
@@ -232,13 +248,13 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
         <div className="flex-1 min-w-0">
           {/* Header Row */}
           <div className="flex items-start justify-between gap-1.5 mb-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               <h4 className={`text-sm font-semibold break-words leading-tight ${
                 !notification.is_read
                   ? 'text-gray-900 dark:text-gray-100'
                   : 'text-gray-700 dark:text-gray-300'
               }`}>
-                {notification.link_to ? (
+                {notification.link_to && !selectionMode ? (
                   <Link
                     href={notification.link_to}
                     className="hover:underline focus:outline-none focus:ring-1 focus:ring-blue-500 rounded"
@@ -258,27 +274,25 @@ export function NotificationListItem({ notification, onMarkAsRead, onDelete }) {
               {getUrgencyBadge()}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-0.5 flex-shrink-0">
-              {!notification.is_read && (
-                <button
-                  onClick={handleMarkAsReadClick}
-                  className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-                  title={t('notifications.markAsRead')}
-                >
-                  <CheckCircle size={16} />
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={handleDeleteClick}
-                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-1 focus:ring-red-500 transition-colors"
-                  title={t('notifications.deleteNotification')}
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
+            {/* Three-dot action menu */}
+            {!selectionMode && (onMarkAsRead || onDelete) && (
+              <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                <TableActionsDropdown
+                  size="sm"
+                  customActions={
+                    !notification.is_read && onMarkAsRead
+                      ? [{
+                          icon: CheckCircle,
+                          label: t('notifications.markAsRead'),
+                          onClick: handleMarkAsRead,
+                          color: 'green',
+                        }]
+                      : []
+                  }
+                  onDelete={onDelete ? handleDelete : undefined}
+                />
+              </div>
+            )}
           </div>
 
           {/* Message */}

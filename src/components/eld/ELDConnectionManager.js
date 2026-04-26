@@ -280,21 +280,21 @@ export default function ELDConnectionManager({ onConnectionChange }) {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3 min-w-0">
             <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
               <Zap size={20} className="text-white" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-white">ELD Integration</h3>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h3 className="text-lg font-semibold text-white truncate">ELD Integration</h3>
                 {isConnected && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-400/90 text-green-900 text-xs font-semibold rounded-full">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-400/90 text-green-900 text-xs font-semibold rounded-full whitespace-nowrap">
                     <CheckCircle size={10} />
                     Active
                   </span>
                 )}
               </div>
-              <p className="text-sm text-blue-100 hidden sm:block">
+              <p className="text-sm text-blue-100 hidden sm:block truncate">
                 {isConnected
                   ? `Connected to ${connection.provider_name || connection.provider}`
                   : 'Connect your ELD provider for automated data sync'
@@ -304,7 +304,7 @@ export default function ELDConnectionManager({ onConnectionChange }) {
           </div>
 
           {isConnected && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
               <button
                 onClick={triggerSync}
                 disabled={syncing}
@@ -357,17 +357,17 @@ export default function ELDConnectionManager({ onConnectionChange }) {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {connection.provider_name || connection.provider}
                     </h4>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 ${status.color} text-xs font-medium rounded-full`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 ${status.color} text-xs font-medium rounded-full whitespace-nowrap`}>
                       <StatusIcon size={10} />
                       {status.text}
                     </span>
                   </div>
                   {connection.company_name && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 break-words">
                       {connection.company_name}
                     </p>
                   )}

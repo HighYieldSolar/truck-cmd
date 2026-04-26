@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Pagination } from "@/hooks/usePagination";
 import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
@@ -32,6 +32,15 @@ export default function CustomerTable({
 }) {
   const { t } = useTranslation('customers');
   const [openMenuId, setOpenMenuId] = useState(null);
+  const tableTopRef = useRef(null);
+
+  // Wrap pagination's goToPage so changing pages scrolls back to the top of the list
+  const handlePageChange = (page) => {
+    pagination?.goToPage(page);
+    requestAnimationFrame(() => {
+      tableTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   // Status badge colors
   const getStatusColor = (status) => {
@@ -108,7 +117,7 @@ export default function CustomerTable({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible transition-colors duration-200">
+    <div ref={tableTopRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-visible transition-colors duration-200 scroll-mt-20">
       {/* Desktop Table View */}
       <div className="hidden xl:block">
         <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
@@ -321,16 +330,19 @@ export default function CustomerTable({
       </div>
 
       {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+      {pagination && (pagination.totalPages > 1 || pagination.setItemsPerPage) && (
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <Pagination
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}
             pageNumbers={pagination.pageNumbers}
-            onPageChange={pagination.goToPage}
+            onPageChange={handlePageChange}
             hasNextPage={pagination.hasNextPage}
             hasPrevPage={pagination.hasPrevPage}
             showingText={pagination.showingText}
+            itemsPerPage={pagination.itemsPerPage}
+            onItemsPerPageChange={pagination.setItemsPerPage}
+            pageSizeOptions={pagination.pageSizeOptions}
           />
         </div>
       )}

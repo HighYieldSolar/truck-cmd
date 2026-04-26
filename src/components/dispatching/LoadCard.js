@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import StatusBadge from './StatusBadge';
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
-import TableActions from "@/components/shared/TableActions";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
@@ -273,10 +273,11 @@ export default function LoadCard({ load, onSelect, onEdit, onDelete }) {
             <Navigation size={16} />
           </button>
           <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-1"></div>
-          <TableActions
+          <TableActionsDropdown
+            size="md"
+            buttonStyle="dots"
             onView={() => onSelect(load)}
             onDelete={() => onDelete(load)}
-            size="lg"
           />
         </div>
       </div>

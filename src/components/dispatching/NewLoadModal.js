@@ -435,7 +435,7 @@ export default function NewLoadForm({
                     name="customer"
                     value={formData.customer}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     required
                     autoFocus
                   >
@@ -453,14 +453,24 @@ export default function NewLoadForm({
                     name="customer"
                     value={formData.customer}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder={t('newLoadModal.placeholders.enterCustomerName')}
                     required
                     autoFocus
                   />
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('newLoadModal.hints.selectOrType')}</p>
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('newLoadModal.hints.selectOrType')}</p>
+                <a
+                  href="/dashboard/customers"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
+                >
+                  + {t('newLoadModal.addNewCustomer', { defaultValue: 'Add new customer' })}
+                </a>
+              </div>
             </div>
 
             {/* Load Number section - now optional */}
@@ -580,7 +590,7 @@ export default function NewLoadForm({
             {/* Date section with better layout */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="min-w-0">
                   <label htmlFor="pickupDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('newLoadModal.labels.pickupDate')} <span className="text-red-500">*</span>
                   </label>
@@ -594,13 +604,13 @@ export default function NewLoadForm({
                       name="pickupDate"
                       value={formData.pickupDate}
                       onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="block w-full max-w-full min-w-0 pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <label htmlFor="deliveryDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('newLoadModal.labels.deliveryDate')} <span className="text-red-500">*</span>
                   </label>
@@ -614,7 +624,7 @@ export default function NewLoadForm({
                       name="deliveryDate"
                       value={formData.deliveryDate}
                       onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="block w-full max-w-full min-w-0 pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       required
                     />
                   </div>
@@ -855,8 +865,8 @@ export default function NewLoadForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl text-white z-10">
           <div className="p-4 sm:p-5">

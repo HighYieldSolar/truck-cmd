@@ -10,10 +10,11 @@ import { NotificationListItem, NotificationListItemSkeleton } from "@/components
 import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
 import { usePagination, Pagination, SimplePagination } from "@/hooks/usePagination";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
+import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import {
   Bell, Filter, AlertCircle, ChevronLeft, ChevronRight,
   RefreshCw, CheckCircle, Trash2, Settings, Search,
-  AlertTriangle, Clock, FileText, X, BellOff
+  AlertTriangle, Clock, FileText, X, BellOff, CheckSquare, Square
 } from "lucide-react";
 
 const NOTIFICATION_PAGE_SIZE = 10;
@@ -64,6 +65,14 @@ export default function NotificationsPage() {
     status: "ALL",
     search: ""
   });
+
+  // Multi-select state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'single'|'bulk'|'all-read', id?, count? }
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter notifications client-side for search
   const filteredNotifications = useMemo(() => {
@@ -312,6 +321,11 @@ export default function NotificationsPage() {
     }
   };
 
+  // Open the confirm modal for a single delete
+  const requestDeleteNotification = (notificationId) => {
+    setDeleteConfirm({ type: 'single', id: notificationId });
+  };
+
   const handleDeleteNotification = async (notificationId) => {
     if (!user || !user.id) return;
     const originalList = [...notificationsList];
@@ -405,6 +419,109 @@ export default function NotificationsPage() {
     }
   };
 
+  // ---- Multi-select helpers ----
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => {
+      if (prev) setSelectedIds(new Set()); // exiting clears selection
+      return !prev;
+    });
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedIds((prev) => {
+      const allIds = paginatedData.map((n) => n.id);
+      const allSelected = allIds.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...allIds]);
+    });
+  };
+
+  const handleBulkMarkRead = async () => {
+    if (!user?.id || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const original = [...notificationsList];
+    setNotificationsList((list) =>
+      list.map((n) => (ids.includes(n.id) ? { ...n, is_read: true } : n))
+    );
+    setStats((s) => {
+      const newlyRead = original.filter((n) => ids.includes(n.id) && !n.is_read).length;
+      return { ...s, unread: Math.max(0, s.unread - newlyRead), read: s.read + newlyRead };
+    });
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .in("id", ids)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setOperationMessage({ type: "success", text: `${ids.length} marked as read.` });
+      setSelectedIds(new Set());
+    } catch (e) {
+      setOperationMessage({ type: "error", text: getUserFriendlyError(e) });
+      setNotificationsList(original);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!user?.id || selectedIds.size === 0) return;
+    setIsDeleting(true);
+    const ids = Array.from(selectedIds);
+    const original = [...notificationsList];
+    setNotificationsList((list) => list.filter((n) => !ids.includes(n.id)));
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .in("id", ids)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      // Recompute stats from the new list
+      const newList = original.filter((n) => !ids.includes(n.id));
+      const unread = newList.filter((n) => !n.is_read).length;
+      const critical = newList.filter((n) => n.urgency === "CRITICAL" || n.urgency === "HIGH").length;
+      setStats({ total: newList.length, unread, read: newList.length - unread, critical });
+      setOperationMessage({ type: "success", text: `${ids.length} notifications deleted.` });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      setDeleteConfirm(null);
+    } catch (e) {
+      setOperationMessage({ type: "error", text: getUserFriendlyError(e) });
+      setNotificationsList(original);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    if (deleteConfirm.type === "single") {
+      setIsDeleting(true);
+      await handleDeleteNotification(deleteConfirm.id);
+      setIsDeleting(false);
+      setDeleteConfirm(null);
+    } else if (deleteConfirm.type === "bulk") {
+      await handleBulkDelete();
+    } else if (deleteConfirm.type === "all-read") {
+      setIsDeleting(true);
+      await handleDeleteAllRead();
+      setIsDeleting(false);
+      setDeleteConfirm(null);
+    }
+  };
+
   // Stat Card Component
   const StatCard = ({ icon: Icon, iconBgClass, iconColorClass, label, value, borderColor = "border-blue-500" }) => (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 ${borderColor}`}>
@@ -456,7 +573,7 @@ export default function NotificationsPage() {
                 {/* Delete All Read */}
                 {stats.read > 0 && (
                   <button
-                    onClick={handleDeleteAllRead}
+                    onClick={() => setDeleteConfirm({ type: 'all-read', count: stats.read })}
                     disabled={isLoading}
                     className="inline-flex items-center px-4 py-2 bg-blue-500/20 text-white border border-white/30 rounded-lg font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-50"
                   >
@@ -521,8 +638,10 @@ export default function NotificationsPage() {
 
           {/* Main Content */}
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            {/* Sidebar */}
-            <div className="space-y-6">
+            {/* Sidebar — desktop only. On mobile the dropdowns in the filter bar
+                cover the same filtering, so we hide this whole column to remove
+                duplicate UI and reduce the scroll-to-content distance. */}
+            <div className="space-y-6 hidden xl:block">
               {/* Categories Filter */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
@@ -582,10 +701,10 @@ export default function NotificationsPage() {
             {/* Main Content Area */}
             <div className="xl:col-span-3 space-y-6">
               {/* Filter Bar */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex flex-col xl:flex-row gap-4">
-                  {/* Search Input */}
-                  <div className="flex-1 relative">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                {/* Row 1: Search + action icons */}
+                <div className="flex gap-2">
+                  <div className="flex-1 relative min-w-0">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="text"
@@ -595,32 +714,98 @@ export default function NotificationsPage() {
                       onChange={(e) => handleFilterChange('search', e.target.value)}
                     />
                   </div>
+                  <button
+                    onClick={toggleSelectionMode}
+                    className={`px-3 py-2 rounded-lg border transition-colors flex-shrink-0 ${
+                      selectionMode
+                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    title={selectionMode ? 'Cancel selection' : 'Select notifications'}
+                    aria-label={selectionMode ? 'Cancel selection' : 'Select notifications'}
+                  >
+                    {selectionMode ? <X className="h-5 w-5" /> : <CheckSquare className="h-5 w-5" />}
+                  </button>
+                  <button
+                    onClick={() => fetchNotifications(filters)}
+                    disabled={isLoading}
+                    className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 transition-colors disabled:opacity-50 flex-shrink-0"
+                    title="Refresh"
+                    aria-label="Refresh"
+                  >
+                    <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    {/* Refresh Button */}
+                {/* Row 2: Type + Status dropdowns + Clear */}
+                <div className="grid grid-cols-2 sm:grid-cols-[1fr_1fr_auto] gap-2">
+                  <select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Filter by status"
+                  >
+                    {statusTypes.map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Filter by type"
+                  >
+                    {notificationTypes.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                  {(filters.type !== 'ALL' || filters.status !== 'ALL' || filters.search) && (
                     <button
-                      onClick={() => fetchNotifications(filters)}
-                      disabled={isLoading}
-                      className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                      title="Refresh"
+                      onClick={clearFilters}
+                      className="col-span-2 sm:col-span-1 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 transition-colors flex items-center justify-center gap-1"
                     >
-                      <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                      <X className="h-4 w-4" /> Clear filters
                     </button>
-
-                    {/* Clear Filters */}
-                    {(filters.type !== 'ALL' || filters.status !== 'ALL' || filters.search) && (
-                      <button
-                        onClick={clearFilters}
-                        className="px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        title="Clear Filters"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
+
+              {/* Bulk action bar */}
+              {selectionMode && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={toggleSelectAllVisible}
+                      className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:underline"
+                    >
+                      {paginatedData.length > 0 && paginatedData.every((n) => selectedIds.has(n.id)) ? (
+                        <><CheckSquare className="h-4 w-4" /> Deselect all</>
+                      ) : (
+                        <><Square className="h-4 w-4" /> Select all on page</>
+                      )}
+                    </button>
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      {selectedIds.size} selected
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleBulkMarkRead}
+                      disabled={selectedIds.size === 0}
+                      className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                    >
+                      <CheckCircle className="h-4 w-4" /> Mark read
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({ type: 'bulk', count: selectedIds.size })}
+                      disabled={selectedIds.size === 0}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Notifications List */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -664,7 +849,10 @@ export default function NotificationsPage() {
                         key={notification.id}
                         notification={notification}
                         onMarkAsRead={handleMarkAsRead}
-                        onDelete={handleDeleteNotification}
+                        onDelete={requestDeleteNotification}
+                        selectionMode={selectionMode}
+                        isSelected={selectedIds.has(notification.id)}
+                        onToggleSelect={toggleSelectOne}
                       />
                     ))}
                   </div>
@@ -702,6 +890,35 @@ export default function NotificationsPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      <DeleteConfirmationModal
+        isOpen={!!deleteConfirm}
+        onClose={() => !isDeleting && setDeleteConfirm(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+        title={
+          deleteConfirm?.type === 'bulk'
+            ? 'Delete selected notifications?'
+            : deleteConfirm?.type === 'all-read'
+              ? 'Delete all read notifications?'
+              : 'Delete notification?'
+        }
+        message={
+          deleteConfirm?.type === 'bulk'
+            ? `This will permanently delete ${deleteConfirm.count} notification${deleteConfirm.count === 1 ? '' : 's'}. This action cannot be undone.`
+            : deleteConfirm?.type === 'all-read'
+              ? `This will permanently delete ${deleteConfirm.count} read notification${deleteConfirm.count === 1 ? '' : 's'}. This action cannot be undone.`
+              : 'This will permanently delete this notification. This action cannot be undone.'
+        }
+        confirmButtonText={
+          deleteConfirm?.type === 'bulk'
+            ? `Delete ${deleteConfirm.count}`
+            : deleteConfirm?.type === 'all-read'
+              ? `Delete ${deleteConfirm.count}`
+              : 'Delete'
+        }
+      />
     </DashboardLayout>
   );
 }

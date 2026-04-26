@@ -60,7 +60,7 @@ export default function AutomatedIFTAPanel({
   onDataLoaded,
   className = ''
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [automatedData, setAutomatedData] = useState(null);

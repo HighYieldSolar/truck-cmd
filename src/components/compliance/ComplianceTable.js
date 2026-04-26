@@ -8,9 +8,12 @@ import {
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import TableActions from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
+import { usePagination, Pagination } from "@/hooks/usePagination";
 
 export default function ComplianceTable({ complianceItems, filteredItems, onEdit, onDelete, onView, onAddNew }) {
   const { t } = useTranslation('compliance');
+  const pagination = usePagination(filteredItems, { itemsPerPage: 10 });
+  const visibleItems = pagination.paginatedData;
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 mb-6">
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
@@ -81,7 +84,7 @@ export default function ComplianceTable({ complianceItems, filteredItems, onEdit
                 </td>
               </tr>
             ) : (
-              filteredItems.map(item => {
+              visibleItems.map(item => {
                 // Calculate status class
                 let statusClass = "";
                 let statusTextColor = "text-black";
@@ -159,8 +162,25 @@ export default function ComplianceTable({ complianceItems, filteredItems, onEdit
         </table>
       </div>
       
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-gray-700 text-sm">
-        {t('table.showingRecords', { filtered: filteredItems.length, total: complianceItems.length })}
+      <div className="px-4 sm:px-6 py-3 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-200 dark:border-gray-700">
+        {filteredItems.length > 0 ? (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageNumbers={pagination.pageNumbers}
+            onPageChange={pagination.goToPage}
+            hasNextPage={pagination.hasNextPage}
+            hasPrevPage={pagination.hasPrevPage}
+            showingText={pagination.showingText}
+            itemsPerPage={pagination.itemsPerPage}
+            onItemsPerPageChange={pagination.setItemsPerPage}
+            pageSizeOptions={pagination.pageSizeOptions}
+          />
+        ) : (
+          <p className="text-gray-700 dark:text-gray-300 text-sm">
+            {t('table.showingRecords', { filtered: filteredItems.length, total: complianceItems.length })}
+          </p>
+        )}
       </div>
     </div>
   );

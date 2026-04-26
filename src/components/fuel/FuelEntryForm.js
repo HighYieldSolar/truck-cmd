@@ -333,8 +333,8 @@ export default function FuelEntryForm({ isOpen, onClose, fuelEntry, onSave, isSu
 if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 flex items-center justify-center z-50 p-3 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl p-4 sm:p-6 overflow-y-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]">
         <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
             <Fuel size={20} className="text-blue-600 dark:text-blue-400 mr-2" />
@@ -364,8 +364,8 @@ if (!isOpen) return null;
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column - Form Fields */}
-            <div className="space-y-5">
-              <div>
+            <div className="space-y-5 min-w-0">
+              <div className="min-w-0">
                 <label htmlFor="date" className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                   <Calendar size={16} className="text-gray-400 dark:text-gray-500 mr-1" /> {t('form.dateRequired')}
                 </label>
@@ -376,7 +376,7 @@ if (!isOpen) return null;
                   value={formData.date}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full px-3 py-2 border ${
+                  className={`w-full min-w-0 max-w-full px-3 py-2 border ${
                     errors.date && touched.date ? 'border-red-300 dark:border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
                   } rounded-md shadow-sm text-sm focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}
                   required

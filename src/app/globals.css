@@ -443,3 +443,27 @@ body:not(.dashboard-theme) select option {
   background-color: #2563eb !important;
   color: #ffffff !important;
 }
+
+/* ===========================================
+   Mobile overflow guards
+   Native <input type="date"> auto-sizes based on locale text on iOS Safari,
+   which blows out flex containers. These rules clamp width so the field
+   always fits its parent. Pair with `w-full` on the input itself.
+   =========================================== */
+.dashboard-theme input[type="date"],
+.dashboard-theme input[type="time"],
+.dashboard-theme input[type="datetime-local"],
+.dashboard-theme input[type="month"],
+.dashboard-theme input[type="week"] {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Make sure flex children don't refuse to shrink and force horizontal scroll */
+.dashboard-theme .form-grid,
+.dashboard-theme .form-grid > * {
+  min-width: 0;
+}

@@ -90,25 +90,25 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
         />
 
         {/* Modal */}
-        <div className="flex min-h-full items-center justify-center p-4">
+        <div className="relative flex min-h-full items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 px-6 py-5 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 px-4 sm:px-6 py-4 sm:py-5 text-white flex-shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                     <TypeIcon size={24} />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-semibold">{customer.company_name}</h2>
-                    <p className="text-blue-100 text-sm mt-0.5">
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-semibold truncate">{customer.company_name}</h2>
+                    <p className="text-blue-100 text-sm mt-0.5 truncate">
                       {formatType(customer.customer_type)}
                     </p>
                   </div>
@@ -116,7 +116,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
                 <button
                   onClick={onClose}
                   aria-label="Close"
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X size={20} />
                 </button>
@@ -124,7 +124,7 @@ export default function CustomerViewModal({ isOpen, onClose, customer, onEdit })
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
               {/* Status Badge */}
               <div className="flex items-center gap-3">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(customer.status)}`}>

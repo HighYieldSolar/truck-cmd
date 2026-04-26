@@ -1120,13 +1120,13 @@ export default function IFTACalculatorPage() {
           )}
 
           {/* Help Section */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 border border-blue-200 dark:border-blue-800">
-            <div className="flex items-start gap-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 sm:p-5 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-start gap-3 sm:gap-4">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                 <Info size={20} className="text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
                   {t('help.howToUse')}
                 </h3>
                 <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">

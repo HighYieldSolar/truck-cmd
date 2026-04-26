@@ -531,27 +531,27 @@ export default function ReceiptDirectory({
                   <div key={year} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     {/* Year Folder */}
                     <div
-                      className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => toggleFolder(yearFolderId)}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         {isYearExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                          <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                          <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
                         )}
                         {isYearExpanded ? (
-                          <FolderOpen className="h-5 w-5 text-amber-500" />
+                          <FolderOpen className="h-5 w-5 text-amber-500 flex-shrink-0" />
                         ) : (
-                          <Folder className="h-5 w-5 text-amber-500" />
+                          <Folder className="h-5 w-5 text-amber-500 flex-shrink-0" />
                         )}
                         <span className="font-semibold text-gray-900 dark:text-gray-100">{year}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          ({Object.values(yearData.months).reduce((sum, m) => sum + m.receipts.length, 0)} receipts)
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          ({Object.values(yearData.months).reduce((sum, m) => sum + m.receipts.length, 0)})
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                           {formatCurrency(yearData.total)}
                         </span>
                         <button
@@ -560,7 +560,7 @@ export default function ReceiptDirectory({
                             downloadFolderAsZip(year);
                           }}
                           disabled={isDownloading}
-                          className="p-1.5 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors disabled:opacity-50"
+                          className="p-1.5 text-gray-500 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors disabled:opacity-50 flex-shrink-0"
                           title={t('receiptDirectoryWidget.downloadAllYear')}
                         >
                           <Download className="h-4 w-4" />
@@ -583,27 +583,27 @@ export default function ReceiptDirectory({
                               <div key={monthNum} className="border-t border-gray-100 dark:border-gray-700 first:border-t-0">
                                 {/* Month Header */}
                                 <div
-                                  className="flex items-center justify-between px-3 py-2 pl-8 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                  className="flex items-center justify-between gap-2 px-3 py-2 pl-6 sm:pl-8 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                   onClick={() => toggleFolder(monthFolderId)}
                                 >
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                                     {isMonthExpanded ? (
-                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                     ) : (
-                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                      <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                     )}
                                     {isMonthExpanded ? (
-                                      <FolderOpen className="h-4 w-4 text-blue-500" />
+                                      <FolderOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
                                     ) : (
-                                      <Folder className="h-4 w-4 text-blue-500" />
+                                      <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
                                     )}
-                                    <span className="font-medium text-gray-800 dark:text-gray-200">{monthData.name}</span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{monthData.name}</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                                       ({monthData.receipts.length})
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                       {formatCurrency(monthData.total)}
                                     </span>
                                     <button
@@ -615,7 +615,7 @@ export default function ReceiptDirectory({
                                           selectAllInFolder(monthData.receipts);
                                         }
                                       }}
-                                      className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                                      className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex-shrink-0"
                                       title={allSelected ? t('receiptDirectoryWidget.deselectAll') : t('receiptDirectoryWidget.selectAll')}
                                     >
                                       {allSelected ? (
@@ -632,7 +632,7 @@ export default function ReceiptDirectory({
                                         downloadFolderAsZip(year, parseInt(monthNum));
                                       }}
                                       disabled={isDownloading}
-                                      className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50"
+                                      className="p-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 disabled:opacity-50 flex-shrink-0"
                                       title={t('receiptDirectoryWidget.downloadMonth')}
                                     >
                                       <Download className="h-4 w-4" />

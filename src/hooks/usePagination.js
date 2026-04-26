@@ -34,12 +34,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
  */
 export function usePagination(data = [], options = {}) {
   const {
-    itemsPerPage = 10,
+    itemsPerPage: initialItemsPerPage = 10,
     maxVisiblePages = 5,
     resetOnDataChange = true,
+    pageSizeOptions = [10, 25, 50],
   } = options;
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
 
   // Calculate total items and pages
   const totalItems = data.length;
@@ -142,12 +144,23 @@ export function usePagination(data = [], options = {}) {
     setCurrentPage(1);
   }, []);
 
+  // When user changes page size, jump back to page 1 to keep state sane
+  const setPageSize = useCallback((size) => {
+    const next = typeof size === "string" ? parseInt(size, 10) : size;
+    if (Number.isFinite(next) && next > 0) {
+      setItemsPerPage(next);
+      setCurrentPage(1);
+    }
+  }, []);
+
   return {
     // Data
     paginatedData,
     totalItems,
     totalPages,
     itemsPerPage,
+    setItemsPerPage: setPageSize,
+    pageSizeOptions,
 
     // Current state
     currentPage,
@@ -203,69 +216,93 @@ export function Pagination({
   hasNextPage,
   hasPrevPage,
   showingText,
+  itemsPerPage,
+  onItemsPerPageChange,
+  pageSizeOptions = [10, 25, 50],
   className = '',
 }) {
-  if (totalPages <= 1) return null;
+  // Hide entirely only when there's nothing to navigate AND no page-size to change.
+  if (totalPages <= 1 && !onItemsPerPageChange) return null;
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      {/* Summary text */}
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        {showingText}
-      </p>
-
-      {/* Page controls */}
-      <div className="flex items-center gap-1">
-        {/* Previous button */}
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!hasPrevPage}
-          className="p-3 sm:p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
-          aria-label="Previous page"
-        >
-          <svg className="h-5 w-5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {/* Page numbers */}
-        {pageNumbers.map((page, index) => (
-          page === '...' ? (
-            <span
-              key={`ellipsis-${index}`}
-              className="px-3 py-1 text-gray-400 dark:text-gray-500"
+    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${className}`}>
+      {/* Left: summary + page-size selector (stack on mobile) */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <p>{showingText}</p>
+        {onItemsPerPageChange && (
+          <label className="flex items-center gap-2">
+            <span className="hidden sm:inline">Rows:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange(parseInt(e.target.value, 10))}
+              className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              aria-label="Rows per page"
             >
-              ...
-            </span>
-          ) : (
-            <button
-              key={page}
-              onClick={() => onPageChange(page)}
-              className={`px-3 py-2 sm:py-1 rounded-lg transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center ${
-                page === currentPage
-                  ? 'bg-blue-600 text-white'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
-              aria-label={`Page ${page}`}
-              aria-current={page === currentPage ? 'page' : undefined}
-            >
-              {page}
-            </button>
-          )
-        ))}
-
-        {/* Next button */}
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!hasNextPage}
-          className="p-3 sm:p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
-          aria-label="Next page"
-        >
-          <svg className="h-5 w-5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt} / page</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
+
+      {/* Right: page controls (only when more than one page) */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={!hasPrevPage}
+            className="p-3 sm:p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+            aria-label="Previous page"
+          >
+            <svg className="h-5 w-5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Mobile: simple "Page X / Y". Desktop: numbered buttons. */}
+          <span className="sm:hidden px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+            {currentPage} / {totalPages}
+          </span>
+          <div className="hidden sm:flex items-center gap-1">
+            {pageNumbers.map((page, index) => (
+              page === '...' ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="px-3 py-1 text-gray-400 dark:text-gray-500"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  className={`px-3 py-1 rounded-lg transition-colors flex items-center justify-center ${
+                    page === currentPage
+                      ? 'bg-blue-600 text-white'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                  aria-label={`Page ${page}`}
+                  aria-current={page === currentPage ? 'page' : undefined}
+                >
+                  {page}
+                </button>
+              )
+            ))}
+          </div>
+
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={!hasNextPage}
+            className="p-3 sm:p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700 dark:text-gray-200 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+            aria-label="Next page"
+          >
+            <svg className="h-5 w-5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

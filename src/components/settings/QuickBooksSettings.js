@@ -365,27 +365,27 @@ export default function QuickBooksSettings() {
           {/* Gradient Header */}
           <div className="bg-gradient-to-r from-[#2CA01C] to-[#1a7a10] dark:from-[#238516] dark:to-[#156a0d] p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
                   <Building2 size={20} className="text-white" />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">QuickBooks Integration</h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-white">QuickBooks Integration</h3>
                     {isConnected && !isExpired && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded-full">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded-full whitespace-nowrap">
                         <CheckCircle size={10} />
                         Active
                       </span>
                     )}
                     {isExpired && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-400/30 text-white text-xs font-semibold rounded-full">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-400/30 text-white text-xs font-semibold rounded-full whitespace-nowrap">
                         <AlertCircle size={10} />
                         Expired
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-green-100 hidden sm:block">
+                  <p className="text-sm text-green-100 hidden sm:block truncate">
                     {isConnected
                       ? `Connected to ${connection.company_name || 'QuickBooks Online'}`
                       : 'Connect your QuickBooks account for automated bookkeeping'
@@ -397,7 +397,7 @@ export default function QuickBooksSettings() {
               {isConnected && !isExpired && (
                 <button
                   onClick={handleConnect}
-                  className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-sm rounded-lg transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 self-start sm:self-auto"
                 >
                   <RefreshCw size={14} />
                   Refresh Connection
@@ -728,22 +728,24 @@ export default function QuickBooksSettings() {
               </p>
             </div>
 
-            <div className="p-5 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+            <div className="p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between gap-3 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex-shrink-0">
                     <Receipt className="text-orange-600 dark:text-orange-400" size={18} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-gray-900 dark:text-white text-sm">Auto-sync Expenses</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Automatically push new expenses to QuickBooks</p>
                   </div>
                 </div>
-                <ToggleSwitch
-                  enabled={!!connection.autoSyncExpenses}
-                  onChange={handleToggleAutoSync}
-                  disabled={togglingSync === 'autoSyncExpenses'}
-                />
+                <div className="flex-shrink-0">
+                  <ToggleSwitch
+                    enabled={!!connection.autoSyncExpenses}
+                    onChange={handleToggleAutoSync}
+                    disabled={togglingSync === 'autoSyncExpenses'}
+                  />
+                </div>
               </div>
 
             </div>
@@ -765,10 +767,56 @@ export default function QuickBooksSettings() {
               </p>
             </div>
 
-            {/* Scroll container: ~10 rows visible (table row ~52px), then scroll */}
-            <div className="overflow-x-auto overflow-y-auto max-h-[520px]">
+            {/* Mobile: stacked cards (no horizontal scroll). Desktop: table view. */}
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700/50 max-h-[520px] overflow-y-auto">
+              {syncRecords.map((record) => {
+                const entityLabel = record.qb_entity_type || (record.entity_type ? record.entity_type.charAt(0).toUpperCase() + record.entity_type.slice(1) : '—');
+                const syncedAt = record.last_synced_at || record.updated_at || record.created_at;
+                return (
+                  <div key={record.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getSyncStatusBadge(record.sync_status)}
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{entityLabel}</span>
+                      </div>
+                      {record.sync_status === 'failed' && (
+                        <button
+                          onClick={() => handleRetrySync(record)}
+                          disabled={retrying === record.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#2CA01C] bg-green-50 dark:bg-green-900/20 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50 flex-shrink-0"
+                        >
+                          {retrying === record.id ? <RefreshCw size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                      <dt className="text-gray-500 dark:text-gray-400">Synced</dt>
+                      <dd className="text-gray-700 dark:text-gray-300 truncate">
+                        {syncedAt ? new Date(syncedAt).toLocaleString() : '—'}
+                      </dd>
+                      {record.qb_entity_id && (
+                        <>
+                          <dt className="text-gray-500 dark:text-gray-400">QB ID</dt>
+                          <dd className="text-gray-700 dark:text-gray-300 font-mono truncate">{record.qb_entity_id}</dd>
+                        </>
+                      )}
+                      {record.error_message && (
+                        <>
+                          <dt className="text-gray-500 dark:text-gray-400">Error</dt>
+                          <dd className="text-red-500 dark:text-red-400 break-words">{record.error_message}</dd>
+                        </>
+                      )}
+                    </dl>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-y-auto max-h-[520px]">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 shadow-sm">
+                <thead className="sticky top-0 z-[1] shadow-sm">
                   <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700">
                     <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Status</th>
                     <th className="text-left py-2.5 px-4 text-gray-500 dark:text-gray-300 font-medium text-xs uppercase tracking-wider bg-gray-100 dark:bg-gray-700">Entity</th>

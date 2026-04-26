@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
+import { TableActionsDropdown } from "@/components/shared/TableActions";
 
 export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewReceipt }) {
   const { t } = useTranslation('fuel');
@@ -153,34 +154,12 @@ export default function FuelEntryCard({ fuelEntry, onEdit, onDelete, onViewRecei
 
       {/* Card Footer - Actions */}
       <div className="px-4 py-3 flex items-center justify-end border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center space-x-1">
-          {/* View Receipt */}
-          {fuelEntry.receipt_image && (
-            <button
-              onClick={handleViewReceipt}
-              className="p-2 rounded-lg transition-colors text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-              title={t('fuelCard.viewReceipt')}
-            >
-              <Eye size={16} />
-            </button>
-          )}
-          {/* Edit */}
-          <button
-            onClick={() => onEdit(fuelEntry)}
-            className="p-2 rounded-lg transition-colors text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30"
-            title={t('fuelCard.edit')}
-          >
-            <Edit size={16} />
-          </button>
-          {/* Delete */}
-          <button
-            onClick={() => onDelete(fuelEntry)}
-            className="p-2 rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-            title={t('fuelCard.delete')}
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        <TableActionsDropdown
+          size="sm"
+          onView={fuelEntry.receipt_image ? handleViewReceipt : undefined}
+          onEdit={() => onEdit(fuelEntry)}
+          onDelete={() => onDelete(fuelEntry)}
+        />
       </div>
     </div>
   );

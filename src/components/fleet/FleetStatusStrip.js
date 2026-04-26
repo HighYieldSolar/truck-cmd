@@ -33,34 +33,37 @@ export default function FleetStatusStrip({
   ];
   const syncedLbl = syncedLabel ?? t("strip.syncedFromEld", "Synced from ELD");
   return (
-    <div className="flex items-center gap-2 px-5 py-3 overflow-x-auto">
-      {items.map((it) => {
-        const muted = it.val === 0;
-        const tone = muted ? "muted" : it.tone;
-        const active = activeFilter === it.key;
-        return (
-          <button
-            key={it.key}
-            onClick={() => onPick?.(it)}
-            className={`inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-lg border whitespace-nowrap text-[12.5px] font-medium tracking-tight transition ${PALETTE[tone]} ${active ? "ring-2 ring-offset-1 ring-slate-900" : "hover:brightness-95"}`}
-          >
-            <span className="relative inline-flex items-center justify-center w-3 h-3">
-              <it.icon size={12} strokeWidth={1.75} />
-              {it.pulse && !muted && (
-                <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)] ring-2 ring-emerald-50" />
-              )}
-            </span>
-            <span className="text-[15px] font-semibold tabular-nums leading-none -tracking-[0.01em]">
-              {it.val}
-            </span>
-            <span>{it.label}</span>
-          </button>
-        );
-      })}
-      <div className="flex-1" />
-      <span className="hidden sm:inline-flex items-center text-[11px] text-slate-500 dark:text-gray-400 whitespace-nowrap">
-        {syncedLbl} · <b className="text-slate-700 dark:text-gray-200 ml-1">{syncedAgo ? ageToLabel(syncedAgo) + " " + t("strip.ago", "ago") : "—"}</b>
-      </span>
+    <div className="px-3 sm:px-5 py-3">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2">
+        {items.map((it) => {
+          const muted = it.val === 0;
+          const tone = muted ? "muted" : it.tone;
+          const active = activeFilter === it.key;
+          return (
+            <button
+              key={it.key}
+              onClick={() => onPick?.(it)}
+              className={`min-w-0 inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-lg border text-[12.5px] font-medium tracking-tight transition ${PALETTE[tone]} ${active ? "ring-2 ring-offset-1 ring-slate-900" : "hover:brightness-95"}`}
+            >
+              <span className="relative inline-flex items-center justify-center w-3 h-3 flex-shrink-0">
+                <it.icon size={12} strokeWidth={1.75} />
+                {it.pulse && !muted && (
+                  <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 rounded-full bg-[var(--accent)] ring-2 ring-emerald-50 dark:ring-emerald-900/40" />
+                )}
+              </span>
+              <span className="text-[15px] font-semibold tabular-nums leading-none -tracking-[0.01em] flex-shrink-0">
+                {it.val}
+              </span>
+              <span className="truncate">{it.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-2 hidden sm:flex justify-end">
+        <span className="text-[11px] text-slate-500 dark:text-gray-400 whitespace-nowrap">
+          {syncedLbl} · <b className="text-slate-700 dark:text-gray-200 ml-1">{syncedAgo ? ageToLabel(syncedAgo) + " " + t("strip.ago", "ago") : "—"}</b>
+        </span>
+      </div>
     </div>
   );
 }

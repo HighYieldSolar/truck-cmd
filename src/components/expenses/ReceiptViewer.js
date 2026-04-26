@@ -214,13 +214,13 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+      <div className="relative flex min-h-full items-center justify-center p-3 sm:p-4">
         <div
-          className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transform transition-all"
+          className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl sticky top-0 z-10">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600 rounded-t-xl flex-shrink-0">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 min-w-0">
               <FileText className="h-5 w-5 flex-shrink-0" />
               <span className="truncate">{t('receiptViewer.title')}</span>
@@ -233,7 +233,7 @@ export default function ReceiptViewer({ isOpen, onClose, receipt }) {
             </button>
           </div>
 
-          <div className="p-4 sm:p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
             {/* Receipt Preview Section */}
             {hasReceipt ? (
               <div className="mb-6 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">

@@ -69,7 +69,7 @@ function prettyProvider(p) {
 // ── Tab strip ─────────────────────────────────────────────
 function TabStrip({ activeTab, onTabChange, eldConnected, eldMiles, manualTripCount, t }) {
   return (
-    <div className="flex items-end gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+    <div className="grid grid-cols-2 gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
       <TabButton
         active={activeTab === 'auto'}
         onClick={() => onTabChange('auto')}
@@ -109,19 +109,19 @@ function TabButton({ active, onClick, label, sub, badge }) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 sm:px-5 py-3 -mb-px border-b-2 transition-colors flex items-center gap-2.5 whitespace-nowrap ${
+      className={`px-2 sm:px-5 py-3 -mb-px border-b-2 transition-colors flex flex-col items-start sm:flex-row sm:items-center sm:justify-start gap-1 sm:gap-2.5 min-w-0 ${
         active
           ? 'border-blue-600 dark:border-blue-400'
           : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
-      <div className="text-left">
-        <div className={`text-sm font-semibold ${active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
+      <div className="text-left min-w-0 sm:flex-initial w-full sm:w-auto">
+        <div className={`text-sm font-semibold truncate ${active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
           {label}
         </div>
-        <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{sub}</div>
+        <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate hidden sm:block">{sub}</div>
       </div>
-      {badge}
+      <span className="flex-shrink-0">{badge}</span>
     </button>
   );
 }

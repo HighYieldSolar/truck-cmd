@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { usePagination, Pagination } from "@/hooks/usePagination";
 import { supabase } from "@/lib/supabaseClient";
 import {
   MapPin,
@@ -297,10 +298,18 @@ const TripCard = ({ trip, vehicles, onSelect, isSelected, onDelete }) => {
   return (
     <div
       onClick={() => onSelect(trip)}
-      className={`group relative cursor-pointer rounded-lg border transition-all
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(trip);
+        }
+      }}
+      className={`group relative cursor-pointer rounded-lg border transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
         ${isSelected
-          ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-900/10 ring-1 ring-blue-500/30 shadow-sm'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/40 shadow-md'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 hover:shadow-sm'
         }`}
     >
       <div className="p-3 flex items-center gap-3">
@@ -1102,6 +1111,20 @@ export default function StateMileageLogger() {
     });
   }, [completedTrips, completedTripCrossings, summaryQuarter]);
 
+  // Pagination for past trips list (audit: 10 per page)
+  const pastTripsPagination = usePagination(filteredCompletedTrips, { itemsPerPage: 10 });
+
+  // Auto-scroll to opened trip details when a past trip is selected (mobile-friendly)
+  const tripDetailsRef = useRef(null);
+  useEffect(() => {
+    if (selectedPastTrip && tripDetailsRef.current) {
+      // Defer one frame so the panel is mounted before scrolling
+      requestAnimationFrame(() => {
+        tripDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [selectedPastTrip]);
+
   // Per-segment mileage aggregation. Each segment (pair of consecutive
   // crossings) is bucketed by the entry crossing's local date — matching
   // the IFTA import logic in iftaMileageService.getStateMileageByQuarter,
@@ -1347,7 +1370,7 @@ export default function StateMileageLogger() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           {t('newTrip.startingOdometer')}
                         </label>
@@ -1356,12 +1379,12 @@ export default function StateMileageLogger() {
                           name="start_odometer"
                           value={newTripForm.start_odometer}
                           onChange={handleNewTripChange}
-                          className="w-full px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full min-w-0 px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           placeholder={t('newTrip.odometerPlaceholder')}
                           required
                         />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           {t('newTrip.date')}
                         </label>
@@ -1370,7 +1393,7 @@ export default function StateMileageLogger() {
                           name="date"
                           value={newTripForm.date}
                           onChange={handleNewTripChange}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full min-w-0 max-w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           required
                         />
                       </div>
@@ -1536,7 +1559,7 @@ export default function StateMileageLogger() {
                     <div className="mt-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t('stateCrossings.addTitle')}</h4>
                       <form onSubmit={handleAddCrossing} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                        <div className="sm:col-span-5">
+                        <div className="sm:col-span-5 min-w-0">
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.enteringState')}
                           </label>
@@ -1544,7 +1567,7 @@ export default function StateMileageLogger() {
                             name="state"
                             value={crossingForm.state}
                             onChange={handleCrossingChange}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                           >
                             <option value="">{t('newTrip.selectState')}</option>
@@ -1554,7 +1577,7 @@ export default function StateMileageLogger() {
                           </select>
                         </div>
 
-                        <div className="sm:col-span-3">
+                        <div className="sm:col-span-3 min-w-0">
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.odometerReading')}
                           </label>
@@ -1563,13 +1586,13 @@ export default function StateMileageLogger() {
                             name="odometer"
                             value={crossingForm.odometer}
                             onChange={handleCrossingChange}
-                            className="w-full px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full min-w-0 px-3 py-2 text-sm font-mono tabular-nums border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder={t('stateCrossings.currentReading')}
                             required
                           />
                         </div>
 
-                        <div className="sm:col-span-2">
+                        <div className="sm:col-span-2 min-w-0">
                           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {t('stateCrossings.crossingDate')}
                           </label>
@@ -1578,12 +1601,12 @@ export default function StateMileageLogger() {
                             name="date"
                             value={crossingForm.date}
                             onChange={handleCrossingChange}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full min-w-0 max-w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                           />
                         </div>
 
-                        <div className="sm:col-span-2">
+                        <div className="sm:col-span-2 min-w-0">
                           <button
                             type="submit"
                             disabled={loading}
@@ -1725,24 +1748,39 @@ export default function StateMileageLogger() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {filteredCompletedTrips.map(trip => (
-                      <TripCard
-                        key={trip.id}
-                        trip={trip}
-                        vehicles={vehicles}
-                        onSelect={(trip) => handleSelectPastTrip(trip)}
-                        isSelected={selectedPastTrip?.id === trip.id}
-                        onDelete={(trip, vehicleName) => handleDeleteClick(trip, vehicleName)}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      {pastTripsPagination.paginatedData.map(trip => (
+                        <TripCard
+                          key={trip.id}
+                          trip={trip}
+                          vehicles={vehicles}
+                          onSelect={(trip) => handleSelectPastTrip(trip)}
+                          isSelected={selectedPastTrip?.id === trip.id}
+                          onDelete={(trip, vehicleName) => handleDeleteClick(trip, vehicleName)}
+                        />
+                      ))}
+                    </div>
+                    {pastTripsPagination.totalPages > 1 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <Pagination
+                          currentPage={pastTripsPagination.currentPage}
+                          totalPages={pastTripsPagination.totalPages}
+                          pageNumbers={pastTripsPagination.pageNumbers}
+                          onPageChange={pastTripsPagination.goToPage}
+                          hasNextPage={pastTripsPagination.hasNextPage}
+                          hasPrevPage={pastTripsPagination.hasPrevPage}
+                          showingText={pastTripsPagination.showingText}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-2">
+          <div ref={tripDetailsRef} className="lg:col-span-2 scroll-mt-4">
             {selectedPastTrip ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">

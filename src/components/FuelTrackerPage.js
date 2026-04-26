@@ -11,7 +11,9 @@ import {
   Filter,
   FileText,
   Calculator,
-  Download
+  Download,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -63,6 +65,12 @@ export default function FuelTrackerPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState(null);
+
+  // Mobile collapsible widget state — defaults closed on mobile so the
+  // primary table is the first thing users see.
+  const [topFuelOpen, setTopFuelOpen] = useState(false);
+  const [statesCatOpen, setStatesCatOpen] = useState(false);
+  const [stateSummaryOpen, setStateSummaryOpen] = useState(false);
   
   // Add dedicated loading state for deletion
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -547,15 +555,23 @@ export default function FuelTrackerPage() {
             <div className="lg:col-span-1 space-y-6">
               {/* Top 3 Fuel Purchases Card */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mr-3">
+                <button
+                  type="button"
+                  onClick={() => setTopFuelOpen((v) => !v)}
+                  className="w-full px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 text-left lg:cursor-default"
+                  aria-expanded={topFuelOpen}
+                >
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mr-3 flex-shrink-0">
                       <Fuel size={16} className="text-amber-600 dark:text-amber-400" />
                     </div>
-                    {t('page.topFuelPurchases')}
+                    <span className="truncate">{t('page.topFuelPurchases')}</span>
                   </h3>
-                </div>
-                <div className="p-4">
+                  <span className="lg:hidden text-gray-400">
+                    {topFuelOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </span>
+                </button>
+                <div className={`p-4 ${topFuelOpen ? 'block' : 'hidden'} lg:block`}>
                   {loading ? (
                     <div className="flex justify-center items-center py-8">
                       <RefreshCw size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
@@ -572,15 +588,23 @@ export default function FuelTrackerPage() {
 
               {/* States Categories */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3">
+                <button
+                  type="button"
+                  onClick={() => setStatesCatOpen((v) => !v)}
+                  className="w-full px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 text-left lg:cursor-default"
+                  aria-expanded={statesCatOpen}
+                >
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mr-3 flex-shrink-0">
                       <BarChart2 size={16} className="text-purple-600 dark:text-purple-400" />
                     </div>
-                    {t('page.statesTitle')}
+                    <span className="truncate">{t('page.statesTitle')}</span>
                   </h3>
-                </div>
-                <div className="p-4">
+                  <span className="lg:hidden text-gray-400">
+                    {statesCatOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </span>
+                </button>
+                <div className={`p-4 ${statesCatOpen ? 'block' : 'hidden'} lg:block`}>
                   {loading ? (
                     <div className="flex justify-center items-center py-8">
                       <RefreshCw size={24} className="animate-spin text-gray-400 dark:text-gray-500" />
@@ -754,13 +778,21 @@ export default function FuelTrackerPage() {
               {/* State Summary */}
               {filteredFuelEntries.length > 0 && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                  <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200">
-                      <BarChart2 size={18} className="mr-2 text-blue-500 dark:text-blue-400" />
-                      {t('page.iftaStateSummary')}
+                  <button
+                    type="button"
+                    onClick={() => setStateSummaryOpen((v) => !v)}
+                    className="w-full px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2 text-left lg:cursor-default"
+                    aria-expanded={stateSummaryOpen}
+                  >
+                    <h3 className="font-medium flex items-center text-gray-700 dark:text-gray-200 min-w-0">
+                      <BarChart2 size={18} className="mr-2 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                      <span className="truncate">{t('page.iftaStateSummary')}</span>
                     </h3>
-                  </div>
-                  <div className="p-0">
+                    <span className="lg:hidden text-gray-400">
+                      {stateSummaryOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </span>
+                  </button>
+                  <div className={`p-0 ${stateSummaryOpen ? 'block' : 'hidden'} lg:block`}>
                     <StateSummary
                       fuelData={filteredFuelEntries}
                       onExportForIFTA={handleGoToIFTA}

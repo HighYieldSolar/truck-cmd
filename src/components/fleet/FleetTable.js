@@ -37,8 +37,8 @@ export default function FleetTable({
   const { t } = useTranslation("fleet");
   return (
     <div className="flex-1 overflow-auto bg-white dark:bg-gray-800">
-      <div className="min-w-max">
-        <div className="sticky top-0 z-[1] flex items-center bg-gray-50 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
+      <div className="min-w-full md:min-w-max">
+        <div className="sticky top-0 z-[1] flex items-center bg-gray-50 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700 hidden md:flex">
           {selectable && (
             <div className="w-9 flex items-center justify-center">
               <input
@@ -109,7 +109,7 @@ export function FleetRow({ selected, onClick, children, dense, ariaLabel }) {
           onClick?.(e);
         }
       }}
-      className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/50 cursor-pointer transition ${
+      className={`flex flex-wrap md:flex-nowrap items-stretch border-b border-gray-100 dark:border-gray-700/50 cursor-pointer transition ${
         selected ? "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50" : "hover:bg-gray-50 dark:hover:bg-gray-700/40"
       } focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400 ${
         dense ? "min-h-[36px] py-1" : "min-h-[44px] py-2"
