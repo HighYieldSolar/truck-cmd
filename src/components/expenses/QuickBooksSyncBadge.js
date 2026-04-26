@@ -154,12 +154,12 @@ export default function QuickBooksSyncBadge({
     <div className="relative inline-block">
       {badgeContent}
 
-      {/* Tooltip Popover */}
+      {/* Tooltip Popover — opens to the right by default; on small screens
+          we constrain width so it can't run off the viewport. */}
       {showTooltip && (
         <div
           ref={tooltipRef}
-          className="absolute z-50 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-          style={{ right: 0 }}
+          className="absolute z-50 mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden left-0 sm:left-auto sm:right-0"
         >
           {/* Header */}
           <div className={`px-3 py-2 ${config.bgColor} border-b ${config.borderColor}`}>

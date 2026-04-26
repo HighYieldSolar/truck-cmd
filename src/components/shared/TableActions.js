@@ -394,7 +394,7 @@ export function TableActionsDropdown({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[999] animate-in fade-in slide-in-from-top-2 duration-150"
+          className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-30 animate-in fade-in slide-in-from-top-2 duration-150"
         >
           {actions.map((action, index) => {
             const ActionIcon = action.icon;

@@ -8,7 +8,9 @@ import {
   Filter,
   Search,
   Plus,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal,
+  X
 } from "lucide-react";
 import InvoiceStatusBadge from "@/components/invoices/InvoiceStatusBadge";
 import { TableActionsDropdown } from "@/components/shared/TableActions";
@@ -66,109 +68,101 @@ const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
     { value: 'customer', label: t('list.customer') }
   ];
 
+  const inputBase =
+    "w-full min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  const labelBase = "block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1";
+
+  const hasActiveFilters =
+    filters.status !== 'all' ||
+    filters.dateRange !== 'all' ||
+    (filters.search && filters.search.length > 0);
+
+  // Apply filters live as user changes them
+  const handleLiveChange = (key, value) => {
+    const next = { ...filters, [key]: value };
+    setFilters(next);
+    onApplyFilters(next);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 mb-6">
-      <div className="bg-blue-500 px-5 py-4 text-white">
-        <h3 className="font-semibold flex items-center">
-          <Filter size={18} className="mr-2" />
-          {t('list.filterInvoices')}
-        </h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 space-y-3">
+      {/* Search row — primary affordance */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={16} className="text-gray-400 dark:text-gray-500" />
+        </div>
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => handleLiveChange('search', e.target.value)}
+          className={`${inputBase} pl-10`}
+          placeholder={t('filters.searchPlaceholder')}
+          aria-label={t('list.search')}
+        />
       </div>
 
-      <div className="p-5">
-        <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.status')}</label>
-            <select
-              name="status"
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
-            >
-              <option value="all">{t('list.allStatuses')}</option>
-              {statusOptions.filter(option => option.value !== 'all').map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.dateRange')}</label>
-            <select
-              name="dateRange"
-              value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
-            >
-              <option value="all">{t('filters.allTime')}</option>
-              {dateRangeOptions.filter(option => option.value !== 'all').map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.sortBy')}</label>
-            <select
-              name="sortBy"
-              value={filters.sortBy}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">{t('list.search')}</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder={t('filters.searchPlaceholder')}
-              />
-            </div>
-          </div>
-        </form>
-
-        <div className="mt-5 pt-4 border-t border-gray-200 flex justify-between items-center">
-          <button
-            onClick={handleApplyFilters}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm flex items-center font-medium"
+      {/* Filter dropdowns — 2-col mobile, 3-col desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <label className={labelBase}>{t('list.status')}</label>
+          <select
+            name="status"
+            value={filters.status}
+            onChange={(e) => handleLiveChange('status', e.target.value)}
+            className={inputBase}
           >
-            <Filter size={16} className="mr-2" />
-            {t('list.applyFilters')}
-          </button>
+            <option value="all">{t('list.allStatuses')}</option>
+            {statusOptions.filter(option => option.value !== 'all').map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
 
-          <button
-            onClick={handleResetFilters}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-            disabled={
-              filters.status === "all" &&
-              filters.dateRange === "all" &&
-              filters.search === "" &&
-              filters.sortBy === "invoice_date" &&
-              filters.sortDirection === "desc"
-            }
+        <div className="min-w-0">
+          <label className={labelBase}>{t('list.dateRange')}</label>
+          <select
+            name="dateRange"
+            value={filters.dateRange}
+            onChange={(e) => handleLiveChange('dateRange', e.target.value)}
+            className={inputBase}
           >
-            <RefreshCw size={14} className="mr-1" />
-            {t('list.resetFilters')}
-          </button>
+            <option value="all">{t('filters.allTime')}</option>
+            {dateRangeOptions.filter(option => option.value !== 'all').map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-0 col-span-2 sm:col-span-1">
+          <label className={labelBase}>{t('list.sortBy')}</label>
+          <select
+            name="sortBy"
+            value={filters.sortBy}
+            onChange={(e) => handleLiveChange('sortBy', e.target.value)}
+            className={inputBase}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
         </div>
       </div>
+
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+          <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <SlidersHorizontal className="h-3 w-3" />
+            Filters active
+          </span>
+          <button
+            onClick={handleResetFilters}
+            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <X className="h-4 w-4" />
+            <span>{t('list.resetFilters')}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

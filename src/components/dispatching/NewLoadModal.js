@@ -943,17 +943,20 @@ export default function NewLoadForm({
                 })}
               </div>
 
-              {/* Desktop: Original layout */}
-              <div className="hidden sm:flex items-center justify-between">
+              {/* Desktop: circle-on-top, label-below pattern so the connector
+                  bars between circles are always equal width regardless of
+                  step-label length. */}
+              <div className="hidden sm:flex items-start justify-between">
                 {steps.map((step, index) => {
                   const Icon = step.icon;
                   const isActive = currentStep === step.number;
                   const isCompleted = currentStep > step.number;
 
                   return (
-                    <div key={step.number} className="flex items-center flex-1">
-                      <div className="flex flex-row items-center relative">
-                        {/* Step circle with icon */}
+                    <div key={step.number} className="flex items-start flex-1 min-w-0">
+                      {/* Step (circle + label), fixed width so labels can wrap
+                          beneath without affecting the connector position. */}
+                      <div className="flex flex-col items-center w-24 flex-shrink-0">
                         <div className={`
                           w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-xl
                           ${isActive
@@ -969,10 +972,8 @@ export default function NewLoadForm({
                             <Icon size={24} className={isActive ? 'animate-pulse' : ''} />
                           )}
                         </div>
-
-                        {/* Step details */}
-                        <div className="ml-3 text-left">
-                          <div className={`text-xs font-medium transition-all ${
+                        <div className="mt-2 text-center">
+                          <div className={`text-[11px] font-medium transition-all ${
                             isActive
                               ? 'text-white/90'
                               : isCompleted
@@ -981,7 +982,7 @@ export default function NewLoadForm({
                           }`}>
                             {t('wizard.step')} {step.number}
                           </div>
-                          <div className={`text-sm font-semibold transition-all ${
+                          <div className={`text-sm font-semibold leading-tight transition-all ${
                             isActive
                               ? 'text-white'
                               : isCompleted
@@ -993,11 +994,12 @@ export default function NewLoadForm({
                         </div>
                       </div>
 
-                      {/* Progress bar between steps */}
+                      {/* Progress bar between steps — vertically centered on
+                          the circle (mt-7 = half of 14 minus half of 2). */}
                       {index < steps.length - 1 && (
-                        <div className="flex-1 mx-4">
-                          <div className="h-3 bg-blue-800/30 rounded-full overflow-hidden relative">
-                            <div className="absolute inset-0 bg-white/10"></div>
+                        <div className="flex-1 mt-7 mx-2">
+                          <div className="h-1.5 bg-blue-800/30 rounded-full overflow-hidden relative">
+                            <div className="absolute inset-0 bg-white/10" />
                             <div className={`h-full transition-all duration-700 ease-out relative ${
                               isCompleted
                                 ? 'bg-gradient-to-r from-green-400 to-green-500'
@@ -1006,7 +1008,7 @@ export default function NewLoadForm({
                               width: isCompleted ? '100%' : isActive ? '50%' : '0%'
                             }}>
                               {isCompleted && (
-                                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
                               )}
                             </div>
                           </div>

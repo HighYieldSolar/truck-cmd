@@ -444,11 +444,11 @@ export default function QuickBooksSettings() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate min-w-0">
                           {connection.company_name || 'QuickBooks Online'}
                         </h4>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${isExpired
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0 ${isExpired
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                           : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           }`}>
