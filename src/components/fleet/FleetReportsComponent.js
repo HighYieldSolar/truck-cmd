@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Download,
@@ -87,13 +87,23 @@ export function FleetExportModal({ isOpen, onClose, user }) {
   const [exportFormat, setExportFormat] = useState('pdf');
   const [exportState, setExportState] = useState('idle');
   const [error, setError] = useState(null);
+  // Track recent export timestamps for a lightweight client-side rate
+  // limit. Caps at 5 exports per 60 seconds per session — enough for normal
+  // power-user flows, blocks button-mashing.
+  const recentExportsRef = useRef([]);
+  const [cooldownMessage, setCooldownMessage] = useState(null);
 
   // Feature access for export formats
   const { canAccess } = useFeatureAccess();
   const canExportCSV = canAccess('exportCSV');
 
+  // Reset stale state when the modal opens so a previous "success" or
+  // "error" doesn't carry over to the new session.
   useEffect(() => {
     if (isOpen) {
+      setExportState('idle');
+      setError(null);
+      setCooldownMessage(null);
       const originalStyle = window.getComputedStyle(document.body).overflow;
       document.body.style.overflow = 'hidden';
       return () => {
@@ -547,8 +557,31 @@ export function FleetExportModal({ isOpen, onClose, user }) {
   // Handle export
   const handleExport = async () => {
     if (!user) return;
+
+    // Client-side rate limit: max 5 exports per 60 seconds. Drops timestamps
+    // older than the window before checking. Prevents accidental
+    // double-clicks AND blocks anyone mashing the export button (each
+    // export pulls full fleet data from Supabase, so unlimited fan-out is
+    // a soft DoS vector against the user's own quota).
+    const now = Date.now();
+    const WINDOW_MS = 60_000;
+    const MAX_PER_WINDOW = 5;
+    recentExportsRef.current = recentExportsRef.current.filter(
+      (t) => now - t < WINDOW_MS
+    );
+    if (recentExportsRef.current.length >= MAX_PER_WINDOW) {
+      const oldest = recentExportsRef.current[0];
+      const waitSeconds = Math.ceil((WINDOW_MS - (now - oldest)) / 1000);
+      setCooldownMessage(
+        `Too many exports. Please wait ${waitSeconds}s before trying again.`
+      );
+      return;
+    }
+    recentExportsRef.current.push(now);
+
     setExportState('loading');
     setError(null);
+    setCooldownMessage(null);
 
     try {
       if (exportFormat === 'pdf' || exportFormat === 'print') {
@@ -575,10 +608,21 @@ export function FleetExportModal({ isOpen, onClose, user }) {
       }
 
       setExportState('success');
-      setTimeout(() => onClose(), 1500);
+      // Auto-clear the success state after ~2s so the user can run another
+      // export without closing & reopening the modal. The modal stays open;
+      // only the success badge disappears.
+      setTimeout(() => {
+        setExportState((s) => (s === 'success' ? 'idle' : s));
+      }, 2000);
     } catch (err) {
       setExportState('error');
       setError('Failed to generate report. Please try again.');
+      // Clear error state after 4s so the user can retry without
+      // re-opening the modal.
+      setTimeout(() => {
+        setExportState((s) => (s === 'error' ? 'idle' : s));
+        setError(null);
+      }, 4000);
     }
   };
 
@@ -718,17 +762,23 @@ export function FleetExportModal({ isOpen, onClose, user }) {
             )}
           </div>
 
-          {/* Error/Success Messages */}
+          {/* Error / cooldown / success — auto-dismiss after a few seconds */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md border border-red-200 dark:border-red-800">
               <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
           )}
 
+          {cooldownMessage && (
+            <div className="bg-amber-50 dark:bg-amber-900/30 p-3 rounded-md border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-700 dark:text-amber-300">{cooldownMessage}</p>
+            </div>
+          )}
+
           {exportState === 'success' && (
             <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md flex items-center border border-green-200 dark:border-green-800">
               <Check size={16} className="text-green-500 dark:text-green-400 mr-2" />
-              <p className="text-sm text-green-700 dark:text-green-300">Export successful!</p>
+              <p className="text-sm text-green-700 dark:text-green-300">Export successful! You can run another export below.</p>
             </div>
           )}
         </div>
@@ -747,7 +797,7 @@ export function FleetExportModal({ isOpen, onClose, user }) {
             type="button"
             onClick={handleExport}
             className="w-full sm:w-auto px-6 py-3 sm:py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors disabled:opacity-50"
-            disabled={exportState === 'loading' || exportState === 'success'}
+            disabled={exportState === 'loading'}
           >
             {exportState === 'loading' ? (
               <>
