@@ -11,6 +11,23 @@ import { getInvoiceById, updateInvoiceStatus, recordPayment, deleteInvoice, emai
 import InvoicePdfGenerator from "@/components/invoices/InvoicePdfGenerator";
 import PaymentModal from "@/components/invoices/PaymentModal";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, formatDateForDisplayMMDDYYYY, getCurrentDateLocal } from "@/lib/utils/dateUtils";
+
+// Render a timestamp as "MM/DD/YYYY, h:mm AM/PM" to keep activity/payment logs
+// visually consistent with the MM/DD/YYYY date fields elsewhere on this page.
+function formatTimestampMMDDYYYY(value) {
+  if (!value) return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const hours24 = d.getHours();
+  const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${mm}/${dd}/${yyyy}, ${hours12}:${minutes} ${meridiem}`;
+}
 
 import {
   ChevronLeft,
@@ -53,7 +70,7 @@ const PaymentHistoryItem = ({ payment }) => {
         </div>
         <div>
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{payment.description}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{payment.date} · {payment.reference || 'No reference'}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDateForDisplayMMDDYYYY(payment.date)} · {payment.reference || 'No reference'}</p>
         </div>
       </div>
       <div className="text-right">
@@ -185,7 +202,7 @@ const EmailInvoiceModal = ({ isOpen, onClose, onSend, invoice, isSubmitting, com
       description: t('detail.emailModal.templates.professional.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
-        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const dueDate = formatDateForDisplay(inv.due_date);
         const companyName = company?.name || 'Your Company';
         const companyPhone = company?.phone || '';
         return `Dear ${inv.customer},
@@ -194,7 +211,7 @@ Please find attached invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}
 
 Payment Details:
 • Invoice Number: ${inv.invoice_number}
-• Invoice Date: ${new Date(inv.invoice_date).toLocaleDateString()}
+• Invoice Date: ${formatDateForDisplay(inv.invoice_date)}
 • Due Date: ${dueDate}
 • Amount Due: $${amountDue.toFixed(2)}
 
@@ -211,7 +228,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
       description: t('detail.emailModal.templates.friendly.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
-        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const dueDate = formatDateForDisplay(inv.due_date);
         const companyName = company?.name || 'Your Company';
         return `Hi ${inv.customer.split(' ')[0]},
 
@@ -228,12 +245,12 @@ ${companyName}`;
       description: t('detail.emailModal.templates.reminder.description'),
       generate: (inv, company) => {
         const amountDue = (inv.total || 0) - (inv.amount_paid || 0);
-        const dueDate = new Date(inv.due_date).toLocaleDateString();
+        const dueDate = formatDateForDisplay(inv.due_date);
         const companyName = company?.name || 'Your Company';
         const companyPhone = company?.phone || '';
         return `Dear ${inv.customer},
 
-This is a friendly reminder regarding invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}, which ${new Date(inv.due_date) < new Date() ? 'was due on' : 'is due on'} ${dueDate}.
+This is a friendly reminder regarding invoice #${inv.invoice_number} for $${amountDue.toFixed(2)}, which ${(() => { const d = new Date(); d.setHours(0,0,0,0); const due = inv.due_date ? new Date(inv.due_date + 'T00:00:00') : null; return due && due < d; })() ? 'was due on' : 'is due on'} ${dueDate}.
 
 If you've already sent payment, please disregard this message. Otherwise, we kindly request that you process this payment at your earliest convenience.
 
@@ -327,7 +344,7 @@ ${companyName}${companyPhone ? `\n${companyPhone}` : ''}`;
               </div>
               <div className="text-center">
                 <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('detail.emailModal.dueDate')}</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{formatDateForDisplayMMDDYYYY(invoice.due_date)}</p>
               </div>
             </div>
           </div>
@@ -646,7 +663,7 @@ export default function InvoiceDetail({ invoiceId }) {
         const initialHistory = [{
           type: 'created',
           description: 'Invoice created',
-          date: new Date(invoiceData.created_at).toLocaleString(),
+          date: formatTimestampMMDDYYYY(invoiceData.created_at),
           user: 'You'
         }];
         
@@ -663,7 +680,7 @@ export default function InvoiceDetail({ invoiceId }) {
           const formattedActivities = activities.map(activity => ({
             type: activity.activity_type,
             description: activity.description,
-            date: new Date(activity.created_at).toLocaleString(),
+            date: formatTimestampMMDDYYYY(activity.created_at),
             user: activity.user_name || 'System'
           }));
           
@@ -751,7 +768,7 @@ export default function InvoiceDetail({ invoiceId }) {
             const paymentData = {
               amount: remainingBalance,
               method: 'manual',
-              date: new Date().toISOString().split('T')[0],
+              date: getCurrentDateLocal(),
               reference: 'Marked as paid',
               description: `Payment for invoice ${invoice.invoice_number}`,
               status: 'completed'
@@ -854,7 +871,7 @@ export default function InvoiceDetail({ invoiceId }) {
         const formattedActivities = activities.map(activity => ({
           type: activity.activity_type,
           description: activity.description,
-          date: new Date(activity.created_at).toLocaleString(),
+          date: formatTimestampMMDDYYYY(activity.created_at),
           user: activity.user_name || 'System'
         }));
 
@@ -862,7 +879,7 @@ export default function InvoiceDetail({ invoiceId }) {
         const initialHistory = [{
           type: 'created',
           description: 'Invoice created',
-          date: new Date(refreshedInvoice?.created_at || invoice.created_at).toLocaleString(),
+          date: formatTimestampMMDDYYYY(refreshedInvoice?.created_at || invoice.created_at),
           user: 'You'
         }];
 
@@ -892,7 +909,7 @@ export default function InvoiceDetail({ invoiceId }) {
       const newActivity = {
         type: 'sent',
         description: `Invoice emailed to ${emailData.to}`,
-        date: new Date().toLocaleString(),
+        date: formatTimestampMMDDYYYY(new Date()),
         user: 'You'
       };
       
@@ -995,7 +1012,7 @@ export default function InvoiceDetail({ invoiceId }) {
                   {t('title')} {invoice.invoice_number}
                 </h1>
                 <p className="text-blue-100">
-                  {t('detail.createdOn')} {new Date(invoice.invoice_date).toLocaleDateString()}
+                  {t('detail.createdOn')} {formatDateForDisplayMMDDYYYY(invoice.invoice_date)}
                 </p>
               </div>
             </div>
@@ -1101,8 +1118,8 @@ export default function InvoiceDetail({ invoiceId }) {
                 <div className="text-right">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('detail.invoice')}</h2>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">{t('detail.invoiceNumber')} <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.date')} <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.invoice_date).toLocaleDateString()}</span></p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.dueDate')} <span className="font-medium text-gray-900 dark:text-gray-100">{new Date(invoice.due_date).toLocaleDateString()}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.date')} <span className="font-medium text-gray-900 dark:text-gray-100">{formatDateForDisplayMMDDYYYY(invoice.invoice_date)}</span></p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.dueDate')} <span className="font-medium text-gray-900 dark:text-gray-100">{formatDateForDisplayMMDDYYYY(invoice.due_date)}</span></p>
                   {invoice.po_number && (
                     <p className="text-gray-600 dark:text-gray-400 text-sm">{t('detail.poNumber')} <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.po_number}</span></p>
                   )}
@@ -1258,7 +1275,7 @@ export default function InvoiceDetail({ invoiceId }) {
               <div className="mt-6 space-y-2">
                 <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <Clock size={16} className="text-orange-500 mr-2" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('detail.dueOn')} {new Date(invoice.due_date).toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t('detail.dueOn')} {formatDateForDisplayMMDDYYYY(invoice.due_date)}</span>
                 </div>
                 <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <CheckCircle size={16} className="text-blue-500 mr-2" />

@@ -9,6 +9,7 @@ import { getInvoiceById } from "@/lib/services/invoiceService";
 import { ChevronLeft, FileText, RefreshCw, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/context/LanguageContext";
+import { parseDateFromDB, getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 export default function EditInvoicePage({ params }) {
   const { t } = useTranslation('invoices');
@@ -61,11 +62,11 @@ export default function EditInvoicePage({ params }) {
           customer_email: invoice.customer_email || '',
           customer_address: invoice.customer_address || '',
           invoice_date: invoice.invoice_date
-            ? new Date(invoice.invoice_date).toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+            ? parseDateFromDB(invoice.invoice_date)
+            : getCurrentDateLocal(),
           due_date: invoice.due_date
-            ? new Date(invoice.due_date).toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+            ? parseDateFromDB(invoice.due_date)
+            : getCurrentDateLocal(),
           status: invoice.status || 'Draft',
           payment_terms: invoice.payment_terms || 'Net 15',
           po_number: invoice.po_number || '',

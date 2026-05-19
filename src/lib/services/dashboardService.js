@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import { getCurrentDateLocal, createLocalDate } from "../utils/dateUtils";
 
 /**
  * Fetches dashboard statistics for the authenticated user
@@ -475,8 +476,8 @@ export async function fetchRecentActivity(userId, limit = 5) {
  */
 export async function fetchUpcomingDeliveries(userId, limit = 3) {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = getCurrentDateLocal();
+
     const { data, error } = await supabase
       .from('loads')
       .select('id, load_number, customer, destination, delivery_date, status')
@@ -561,19 +562,22 @@ function timeAgo(date) {
 
 function formatDate(dateString) {
   if (!dateString) return '';
-  
-  const date = new Date(dateString);
+
+  // Parse YYYY-MM-DD strings as local-midnight to avoid UTC drift
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+    ? createLocalDate(dateString)
+    : new Date(dateString);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   if (date.toDateString() === today.toDateString()) {
     return 'Today';
   } else if (date.toDateString() === tomorrow.toDateString()) {
     return 'Tomorrow';
   } else {
-    return new Date(date).toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
     });

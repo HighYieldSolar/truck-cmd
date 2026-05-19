@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, formatDateLocal } from "@/lib/utils/dateUtils";
 import {
   Folder,
   FolderOpen,
@@ -203,7 +204,7 @@ export default function ReceiptDirectory({
       if (contentType.includes('png')) extension = 'png';
       else if (contentType.includes('pdf')) extension = 'pdf';
 
-      const date = new Date(expense.date).toISOString().split('T')[0];
+      const date = formatDateLocal(expense.date);
       const description = sanitizeFilename(expense.description);
       const filename = `${date}-${description}.${extension}`;
 
@@ -261,7 +262,7 @@ export default function ReceiptDirectory({
           if (contentType.includes('png')) extension = 'png';
           else if (contentType.includes('pdf')) extension = 'pdf';
 
-          const date = new Date(expense.date).toISOString().split('T')[0];
+          const date = formatDateLocal(expense.date);
           const description = sanitizeFilename(expense.description);
           const filename = `${date}-${description}.${extension}`;
 
@@ -315,7 +316,7 @@ export default function ReceiptDirectory({
           if (contentType.includes('png')) extension = 'png';
           else if (contentType.includes('pdf')) extension = 'pdf';
 
-          const date = new Date(expense.date).toISOString().split('T')[0];
+          const date = formatDateLocal(expense.date);
           const description = sanitizeFilename(expense.description);
           const filename = `${date}-${description}.${extension}`;
 
@@ -671,7 +672,7 @@ export default function ReceiptDirectory({
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {new Date(expense.date).toLocaleDateString()}
+                                                    {formatDateForDisplay(expense.date)}
                                                   </span>
                                                   <span className={`text-xs px-1.5 py-0.5 rounded ${getCategoryColor(expense.category)}`}>
                                                     {expense.category}
@@ -720,7 +721,7 @@ export default function ReceiptDirectory({
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-0.5">
                                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {new Date(expense.date).toLocaleDateString()}
+                                                    {formatDateForDisplay(expense.date)}
                                                   </span>
                                                   <span className={`text-xs px-1.5 py-0.5 rounded ${getCategoryColor(expense.category)}`}>
                                                     {expense.category}

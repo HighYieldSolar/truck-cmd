@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, getCurrentDateLocal, createLocalDate } from "@/lib/utils/dateUtils";
 import {
   FileText,
   Plus,
@@ -216,7 +217,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
   const { t } = useTranslation('invoices');
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplay(dateString);
   };
 
   // Handle marking an invoice as paid
@@ -250,7 +251,7 @@ const InvoicesTable = ({ invoices, onMarkAsPaid, onDelete, loading, onViewInvoic
       const paymentData = {
         amount: remainingBalance,
         method: 'manual',
-        date: new Date().toISOString().split('T')[0],
+        date: getCurrentDateLocal(),
         reference: 'Marked as paid',
         description: `Payment for invoice ${invoice.invoice_number}`,
         status: 'completed'
@@ -425,14 +426,15 @@ const QuickActionCard = ({ title, icon, onClick, bgColor = 'bg-blue-50' }) => {
 const DueSoonWidget = ({ invoices, onViewInvoice }) => {
   const { t } = useTranslation('invoices');
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dueSoon = invoices
     .filter(invoice => {
       if (invoice.status.toLowerCase() !== 'pending') return false;
-      const dueDate = new Date(invoice.due_date);
+      const dueDate = createLocalDate(invoice.due_date);
       const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
       return daysUntilDue >= 0 && daysUntilDue <= 7;
     })
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .sort((a, b) => createLocalDate(a.due_date) - createLocalDate(b.due_date))
     .slice(0, 5);
 
   return (
@@ -452,7 +454,7 @@ const DueSoonWidget = ({ invoices, onViewInvoice }) => {
         ) : (
           <div className="space-y-3">
             {dueSoon.map(invoice => {
-              const dueDate = new Date(invoice.due_date);
+              const dueDate = createLocalDate(invoice.due_date);
               const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
               let badgeColor = 'bg-yellow-100 text-yellow-800';
               if (daysUntilDue <= 2) badgeColor = 'bg-red-100 text-red-800';
@@ -488,12 +490,12 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
   const { t } = useTranslation('invoices');
   const overdue = invoices
     .filter(invoice => invoice.status.toLowerCase() === 'overdue')
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .sort((a, b) => createLocalDate(a.due_date) - createLocalDate(b.due_date))
     .slice(0, 5);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplay(dateString);
   };
 
   return (
@@ -513,8 +515,9 @@ const OverdueWidget = ({ invoices, onViewInvoice }) => {
         ) : (
           <div className="space-y-3">
             {overdue.map(invoice => {
-              const dueDate = new Date(invoice.due_date);
+              const dueDate = createLocalDate(invoice.due_date);
               const today = new Date();
+              today.setHours(0, 0, 0, 0);
               const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
 
               return (
@@ -596,21 +599,22 @@ export default function InvoiceDashboard() {
 
       // Set upcoming payments (due within 7 days)
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const upcoming = invoicesData
         .filter(invoice => {
           if (invoice.status.toLowerCase() !== 'pending') return false;
-          const dueDate = new Date(invoice.due_date);
+          const dueDate = createLocalDate(invoice.due_date);
           const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
           return daysUntilDue >= 0 && daysUntilDue <= 7;
         })
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .sort((a, b) => createLocalDate(a.due_date) - createLocalDate(b.due_date))
         .slice(0, 5);
       setUpcomingPayments(upcoming);
 
       // Set overdue invoices
       const overdue = invoicesData
         .filter(invoice => invoice.status.toLowerCase() === 'overdue')
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .sort((a, b) => createLocalDate(a.due_date) - createLocalDate(b.due_date))
         .slice(0, 5);
       setOverdueInvoices(overdue);
 

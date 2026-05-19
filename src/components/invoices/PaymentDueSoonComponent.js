@@ -4,13 +4,14 @@ import Link from "next/link";
 import { Calendar, Clock } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, createLocalDate } from "@/lib/utils/dateUtils";
 
 export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
   const { t } = useTranslation('invoices');
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplay(dateString);
   };
 
   return (
@@ -29,8 +30,9 @@ export default function PaymentDueSoonComponent({ invoices, onViewInvoice }) {
         ) : (
           <ul className="divide-y divide-gray-200">
             {invoices.map((invoice) => {
-              const dueDate = new Date(invoice.due_date);
+              const dueDate = createLocalDate(invoice.due_date);
               const today = new Date();
+              today.setHours(0, 0, 0, 0);
               const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
               return (

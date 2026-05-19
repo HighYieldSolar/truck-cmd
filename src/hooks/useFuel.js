@@ -12,6 +12,7 @@ import {
   getVehiclesWithFuelRecords
 } from '@/lib/services/fuelService';
 import { getVehicleName } from '@/lib/services/expenseFuelIntegration';
+import { getCurrentDateLocal } from '@/lib/utils/dateUtils';
 
 export default function useFuel(userId) {
   const [fuelEntries, setFuelEntries] = useState([]);
@@ -199,7 +200,7 @@ export default function useFuel(userId) {
         user_id: userId,
         description: `Fuel - ${newFuelEntry.location || 'Unknown Location'}`,
         amount: newFuelEntry.total_amount || 0,
-        date: newFuelEntry.date || new Date().toISOString().split('T')[0],
+        date: newFuelEntry.date || getCurrentDateLocal(),
         category: 'Fuel',
         payment_method: 'Credit Card',
         notes: `Vehicle: ${vehicleName || ''}, ${newFuelEntry.gallons || 0} gallons at ${newFuelEntry.state || ''}`,

@@ -45,7 +45,7 @@ const LoadRouteMap = dynamic(() => import('./LoadRouteMap'), {
     </div>
   )
 });
-import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { formatDateForDisplayMMDDYYYY, getCurrentDateLocal, prepareDateForDB, createLocalDate } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function LoadDetailModal({
@@ -218,8 +218,8 @@ export default function LoadDetailModal({
 
     // Date validation
     if (updatedLoad.pickup_date && updatedLoad.delivery_date) {
-      const pickup = new Date(updatedLoad.pickup_date);
-      const delivery = new Date(updatedLoad.delivery_date);
+      const pickup = createLocalDate(updatedLoad.pickup_date);
+      const delivery = createLocalDate(updatedLoad.delivery_date);
       if (delivery < pickup) {
         errors.push(t('loadDetailModal.validation.deliveryBeforePickup'));
       }

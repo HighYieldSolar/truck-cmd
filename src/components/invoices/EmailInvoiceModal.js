@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { XCircle, Mail, RefreshCw, Send, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 /**
  * Modal component for emailing invoices to customers
@@ -67,7 +68,7 @@ export default function EmailInvoiceModal({ isOpen, onClose, invoice, onSuccess 
   // Generate default email message based on invoice
   function generateDefaultMessage(invoice, companyName = 'Your Company', phone = '') {
     const amountDue = (invoice.total || 0) - (invoice.amount_paid || 0);
-    const dueDate = new Date(invoice.due_date).toLocaleDateString();
+    const dueDate = formatDateForDisplay(invoice.due_date);
 
     return `Dear ${invoice.customer || 'Customer'},
 
@@ -77,7 +78,7 @@ This invoice is due on ${dueDate}. Please remit payment at your earliest conveni
 
 Summary:
 - Invoice Number: ${invoice.invoice_number}
-- Invoice Date: ${new Date(invoice.invoice_date).toLocaleDateString()}
+- Invoice Date: ${formatDateForDisplay(invoice.invoice_date)}
 - Due Date: ${dueDate}
 - Amount Due: $${amountDue.toFixed(2)}
 
@@ -222,11 +223,11 @@ ${companyName}${phone ? `\n${phone}` : ''}`;
             <div className="flex justify-between text-sm">
               <div>
                 <p className="text-gray-600">{t('emailModal.customer')}: {invoice.customer}</p>
-                <p className="text-gray-600">{t('emailModal.date')}: {new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                <p className="text-gray-600">{t('emailModal.date')}: {formatDateForDisplay(invoice.invoice_date)}</p>
               </div>
               <div className="text-right">
                 <p className="text-gray-900 font-medium">{t('emailModal.total')}: ${invoice.total?.toFixed(2) || "0.00"}</p>
-                <p className="text-gray-600">{t('emailModal.due')}: {new Date(invoice.due_date).toLocaleDateString()}</p>
+                <p className="text-gray-600">{t('emailModal.due')}: {formatDateForDisplay(invoice.due_date)}</p>
               </div>
             </div>
           </div>

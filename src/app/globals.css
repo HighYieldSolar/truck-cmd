@@ -154,13 +154,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   opacity: 1 !important;
 }
 
-.dark input[type="number"]::-webkit-inner-spin-button,
-.dark input[type="number"]::-webkit-outer-spin-button {
-  filter: invert(1) !important;
-  background: transparent !important;
-  opacity: 0.8;
-}
-
 /* Fix for any problematic background overrides */
 .content-wrapper {
   min-height: calc(100vh - 64px);
@@ -240,20 +233,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   opacity: 1;
 }
 
-/* Dashboard-specific number input spinners - light mode */
-.dashboard-theme input[type="number"]::-webkit-inner-spin-button,
-.dashboard-theme input[type="number"]::-webkit-outer-spin-button {
-  opacity: 0.5;
-  cursor: pointer;
-  background: transparent;
-  -webkit-appearance: inner-spin-button;
-}
-
-.dashboard-theme input[type="number"]:hover::-webkit-inner-spin-button,
-.dashboard-theme input[type="number"]:hover::-webkit-outer-spin-button {
-  opacity: 0.8;
-}
-
 /* Dashboard-specific date picker calendar icon - dark mode */
 .dashboard-theme.dark input[type="date"]::-webkit-calendar-picker-indicator,
 .dashboard-theme.dark input[type="time"]::-webkit-calendar-picker-indicator,
@@ -278,29 +257,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
 .dark input[type="time"]::-webkit-calendar-picker-indicator:hover,
 .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1 !important;
-}
-
-/* Dashboard-specific number input spinners - dark mode */
-.dashboard-theme.dark input[type="number"]::-webkit-inner-spin-button,
-.dashboard-theme.dark input[type="number"]::-webkit-outer-spin-button,
-.dark .dashboard-theme input[type="number"]::-webkit-inner-spin-button,
-.dark .dashboard-theme input[type="number"]::-webkit-outer-spin-button,
-.dark input[type="number"]::-webkit-inner-spin-button,
-.dark input[type="number"]::-webkit-outer-spin-button {
-  filter: invert(1) brightness(2) !important;
-  opacity: 0.7 !important;
-  cursor: pointer;
-  background: transparent !important;
-  -webkit-appearance: inner-spin-button !important;
-}
-
-.dashboard-theme.dark input[type="number"]:hover::-webkit-inner-spin-button,
-.dashboard-theme.dark input[type="number"]:hover::-webkit-outer-spin-button,
-.dark .dashboard-theme input[type="number"]:hover::-webkit-inner-spin-button,
-.dark .dashboard-theme input[type="number"]:hover::-webkit-outer-spin-button,
-.dark input[type="number"]:hover::-webkit-inner-spin-button,
-.dark input[type="number"]:hover::-webkit-outer-spin-button {
   opacity: 1 !important;
 }
 
@@ -399,20 +355,19 @@ body:not(.dashboard-theme) select option {
   opacity: 1 !important;
 }
 
-/* Dark mode: Number spinner arrows - make them white/light */
-.dark input[type="number"]::-webkit-inner-spin-button,
-.dark input[type="number"]::-webkit-outer-spin-button,
-.dashboard-theme.dark input[type="number"]::-webkit-inner-spin-button,
-.dashboard-theme.dark input[type="number"]::-webkit-outer-spin-button {
-  filter: invert(1) !important;
-  opacity: 0.7 !important;
-  cursor: pointer !important;
-  background: transparent !important;
+/* Hide native number input spinners globally — the webkit/firefox defaults render
+   with mismatched backgrounds in both light and dark modes and don't fit the design
+   system. Users can still increment with ArrowUp/ArrowDown keys or by typing. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
-.dark input[type="number"]::-webkit-inner-spin-button:hover,
-.dark input[type="number"]::-webkit-outer-spin-button:hover {
-  opacity: 1 !important;
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* ===========================================

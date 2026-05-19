@@ -348,7 +348,7 @@ export default function DispatchingFeature() {
             />
             <FAQItem 
               question="How do drivers receive their assignments?"
-              answer="Drivers receive assignments instantly through our mobile app with push notifications. They can view all load details, communicate with dispatch, capture signatures, and upload proof of delivery documents—all from their smartphone or tablet. For companies not using the mobile app, email and SMS notifications are also available."
+              answer="Drivers receive assignments instantly through our mobile app with push notifications. They can view all load details, communicate with dispatch, capture signatures, and upload proof of delivery documents—all from their smartphone or tablet. For companies not using the mobile app, email notifications are also available."
             />
             <FAQItem 
               question="Can I integrate with load boards?"

@@ -59,7 +59,6 @@ export default function PricingPage() {
         "Fleet analytics",
         "Multi-user access (6 users)",
         "Excel exports",
-        "SMS notifications",
         "Phone support",
         "Priority support"
       ],

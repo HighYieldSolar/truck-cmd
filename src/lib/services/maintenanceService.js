@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { syncMaintenanceToExpense } from "./expenseMaintenanceIntegration";
 import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
+import { formatDateLocal, getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 /**
  * Fetch all maintenance records for a user
@@ -214,7 +215,7 @@ export async function completeMaintenanceRecord(id, completionData, syncToExpens
     .from("maintenance_records")
     .update({
       status: "Completed",
-      completed_date: completionData.completed_date || new Date().toISOString().split('T')[0],
+      completed_date: completionData.completed_date || getCurrentDateLocal(),
       cost: completionData.cost,
       odometer_at_service: completionData.odometer_at_service,
       service_provider: completionData.service_provider,
@@ -320,7 +321,7 @@ export async function getUpcomingMaintenance(userId, days = 30) {
     `)
     .eq("user_id", userId)
     .neq("status", "Completed")
-    .lte("due_date", futureDate.toISOString().split('T')[0])
+    .lte("due_date", formatDateLocal(futureDate))
     .order("due_date", { ascending: true });
 
   if (error) throw error;
@@ -331,7 +332,7 @@ export async function getUpcomingMaintenance(userId, days = 30) {
  * Get overdue maintenance
  */
 export async function getOverdueMaintenance(userId) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getCurrentDateLocal();
 
   const { data, error } = await supabase
     .from("maintenance_records")

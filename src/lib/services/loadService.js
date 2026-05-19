@@ -1,6 +1,7 @@
 // src/lib/services/loadService.js
 import { supabase } from "../supabaseClient";
 import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
+import { formatDateLocal, getCurrentDateLocal, formatDateForDisplay } from "../utils/dateUtils";
 
 /**
  * Fetch all loads for the current user with optional filters
@@ -31,24 +32,24 @@ export async function fetchLoads(userId, filters = {}) {
       
       switch (filters.dateRange) {
         case 'today':
-          query = query.eq('pickup_date', today.toISOString().split('T')[0]);
+          query = query.eq('pickup_date', formatDateLocal(today));
           break;
         case 'tomorrow':
-          query = query.eq('pickup_date', tomorrow.toISOString().split('T')[0]);
+          query = query.eq('pickup_date', formatDateLocal(tomorrow));
           break;
         case 'thisWeek': {
           const endOfWeek = new Date(today);
           endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
           query = query
-            .gte('pickup_date', today.toISOString().split('T')[0])
-            .lte('pickup_date', endOfWeek.toISOString().split('T')[0]);
+            .gte('pickup_date', formatDateLocal(today))
+            .lte('pickup_date', formatDateLocal(endOfWeek));
           break;
         }
         case 'thisMonth': {
           const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
           query = query
-            .gte('pickup_date', today.toISOString().split('T')[0])
-            .lte('pickup_date', lastDay.toISOString().split('T')[0]);
+            .gte('pickup_date', formatDateLocal(today))
+            .lte('pickup_date', formatDateLocal(lastDay));
           break;
         }
         // Add more date range filters as needed
@@ -311,7 +312,7 @@ export async function assignDriver(userId, loadId, driverName) {
       await NotificationService.createNotification({
         userId: load.user_id,
         title: `Load ${load.load_number} Assigned`,
-        message: `Driver ${driverName} has been assigned to load ${load.load_number} (${load.origin} → ${load.destination}). Pickup: ${load.pickup_date ? new Date(load.pickup_date).toLocaleDateString() : 'TBD'}`,
+        message: `Driver ${driverName} has been assigned to load ${load.load_number} (${load.origin} → ${load.destination}). Pickup: ${load.pickup_date ? formatDateForDisplay(load.pickup_date) : 'TBD'}`,
         type: NOTIFICATION_TYPES.LOAD_ASSIGNED,
         entityType: 'load',
         entityId: load.id,
@@ -490,7 +491,7 @@ export async function updateCompletedLoadEarnings(loadId, oldRate, newRate) {
             load_id: loadId,
             amount: newRate,
             source: 'Factoring',
-            date: new Date().toISOString().split('T')[0],
+            date: getCurrentDateLocal(),
             description: `Factored load #${load.load_number}: ${load.origin} to ${load.destination}`,
             factoring_company: load.factoring_company
           })

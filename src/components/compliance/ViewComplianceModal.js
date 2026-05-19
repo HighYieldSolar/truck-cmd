@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { X, FileText, Clock, Download, ExternalLink, Shield, Building2, User, FileCheck, Loader2 } from "lucide-react";
 import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
-import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { formatDateForDisplayMMDDYYYY, createLocalDate } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
@@ -65,7 +65,8 @@ export default function ViewComplianceModal({ isOpen, onClose, compliance }) {
     if (!compliance.expiration_date) return null;
 
     const today = new Date();
-    const expirationDate = new Date(compliance.expiration_date);
+    today.setHours(0, 0, 0, 0);
+    const expirationDate = createLocalDate(compliance.expiration_date);
     const differenceInTime = expirationDate - today;
     const differenceInDays = Math.ceil(differenceInTime / (1000 * 3600 * 24));
 

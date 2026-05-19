@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import TutorialCard from "@/components/shared/TutorialCard";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateLocal } from "@/lib/utils/dateUtils";
 
 // Import dispatching components
 import LoadStats from "@/components/dispatching/LoadStats";
@@ -127,38 +128,38 @@ const fetchLoads = async (userId, filters = {}) => {
 
       switch (filters.dateRange) {
         case 'today':
-          query = query.gte(dateField, today.toISOString().split('T')[0])
-            .lt(dateField, tomorrow.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(today))
+            .lt(dateField, formatDateLocal(tomorrow));
           break;
         case 'tomorrow':
           const dayAfterTomorrow = new Date(tomorrow);
           dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-          query = query.gte(dateField, tomorrow.toISOString().split('T')[0])
-            .lt(dateField, dayAfterTomorrow.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(tomorrow))
+            .lt(dateField, formatDateLocal(dayAfterTomorrow));
           break;
         case 'thisWeek':
-          query = query.gte(dateField, thisWeekStart.toISOString().split('T')[0])
-            .lte(dateField, thisWeekEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(thisWeekStart))
+            .lte(dateField, formatDateLocal(thisWeekEnd));
           break;
         case 'lastWeek':
-          query = query.gte(dateField, lastWeekStart.toISOString().split('T')[0])
-            .lte(dateField, lastWeekEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(lastWeekStart))
+            .lte(dateField, formatDateLocal(lastWeekEnd));
           break;
         case 'thisMonth':
-          query = query.gte(dateField, thisMonthStart.toISOString().split('T')[0])
-            .lte(dateField, thisMonthEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(thisMonthStart))
+            .lte(dateField, formatDateLocal(thisMonthEnd));
           break;
         case 'lastMonth':
-          query = query.gte(dateField, lastMonthStart.toISOString().split('T')[0])
-            .lte(dateField, lastMonthEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(lastMonthStart))
+            .lte(dateField, formatDateLocal(lastMonthEnd));
           break;
         case 'thisQuarter':
-          query = query.gte(dateField, thisQuarterStart.toISOString().split('T')[0])
-            .lte(dateField, thisQuarterEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(thisQuarterStart))
+            .lte(dateField, formatDateLocal(thisQuarterEnd));
           break;
         case 'lastQuarter':
-          query = query.gte(dateField, lastQuarterStart.toISOString().split('T')[0])
-            .lte(dateField, lastQuarterEnd.toISOString().split('T')[0]);
+          query = query.gte(dateField, formatDateLocal(lastQuarterStart))
+            .lte(dateField, formatDateLocal(lastQuarterEnd));
           break;
         case 'Custom':
           if (filters.startDate) {
@@ -633,8 +634,8 @@ export default function DispatchingPage() {
     if (dates.length === 0) return null;
 
     return {
-      start: dates[0].toISOString().split('T')[0],
-      end: dates[dates.length - 1].toISOString().split('T')[0]
+      start: formatDateLocal(dates[0]),
+      end: formatDateLocal(dates[dates.length - 1])
     };
   }, [loads]);
 

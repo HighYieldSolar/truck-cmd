@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RefreshCw, AlertTriangle, X, Trash2, FileText, DollarSign, Fuel } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 /**
  * Specialized deletion modal for fuel entries with linked expenses
@@ -65,7 +66,7 @@ export default function FuelDeletionModal({
               </h3>
 
               <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.dateLabel')}</span> {new Date(fuelEntry.date).toLocaleDateString()}</p>
+                <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.dateLabel')}</span> {formatDateForDisplay(fuelEntry.date)}</p>
                 <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.gallonsLabel')}</span> {fuelEntry.gallons.toFixed(3)}</p>
                 <p><span className="font-medium text-gray-700 dark:text-gray-300">{t('deleteModal.amountLabel')}</span> {formattedAmount}</p>
               </div>

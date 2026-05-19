@@ -1,9 +1,10 @@
 // src/components/dispatching/NewLoadModal.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 import {
   X,
   MapPin,
@@ -102,6 +103,19 @@ export default function NewLoadForm({
   const [error, setError] = useState("");
   const [customers, setCustomers] = useState([]);
   const [customersLoading, setCustomersLoading] = useState(true);
+
+  // Dedupe customers by company_name so the dropdown doesn't show duplicates.
+  const dedupedCustomers = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const c of customers) {
+      if (c?.company_name && !seen.has(c.company_name)) {
+        seen.add(c.company_name);
+        out.push(c);
+      }
+    }
+    return out;
+  }, [customers]);
   const [drivers, setDrivers] = useState([]);
   const [driversLoading, setDriversLoading] = useState(true);
   const [trucks, setTrucks] = useState([]);
@@ -440,7 +454,7 @@ export default function NewLoadForm({
                     autoFocus
                   >
                     <option value="">{t('newLoadModal.placeholders.selectCustomer')}</option>
-                    {customers.map((customer) => (
+                    {dedupedCustomers.map((customer) => (
                       <option key={customer.id} value={customer.company_name}>
                         {customer.company_name}
                       </option>
@@ -847,8 +861,8 @@ export default function NewLoadForm({
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">{t('newLoadModal.summary.dates')}:</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {formData.pickupDate ? new Date(formData.pickupDate).toLocaleDateString() : '-'} →
-                    {formData.deliveryDate ? new Date(formData.deliveryDate).toLocaleDateString() : '-'}
+                    {formData.pickupDate ? formatDateForDisplay(formData.pickupDate) : '-'} →
+                    {formData.deliveryDate ? formatDateForDisplay(formData.deliveryDate) : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">

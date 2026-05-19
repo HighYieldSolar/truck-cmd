@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SupabaseImage from "./SupabaseImage";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, formatDateLocal } from "@/lib/utils/dateUtils";
 
 export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleInfo }) {
   const { t } = useTranslation('fuel');
@@ -59,7 +60,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
       else if (contentType.includes('pdf')) extension = 'pdf';
 
       // Create filename
-      const date = new Date(receipt.date).toISOString().split('T')[0];
+      const date = formatDateLocal(receipt.date);
       const location = (receipt.location || 'fuel').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
       const filename = `receipt_${date}_${location}.${extension}`;
 
@@ -111,13 +112,13 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
           <div class="receipt-container">
             <div class="receipt-header">
               <h1>Fuel Receipt</h1>
-              <h2>${receipt.location} - ${new Date(receipt.date).toLocaleDateString()}</h2>
+              <h2>${receipt.location} - ${formatDateForDisplay(receipt.date)}</h2>
             </div>
             <img src="${receipt.receipt_image}" class="receipt-image" />
             <div class="receipt-details">
               <div class="receipt-row">
                 <div class="receipt-label">Date:</div>
-                <div>${new Date(receipt.date).toLocaleDateString()}</div>
+                <div>${formatDateForDisplay(receipt.date)}</div>
               </div>
               <div class="receipt-row">
                 <div class="receipt-label">Location:</div>
@@ -169,7 +170,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
         // Try to share just the text if file sharing fails
         await navigator.share({
           title: `Fuel Receipt - ${receipt.location}`,
-          text: `Fuel receipt from ${receipt.location} on ${new Date(receipt.date).toLocaleDateString()}: $${receipt.total_amount.toFixed(2)} for ${receipt.gallons.toFixed(3)} gallons`
+          text: `Fuel receipt from ${receipt.location} on ${formatDateForDisplay(receipt.date)}: $${receipt.total_amount.toFixed(2)} for ${receipt.gallons.toFixed(3)} gallons`
         });
       } catch (shareError) {
         alert(t('receiptViewer.unableToShare'));
@@ -275,7 +276,7 @@ export default function ReceiptViewerModal({ isOpen, onClose, receipt, vehicleIn
                 <Calendar size={14} className="sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 mr-1.5 sm:mr-2 flex-shrink-0" />
                 <span className="truncate">{t('receiptViewer.date')}</span>
               </div>
-              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold">{new Date(receipt.date).toLocaleDateString()}</div>
+              <div className="text-gray-900 dark:text-gray-100 text-sm sm:text-lg font-semibold">{formatDateForDisplay(receipt.date)}</div>
             </div>
 
             <div className="bg-white dark:bg-gray-700 p-2.5 sm:p-3 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">

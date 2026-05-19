@@ -2,6 +2,7 @@
 import { supabase } from "../supabaseClient";
 import { NotificationService, URGENCY_LEVELS } from "./notificationService";
 import { getLimit } from "@/config/tierConfig";
+import { formatDateLocal, getCurrentDateLocal, createLocalDate, formatDateForDisplay } from "../utils/dateUtils";
 
 /**
  * Fetch all invoices for the current user with optional filters
@@ -36,39 +37,39 @@ export async function fetchInvoices(userId, filters = {}) {
         case 'thisMonth': {
           const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
           const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          
+
           query = query
-            .gte('invoice_date', firstDay.toISOString().split('T')[0])
-            .lte('invoice_date', lastDay.toISOString().split('T')[0]);
+            .gte('invoice_date', formatDateLocal(firstDay))
+            .lte('invoice_date', formatDateLocal(lastDay));
           break;
         }
         case 'last30': {
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(now.getDate() - 30);
-          
-          query = query.gte('invoice_date', thirtyDaysAgo.toISOString().split('T')[0]);
+
+          query = query.gte('invoice_date', formatDateLocal(thirtyDaysAgo));
           break;
         }
         case 'last90': {
           const ninetyDaysAgo = new Date();
           ninetyDaysAgo.setDate(now.getDate() - 90);
-          
-          query = query.gte('invoice_date', ninetyDaysAgo.toISOString().split('T')[0]);
+
+          query = query.gte('invoice_date', formatDateLocal(ninetyDaysAgo));
           break;
         }
         case 'thisYear': {
           const firstDayOfYear = new Date(now.getFullYear(), 0, 1);
-          
-          query = query.gte('invoice_date', firstDayOfYear.toISOString().split('T')[0]);
+
+          query = query.gte('invoice_date', formatDateLocal(firstDayOfYear));
           break;
         }
         case 'lastMonth': {
           const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
           const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-          
+
           query = query
-            .gte('invoice_date', firstDayLastMonth.toISOString().split('T')[0])
-            .lte('invoice_date', lastDayLastMonth.toISOString().split('T')[0]);
+            .gte('invoice_date', formatDateLocal(firstDayLastMonth))
+            .lte('invoice_date', formatDateLocal(lastDayLastMonth));
           break;
         }
         case 'custom': {
@@ -565,7 +566,7 @@ export async function updateInvoiceStatus(id, status) {
       .update({ 
         status,
         // If status is 'Paid', set payment date to now
-        ...(status.toLowerCase() === 'paid' ? { payment_date: new Date().toISOString() } : {})
+        ...(status.toLowerCase() === 'paid' ? { payment_date: getCurrentDateLocal() } : {})
       })
       .eq('id', id)
       .select();
@@ -653,7 +654,7 @@ export async function recordPayment(invoiceId, paymentData) {
       .update({ 
         status: newStatus,
         amount_paid: newAmountPaid,
-        payment_date: newStatus === 'Paid' ? new Date().toISOString() : null
+        payment_date: newStatus === 'Paid' ? getCurrentDateLocal() : null
       })
       .eq('id', invoiceId);
       
@@ -723,22 +724,23 @@ export async function getInvoiceStats(userId) {
     if (!invoices) return { total: 0, paid: 0, pending: 0, overdue: 0, count: 0 };
     
     const today = new Date();
-    
+    today.setHours(0, 0, 0, 0);
+
     // Calculate totals
     let totalAmount = 0;
     let paidAmount = 0;
     let pendingAmount = 0;
     let overdueAmount = 0;
-    
+
     invoices.forEach(invoice => {
       const total = parseFloat(invoice.total) || 0;
       totalAmount += total;
-      
+
       switch (invoice.status.toLowerCase()) {
         case 'paid':
         case 'partially paid':
           paidAmount += parseFloat(invoice.amount_paid) || 0;
-          
+
           // Add any unpaid amount to pending
           if (invoice.status.toLowerCase() === 'partially paid') {
             pendingAmount += total - (parseFloat(invoice.amount_paid) || 0);
@@ -748,8 +750,8 @@ export async function getInvoiceStats(userId) {
           overdueAmount += total;
           break;
         default:
-          // Check if overdue
-          const dueDate = new Date(invoice.due_date);
+          // Check if overdue (compare local-midnight to local-midnight)
+          const dueDate = createLocalDate(invoice.due_date);
           if (dueDate < today) {
             overdueAmount += total;
           } else {
@@ -831,11 +833,11 @@ export async function duplicateInvoice(invoiceId, overrides = {}) {
       customer: originalInvoice.customer,
       customer_email: originalInvoice.customer_email,
       customer_address: originalInvoice.customer_address,
-      invoice_date: new Date().toISOString().split('T')[0],
+      invoice_date: getCurrentDateLocal(),
       due_date: (() => {
         const date = new Date();
         date.setDate(date.getDate() + 15); // Default to Net 15
-        return date.toISOString().split('T')[0];
+        return formatDateLocal(date);
       })(),
       payment_terms: originalInvoice.payment_terms || 'Net 15',
       po_number: '', // Clear PO number for new invoice
@@ -874,7 +876,7 @@ export async function duplicateInvoice(invoiceId, overrides = {}) {
  */
 export async function checkAndUpdateOverdueInvoices(userId) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateLocal();
 
     // Find pending invoices that are now overdue (include more details for notifications)
     const { data: overdueInvoices, error } = await supabase
@@ -912,11 +914,13 @@ export async function checkAndUpdateOverdueInvoices(userId) {
           .maybeSingle();
 
         if (!existingNotif) {
-          const daysPastDue = Math.floor((new Date() - new Date(invoice.due_date)) / (1000 * 60 * 60 * 24));
+          const todayMidnight = new Date();
+          todayMidnight.setHours(0, 0, 0, 0);
+          const daysPastDue = Math.floor((todayMidnight - createLocalDate(invoice.due_date)) / (1000 * 60 * 60 * 24));
           await NotificationService.createNotification({
             userId: userId,
             title: `Invoice ${invoice.invoice_number} Overdue`,
-            message: `Invoice for ${invoice.customer} ($${invoice.total?.toLocaleString()}) is ${daysPastDue} day${daysPastDue > 1 ? 's' : ''} past due. Due date was ${new Date(invoice.due_date).toLocaleDateString()}.`,
+            message: `Invoice for ${invoice.customer} ($${invoice.total?.toLocaleString()}) is ${daysPastDue} day${daysPastDue > 1 ? 's' : ''} past due. Due date was ${formatDateForDisplay(invoice.due_date)}.`,
             type: 'INVOICE_OVERDUE',
             entityType: 'invoice',
             entityId: invoice.id,

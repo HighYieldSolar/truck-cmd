@@ -122,7 +122,6 @@ export default function BillingSettings() {
           "Everything in Premium, plus:",
           "Maintenance scheduling",
           "Advanced fleet reports",
-          "SMS notifications",
           "Quiet hours for notifications",
           "CSV & Excel exports",
           "Priority phone support"

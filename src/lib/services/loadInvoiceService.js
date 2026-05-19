@@ -2,6 +2,7 @@
 import { supabase } from "../supabaseClient";
 import { generateInvoiceNumber } from "./invoiceService";
 import { NotificationService, URGENCY_LEVELS } from "./notificationService";
+import { formatDateLocal, getCurrentDateLocal } from "../utils/dateUtils";
 
 /**
  * Creates an invoice from a completed load
@@ -26,7 +27,7 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
     const defaultOptions = {
       markAsPaid: false,
       dueInDays: 15,
-      invoiceDate: new Date().toISOString().split('T')[0],
+      invoiceDate: getCurrentDateLocal(),
       notes: '',
     };
     
@@ -51,7 +52,7 @@ export async function createInvoiceFromLoad(userId, loadId, options = {}) {
       customer_id: load.customer_id,
       load_id: loadId,
       invoice_date: mergedOptions.invoiceDate,
-      due_date: dueDate.toISOString().split('T')[0],
+      due_date: formatDateLocal(dueDate),
       status: mergedOptions.markAsPaid ? 'Paid' : 'Pending',
       total: totalAmount,
       subtotal: totalAmount,

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { NotificationService, NOTIFICATION_TYPES, URGENCY_LEVELS } from "./notificationService";
+import { getCurrentDateLocal, formatDateLocal, createLocalDate } from "@/lib/utils/dateUtils";
 
 // ============================================
 // READ OPERATIONS
@@ -62,24 +63,36 @@ export async function getComplianceStats(userId) {
     if (error) throw error;
 
     const items = data || [];
-    const now = new Date();
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const thirtyDaysFromNow = new Date(todayMidnight.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    return {
-      total: items.length,
-      active: items.filter(item => item.status === 'Active').length,
-      expiringSoon: items.filter(item => {
-        if (!item.expiration_date) return false;
-        const expDate = new Date(item.expiration_date);
-        return expDate > now && expDate <= thirtyDaysFromNow;
-      }).length,
-      expired: items.filter(item => {
-        if (!item.expiration_date) return false;
-        const expDate = new Date(item.expiration_date);
-        return expDate <= now || item.status === 'Expired';
-      }).length,
-      pending: items.filter(item => item.status === 'Pending').length
-    };
+    // Mutually-exclusive buckets so they sum to total. Precedence:
+    // Pending → Expired (by stored status or expired date) → Expiring Soon (within 30d) → Active
+    const counts = { total: items.length, active: 0, expiringSoon: 0, expired: 0, pending: 0 };
+    for (const item of items) {
+      if (item.status === 'Pending') {
+        counts.pending++;
+        continue;
+      }
+      if (item.status === 'Expired') {
+        counts.expired++;
+        continue;
+      }
+      if (!item.expiration_date) {
+        counts.active++;
+        continue;
+      }
+      const expDate = createLocalDate(item.expiration_date);
+      if (expDate <= todayMidnight) {
+        counts.expired++;
+      } else if (expDate <= thirtyDaysFromNow) {
+        counts.expiringSoon++;
+      } else {
+        counts.active++;
+      }
+    }
+    return counts;
   } catch (error) {
     // Stats errors shouldn't block main functionality
     return {
@@ -100,8 +113,8 @@ export async function getComplianceStats(userId) {
  */
 export async function getExpiringItems(userId, limit = 5) {
   try {
-    const now = new Date().toISOString().split('T')[0];
-    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const now = getCurrentDateLocal();
+    const thirtyDaysFromNow = formatDateLocal(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
     const { data, error } = await supabase
       .from("compliance_items")
@@ -424,7 +437,7 @@ export function getDaysUntilExpiration(expirationDate) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const expDate = new Date(expirationDate);
+  const expDate = createLocalDate(expirationDate);
   expDate.setHours(0, 0, 0, 0);
 
   const diffTime = expDate - today;

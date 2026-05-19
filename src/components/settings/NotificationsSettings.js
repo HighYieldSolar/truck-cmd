@@ -9,7 +9,7 @@ import { OperationMessage } from '@/components/ui/OperationMessage';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import Link from 'next/link';
 import {
-  Bell, Mail, Smartphone, Monitor, Settings,
+  Bell, Mail, Monitor, Settings,
   FileText, TruckIcon, User, Calendar, Wrench,
   CreditCard, AlertTriangle, RefreshCw, Save, Fuel,
   Lock, ArrowRight, Sparkles, Send, CheckCircle, XCircle
@@ -95,16 +95,15 @@ const NOTIFICATION_CATEGORIES = [
 const DEFAULT_PREFERENCES = {
   email_enabled: true,
   push_enabled: true,
-  sms_enabled: false,
   categories: {
-    compliance: { email: true, push: true, sms: false },
-    drivers: { email: true, push: true, sms: false },
-    loads: { email: false, push: true, sms: false },
-    ifta: { email: true, push: true, sms: false },
-    maintenance: { email: false, push: true, sms: false },
-    fuel: { email: false, push: true, sms: false },
-    billing: { email: true, push: true, sms: false },
-    system: { email: false, push: true, sms: false }
+    compliance: { email: true, push: true },
+    drivers: { email: true, push: true },
+    loads: { email: false, push: true },
+    ifta: { email: true, push: true },
+    maintenance: { email: false, push: true },
+    fuel: { email: false, push: true },
+    billing: { email: true, push: true },
+    system: { email: false, push: true }
   },
   quiet_hours: {
     enabled: false,
@@ -123,18 +122,11 @@ export default function NotificationsSettings() {
   const [operationMessage, setOperationMessage] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
-  const [testingSMS, setTestingSMS] = useState(false);
-  const [testResults, setTestResults] = useState({ email: null, sms: null });
-  const [userPhone, setUserPhone] = useState('');
-  const [smsConsentChecked, setSmsConsentChecked] = useState(false);
-  const [smsPhoneInput, setSmsPhoneInput] = useState('');
-  const [smsConsentLoading, setSmsConsentLoading] = useState(false);
-  const [userHasSmsConsent, setUserHasSmsConsent] = useState(false);
+  const [testResults, setTestResults] = useState({ email: null });
 
   // Feature access checks
   const { canAccess, currentTier, loading: featureLoading } = useFeatureAccess();
   const hasEmailNotifications = canAccess('notificationsEmail');
-  const hasSMSNotifications = canAccess('notificationsSMS');
   const hasQuietHours = canAccess('notificationsQuietHours');
   const hasDigestMode = canAccess('notificationsDigest');
 
@@ -148,21 +140,12 @@ export default function NotificationsSettings() {
     setIsLoading(true);
 
     try {
-      // Try to get existing preferences and user phone/consent
-      const [prefsResult, userResult] = await Promise.all([
-        supabase
-          .from('notification_preferences')
-          .select('*')
-          .eq('user_id', user.id)
-          .single(),
-        supabase
-          .from('users')
-          .select('phone, sms_consent')
-          .eq('id', user.id)
-          .single()
-      ]);
+      const prefsResult = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      // Handle preferences
       if (prefsResult.error) {
         if (prefsResult.error.code === 'PGRST116' || prefsResult.error.code === '42P01') {
           setPreferences(DEFAULT_PREFERENCES);
@@ -182,16 +165,6 @@ export default function NotificationsSettings() {
             ...(prefsResult.data.preferences?.quiet_hours || {})
           }
         });
-      }
-
-      // Set user phone and consent status if available
-      if (userResult.data?.phone) {
-        setUserPhone(userResult.data.phone);
-        setSmsPhoneInput(userResult.data.phone);
-      }
-      if (userResult.data?.sms_consent) {
-        setUserHasSmsConsent(true);
-        setSmsConsentChecked(true);
       }
     } catch (err) {
       // Silently handle errors and use defaults
@@ -276,7 +249,7 @@ export default function NotificationsSettings() {
   const updateCategoryPreference = (categoryId, channel, value) => {
     setPreferences(prev => {
       // Get existing category preferences or use defaults
-      const existingCatPrefs = prev.categories?.[categoryId] || { email: true, push: true, sms: false };
+      const existingCatPrefs = prev.categories?.[categoryId] || { email: true, push: true };
 
       return {
         ...prev,
@@ -324,8 +297,7 @@ export default function NotificationsSettings() {
         },
         body: JSON.stringify({
           email: user.email,
-          testEmail: true,
-          testSMS: false
+          testEmail: true
         })
       });
 
@@ -346,119 +318,6 @@ export default function NotificationsSettings() {
       setOperationMessage({ type: 'error', text: t('notifications.messages.testEmailError') });
     } finally {
       setTestingEmail(false);
-    }
-  };
-
-  // Test SMS notification
-  const testSMSNotification = async () => {
-    if (!userPhone) {
-      setOperationMessage({
-        type: 'error',
-        text: t('notifications.messages.noPhone')
-      });
-      return;
-    }
-
-    setTestingSMS(true);
-    setTestResults(prev => ({ ...prev, sms: null }));
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/notifications/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({
-          phone: userPhone,
-          testEmail: false,
-          testSMS: true
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.results?.sms?.success) {
-        setTestResults(prev => ({ ...prev, sms: 'success' }));
-        setOperationMessage({ type: 'success', text: t('notifications.messages.testSMSSuccess') });
-      } else {
-        setTestResults(prev => ({ ...prev, sms: 'error' }));
-        setOperationMessage({
-          type: 'error',
-          text: data.results?.sms?.error || t('notifications.messages.testSMSFailed')
-        });
-      }
-    } catch (err) {
-      setTestResults(prev => ({ ...prev, sms: 'error' }));
-      setOperationMessage({ type: 'error', text: t('notifications.messages.testSMSError') });
-    } finally {
-      setTestingSMS(false);
-    }
-  };
-
-  // Handle SMS consent opt-in
-  const handleSmsConsent = async () => {
-    if (!smsConsentChecked || !smsPhoneInput) return;
-
-    setSmsConsentLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/sms/consent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({ phone: smsPhoneInput, consent: true })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUserHasSmsConsent(true);
-        setUserPhone(smsPhoneInput);
-        setOperationMessage({ type: 'success', text: 'SMS notifications enabled. A confirmation text has been sent to your phone.' });
-      } else {
-        setOperationMessage({ type: 'error', text: data.error || 'Failed to enable SMS notifications.' });
-        updateMasterToggle('sms_enabled', false);
-      }
-    } catch (err) {
-      setOperationMessage({ type: 'error', text: 'Failed to enable SMS notifications. Please try again.' });
-      updateMasterToggle('sms_enabled', false);
-    } finally {
-      setSmsConsentLoading(false);
-    }
-  };
-
-  // Handle SMS opt-out
-  const handleSmsOptOut = async () => {
-    setSmsConsentLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/sms/consent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({ phone: userPhone || smsPhoneInput, consent: false })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUserHasSmsConsent(false);
-        setSmsConsentChecked(false);
-        updateMasterToggle('sms_enabled', false);
-        setOperationMessage({ type: 'success', text: 'SMS notifications disabled.' });
-      } else {
-        setOperationMessage({ type: 'error', text: data.error || 'Failed to disable SMS notifications.' });
-      }
-    } catch (err) {
-      setOperationMessage({ type: 'error', text: 'Failed to disable SMS notifications. Please try again.' });
-    } finally {
-      setSmsConsentLoading(false);
     }
   };
 
@@ -635,109 +494,6 @@ export default function NotificationsSettings() {
             </div>
           </div>
 
-          {/* SMS Toggle */}
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
-                  <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-2">
-                    {t('notifications.channels.sms')}
-                    {userHasSmsConsent && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Consent given
-                      </span>
-                    )}
-                    {!hasSMSNotifications && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                        <Lock className="h-3 w-3 mr-1" />
-                        {t('notifications.upgrade.fleet')}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.channels.smsDescription')}</p>
-                </div>
-              </div>
-              <div className="flex-shrink-0 pl-11 sm:pl-0">
-                {hasSMSNotifications ? (
-                  <Toggle
-                    enabled={preferences.sms_enabled}
-                    onChange={(v) => {
-                      if (v && !userHasSmsConsent) {
-                        // Don't enable yet — show consent form below
-                        updateMasterToggle('sms_enabled', v);
-                      } else if (!v && userHasSmsConsent) {
-                        // Disabling — call opt-out API
-                        handleSmsOptOut();
-                      } else {
-                        updateMasterToggle('sms_enabled', v);
-                      }
-                    }}
-                  />
-                ) : (
-                  <Link
-                    href="/dashboard/upgrade"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                  >
-                    {t('notifications.upgrade.upgrade')} <ArrowRight className="h-3 w-3" />
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* SMS Consent Form — shown when SMS is toggled on but user hasn't consented */}
-            {preferences.sms_enabled && !userHasSmsConsent && hasSMSNotifications && (
-              <div className="ml-11 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 space-y-3">
-                <div>
-                  <label htmlFor="sms-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mobile Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="sms-phone"
-                    value={smsPhoneInput}
-                    onChange={(e) => setSmsPhoneInput(e.target.value)}
-                    placeholder="(555) 555-5555"
-                    className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  />
-                </div>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={smsConsentChecked}
-                    onChange={(e) => setSmsConsentChecked(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Yes, I would like to receive optional SMS notifications from Truck Command (not required to use any features). Msg frequency varies (1-10/mo). Msg&data rates may apply. Reply STOP to unsubscribe.{' '}
-                    <Link href="/sms-consent" className="text-purple-600 dark:text-purple-400 underline hover:no-underline">
-                      SMS Terms
-                    </Link>
-                  </span>
-                </label>
-                <button
-                  onClick={handleSmsConsent}
-                  disabled={!smsConsentChecked || !smsPhoneInput || smsConsentLoading}
-                  className={`
-                    px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                    ${smsConsentChecked && smsPhoneInput
-                      ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {smsConsentLoading ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Enable SMS & Save Consent'
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -755,7 +511,7 @@ export default function NotificationsSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-200 dark:bg-gray-700">
           {NOTIFICATION_CATEGORIES.map((category) => {
             const CategoryIcon = category.icon;
-            const catPrefs = preferences.categories[category.id] || { email: true, push: true, sms: false };
+            const catPrefs = preferences.categories[category.id] || { email: true, push: true };
 
             return (
               <div key={category.id} className="p-3 bg-white dark:bg-gray-800">
@@ -805,22 +561,6 @@ export default function NotificationsSettings() {
                     </span>
                   </div>
 
-                  {/* SMS */}
-                  <div className="flex items-center gap-1">
-                    <Toggle
-                      enabled={catPrefs.sms}
-                      onChange={(v) => updateCategoryPreference(category.id, 'sms', v)}
-                      disabled={!preferences.sms_enabled}
-                      size="xs"
-                    />
-                    <span className={`text-[11px] ${
-                      preferences.sms_enabled
-                        ? 'text-gray-600 dark:text-gray-400'
-                        : 'text-gray-400 dark:text-gray-500'
-                    }`}>
-                      {t('notifications.channelLabels.sms')}
-                    </span>
-                  </div>
                 </div>
               </div>
             );
@@ -1016,92 +756,42 @@ export default function NotificationsSettings() {
           </p>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Test Email */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
-                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testEmail')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user?.email || t('notifications.test.noEmailFound')}
-                  </p>
-                </div>
+          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+                <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="flex items-center justify-end gap-2">
-                {testResults.email === 'success' && (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                )}
-                {testResults.email === 'error' && (
-                  <XCircle className="h-5 w-5 text-red-500" />
-                )}
-                <button
-                  onClick={testEmailNotification}
-                  disabled={testingEmail || !preferences.email_enabled}
-                  className={`
-                    px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
-                    ${preferences.email_enabled
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {testingEmail ? (
-                    <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
-                  ) : (
-                    t('notifications.test.sendTest')
-                  )}
-                </button>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testEmail')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email || t('notifications.test.noEmailFound')}
+                </p>
               </div>
             </div>
-
-            {/* Test SMS */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex-shrink-0">
-                  <Smartphone className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{t('notifications.test.testSMS')}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {userPhone ? `+1${userPhone}` : t('notifications.test.noPhoneFound')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                {testResults.sms === 'success' && (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                )}
-                {testResults.sms === 'error' && (
-                  <XCircle className="h-5 w-5 text-red-500" />
-                )}
-                {hasSMSNotifications ? (
-                  <button
-                    onClick={testSMSNotification}
-                    disabled={testingSMS || !preferences.sms_enabled || !userPhone}
-                    className={`
-                      px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
-                      ${preferences.sms_enabled && userPhone
-                        ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      }
-                    `}
-                  >
-                    {testingSMS ? (
-                      <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
-                    ) : (
-                      t('notifications.test.sendTest')
-                    )}
-                  </button>
+            <div className="flex items-center justify-end gap-2">
+              {testResults.email === 'success' && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+              {testResults.email === 'error' && (
+                <XCircle className="h-5 w-5 text-red-500" />
+              )}
+              <button
+                onClick={testEmailNotification}
+                disabled={testingEmail || !preferences.email_enabled}
+                className={`
+                  px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto
+                  ${preferences.email_enabled
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  }
+                `}
+              >
+                {testingEmail ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
                 ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                    <Lock className="h-3 w-3 mr-1" />
-                    {t('notifications.upgrade.fleet')}
-                  </span>
+                  t('notifications.test.sendTest')
                 )}
-              </div>
+              </button>
             </div>
           </div>
 

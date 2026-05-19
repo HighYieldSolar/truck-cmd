@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
 import { TableActionsDropdown } from "@/components/shared/TableActions";
+import { createLocalDate } from "@/lib/utils/dateUtils";
 
 export function NotificationListItem({
   notification,
@@ -314,12 +315,16 @@ export function NotificationListItem({
               <>
                 <span>·</span>
                 <span className={`font-medium flex items-center gap-0.5 ${
-                  new Date(notification.due_date) < new Date()
+                  (() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return createLocalDate(notification.due_date) < today;
+                  })()
                     ? 'text-red-600 dark:text-red-400'
                     : 'text-amber-600 dark:text-amber-400'
                 }`}>
                   <CalendarClock size={10} />
-                  {t('notifications.due')} {new Date(notification.due_date).toLocaleDateString(undefined, {
+                  {t('notifications.due')} {createLocalDate(notification.due_date).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric'
                   })}

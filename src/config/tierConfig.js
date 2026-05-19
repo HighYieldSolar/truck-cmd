@@ -125,7 +125,6 @@ export const TIER_FEATURES = {
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
-    notificationsSMS: false,
     notificationsQuietHours: false,
     notificationsDigest: true,
 
@@ -206,7 +205,6 @@ export const TIER_FEATURES = {
     // Notifications
     notificationsInApp: true,
     notificationsEmail: false,
-    notificationsSMS: false,
     notificationsQuietHours: false,
     notificationsDigest: false,
 
@@ -287,7 +285,6 @@ export const TIER_FEATURES = {
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
-    notificationsSMS: false,
     notificationsQuietHours: false,
     notificationsDigest: true,
 
@@ -368,7 +365,6 @@ export const TIER_FEATURES = {
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
-    notificationsSMS: true,
     notificationsQuietHours: true,
     notificationsDigest: true,
 
@@ -430,7 +426,6 @@ export const TIER_FEATURES = {
     // Notifications
     notificationsInApp: true,
     notificationsEmail: true,
-    notificationsSMS: true,
     notificationsQuietHours: true,
     notificationsDigest: true,
     notifCompliance: true,
@@ -483,11 +478,6 @@ export const FEATURE_DESCRIPTIONS = {
   maintenanceScheduling: {
     name: 'Maintenance Scheduling',
     description: 'Schedule and track vehicle maintenance',
-    requiredTier: 'fleet'
-  },
-  notificationsSMS: {
-    name: 'SMS Notifications',
-    description: 'Receive critical alerts via text message',
     requiredTier: 'fleet'
   },
   notificationsQuietHours: {

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { getCurrentDateLocal, prepareDateForDB } from "@/lib/utils/dateUtils";
+import { getCurrentDateLocal, prepareDateForDB, formatDateForDisplay } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 import { recordFactoredEarnings } from "@/lib/services/earningsService";
 import { createInvoiceFromLoad } from "@/lib/services/loadInvoiceService";
@@ -351,7 +351,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
 
   // Form state
   const [formData, setFormData] = useState({
-    deliveryDate: new Date().toISOString().split('T')[0],
+    deliveryDate: getCurrentDateLocal(),
     deliveryTime: new Date().toTimeString().slice(0, 5),
     receivedBy: "",
     notes: "",
@@ -713,7 +713,7 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
           const invoice = await createInvoiceFromLoad(currentUserId, loadId, {
             markAsPaid: formData.markPaid,
             dueInDays: 15,
-            invoiceDate: formData.deliveryDate || new Date().toISOString().split('T')[0],
+            invoiceDate: formData.deliveryDate || getCurrentDateLocal(),
             notes: `Invoice for Load #${loadDetails.loadNumber || 'N/A'}: ${loadDetails.origin} to ${loadDetails.destination}`
           });
 
@@ -756,12 +756,10 @@ export default function CompleteLoadForm({ loadId, loadDetails: initialLoadDetai
     }
   };
 
-  // Format dates for display
+  // Format dates for display (date-column safe — never goes through UTC)
   const formatDate = (dateString) => {
     if (!dateString) return '';
-
-    const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return formatDateForDisplay(dateString);
   };
 
   if (loading) {

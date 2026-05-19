@@ -1,30 +1,6 @@
 // src/lib/services/expenseService.js
 import { supabase } from "../supabaseClient";
-
-/**
- * Helper function to ensure dates are formatted correctly for storage
- * @param {string} dateString - The date string to format
- * @returns {string} - Properly formatted date string
- */
-function formatDateForStorage(dateString) {
-  if (!dateString) return null;
-  
-  // If already in YYYY-MM-DD format, just return it
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
-  }
-  
-  try {
-    // Parse the date string and ensure it's in YYYY-MM-DD format
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    return dateString; // Return original if there's an error
-  }
-}
+import { formatDateLocal, prepareDateForDB } from "../utils/dateUtils";
 
 /**
  * Fetch all expenses for the current user with optional filters
@@ -52,45 +28,45 @@ export async function fetchExpenses(userId, filters = {}) {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (filters.dateRange === 'Last Month') {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (filters.dateRange === 'This Quarter') {
       const now = new Date();
       const quarter = Math.floor(now.getMonth() / 3);
       const firstDay = new Date(now.getFullYear(), quarter * 3, 1);
       const lastDay = new Date(now.getFullYear(), quarter * 3 + 3, 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (filters.dateRange === 'Last Quarter') {
       const now = new Date();
       const quarter = Math.floor(now.getMonth() / 3) - 1;
       const year = quarter < 0 ? now.getFullYear() - 1 : now.getFullYear();
       const firstDay = new Date(year, (quarter < 0 ? 4 : 0) + quarter * 3, 1);
       const lastDay = new Date(year, (quarter < 0 ? 4 : 0) + quarter * 3 + 3, 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (filters.dateRange === 'This Year') {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), 0, 1);
       const lastDay = new Date(now.getFullYear(), 11, 31);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (filters.dateRange === 'Custom' && filters.startDate && filters.endDate) {
       query = query
         .gte('date', filters.startDate)
@@ -149,7 +125,7 @@ export async function createExpense(expenseData) {
     // Format the date properly before submitting
     const formattedData = {
       ...expenseData,
-      date: formatDateForStorage(expenseData.date)
+      date: prepareDateForDB(expenseData.date)
     };
     
     const { data, error } = await supabase
@@ -177,7 +153,7 @@ export async function updateExpense(userId, id, expenseData) {
     // Format the date properly before submitting
     const formattedData = {
       ...expenseData,
-      date: formatDateForStorage(expenseData.date)
+      date: prepareDateForDB(expenseData.date)
     };
 
     const { data, error } = await supabase
@@ -235,27 +211,27 @@ export async function getExpenseStats(userId, period = 'month') {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (period === 'quarter') {
       const now = new Date();
       const quarter = Math.floor(now.getMonth() / 3);
       const firstDay = new Date(now.getFullYear(), quarter * 3, 1);
       const lastDay = new Date(now.getFullYear(), quarter * 3 + 3, 0);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     } else if (period === 'year') {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), 0, 1);
       const lastDay = new Date(now.getFullYear(), 11, 31);
-      
+
       query = query
-        .gte('date', firstDay.toISOString().split('T')[0])
-        .lte('date', lastDay.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(firstDay))
+        .lte('date', formatDateLocal(lastDay));
     }
     
     const { data, error } = await query;

@@ -17,6 +17,7 @@ import { TableActionsDropdown } from "@/components/shared/TableActions";
 import { useTranslation } from "@/context/LanguageContext";
 import QuickBooksSyncBadge from "@/components/expenses/QuickBooksSyncBadge";
 import { useQuickBooksSyncStatus } from "@/hooks/useQuickBooksSyncStatus";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 // Invoice Filters Component
 const InvoiceFilters = ({ filters, setFilters, onApplyFilters }) => {
@@ -195,7 +196,7 @@ export default function InvoiceListComponent({
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplay(dateString);
   };
 
   const formatCurrency = (amount) => {

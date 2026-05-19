@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Download, Printer, RefreshCw } from 'lucide-react';
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 /**
  * Component that generates and downloads or prints a PDF invoice
@@ -90,8 +91,8 @@ export default function InvoicePdfGenerator({ invoice, companyInfo, id, mode = "
       
       doc.setFontSize(10);
       doc.text(`Invoice #: ${invoice.invoice_number}`, 140, 30);
-      doc.text(`Date: ${new Date(invoice.invoice_date).toLocaleDateString()}`, 140, 35);
-      doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 140, 40);
+      doc.text(`Date: ${formatDateForDisplay(invoice.invoice_date)}`, 140, 35);
+      doc.text(`Due Date: ${formatDateForDisplay(invoice.due_date)}`, 140, 40);
       
       if (invoice.po_number) {
         doc.text(`PO #: ${invoice.po_number}`, 140, 45);

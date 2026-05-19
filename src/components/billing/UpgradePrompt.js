@@ -117,7 +117,7 @@ export function UpgradeModal({
   const getTierFeatures = (tier) => {
     const featureKeys = {
       premium: ['trucks', 'unlimited', 'compliance', 'ifta', 'mileage', 'email', 'pdf'],
-      fleet: ['trucks', 'reports', 'maintenance', 'sms', 'quiet', 'exports', 'support'],
+      fleet: ['trucks', 'reports', 'maintenance', 'quiet', 'exports', 'support'],
       enterprise: ['unlimited', 'manager', 'integrations', 'api', 'sla', 'reports']
     };
 

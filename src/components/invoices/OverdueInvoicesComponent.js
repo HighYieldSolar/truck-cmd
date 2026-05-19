@@ -4,23 +4,25 @@ import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import InvoiceStatusBadge from "./InvoiceStatusBadge";
 import { useTranslation } from "@/context/LanguageContext";
+import { formatDateForDisplay, createLocalDate } from "@/lib/utils/dateUtils";
 
 export default function OverdueInvoicesComponent({ invoices, onViewInvoice }) {
   const { t } = useTranslation('invoices');
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString();
+    return formatDateForDisplay(dateString);
   };
 
   const formatCurrency = (amount) => {
     return `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Calculate days overdue
+  // Calculate days overdue (compare local-midnight to local-midnight)
   const getDaysOverdue = (dueDate) => {
-    const due = new Date(dueDate);
+    const due = createLocalDate(dueDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return Math.ceil((today - due) / (1000 * 60 * 60 * 24));
   };
 

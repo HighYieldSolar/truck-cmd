@@ -4,6 +4,7 @@ import { COMPLIANCE_TYPES } from "@/lib/constants/complianceConstants";
 import StatusBadge from "./StatusBadge";
 import { FileText } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
+import { createLocalDate } from "@/lib/utils/dateUtils";
 
 export default function UpcomingExpirations({ expirations, onViewItem }) {
   const { t } = useTranslation('compliance');
@@ -21,9 +22,11 @@ export default function UpcomingExpirations({ expirations, onViewItem }) {
         ) : (
           <ul className="divide-y divide-gray-200">
             {expirations.map((item) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
               const itemStatus =
                 Math.ceil(
-                  (new Date(item.expiration_date) - new Date()) /
+                  (createLocalDate(item.expiration_date) - today) /
                     (1000 * 3600 * 24)
                 ) <= 7
                   ? "Expiring Soon"

@@ -32,7 +32,7 @@ import {
   MAINTENANCE_STATUSES
 } from "@/lib/services/maintenanceService";
 import { fetchTrucks } from "@/lib/services/truckService";
-import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { formatDateForDisplayMMDDYYYY, createLocalDate } from "@/lib/utils/dateUtils";
 import MaintenanceFormModal from "@/components/fleet/MaintenanceFormModal";
 import DeleteConfirmationModal from "@/components/common/DeleteConfirmationModal";
 import OperationMessage from "@/components/ui/OperationMessage";
@@ -104,7 +104,7 @@ export default function MaintenancePage() {
       pending: records.filter(r => r.status !== 'Completed' && r.status !== 'Cancelled').length,
       overdue: records.filter(r => {
         if (r.status === 'Completed' || r.status === 'Cancelled') return false;
-        const dueDate = new Date(r.due_date);
+        const dueDate = createLocalDate(r.due_date);
         dueDate.setHours(0, 0, 0, 0);
         return dueDate < today;
       }).length,
@@ -404,7 +404,7 @@ export default function MaintenancePage() {
     if (!record.due_date) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const due = new Date(record.due_date);
+    const due = createLocalDate(record.due_date);
     due.setHours(0, 0, 0, 0);
     return due < today;
   };

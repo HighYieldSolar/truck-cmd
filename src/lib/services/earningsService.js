@@ -1,5 +1,6 @@
 // src/lib/services/earningsService.js
 import { supabase } from "../supabaseClient";
+import { getCurrentDateLocal } from "../utils/dateUtils";
 
 /**
  * Records factored earnings for a completed load
@@ -16,7 +17,7 @@ export async function recordFactoredEarnings(userId, loadId, amount, factoringCo
       user_id: userId,
       load_id: loadId,
       amount: amount,
-      date: new Date().toISOString().split('T')[0],
+      date: getCurrentDateLocal(),
       source: 'Factoring',
       description: `Factored earnings for Load #${loadNumber}`,
       factoring_company: factoringCompany

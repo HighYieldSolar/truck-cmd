@@ -130,8 +130,7 @@ export default function UpgradePage() {
       ],
       notIncluded: [
         "Maintenance scheduling",
-        "Fleet reports",
-        "SMS notifications"
+        "Fleet reports"
       ],
       recommended: true
     },
@@ -148,7 +147,6 @@ export default function UpgradePage() {
         "Everything in Premium, plus:",
         "Maintenance scheduling",
         "Advanced fleet reports",
-        "SMS notifications",
         "Quiet hours for notifications",
         "CSV & Excel exports",
         "Priority phone support"

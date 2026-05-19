@@ -6,7 +6,7 @@ import {
   CheckCircle,
   ArrowRight
 } from "lucide-react";
-import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { formatDateForDisplayMMDDYYYY, createLocalDate } from "@/lib/utils/dateUtils";
 import { useTranslation } from "@/context/LanguageContext";
 
 // Format dates for display
@@ -40,8 +40,9 @@ export default function MaintenanceAlertsComponent({ upcomingMaintenance }) {
         ) : (
           <div className="space-y-3">
             {upcomingMaintenance.map(item => {
-              const dueDate = new Date(item.due_date);
+              const dueDate = createLocalDate(item.due_date);
               const today = new Date();
+              today.setHours(0, 0, 0, 0);
               const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
               return (

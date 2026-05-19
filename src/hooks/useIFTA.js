@@ -1,6 +1,7 @@
 // src/hooks/useIFTA.js
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, formatError } from "@/lib/supabaseClient";
+import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 export default function useIFTA(userId, activeQuarter) {
   const [trips, setTrips] = useState([]);
@@ -142,7 +143,7 @@ export default function useIFTA(userId, activeQuarter) {
       setError(null);
       
       // Get current date for filtering
-      const now = new Date().toISOString().split('T')[0];
+      const now = getCurrentDateLocal();
       
       // Get rates from DB with effective date filtering
       const { data, error: ratesError } = await supabase
@@ -309,7 +310,7 @@ export default function useIFTA(userId, activeQuarter) {
         .from('ifta_tax_rates')
         .insert([{
           ...rateData,
-          effective_date: rateData.effective_date || new Date().toISOString().split('T')[0]
+          effective_date: rateData.effective_date || getCurrentDateLocal()
         }])
         .select();
         

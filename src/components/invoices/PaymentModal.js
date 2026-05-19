@@ -9,6 +9,7 @@ import {
   XCircle
 } from "lucide-react";
 import { useTranslation } from "@/context/LanguageContext";
+import { getCurrentDateLocal } from "@/lib/utils/dateUtils";
 
 /**
  * PaymentModal - Modal for recording payments on invoices
@@ -24,7 +25,7 @@ export default function PaymentModal({ isOpen, onClose, onSubmit, invoice, isSub
   const [payment, setPayment] = useState({
     amount: invoice?.balance || 0,
     method: 'credit_card',
-    date: new Date().toISOString().split('T')[0],
+    date: getCurrentDateLocal(),
     reference: '',
     notes: ''
   });

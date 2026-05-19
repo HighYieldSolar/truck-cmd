@@ -120,7 +120,6 @@ export default function DowngradePlanPage() {
           "All Premium features",
           "Maintenance scheduling",
           "Advanced fleet reports",
-          "SMS notifications",
           "Team user access",
           "Priority phone support"
         ]
@@ -146,7 +145,6 @@ export default function DowngradePlanPage() {
         fleet: [
           "Maintenance scheduling",
           "Advanced fleet reports",
-          "SMS notifications",
           "Team user access (6 users)",
           "Priority phone support",
           "CSV & Excel exports"
@@ -165,7 +163,6 @@ export default function DowngradePlanPage() {
         "Everything in Premium, plus:",
         "Maintenance scheduling",
         "Advanced fleet reports",
-        "SMS notifications",
         "Team user access (6 users)",
         "Priority phone support",
         "CSV & Excel exports"

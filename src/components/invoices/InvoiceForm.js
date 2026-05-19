@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import {
   updateInvoice
 } from "@/lib/services/invoiceService";
 import { fetchLoads } from "@/lib/services/loadService";
+import { getCurrentDateLocal, formatDateLocal } from "@/lib/utils/dateUtils";
 import {
   Save,
   Trash2,
@@ -129,6 +130,21 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
   const [success, setSuccess] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [loads, setLoads] = useState([]);
+
+  // Deduped customer options. If the currently-selected customer name is not in the
+  // fetched list (e.g. legacy invoice referencing a deleted customer), prepend it
+  // as a synthetic option so the <select> stays in sync with form state.
+  const customerOptions = useMemo(() => {
+    const seen = new Set();
+    const opts = [];
+    for (const c of customers) {
+      if (c?.company_name && !seen.has(c.company_name)) {
+        seen.add(c.company_name);
+        opts.push({ key: c.id, name: c.company_name });
+      }
+    }
+    return opts;
+  }, [customers]);
   const [hasRestoredData, setHasRestoredData] = useState(false);
 
   // Form state
@@ -137,11 +153,11 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
     customer: "",
     customer_email: "",
     customer_address: "",
-    invoice_date: new Date().toISOString().split("T")[0],
+    invoice_date: getCurrentDateLocal(),
     due_date: (() => {
       const date = new Date();
       date.setDate(date.getDate() + 15);
-      return date.toISOString().split("T")[0];
+      return formatDateLocal(date);
     })(),
     status: "Draft",
     payment_terms: "Net 15",
@@ -242,11 +258,11 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
       customer: "",
       customer_email: "",
       customer_address: "",
-      invoice_date: new Date().toISOString().split("T")[0],
+      invoice_date: getCurrentDateLocal(),
       due_date: (() => {
         const date = new Date();
         date.setDate(date.getDate() + 15);
-        return date.toISOString().split("T")[0];
+        return formatDateLocal(date);
       })(),
       status: "Draft",
       payment_terms: "Net 15",
@@ -499,9 +515,14 @@ export default function InvoiceForm({ userId, initialData = null, isDuplicating 
                   required
                 >
                   <option value="">{t('form.selectCustomer')}</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.company_name}>
-                      {customer.company_name}
+                  {invoice.customer && !customerOptions.some(o => o.name === invoice.customer) && (
+                    <option key="__current" value={invoice.customer}>
+                      {invoice.customer}
+                    </option>
+                  )}
+                  {customerOptions.map(opt => (
+                    <option key={opt.key} value={opt.name}>
+                      {opt.name}
                     </option>
                   ))}
                 </select>

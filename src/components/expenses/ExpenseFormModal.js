@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useTranslation } from "@/context/LanguageContext";
 import { createExpense, updateExpense, uploadReceiptImage } from '@/lib/services/expenseService';
 import { getUserFriendlyError } from '@/lib/utils/errorMessages';
-import { getCurrentDateLocal, formatDateLocal, prepareDateForDB } from '@/lib/utils/dateUtils';
+import { getCurrentDateLocal, formatDateLocal, prepareDateForDB, createLocalDate } from '@/lib/utils/dateUtils';
 import { useQuickBooksAutoSync } from '@/hooks/useQuickBooksAutoSync';
 
 // LocalStorage helpers
@@ -229,7 +229,7 @@ export default function ExpenseFormModal({ isOpen, onClose, expense, onSave, onQ
     if (!formData.date) {
       errors.date = t('validation.dateRequired');
     } else {
-      const selectedDate = new Date(formData.date);
+      const selectedDate = createLocalDate(formData.date);
       const today = new Date();
       today.setHours(23, 59, 59, 999);
 

@@ -2,6 +2,7 @@
 import { supabase } from "../supabaseClient";
 import { createInvoiceFromLoad } from "./loadInvoiceService";
 import { recordFactoredEarnings } from "./earningsService";
+import { getCurrentDateLocal } from "../utils/dateUtils";
 
 /**
  * Completes a load and handles either invoice generation or factoring
@@ -76,7 +77,7 @@ export async function completeLoad(userId, loadId, completionData) {
       // Record factored earnings
       try {
         earnings = await recordFactoredEarnings(userId, loadId, totalRate, {
-          date: deliveryDate || new Date().toISOString().split('T')[0],
+          date: deliveryDate || getCurrentDateLocal(),
           description: `Factored load #${load.load_number || 'N/A'}: ${load.origin} to ${load.destination}`,
           factoringCompany: factoringCompany
         });
@@ -89,7 +90,7 @@ export async function completeLoad(userId, loadId, completionData) {
         invoice = await createInvoiceFromLoad(userId, loadId, {
           markAsPaid: markPaid,
           dueInDays: 15,
-          invoiceDate: new Date().toISOString().split('T')[0],
+          invoiceDate: getCurrentDateLocal(),
           notes: `Invoice for Load #${load.load_number || 'N/A'}: ${load.origin} to ${load.destination}`
         });
       } catch (invoiceError) {

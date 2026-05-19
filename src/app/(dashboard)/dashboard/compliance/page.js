@@ -222,11 +222,18 @@ export default function CompliancePage() {
       .slice(0, 5);
   }, [complianceItems]);
 
-  // Calculate category counts
+  // Calculate category counts. Records may store `compliance_type` as either the
+  // constant key (e.g. "REGISTRATION", new format) or the human-readable name
+  // (e.g. "Vehicle Registration", legacy/seed data) — match both, case-insensitive.
   const categoryCounts = useMemo(() => {
     const counts = {};
-    Object.keys(COMPLIANCE_TYPES).forEach(key => {
-      counts[key] = complianceItems.filter(item => item.compliance_type === key).length;
+    Object.entries(COMPLIANCE_TYPES).forEach(([key, type]) => {
+      const keyLower = key.toLowerCase();
+      const nameLower = type.name.toLowerCase();
+      counts[key] = complianceItems.filter(item => {
+        const v = (item.compliance_type || '').toLowerCase();
+        return v === keyLower || v === nameLower;
+      }).length;
     });
     return counts;
   }, [complianceItems]);

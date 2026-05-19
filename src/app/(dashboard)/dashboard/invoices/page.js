@@ -29,7 +29,7 @@ import {
   checkAndUpdateOverdueInvoices
 } from "@/lib/services/invoiceService";
 import { LimitReachedPrompt } from "@/components/billing/UpgradePrompt";
-import { formatDateForDisplayMMDDYYYY } from "@/lib/utils/dateUtils";
+import { formatDateForDisplayMMDDYYYY, createLocalDate, formatDateLocal } from "@/lib/utils/dateUtils";
 import { getUserFriendlyError } from "@/lib/utils/errorMessages";
 import { usePagination, Pagination } from "@/hooks/usePagination";
 import { OperationMessage, EmptyState } from "@/components/ui/OperationMessage";
@@ -459,8 +459,8 @@ export default function Page() {
     if (dates.length === 0) return null;
 
     return {
-      start: dates[0].toISOString().split('T')[0],
-      end: dates[dates.length - 1].toISOString().split('T')[0]
+      start: formatDateLocal(dates[0]),
+      end: formatDateLocal(dates[dates.length - 1])
     };
   }, [filteredInvoices]);
 
@@ -607,8 +607,10 @@ export default function Page() {
   // Get days until due or overdue
   const getDaysInfo = (dueDate, status) => {
     if (!dueDate) return null;
-    const due = new Date(dueDate);
+    // Compare local-midnight to local-midnight to avoid UTC drift
+    const due = createLocalDate(dueDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const diffTime = due - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 

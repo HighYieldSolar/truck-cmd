@@ -204,33 +204,33 @@ export async function getFuelStats(userId, period = 'quarter') {
     if (period === 'quarter') {
       const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
       const quarterEnd = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0);
-      
+
       query = query
-        .gte('date', quarterStart.toISOString().split('T')[0])
-        .lte('date', quarterEnd.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(quarterStart))
+        .lte('date', formatDateLocal(quarterEnd));
     } else if (period === 'month') {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
+
       query = query
-        .gte('date', monthStart.toISOString().split('T')[0])
-        .lte('date', monthEnd.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(monthStart))
+        .lte('date', formatDateLocal(monthEnd));
     } else if (period === 'lastMonth') {
       const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
       const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
       const lastMonthStart = new Date(lastMonthYear, lastMonth, 1);
       const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0);
-      
+
       query = query
-        .gte('date', lastMonthStart.toISOString().split('T')[0])
-        .lte('date', lastMonthEnd.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(lastMonthStart))
+        .lte('date', formatDateLocal(lastMonthEnd));
     } else if (period === 'year') {
       const yearStart = new Date(now.getFullYear(), 0, 1);
       const yearEnd = new Date(now.getFullYear(), 11, 31);
-      
+
       query = query
-        .gte('date', yearStart.toISOString().split('T')[0])
-        .lte('date', yearEnd.toISOString().split('T')[0]);
+        .gte('date', formatDateLocal(yearStart))
+        .lte('date', formatDateLocal(yearEnd));
     }
     
     const { data, error } = await query;
