@@ -510,24 +510,26 @@ export default function GPSTrackingMap({
         )}
       </div>
 
-      {/* Vehicle List */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-64 overflow-y-auto">
+      {/* Vehicle List — flex children need min-w-0 so the address can
+          truncate; without it the row's intrinsic width grows past the
+          viewport on mobile and the whole page scrolls horizontally. */}
+      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-64 overflow-y-auto overflow-x-hidden">
         {vehicles.map((vehicle) => (
           <div
             key={vehicle.externalVehicleId}
             onClick={() => handleVehicleClick(vehicle)}
             className={`
-              p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors
+              p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors
               ${selectedVehicle?.externalVehicleId === vehicle.externalVehicleId
                 ? 'bg-blue-50 dark:bg-blue-900/20'
                 : ''
               }
             `}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className={`
-                  p-2 rounded-lg
+                  p-2 rounded-lg flex-shrink-0
                   ${vehicle.isMoving
                     ? 'bg-green-100 dark:bg-green-900/30'
                     : vehicle.isStale
@@ -543,22 +545,22 @@ export default function GPSTrackingMap({
                         : 'text-gray-500'
                   } />
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
                     {vehicle.vehicleName}
                   </h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {vehicle.location?.address || 'Unknown location'}
                   </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className={`text-sm font-medium ${vehicle.isMoving ? 'text-green-600' : 'text-gray-500'}`}>
+              <div className="text-right flex-shrink-0">
+                <p className={`text-sm font-medium whitespace-nowrap ${vehicle.isMoving ? 'text-green-600' : 'text-gray-500'}`}>
                   {vehicle.isMoving ? formatSpeed(vehicle.location?.speedMph) : 'Stopped'}
                 </p>
-                <p className="text-xs text-gray-400 flex items-center gap-1 justify-end">
-                  <Clock size={12} />
+                <p className="text-xs text-gray-400 flex items-center gap-1 justify-end whitespace-nowrap">
+                  <Clock size={12} className="flex-shrink-0" />
                   {formatAge(vehicle.ageMinutes)}
                 </p>
               </div>
