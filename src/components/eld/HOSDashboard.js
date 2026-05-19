@@ -115,7 +115,12 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
   // Local name maps — prefer UUID lookup (set by ELD sync, immune to
   // provider-id drift) and fall back to eld_external_id, then the raw
   // provider id if neither side of the local mapping is populated.
-  const { driverNameById, driverNameByEldId } = useELDNameMaps(user?.id);
+  const {
+    driverNameById,
+    driverNameByEldId,
+    vehicleNameById,
+    vehicleNameByEldId,
+  } = useELDNameMaps(user?.id);
 
   // Transform realtime data to component format
   const hosData = useMemo(() => {
@@ -136,6 +141,10 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
       hasViolation: driver.has_violation,
       location: driver.location_description,
       vehicleId: driver.vehicle_id,
+      vehicleName:
+        vehicleNameById[driver.vehicle_id] ||
+        vehicleNameByEldId[driver.eld_vehicle_id] ||
+        null,
       statusStartedAt: driver.status_started_at,
       updatedAt: driver.updated_at
     }));
@@ -152,7 +161,7 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
       },
       lastUpdated: realtimeDrivers[0]?.updated_at || new Date().toISOString()
     };
-  }, [realtimeDrivers, driversByStatus, driversWithViolations, driverNameById, driverNameByEldId]);
+  }, [realtimeDrivers, driversByStatus, driversWithViolations, driverNameById, driverNameByEldId, vehicleNameById, vehicleNameByEldId]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -262,14 +271,22 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
                 onClick={() => onDriverSelect?.(driver)}
                 className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${statusConfig.badgeColor}`} />
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[120px]">
-                      {driver.name}
-                    </span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig.badgeColor}`} />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate block">
+                        {driver.name}
+                      </span>
+                      {driver.vehicleName && (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 max-w-full truncate">
+                          <Truck size={10} className="flex-shrink-0" />
+                          <span className="truncate">{driver.vehicleName}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className={`text-xs ${getTimeWarningClass(driver.driveTimeRemaining, 660)}`}>
+                  <span className={`text-xs flex-shrink-0 ${getTimeWarningClass(driver.driveTimeRemaining, 660)}`}>
                     {formatMinutes(driver.driveTimeRemaining)} drive
                   </span>
                 </div>
@@ -345,18 +362,26 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
               onClick={() => onDriverSelect?.(driver)}
               className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${statusConfig.bgColor}`}>
+              <div className="flex items-center justify-between mb-3 gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${statusConfig.bgColor}`}>
                     <StatusIcon size={18} className={statusConfig.textColor} />
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                  <div className="min-w-0">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
                       {driver.name}
                     </h4>
-                    <span className={`text-sm ${statusConfig.textColor}`}>
-                      {statusConfig.label}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-sm ${statusConfig.textColor}`}>
+                        {statusConfig.label}
+                      </span>
+                      {driver.vehicleName && (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md">
+                          <Truck size={11} className="text-gray-500 dark:text-gray-400" />
+                          <span className="truncate max-w-[140px]">{driver.vehicleName}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 

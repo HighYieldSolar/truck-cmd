@@ -392,7 +392,7 @@ export default function GPSTrackingMap({
               zoom: mapBounds?.zoom || 4
             }}
             style={{ width: '100%', height: '100%' }}
-            mapStyle={isDarkMode ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12'}
+            mapStyle={isDarkMode ? 'mapbox://styles/mapbox/navigation-night-v1' : 'mapbox://styles/mapbox/streets-v12'}
             attributionControl={false}
           >
             <NavigationControl position="top-right" />
