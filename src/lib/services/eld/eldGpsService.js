@@ -69,10 +69,14 @@ export async function getAllVehicleLocations(userId) {
       }
     }
 
-    // Enhance with local vehicle info
+    // Enhance with local vehicle info. We resolve the local UUID two ways:
+    //   1. eld_entity_mappings via getLocalVehicleId(userId, externalId)
+    //   2. Direct lookup on vehicles.eld_external_id, scoped to user_id
+    // Either path is enough; we fall back to (2) when (1) misses so a missing
+    // mapping row doesn't render every truck as "Unknown Vehicle".
     const enhancedLocations = await Promise.all(
       Object.values(latestByVehicle).map(async (loc) => {
-        const localVehicleId = await getLocalVehicleId(connectionId, loc.eld_vehicle_id);
+        let localVehicleId = await getLocalVehicleId(userId, loc.eld_vehicle_id);
         let vehicleInfo = null;
 
         if (localVehicleId) {
@@ -82,6 +86,19 @@ export async function getAllVehicleLocations(userId) {
             .eq('id', localVehicleId)
             .single();
           vehicleInfo = vehicle;
+        }
+
+        if (!vehicleInfo) {
+          const { data: vehicle } = await supabaseAdmin
+            .from('vehicles')
+            .select('id, name, license_plate, make, model, year')
+            .eq('user_id', userId)
+            .eq('eld_external_id', loc.eld_vehicle_id)
+            .maybeSingle();
+          if (vehicle) {
+            vehicleInfo = vehicle;
+            localVehicleId = vehicle.id;
+          }
         }
 
         // Calculate how fresh the location is
@@ -299,8 +316,10 @@ export async function refreshLocations(userId) {
 
         savedCount++;
 
-        // Also update the vehicle's last known location
-        const localVehicleId = await getLocalVehicleId(connectionId, location.vehicleId);
+        // Also update the vehicle's last known location. Pass userId, not
+        // connectionId — eld_entity_mappings is keyed by user_id, so the
+        // wrong arg silently dropped every update on the floor.
+        const localVehicleId = await getLocalVehicleId(userId, location.vehicleId);
         if (localVehicleId) {
           await supabaseAdmin
             .from('vehicles')

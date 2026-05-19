@@ -53,6 +53,22 @@ export default function DispatchingMap({
   const [showRoutes, setShowRoutes] = useState(true);
   const [showVehicles, setShowVehicles] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Track dark-mode class on <html>/<body> so the embedded FleetMap can swap
+  // its Mapbox style to match the ELD tracking page (navigation-night-v1).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const update = () => setIsDarkMode(
+      document.documentElement.classList.contains('dark') ||
+      document.body.classList.contains('dark')
+    );
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const { canAccess } = useFeatureAccess();
   const hasGpsAccess = canAccess('eldGpsTracking');
@@ -436,6 +452,9 @@ export default function DispatchingMap({
             onLoadSelect={onLoadSelect}
             height={320}
             showControls={true}
+            mapStyle={isDarkMode
+              ? 'mapbox://styles/mapbox/navigation-night-v1'
+              : 'mapbox://styles/mapbox/streets-v12'}
           />
         )}
 
