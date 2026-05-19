@@ -12,7 +12,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import { useRealtimeDriverHOS } from '@/hooks/useELDRealtime';
+import { useRealtimeDriverHOS, useELDNameMaps } from '@/hooks/useELDRealtime';
 
 // Violation severity colors
 const SEVERITY_CONFIG = {
@@ -85,7 +85,8 @@ export default function HOSViolationAlert({
   }, []);
 
   // Use real-time subscription hook
-  const { driversWithViolations, drivers, loading, error } = useRealtimeDriverHOS(user?.id);
+  const { drivers, loading, error } = useRealtimeDriverHOS(user?.id);
+  const { driverNameByEldId } = useELDNameMaps(user?.id);
 
   // Build violation alerts from driver data
   const violationAlerts = useMemo(() => {
@@ -106,7 +107,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-violation`,
           driverId: driver.id,
-          driverName: driver.eld_driver_id,
+          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'violation',
           severity: 'critical',
           title: 'HOS Violation',
@@ -120,7 +121,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-drive-warning`,
           driverId: driver.id,
-          driverName: driver.eld_driver_id,
+          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'drive_time_warning',
           severity: driveMinutes <= 30 ? 'critical' : 'warning',
           title: 'Drive Time Warning',
@@ -135,7 +136,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-shift-warning`,
           driverId: driver.id,
-          driverName: driver.eld_driver_id,
+          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'shift_time_warning',
           severity: shiftMinutes <= 60 ? 'critical' : 'warning',
           title: 'Shift Time Warning',
@@ -150,7 +151,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-drive-expired`,
           driverId: driver.id,
-          driverName: driver.eld_driver_id,
+          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'drive_time_expired',
           severity: 'critical',
           title: 'Drive Time Expired',
@@ -163,7 +164,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-shift-expired`,
           driverId: driver.id,
-          driverName: driver.eld_driver_id,
+          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'shift_time_expired',
           severity: 'critical',
           title: 'Shift Time Expired',
@@ -179,7 +180,7 @@ export default function HOSViolationAlert({
     }
 
     return alerts;
-  }, [drivers, dismissedAlerts, showDismissed]);
+  }, [drivers, dismissedAlerts, showDismissed, driverNameByEldId]);
 
   // Sort alerts by severity (critical first) then by time
   const sortedAlerts = useMemo(() => {
@@ -202,7 +203,7 @@ export default function HOSViolationAlert({
       onDriverClick({
         id: driver.id,
         eldDriverId: driver.eld_driver_id,
-        name: driver.eld_driver_id,
+        name: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
         status: driver.duty_status?.toUpperCase() || 'OFF_DUTY',
         driveTimeRemaining: driver.drive_time_remaining_ms
           ? Math.floor(driver.drive_time_remaining_ms / 60000)
@@ -219,8 +220,12 @@ export default function HOSViolationAlert({
     }
   };
 
-  // No alerts
+  // No alerts. We only show the green "All Clear" banner when there ARE
+  // drivers being monitored — otherwise it reads as a confident pass when
+  // really there's nothing to check. With zero drivers, render nothing so
+  // the empty state from HOSDashboard speaks for itself.
   if (!loading && !sortedAlerts.length) {
+    if (!drivers?.length) return null;
     return (
       <div className={`bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 ${className}`}>
         <div className="flex items-center gap-3">

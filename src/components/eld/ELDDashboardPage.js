@@ -5,14 +5,10 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Satellite,
   Clock,
-  AlertTriangle,
   Settings,
   RefreshCw,
   MapPin,
-  Truck,
-  Users,
-  LayoutGrid,
-  Link as LinkIcon
+  LayoutGrid
 } from 'lucide-react';
 import { useELDRealtime } from '@/hooks/useELDRealtime';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
@@ -132,22 +128,19 @@ export default function ELDDashboardPage() {
     getUser();
   }, []);
 
-  // Real-time ELD data
+  // Real-time ELD data — child components (GPSTrackingMap, HOSDashboard,
+  // HOSViolationAlert) subscribe to their own slices. The page reads
+  // vehicles/drivers only to detect the "totally empty" onboarding case and
+  // collapse three identical empty cards into one welcome card.
   const {
     vehicles,
-    vehiclesLoading,
     drivers,
-    driversWithViolations,
-    driversByStatus,
-    driversLoading,
-    faults,
-    criticalFaults,
     hasCriticalFaults,
-    faultsLoading,
     loading,
-    error,
     refresh
   } = useELDRealtime(user?.id);
+
+  const isFullyEmpty = !loading && !vehicles?.length && !drivers?.length;
 
   const handleDriverSelect = (driver) => {
     setSelectedDriver(driver);
@@ -228,41 +221,44 @@ export default function ELDDashboardPage() {
             </div>
           </div>
 
-          {/* View Mode Tabs */}
+          {/* View Mode Tabs — short labels on mobile to prevent two-line wrap. */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1 mb-6">
             <div className="flex">
               <button
                 onClick={() => setViewMode('dashboard')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                   viewMode === 'dashboard'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <LayoutGrid size={18} />
-                Dashboard
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Overview</span>
               </button>
               <button
                 onClick={() => setViewMode('hos')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                   viewMode === 'hos'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Clock size={18} />
-                HOS Compliance
+                <span className="hidden sm:inline">HOS Compliance</span>
+                <span className="sm:hidden">HOS</span>
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                   viewMode === 'map'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <MapPin size={18} />
-                Live Map
+                <span className="hidden sm:inline">Live Map</span>
+                <span className="sm:hidden">Map</span>
               </button>
             </div>
           </div>
@@ -274,68 +270,66 @@ export default function ELDDashboardPage() {
             </div>
           )}
 
-          {/* Dashboard View */}
-          {viewMode === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Stats Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                      <Truck size={20} className="text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {vehicles?.length || 0}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Vehicles</p>
-                    </div>
-                  </div>
+          {/* Unified onboarding card — only shows when neither vehicles nor
+              drivers are reporting from any ELD provider. Replaces three
+              near-identical "No data" cards that used to stack here. */}
+          {isFullyEmpty && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+              <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 p-8 sm:p-12 text-center">
+                <div className="inline-flex p-4 bg-blue-100 dark:bg-blue-900/40 rounded-2xl mb-4">
+                  <Satellite size={36} className="text-blue-600 dark:text-blue-400" />
                 </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <Users size={20} className="text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {drivers?.length || 0}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Drivers</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                      <Truck size={20} className="text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {driversByStatus?.driving?.length || 0}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Driving</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                      <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                        {driversWithViolations?.length || 0}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Violations</p>
-                    </div>
-                  </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  Get real-time visibility into your fleet
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-6">
+                  Connect your Motive or Samsara account to see live GPS positions,
+                  driver Hours-of-Service status, and DOT violation alerts — all in one place.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link
+                    href="/dashboard/settings/eld"
+                    className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                  >
+                    <Settings size={16} className="mr-2" />
+                    Connect ELD Provider
+                  </Link>
+                  <a
+                    href="https://www.truckcommand.com/contact"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-5 py-2.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+                  >
+                    Need help? Talk to support
+                  </a>
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 dark:divide-gray-700 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-4 text-center">
+                  <MapPin size={20} className="mx-auto text-blue-500 mb-1" />
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Live GPS tracking</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">See where every truck is right now</p>
+                </div>
+                <div className="p-4 text-center">
+                  <Clock size={20} className="mx-auto text-indigo-500 mb-1" />
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">HOS compliance</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Drive / shift / cycle countdowns per driver</p>
+                </div>
+                <div className="p-4 text-center">
+                  <LayoutGrid size={20} className="mx-auto text-purple-500 mb-1" />
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Fault alerts</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Vehicle diagnostic codes in real time</p>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* Dashboard View — the top stat strip used to duplicate the counts
+              that already appear inside the Fleet GPS and HOS cards (Vehicles
+              vs Total Vehicles, Driving vs Moving, etc.), so it's been removed
+              to reduce noise. */}
+          {!isFullyEmpty && viewMode === 'dashboard' && (
+            <div className="space-y-6">
               {/* Two Column Layout */}
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* GPS Map */}
@@ -356,7 +350,7 @@ export default function ELDDashboardPage() {
           )}
 
           {/* HOS View */}
-          {viewMode === 'hos' && (
+          {!isFullyEmpty && viewMode === 'hos' && (
             <div className="space-y-6">
               {/* HOS Alerts */}
               <HOSViolationAlert onDriverClick={handleDriverSelect} />
@@ -367,12 +361,14 @@ export default function ELDDashboardPage() {
           )}
 
           {/* Map View */}
-          {viewMode === 'map' && (
+          {!isFullyEmpty && viewMode === 'map' && (
             <div className="space-y-6">
-              {/* Full Map */}
+              {/* Full Map — pass a taller map height instead of clamping the
+                  whole card to 600px (which used to clip the vehicle list on
+                  narrow viewports). */}
               <GPSTrackingMap
                 onVehicleSelect={handleVehicleSelect}
-                className="h-[600px]"
+                mapHeightClass="h-[60vh] min-h-[400px]"
               />
             </div>
           )}

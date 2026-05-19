@@ -16,9 +16,10 @@ import {
   Wifi,
   WifiOff
 } from 'lucide-react';
+import Link from 'next/link';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
-import { useRealtimeDriverHOS } from '@/hooks/useELDRealtime';
+import { useRealtimeDriverHOS, useELDNameMaps } from '@/hooks/useELDRealtime';
 
 // HOS Status colors and icons
 const HOS_STATUS_CONFIG = {
@@ -111,6 +112,9 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
     refresh
   } = useRealtimeDriverHOS(user?.id);
 
+  // Local name map (eld_external_id → friendly driver name from Fleet)
+  const { driverNameByEldId } = useELDNameMaps(user?.id);
+
   // Transform realtime data to component format
   const hosData = useMemo(() => {
     if (!realtimeDrivers?.length) return null;
@@ -118,7 +122,7 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
     const transformedDrivers = realtimeDrivers.map(driver => ({
       id: driver.id,
       eldDriverId: driver.eld_driver_id,
-      name: driver.eld_driver_id, // Will use driver mapping when available
+      name: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
       status: DUTY_STATUS_MAP[driver.duty_status] || 'OFF_DUTY',
       driveTimeRemaining: driver.drive_time_remaining_ms ? Math.floor(driver.drive_time_remaining_ms / 60000) : null,
       shiftTimeRemaining: driver.shift_time_remaining_ms ? Math.floor(driver.shift_time_remaining_ms / 60000) : null,
@@ -143,7 +147,7 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
       },
       lastUpdated: realtimeDrivers[0]?.updated_at || new Date().toISOString()
     };
-  }, [realtimeDrivers, driversByStatus, driversWithViolations]);
+  }, [realtimeDrivers, driversByStatus, driversWithViolations, driverNameByEldId]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -153,7 +157,10 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
   };
 
   const formatMinutes = (minutes) => {
-    if (!minutes && minutes !== 0) return '--:--';
+    // Null/undefined → driver is Off Duty / Sleeper and the ELD provider
+    // isn't reporting a countdown. Render an em-dash so the cell reads as
+    // "not applicable" instead of looking like a broken "--:--" timer.
+    if (minutes === null || minutes === undefined) return '—';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
@@ -207,9 +214,15 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
         <div className="text-center py-8">
           <Clock size={32} className="mx-auto text-gray-400 mb-3" />
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">No HOS Data Available</h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Connect your ELD provider to see driver hours of service.
           </p>
+          <Link
+            href="/dashboard/settings/eld"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Connect ELD Provider
+          </Link>
         </div>
       </div>
     );
@@ -276,24 +289,14 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Clock size={20} className="text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">HOS Compliance</h3>
-              <p className="text-sm text-blue-100">Driver Hours of Service Status</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <Clock size={20} className="text-white" />
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm transition-colors"
-          >
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div>
+            <h3 className="text-lg font-semibold text-white">HOS Compliance</h3>
+            <p className="text-sm text-blue-100">Driver Hours of Service Status</p>
+          </div>
         </div>
       </div>
 
@@ -398,9 +401,17 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
             Real-time
           </span>
         </div>
-        {hosData.lastUpdated && (
-          <span>Last update: {new Date(hosData.lastUpdated).toLocaleTimeString()}</span>
-        )}
+        {hosData.lastUpdated && (() => {
+          const d = new Date(hosData.lastUpdated);
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const yyyy = d.getFullYear();
+          const h24 = d.getHours();
+          const meridiem = h24 >= 12 ? 'PM' : 'AM';
+          const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+          const min = String(d.getMinutes()).padStart(2, '0');
+          return <span>Last update: {mm}/{dd}/{yyyy}, {h12}:{min} {meridiem}</span>;
+        })()}
       </div>
     </div>
   );

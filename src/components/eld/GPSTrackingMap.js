@@ -15,9 +15,10 @@ import {
   X,
   Wifi
 } from 'lucide-react';
+import Link from 'next/link';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { FeatureGate } from '@/components/billing/FeatureGate';
-import { useRealtimeVehicleLocations } from '@/hooks/useELDRealtime';
+import { useRealtimeVehicleLocations, useELDNameMaps } from '@/hooks/useELDRealtime';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -36,7 +37,8 @@ const STALE_THRESHOLD_MINUTES = 15;
 export default function GPSTrackingMap({
   onVehicleSelect,
   compact = false,
-  className = ''
+  className = '',
+  mapHeightClass = 'h-96'
 }) {
   const [user, setUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,6 +66,9 @@ export default function GPSTrackingMap({
     refresh
   } = useRealtimeVehicleLocations(user?.id);
 
+  // Local name map (eld_external_id → friendly vehicle name from Fleet)
+  const { vehicleNameByEldId } = useELDNameMaps(user?.id);
+
   // Transform realtime data to component format
   const vehicles = useMemo(() => {
     if (!realtimeLocations?.length) return [];
@@ -79,7 +84,7 @@ export default function GPSTrackingMap({
         id: loc.id,
         externalVehicleId: loc.eld_vehicle_id,
         vehicleId: loc.vehicle_id,
-        vehicleName: loc.eld_vehicle_id, // Will use vehicle name mapping when available
+        vehicleName: vehicleNameByEldId[loc.eld_vehicle_id] || loc.eld_vehicle_id,
         eldProvider: loc.eld_provider,
         location: {
           latitude: parseFloat(loc.latitude),
@@ -97,7 +102,19 @@ export default function GPSTrackingMap({
         updatedAt: loc.updated_at
       };
     });
-  }, [realtimeLocations]);
+  }, [realtimeLocations, vehicleNameByEldId]);
+
+  // Detect dark mode for Mapbox style selection
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const update = () => setIsDarkMode(document.documentElement.classList.contains('dark') || document.body.classList.contains('dark'));
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Calculate map bounds from vehicle positions
   const mapBounds = useMemo(() => {
@@ -200,15 +217,21 @@ export default function GPSTrackingMap({
 
   if (!vehicles.length) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6`}>
         <div className="text-center py-8">
           <MapPin size={32} className="mx-auto text-gray-400 mb-3" />
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
             No Vehicle Locations
           </h4>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Connect your ELD to see real-time vehicle positions
           </p>
+          <Link
+            href="/dashboard/settings/eld"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Connect ELD Provider
+          </Link>
         </div>
       </div>
     );
@@ -287,33 +310,38 @@ export default function GPSTrackingMap({
     );
   }
 
-  // Full map mode
+  // Full map mode. Note: rounded-xl + border + the child gradient header still
+  // need overflow on the *visual* edges but the inner content (map height +
+  // vehicle list) must be allowed to grow. We rely on rounded children rather
+  // than clipping the wrapper, so the wrapper stays overflow-visible.
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-teal-600 dark:from-green-700 dark:to-teal-700 p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
-              <Navigation size={20} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-base sm:text-lg font-semibold text-white truncate">Fleet GPS Tracking</h3>
-              <p className="text-sm text-green-100 truncate">Real-time vehicle locations</p>
-            </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
+            <Navigation size={20} className="text-white" />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm transition-colors"
-            >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              Refresh
-            </button>
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-white truncate">Fleet GPS Tracking</h3>
+            <p className="text-sm text-green-100 truncate">Real-time vehicle locations</p>
           </div>
         </div>
       </div>
+
+      {/* Stale-signal banner — appears when one or more vehicles haven't
+          reported in over STALE_THRESHOLD_MINUTES, so operators don't have
+          to scan the stat row to notice missing telemetry. */}
+      {vehicles.filter(v => v.isStale).length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5 flex items-center gap-2">
+          <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            <span className="font-semibold">{vehicles.filter(v => v.isStale).length}</span>
+            {' '}
+            {vehicles.filter(v => v.isStale).length === 1 ? 'vehicle hasn’t' : 'vehicles haven’t'} reported in over {STALE_THRESHOLD_MINUTES} minutes
+          </p>
+        </div>
+      )}
 
       {/* Stats Bar — 2-col on mobile, 4-col on sm+ to avoid the cramped
           single-row grid that forced horizontal scroll on narrow viewports. */}
@@ -337,7 +365,7 @@ export default function GPSTrackingMap({
       </div>
 
       {/* Real Mapbox Map */}
-      <div className="relative h-96">
+      <div className={`relative ${mapHeightClass}`}>
         {!MAPBOX_TOKEN ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
             <div className="text-center">
@@ -359,7 +387,7 @@ export default function GPSTrackingMap({
               zoom: mapBounds?.zoom || 4
             }}
             style={{ width: '100%', height: '100%' }}
-            mapStyle="mapbox://styles/mapbox/streets-v12"
+            mapStyle={isDarkMode ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/streets-v12'}
             attributionControl={false}
           >
             <NavigationControl position="top-right" />

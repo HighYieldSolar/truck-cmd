@@ -9,6 +9,74 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 /**
+ * Hook that fetches the local drivers + vehicles tables once and returns
+ * lookup maps keyed by their ELD external IDs. ELD realtime tables only
+ * carry the provider-side identifier (e.g. "1340816" from Samsara) — this
+ * map lets components display the operator-friendly name set in Fleet.
+ *
+ * @param {string} userId - Local user id (drivers/vehicles are user-scoped)
+ * @returns {{ vehicleNameByEldId: Record<string,string>, driverNameByEldId: Record<string,string>, loading: boolean }}
+ */
+export function useELDNameMaps(userId) {
+  const [maps, setMaps] = useState({
+    vehicleNameByEldId: {},
+    driverNameByEldId: {},
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [vehiclesRes, driversRes] = await Promise.all([
+          supabase
+            .from('vehicles')
+            .select('name, license_plate, eld_external_id')
+            .eq('user_id', userId)
+            .not('eld_external_id', 'is', null),
+          supabase
+            .from('drivers')
+            .select('name, eld_external_id')
+            .eq('user_id', userId)
+            .not('eld_external_id', 'is', null),
+        ]);
+
+        if (cancelled) return;
+
+        const vehicleMap = {};
+        for (const v of vehiclesRes.data || []) {
+          if (v.eld_external_id) {
+            vehicleMap[v.eld_external_id] = v.name || v.license_plate || v.eld_external_id;
+          }
+        }
+        const driverMap = {};
+        for (const d of driversRes.data || []) {
+          if (d.eld_external_id) {
+            driverMap[d.eld_external_id] = d.name || d.eld_external_id;
+          }
+        }
+        setMaps({
+          vehicleNameByEldId: vehicleMap,
+          driverNameByEldId: driverMap,
+          loading: false,
+        });
+      } catch {
+        if (!cancelled) setMaps((m) => ({ ...m, loading: false }));
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  return maps;
+}
+
+/**
  * Hook for real-time vehicle locations
  *
  * @param {string} userId - User ID to subscribe for
