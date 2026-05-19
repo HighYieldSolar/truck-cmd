@@ -9,17 +9,31 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 /**
- * Hook that fetches the local drivers + vehicles tables once and returns
- * lookup maps keyed by their ELD external IDs. ELD realtime tables only
- * carry the provider-side identifier (e.g. "1340816" from Samsara) — this
- * map lets components display the operator-friendly name set in Fleet.
+ * Hook that fetches the local drivers + vehicles tables and returns lookup
+ * maps for resolving the operator-friendly name shown in Fleet from a
+ * realtime ELD row.
+ *
+ * Returns two flavors of map for each entity so callers can prefer the
+ * stable UUID match (set by the ELD sync at insert time) and fall back
+ * to the provider's external id if that's all that's available:
+ *
+ *   vehicleNameById      — keyed by local vehicles.id (UUID)
+ *   vehicleNameByEldId   — keyed by vehicles.eld_external_id (provider id)
+ *   driverNameById       — keyed by local drivers.id (UUID)
+ *   driverNameByEldId    — keyed by drivers.eld_external_id (provider id)
+ *
+ * Looking up by UUID is the canonical path because the realtime views
+ * (vehicle_current_locations, driver_hos_status) carry the local
+ * UUID alongside the provider id, and the UUID can't drift even if
+ * eld_external_id values get out of sync after a re-pairing.
  *
  * @param {string} userId - Local user id (drivers/vehicles are user-scoped)
- * @returns {{ vehicleNameByEldId: Record<string,string>, driverNameByEldId: Record<string,string>, loading: boolean }}
  */
 export function useELDNameMaps(userId) {
   const [maps, setMaps] = useState({
+    vehicleNameById: {},
     vehicleNameByEldId: {},
+    driverNameById: {},
     driverNameByEldId: {},
     loading: true,
   });
@@ -33,33 +47,39 @@ export function useELDNameMaps(userId) {
         const [vehiclesRes, driversRes] = await Promise.all([
           supabase
             .from('vehicles')
-            .select('name, license_plate, eld_external_id')
-            .eq('user_id', userId)
-            .not('eld_external_id', 'is', null),
+            .select('id, name, license_plate, eld_external_id')
+            .eq('user_id', userId),
           supabase
             .from('drivers')
-            .select('name, eld_external_id')
-            .eq('user_id', userId)
-            .not('eld_external_id', 'is', null),
+            .select('id, name, eld_external_id')
+            .eq('user_id', userId),
         ]);
 
         if (cancelled) return;
 
-        const vehicleMap = {};
+        const vehicleNameById = {};
+        const vehicleNameByEldId = {};
         for (const v of vehiclesRes.data || []) {
-          if (v.eld_external_id) {
-            vehicleMap[v.eld_external_id] = v.name || v.license_plate || v.eld_external_id;
-          }
+          const display = v.name || v.license_plate || v.eld_external_id || '';
+          if (!display) continue;
+          if (v.id) vehicleNameById[v.id] = display;
+          if (v.eld_external_id) vehicleNameByEldId[v.eld_external_id] = display;
         }
-        const driverMap = {};
+
+        const driverNameById = {};
+        const driverNameByEldId = {};
         for (const d of driversRes.data || []) {
-          if (d.eld_external_id) {
-            driverMap[d.eld_external_id] = d.name || d.eld_external_id;
-          }
+          const display = (d.name || d.eld_external_id || '').trim();
+          if (!display) continue;
+          if (d.id) driverNameById[d.id] = display;
+          if (d.eld_external_id) driverNameByEldId[d.eld_external_id] = display;
         }
+
         setMaps({
-          vehicleNameByEldId: vehicleMap,
-          driverNameByEldId: driverMap,
+          vehicleNameById,
+          vehicleNameByEldId,
+          driverNameById,
+          driverNameByEldId,
           loading: false,
         });
       } catch {

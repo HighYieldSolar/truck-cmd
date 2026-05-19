@@ -86,7 +86,7 @@ export default function HOSViolationAlert({
 
   // Use real-time subscription hook
   const { drivers, loading, error } = useRealtimeDriverHOS(user?.id);
-  const { driverNameByEldId } = useELDNameMaps(user?.id);
+  const { driverNameById, driverNameByEldId } = useELDNameMaps(user?.id);
 
   // Build violation alerts from driver data
   const violationAlerts = useMemo(() => {
@@ -107,7 +107,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-violation`,
           driverId: driver.id,
-          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+          driverName: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'violation',
           severity: 'critical',
           title: 'HOS Violation',
@@ -121,7 +121,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-drive-warning`,
           driverId: driver.id,
-          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+          driverName: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'drive_time_warning',
           severity: driveMinutes <= 30 ? 'critical' : 'warning',
           title: 'Drive Time Warning',
@@ -136,7 +136,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-shift-warning`,
           driverId: driver.id,
-          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+          driverName: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'shift_time_warning',
           severity: shiftMinutes <= 60 ? 'critical' : 'warning',
           title: 'Shift Time Warning',
@@ -151,7 +151,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-drive-expired`,
           driverId: driver.id,
-          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+          driverName: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'drive_time_expired',
           severity: 'critical',
           title: 'Drive Time Expired',
@@ -164,7 +164,7 @@ export default function HOSViolationAlert({
         alerts.push({
           id: `${driver.id}-shift-expired`,
           driverId: driver.id,
-          driverName: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+          driverName: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
           type: 'shift_time_expired',
           severity: 'critical',
           title: 'Shift Time Expired',
@@ -180,7 +180,7 @@ export default function HOSViolationAlert({
     }
 
     return alerts;
-  }, [drivers, dismissedAlerts, showDismissed, driverNameByEldId]);
+  }, [drivers, dismissedAlerts, showDismissed, driverNameById, driverNameByEldId]);
 
   // Sort alerts by severity (critical first) then by time
   const sortedAlerts = useMemo(() => {
@@ -203,7 +203,7 @@ export default function HOSViolationAlert({
       onDriverClick({
         id: driver.id,
         eldDriverId: driver.eld_driver_id,
-        name: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+        name: driverNameById[driver.driver_id] || driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
         status: driver.duty_status?.toUpperCase() || 'OFF_DUTY',
         driveTimeRemaining: driver.drive_time_remaining_ms
           ? Math.floor(driver.drive_time_remaining_ms / 60000)

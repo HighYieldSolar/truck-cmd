@@ -112,8 +112,10 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
     refresh
   } = useRealtimeDriverHOS(user?.id);
 
-  // Local name map (eld_external_id → friendly driver name from Fleet)
-  const { driverNameByEldId } = useELDNameMaps(user?.id);
+  // Local name maps — prefer UUID lookup (set by ELD sync, immune to
+  // provider-id drift) and fall back to eld_external_id, then the raw
+  // provider id if neither side of the local mapping is populated.
+  const { driverNameById, driverNameByEldId } = useELDNameMaps(user?.id);
 
   // Transform realtime data to component format
   const hosData = useMemo(() => {
@@ -122,7 +124,10 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
     const transformedDrivers = realtimeDrivers.map(driver => ({
       id: driver.id,
       eldDriverId: driver.eld_driver_id,
-      name: driverNameByEldId[driver.eld_driver_id] || driver.eld_driver_id,
+      name:
+        driverNameById[driver.driver_id] ||
+        driverNameByEldId[driver.eld_driver_id] ||
+        driver.eld_driver_id,
       status: DUTY_STATUS_MAP[driver.duty_status] || 'OFF_DUTY',
       driveTimeRemaining: driver.drive_time_remaining_ms ? Math.floor(driver.drive_time_remaining_ms / 60000) : null,
       shiftTimeRemaining: driver.shift_time_remaining_ms ? Math.floor(driver.shift_time_remaining_ms / 60000) : null,
@@ -147,7 +152,7 @@ export default function HOSDashboard({ onDriverSelect, compact = false }) {
       },
       lastUpdated: realtimeDrivers[0]?.updated_at || new Date().toISOString()
     };
-  }, [realtimeDrivers, driversByStatus, driversWithViolations, driverNameByEldId]);
+  }, [realtimeDrivers, driversByStatus, driversWithViolations, driverNameById, driverNameByEldId]);
 
   const handleRefresh = async () => {
     if (refreshing) return;

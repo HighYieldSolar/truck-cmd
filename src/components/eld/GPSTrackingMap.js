@@ -66,8 +66,10 @@ export default function GPSTrackingMap({
     refresh
   } = useRealtimeVehicleLocations(user?.id);
 
-  // Local name map (eld_external_id → friendly vehicle name from Fleet)
-  const { vehicleNameByEldId } = useELDNameMaps(user?.id);
+  // Local name maps — prefer UUID lookup (set by ELD sync, immune to
+  // provider-id drift) and fall back to eld_external_id, then the raw
+  // provider id.
+  const { vehicleNameById, vehicleNameByEldId } = useELDNameMaps(user?.id);
 
   // Transform realtime data to component format
   const vehicles = useMemo(() => {
@@ -84,7 +86,10 @@ export default function GPSTrackingMap({
         id: loc.id,
         externalVehicleId: loc.eld_vehicle_id,
         vehicleId: loc.vehicle_id,
-        vehicleName: vehicleNameByEldId[loc.eld_vehicle_id] || loc.eld_vehicle_id,
+        vehicleName:
+          vehicleNameById[loc.vehicle_id] ||
+          vehicleNameByEldId[loc.eld_vehicle_id] ||
+          loc.eld_vehicle_id,
         eldProvider: loc.eld_provider,
         location: {
           latitude: parseFloat(loc.latitude),
@@ -102,7 +107,7 @@ export default function GPSTrackingMap({
         updatedAt: loc.updated_at
       };
     });
-  }, [realtimeLocations, vehicleNameByEldId]);
+  }, [realtimeLocations, vehicleNameById, vehicleNameByEldId]);
 
   // Detect dark mode for Mapbox style selection
   const [isDarkMode, setIsDarkMode] = useState(false);
