@@ -891,7 +891,7 @@ export default function QuickBooksSettings() {
               </p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <Link
-                  href="/dashboard/support"
+                  href="/contact"
                   className="inline-flex items-center text-sm text-[#2CA01C] hover:underline leading-none"
                 >
                   Contact Support

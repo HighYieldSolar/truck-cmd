@@ -230,7 +230,7 @@ export default function ELDSettings() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/dashboard/support"
+                href="/contact"
                 className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
               >
                 Contact Support
